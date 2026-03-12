@@ -87,35 +87,38 @@ Before marking ANY task complete, verify:
 Branch: `feature/API-001-fastapi-setup`
 Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest ...`
 
-### Completed (Tasks 1–6)
+### All Tasks Complete (1–12) — API-001 FastAPI Setup Done
+
+**Test results:** 37 tests passing, 96% coverage
+**Lint/type check:** ruff + mypy clean
+
+**Created files:**
 - `pyproject.toml` — deps, pytest config (asyncio_mode=auto)
-- `src/config/settings.py` — Settings via pydantic-settings
+- `src/config/settings.py` — Settings via pydantic-settings (`COGNIFY_` prefix)
 - `src/utils/logging.py` — structlog setup (`setup_logging(debug)`)
 - `src/api/errors.py` — CognifyError hierarchy + `build_error_response`
-- `src/api/routers/health.py` — `/api/v1/health` + `/api/v1/health/ready`
-- `src/api/middleware/__init__.py` + `src/api/middleware/correlation_id.py` — CorrelationIdMiddleware, correlation_id_ctx ContextVar
-- `tests/unit/api/test_middleware.py` — 5 correlation ID tests (all passing)
+- `src/api/rate_limiter.py` — Module-level slowapi `Limiter` singleton
+- `src/api/dependencies.py` — Placeholder stubs for JWT auth + DB session
+- `src/api/routers/health.py` — `/api/v1/health` + `/api/v1/health/ready` (rate-limit exempt)
+- `src/api/middleware/correlation_id.py` — CorrelationIdMiddleware + `correlation_id_ctx` ContextVar
+- `src/api/middleware/security_headers.py` — X-Content-Type-Options, X-Frame-Options, CSP
+- `src/api/middleware/request_logging.py` — structlog request logging with correlation IDs
+- `src/api/main.py` — `create_app()` factory with middleware stack + exception handlers
+- `tests/conftest.py` — Shared fixtures (app, client, settings)
+- `tests/unit/api/test_health.py` — 11 health/readiness tests
+- `tests/unit/api/test_middleware.py` — 13 middleware tests (correlation, security, logging, rate limiting)
+- `tests/unit/api/test_app.py` — 6 app factory tests
+- `tests/unit/api/test_errors.py` — 7 error handling tests
 
-### In Progress (Task 7 — next to resume)
-- Tests already appended to `tests/unit/api/test_middleware.py` (TestSecurityHeadersMiddleware — 3 tests)
-- Need to create: `src/api/middleware/security_headers.py`
-  - Class `SecurityHeadersMiddleware(BaseHTTPMiddleware)`
-  - Sets: `x-content-type-options: nosniff`, `x-frame-options: DENY`, `content-security-policy: default-src 'self'`
-- Run: 8 tests total (5 corr + 3 security)
-- Commit: `feat: add security headers middleware (CSP, X-Frame, X-Content-Type)`
+**Commits:**
+- `2fbb94f` — chore: add pyproject.toml with runtime and dev dependencies
+- `0940ed4` — feat: add pydantic-settings config with COGNIFY_ env prefix
+- `3863606` — feat: add structlog configuration with JSON/console rendering
+- `6e11112` — feat: add CognifyError hierarchy and standard error response builder
+- `11d2c2f` — feat: add health and readiness endpoints with dependency checks
+- `42a8b5d` — feat: add correlation ID middleware with X-Request-ID header
+- `3dc3d22` — feat: add security headers middleware (CSP, X-Frame, X-Content-Type)
+- `f65abcb` — feat: add request logging middleware with structlog and correlation IDs
+- `f49c700` — feat(api-001): add create_app() factory, rate limiter, and full test suite
 
-### Pending (Task 8)
-- Append tests to `tests/unit/api/test_middleware.py` (TestRequestLoggingMiddleware — 2 tests)
-- Create: `src/api/middleware/request_logging.py`
-  - Class `RequestLoggingMiddleware(BaseHTTPMiddleware)`
-  - Skip paths: `/docs`, `/openapi.json`, `/redoc`
-  - Log fields: method, path, status_code, duration_ms, correlation_id
-  - Stacks with CorrelationIdMiddleware (add RequestLogging first, then CorrelationId)
-- Run: 10 tests total (5 corr + 3 security + 2 logging)
-- Commit: `feat: add request logging middleware with structlog and correlation IDs`
-
-### Remaining Tasks (9–12)
-- Task 9: App factory, rate limiter, dependency stubs
-- Task 10: Rate limiting tests (429 verification)
-- Task 11: Full suite validation, lint, type check
-- Task 12: Dev server smoke test and final commit
+**Next ticket:** API-002 (JWT Authentication)
