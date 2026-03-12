@@ -80,5 +80,24 @@ Before marking ANY task complete, verify:
 - @docs/ci-cd/PIPELINE.md — CI/CD stages and checklist
 - @docs/security/SECURITY_CHECKLIST.md — Sprint security gates
 - @docs/observability/OBSERVABILITY_PLAN.md — SLIs, SLOs, alerts
-- @project-management/BACKLOG.md — Product backlog
+- @project-management/BACKLOG.md — Product backlog (full acceptance criteria)
+- @project-management/PROGRESS.md — **START HERE** — ticket status, branches, links to plans/specs
 - @project-management/RISK_REGISTER.md — Active risks
+
+## Workflow: Plans and Specs
+Implementation artifacts live in `docs/superpowers/`:
+- **Specs** (`docs/superpowers/specs/`): Design documents created before implementation
+- **Plans** (`docs/superpowers/plans/`): Step-by-step task breakdowns with checkboxes
+
+Naming convention: `{date}-{ticket-id}-{description}.md` (e.g., `2026-03-12-api-001-fastapi-setup.md`)
+
+**New session checklist**: Read `project-management/PROGRESS.md` to see what's done/in-progress, then check the relevant plan file for detailed task state.
+
+## Environment
+Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest ...`
+
+## Current Status
+See @project-management/PROGRESS.md for full ticket status.
+
+**Last completed:** API-001 (FastAPI Application Setup) — branch `feature/API-001-fastapi-setup`
+**Next up:** API-002 (JWT Authentication)

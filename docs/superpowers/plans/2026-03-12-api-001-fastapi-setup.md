@@ -59,7 +59,7 @@
 **Files:**
 - Create: `pyproject.toml`
 
-- [ ] **Step 1: Create pyproject.toml**
+- [x] **Step 1: Create pyproject.toml**
 
 ```toml
 [build-system]
@@ -114,17 +114,17 @@ fail_under = 80
 show_missing = true
 ```
 
-- [ ] **Step 2: Install dependencies**
+- [x] **Step 2: Install dependencies**
 
 Run: `pip install -e ".[dev]"`
 Expected: All packages install successfully, no version conflicts.
 
-- [ ] **Step 3: Verify tools work**
+- [x] **Step 3: Verify tools work**
 
 Run: `python -c "import fastapi; import structlog; import slowapi; print('OK')" && ruff --version && mypy --version && pytest --version`
 Expected: All imports succeed, tools print versions.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit** (2fbb94f)
 
 ```bash
 git add pyproject.toml
@@ -139,7 +139,7 @@ git commit -m "chore: add pyproject.toml with runtime and dev dependencies"
 - Create: `src/__init__.py`, `src/config/__init__.py`, `src/config/settings.py`, `.env.example`
 - Create: `tests/__init__.py`, `tests/unit/__init__.py`, `tests/unit/api/__init__.py`, `tests/unit/test_settings.py`
 
-- [ ] **Step 1: Write the failing test for Settings**
+- [x] **Step 1: Write the failing test for Settings**
 
 Create all `__init__.py` package markers (empty files):
 - `tests/__init__.py`
@@ -175,12 +175,12 @@ class TestSettings:
         assert settings.log_level == "DEBUG"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/unit/test_settings.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.config.settings'`
 
-- [ ] **Step 3: Create package markers and Settings**
+- [x] **Step 3: Create package markers and Settings**
 
 Create `src/__init__.py` (empty).
 Create `src/config/__init__.py` (empty).
@@ -202,12 +202,12 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/unit/test_settings.py -v`
 Expected: 2 tests PASS.
 
-- [ ] **Step 5: Create .env.example**
+- [x] **Step 5: Create .env.example**
 
 ```env
 # Cognify Configuration
@@ -220,7 +220,7 @@ COGNIFY_CORS_ALLOWED_ORIGINS=["http://localhost:3000"]
 COGNIFY_RATE_LIMIT_DEFAULT=100/minute
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit** (0940ed4)
 
 ```bash
 git add pyproject.toml src/__init__.py src/config/ tests/__init__.py tests/unit/ .env.example
@@ -235,7 +235,7 @@ git commit -m "feat: add pydantic-settings config with COGNIFY_ env prefix"
 - Create: `src/utils/__init__.py`, `src/utils/logging.py`
 - Create: `tests/unit/test_logging.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/test_logging.py`:
 
@@ -265,12 +265,12 @@ class TestLogging:
         )
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/unit/test_logging.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.utils.logging'`
 
-- [ ] **Step 3: Implement structlog setup**
+- [x] **Step 3: Implement structlog setup**
 
 Create `src/utils/__init__.py` (empty).
 Create `src/utils/logging.py`:
@@ -308,12 +308,12 @@ def setup_logging(debug: bool = False) -> None:
     )
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/unit/test_logging.py -v`
 Expected: 2 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** (3863606)
 
 ```bash
 git add src/utils/ tests/unit/test_logging.py
@@ -330,7 +330,7 @@ git commit -m "feat: add structlog configuration with JSON/console rendering"
 - Create: `src/api/__init__.py`, `src/api/errors.py`
 - Create: `tests/unit/api/test_errors.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/api/test_errors.py`:
 
@@ -387,12 +387,12 @@ class TestCognifyErrors:
         }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/unit/api/test_errors.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.api.errors'`
 
-- [ ] **Step 3: Implement error handling**
+- [x] **Step 3: Implement error handling**
 
 Create `src/api/__init__.py` (empty).
 Create `src/api/errors.py`:
@@ -456,12 +456,12 @@ class RateLimitError(CognifyError):
         )
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/unit/api/test_errors.py -v`
 Expected: 5 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** (6e11112)
 
 ```bash
 git add src/api/__init__.py src/api/errors.py tests/unit/api/test_errors.py
@@ -478,7 +478,7 @@ git commit -m "feat: add CognifyError hierarchy and standard error response buil
 
 Note: These tests intentionally use a bare FastAPI instance with only the health router to test the endpoints in isolation (no middleware). Full integration with the middleware stack is verified in Task 9 when the app factory is built.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/api/test_health.py`:
 
@@ -587,12 +587,12 @@ class TestReadinessEndpoint:
         assert response.json()["status"] == "unavailable"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/unit/api/test_health.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.api.routers.health'`
 
-- [ ] **Step 3: Implement health router**
+- [x] **Step 3: Implement health router**
 
 Create `src/api/routers/__init__.py` (empty).
 Create `src/api/routers/health.py`:
@@ -673,12 +673,12 @@ async def readiness(request: Request) -> JSONResponse:
     )
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/unit/api/test_health.py -v`
 Expected: 9 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** (11d2c2f)
 
 ```bash
 git add src/api/routers/ tests/unit/api/test_health.py
@@ -695,7 +695,7 @@ git commit -m "feat: add health and readiness endpoints with dependency checks"
 - Create: `src/api/middleware/__init__.py`, `src/api/middleware/correlation_id.py`
 - Create: `tests/unit/api/test_middleware.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/api/test_middleware.py`:
 
@@ -795,12 +795,12 @@ class TestCorrelationIdMiddleware:
         assert response.json()["correlation_id"] == custom_id
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/unit/api/test_middleware.py::TestCorrelationIdMiddleware -v`
 Expected: FAIL — `ModuleNotFoundError`
 
-- [ ] **Step 3: Implement correlation ID middleware**
+- [x] **Step 3: Implement correlation ID middleware**
 
 Create `src/api/middleware/__init__.py` (empty).
 Create `src/api/middleware/correlation_id.py`:
@@ -847,12 +847,12 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             correlation_id_ctx.reset(token)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/unit/api/test_middleware.py::TestCorrelationIdMiddleware -v`
 Expected: 5 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** (42a8b5d)
 
 ```bash
 git add src/api/middleware/ tests/unit/api/test_middleware.py
@@ -867,7 +867,7 @@ git commit -m "feat: add correlation ID middleware with X-Request-ID header"
 - Create: `src/api/middleware/security_headers.py`
 - Modify: `tests/unit/api/test_middleware.py` (append tests)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/unit/api/test_middleware.py`:
 
@@ -921,12 +921,12 @@ class TestSecurityHeadersMiddleware:
         )
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/unit/api/test_middleware.py::TestSecurityHeadersMiddleware -v`
 Expected: FAIL — `ModuleNotFoundError`
 
-- [ ] **Step 3: Implement security headers middleware**
+- [x] **Step 3: Implement security headers middleware**
 
 Create `src/api/middleware/security_headers.py`:
 
@@ -952,12 +952,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/unit/api/test_middleware.py::TestSecurityHeadersMiddleware -v`
 Expected: 3 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** (3dc3d22)
 
 ```bash
 git add src/api/middleware/security_headers.py tests/unit/api/test_middleware.py
@@ -972,7 +972,7 @@ git commit -m "feat: add security headers middleware (CSP, X-Frame, X-Content-Ty
 - Create: `src/api/middleware/request_logging.py`
 - Modify: `tests/unit/api/test_middleware.py` (append tests)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/unit/api/test_middleware.py`:
 
@@ -1041,12 +1041,12 @@ class TestRequestLoggingMiddleware:
                 assert data.get("path") != "/docs"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/unit/api/test_middleware.py::TestRequestLoggingMiddleware -v`
 Expected: FAIL — `ModuleNotFoundError`
 
-- [ ] **Step 3: Implement request logging middleware**
+- [x] **Step 3: Implement request logging middleware**
 
 Create `src/api/middleware/request_logging.py`:
 
@@ -1092,12 +1092,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         return response
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pytest tests/unit/api/test_middleware.py::TestRequestLoggingMiddleware -v`
 Expected: 2 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** (f65abcb)
 
 ```bash
 git add src/api/middleware/request_logging.py tests/unit/api/test_middleware.py
@@ -1115,7 +1115,7 @@ git commit -m "feat: add request logging middleware with structlog and correlati
 - Create: `src/models/__init__.py`, `src/services/__init__.py`, `src/agents/__init__.py`, `src/pipelines/__init__.py`
 - Create: `tests/conftest.py`, `tests/unit/api/test_app.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/conftest.py`:
 
@@ -1190,12 +1190,12 @@ class TestCreateApp:
         assert app.debug is False
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/unit/api/test_app.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.api.main'`
 
-- [ ] **Step 3: Create dependency stubs**
+- [x] **Step 3: Create dependency stubs**
 
 Create `src/api/dependencies.py`:
 
@@ -1208,7 +1208,7 @@ async def get_db_session() -> None:
     """Placeholder — replaced when database layer is added."""
 ```
 
-- [ ] **Step 4: Create shared rate limiter instance**
+- [x] **Step 4: Create shared rate limiter instance**
 
 Create `src/api/rate_limiter.py`:
 
@@ -1219,7 +1219,7 @@ from slowapi.util import get_remote_address
 limiter = Limiter(key_func=get_remote_address)
 ```
 
-- [ ] **Step 5: Update health router with @limiter.exempt**
+- [x] **Step 5: Update health router with @limiter.exempt**
 
 Modify `src/api/routers/health.py` — add the exempt decorator to both endpoints:
 
@@ -1248,7 +1248,7 @@ async def readiness(request: Request) -> JSONResponse:
     ...
 ```
 
-- [ ] **Step 6: Create app factory**
+- [x] **Step 6: Create app factory**
 
 Create `src/api/main.py`:
 
@@ -1392,12 +1392,12 @@ Create remaining empty `__init__.py` files:
 - `src/agents/__init__.py`
 - `src/pipelines/__init__.py`
 
-- [ ] **Step 7: Run test to verify it passes**
+- [x] **Step 7: Run test to verify it passes**
 
 Run: `pytest tests/unit/api/test_app.py -v`
 Expected: 6 tests PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit** (f49c700 — Tasks 9–12 committed together)
 
 ```bash
 git add src/api/main.py src/api/dependencies.py src/api/rate_limiter.py src/api/routers/health.py src/models/ src/services/ src/agents/ src/pipelines/ tests/conftest.py tests/unit/api/test_app.py
@@ -1411,7 +1411,7 @@ git commit -m "feat: add create_app() factory with middleware stack and exceptio
 **Files:**
 - Modify: `tests/unit/api/test_middleware.py` (append rate limiting tests)
 
-- [ ] **Step 1: Write the rate limiting tests**
+- [x] **Step 1: Write the rate limiting tests**
 
 Append to `tests/unit/api/test_middleware.py`:
 
@@ -1481,12 +1481,12 @@ class TestRateLimiting:
         assert data["error"]["message"] == "Rate limit exceeded"
 ```
 
-- [ ] **Step 2: Run tests to verify they pass**
+- [x] **Step 2: Run tests to verify they pass**
 
 Run: `pytest tests/unit/api/test_middleware.py::TestRateLimiting -v`
 Expected: 3 tests PASS. The test route uses `@limiter.limit("2/minute")` and `SlowAPIMiddleware` is registered in `create_app()`, so the 3rd request should return 429.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit** (f49c700)
 
 ```bash
 git add tests/unit/api/test_middleware.py
@@ -1501,38 +1501,38 @@ git commit -m "test: add rate limiting tests with 429 error envelope verificatio
 - Modify: any files with lint/type issues
 - Create: `tests/integration/__init__.py`
 
-- [ ] **Step 1: Create integration test package marker**
+- [x] **Step 1: Create integration test package marker**
 
 Create `tests/integration/__init__.py` (empty).
 
-- [ ] **Step 2: Run full test suite with coverage**
+- [x] **Step 2: Run full test suite with coverage**
 
 Run: `pytest tests/ -v --cov=src --cov-report=term-missing`
 Expected: All tests PASS, coverage >= 80%.
 
-- [ ] **Step 3: Run linting**
+- [x] **Step 3: Run linting**
 
 Run: `ruff check src/ tests/ && ruff format --check src/ tests/`
 Expected: No lint errors. If there are errors, fix them (import ordering, unused imports, line length, etc.).
 
-- [ ] **Step 4: Run type checking**
+- [x] **Step 4: Run type checking**
 
 Run: `mypy src/`
 Expected: No type errors. If there are errors, add missing type annotations or fix type mismatches.
 
-- [ ] **Step 5: Fix any issues found**
+- [x] **Step 5: Fix any issues found**
 
 Iterate on lint and type errors until all clean. Common fixes:
 - Move any function-body imports to module top level
 - Add missing return type annotations
 - Fix `dict[str, object]` vs `dict[str, Any]` issues (use `object`, never `Any`)
 
-- [ ] **Step 6: Run full validation again**
+- [x] **Step 6: Run full validation again**
 
 Run: `pytest tests/ -v --cov=src --cov-report=term-missing && ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/`
 Expected: All green.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit** (f49c700 — lint/type fixes included in combined commit)
 
 ```bash
 git add -A
@@ -1546,7 +1546,7 @@ git commit -m "chore: fix lint/type errors, add integration test scaffold"
 **Files:**
 - Possibly modify: `src/api/main.py` (add module-level app for uvicorn)
 
-- [ ] **Step 1: Verify dev server starts**
+- [x] **Step 1: Verify dev server starts**
 
 Run: `timeout 5 uvicorn src.api.main:create_app --factory --port 8000 || true`
 
@@ -1560,12 +1560,12 @@ If uvicorn needs a module-level `app`, add to bottom of `src/api/main.py`:
 app = create_app()
 ```
 
-- [ ] **Step 2: Final full validation**
+- [x] **Step 2: Final full validation**
 
 Run: `pytest tests/ -v --cov=src --cov-report=term-missing && ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/`
 Expected: All tests pass, coverage >= 80%, no lint or type errors.
 
-- [ ] **Step 3: Final commit**
+- [x] **Step 3: Final commit** (f49c700 — final combined commit for Tasks 9–12)
 
 ```bash
 git add -A

@@ -287,8 +287,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 ## Epic 7: API & Authentication
 **Goal**: RESTful API with JWT authentication and role-based access control.
 
-### API-001: FastAPI Application Setup [Must]
+### API-001: FastAPI Application Setup [Must] — DONE
 **As a** developer, **I want** a FastAPI application with proper structure, **so that** we have a solid API foundation.
+- **Status**: Done (branch `feature/API-001-fastapi-setup`)
+- **Plan**: [`docs/superpowers/plans/2026-03-12-api-001-fastapi-setup.md`](../docs/superpowers/plans/2026-03-12-api-001-fastapi-setup.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-12-api-001-fastapi-setup-design.md`](../docs/superpowers/specs/2026-03-12-api-001-fastapi-setup-design.md)
 - **Acceptance Criteria**:
   - FastAPI app with router organization by domain
   - Middleware: CORS, request ID, structured logging, rate limiting
