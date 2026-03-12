@@ -80,45 +80,24 @@ Before marking ANY task complete, verify:
 - @docs/ci-cd/PIPELINE.md — CI/CD stages and checklist
 - @docs/security/SECURITY_CHECKLIST.md — Sprint security gates
 - @docs/observability/OBSERVABILITY_PLAN.md — SLIs, SLOs, alerts
-- @project-management/BACKLOG.md — Product backlog
+- @project-management/BACKLOG.md — Product backlog (full acceptance criteria)
+- @project-management/PROGRESS.md — **START HERE** — ticket status, branches, links to plans/specs
 - @project-management/RISK_REGISTER.md — Active risks
 
-## Active Development Session State
-Branch: `feature/API-001-fastapi-setup`
+## Workflow: Plans and Specs
+Implementation artifacts live in `docs/superpowers/`:
+- **Specs** (`docs/superpowers/specs/`): Design documents created before implementation
+- **Plans** (`docs/superpowers/plans/`): Step-by-step task breakdowns with checkboxes
+
+Naming convention: `{date}-{ticket-id}-{description}.md` (e.g., `2026-03-12-api-001-fastapi-setup.md`)
+
+**New session checklist**: Read `project-management/PROGRESS.md` to see what's done/in-progress, then check the relevant plan file for detailed task state.
+
+## Environment
 Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest ...`
 
-### All Tasks Complete (1–12) — API-001 FastAPI Setup Done
+## Current Status
+See @project-management/PROGRESS.md for full ticket status.
 
-**Test results:** 37 tests passing, 96% coverage
-**Lint/type check:** ruff + mypy clean
-
-**Created files:**
-- `pyproject.toml` — deps, pytest config (asyncio_mode=auto)
-- `src/config/settings.py` — Settings via pydantic-settings (`COGNIFY_` prefix)
-- `src/utils/logging.py` — structlog setup (`setup_logging(debug)`)
-- `src/api/errors.py` — CognifyError hierarchy + `build_error_response`
-- `src/api/rate_limiter.py` — Module-level slowapi `Limiter` singleton
-- `src/api/dependencies.py` — Placeholder stubs for JWT auth + DB session
-- `src/api/routers/health.py` — `/api/v1/health` + `/api/v1/health/ready` (rate-limit exempt)
-- `src/api/middleware/correlation_id.py` — CorrelationIdMiddleware + `correlation_id_ctx` ContextVar
-- `src/api/middleware/security_headers.py` — X-Content-Type-Options, X-Frame-Options, CSP
-- `src/api/middleware/request_logging.py` — structlog request logging with correlation IDs
-- `src/api/main.py` — `create_app()` factory with middleware stack + exception handlers
-- `tests/conftest.py` — Shared fixtures (app, client, settings)
-- `tests/unit/api/test_health.py` — 11 health/readiness tests
-- `tests/unit/api/test_middleware.py` — 13 middleware tests (correlation, security, logging, rate limiting)
-- `tests/unit/api/test_app.py` — 6 app factory tests
-- `tests/unit/api/test_errors.py` — 7 error handling tests
-
-**Commits:**
-- `2fbb94f` — chore: add pyproject.toml with runtime and dev dependencies
-- `0940ed4` — feat: add pydantic-settings config with COGNIFY_ env prefix
-- `3863606` — feat: add structlog configuration with JSON/console rendering
-- `6e11112` — feat: add CognifyError hierarchy and standard error response builder
-- `11d2c2f` — feat: add health and readiness endpoints with dependency checks
-- `42a8b5d` — feat: add correlation ID middleware with X-Request-ID header
-- `3dc3d22` — feat: add security headers middleware (CSP, X-Frame, X-Content-Type)
-- `f65abcb` — feat: add request logging middleware with structlog and correlation IDs
-- `f49c700` — feat(api-001): add create_app() factory, rate limiter, and full test suite
-
-**Next ticket:** API-002 (JWT Authentication)
+**Last completed:** API-001 (FastAPI Application Setup) — branch `feature/API-001-fastapi-setup`
+**Next up:** API-002 (JWT Authentication)
