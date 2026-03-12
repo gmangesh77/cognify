@@ -1,3 +1,4 @@
+import json
 import re
 from typing import AsyncGenerator
 
@@ -140,3 +141,62 @@ class TestSecurityHeadersMiddleware:
             response.headers["content-security-policy"]
             == "default-src 'self'"
         )
+
+
+from src.api.middleware.request_logging import RequestLoggingMiddleware
+from src.utils.logging import setup_logging
+
+
+@pytest.fixture
+def app_with_logging() -> FastAPI:
+    """App with both logging and correlation ID middleware."""
+    app = FastAPI()
+    app.add_middleware(RequestLoggingMiddleware)
+    app.add_middleware(CorrelationIdMiddleware)
+
+    @app.get("/test")
+    async def test_endpoint() -> JSONResponse:
+        return JSONResponse({"ok": True})
+
+    return app
+
+
+@pytest.fixture
+async def log_client(
+    app_with_logging: FastAPI,
+) -> AsyncGenerator[httpx.AsyncClient, None]:
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app_with_logging),
+        base_url="http://test",
+    ) as ac:
+        yield ac
+
+
+class TestRequestLoggingMiddleware:
+    async def test_logs_request_fields(
+        self,
+        log_client: httpx.AsyncClient,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        setup_logging(debug=False)
+        await log_client.get("/test")
+        captured = capsys.readouterr().out
+        log_line = json.loads(captured.strip().split("\n")[-1])
+        assert log_line["method"] == "GET"
+        assert log_line["path"] == "/test"
+        assert log_line["status_code"] == 200
+        assert "duration_ms" in log_line
+        assert "correlation_id" in log_line
+
+    async def test_skips_docs_path(
+        self,
+        log_client: httpx.AsyncClient,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        setup_logging(debug=False)
+        await log_client.get("/docs")
+        captured = capsys.readouterr().out
+        for line in captured.strip().split("\n"):
+            if line.strip():
+                data = json.loads(line)
+                assert data.get("path") != "/docs"
