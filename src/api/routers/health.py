@@ -1,9 +1,11 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from starlette.responses import JSONResponse
+
+from src.api.rate_limiter import limiter
 
 CheckStatus = Literal["ok", "unavailable", "degraded"]
 
@@ -25,14 +27,12 @@ class HealthResponse(BaseModel):
 health_router = APIRouter()
 
 
+@limiter.exempt  # type: ignore[untyped-decorator]
 @health_router.get(
     "/health",
     response_model=HealthResponse,
     summary="Liveness check",
-    description=(
-        "Returns service health status."
-        " Public — no auth required."
-    ),
+    description=("Returns service health status. Public — no auth required."),
 )
 async def health(request: Request) -> HealthResponse:
     settings = request.app.state.settings
@@ -40,11 +40,12 @@ async def health(request: Request) -> HealthResponse:
     return HealthResponse(
         status="healthy",
         version=settings.app_version,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         checks=checks,
     )
 
 
+@limiter.exempt  # type: ignore[untyped-decorator]
 @health_router.get(
     "/health/ready",
     response_model=HealthResponse,
@@ -58,13 +59,11 @@ async def health(request: Request) -> HealthResponse:
 async def readiness(request: Request) -> JSONResponse:
     settings = request.app.state.settings
     checks = DependencyChecks()
-    all_ok = all(
-        v == "ok" for v in checks.model_dump().values()
-    )
+    all_ok = all(v == "ok" for v in checks.model_dump().values())
     response = HealthResponse(
         status="healthy" if all_ok else "unavailable",
         version=settings.app_version,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         checks=checks,
     )
     return JSONResponse(

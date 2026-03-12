@@ -13,7 +13,5 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["x-content-type-options"] = "nosniff"
         response.headers["x-frame-options"] = "DENY"
-        response.headers["content-security-policy"] = (
-            "default-src 'self'"
-        )
+        response.headers["content-security-policy"] = "default-src 'self'"
         return response

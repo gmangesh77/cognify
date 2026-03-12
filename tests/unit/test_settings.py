@@ -14,9 +14,7 @@ class TestSettings:
         assert settings.rate_limit_default == "100/minute"
         assert settings.api_v1_prefix == "/api/v1"
 
-    def test_env_override(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_env_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("COGNIFY_DEBUG", "true")
         monkeypatch.setenv("COGNIFY_LOG_LEVEL", "DEBUG")
         settings = Settings()

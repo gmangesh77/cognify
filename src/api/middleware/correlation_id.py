@@ -9,9 +9,7 @@ from starlette.middleware.base import (
 from starlette.requests import Request
 from starlette.responses import Response
 
-correlation_id_ctx: ContextVar[str] = ContextVar(
-    "correlation_id", default=""
-)
+correlation_id_ctx: ContextVar[str] = ContextVar("correlation_id", default="")
 
 _VALID_ID_PATTERN = re.compile(r"^[A-Za-z0-9\-_]{1,128}$")
 

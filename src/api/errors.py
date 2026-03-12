@@ -1,6 +1,6 @@
 from starlette.status import (
     HTTP_404_NOT_FOUND,
-    HTTP_422_UNPROCESSABLE_ENTITY,
+    HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_429_TOO_MANY_REQUESTS,
 )
 
@@ -20,9 +20,7 @@ def build_error_response(
 
 
 class CognifyError(Exception):
-    def __init__(
-        self, status_code: int, code: str, message: str
-    ) -> None:
+    def __init__(self, status_code: int, code: str, message: str) -> None:
         self.status_code = status_code
         self.code = code
         self.message = message
@@ -41,7 +39,7 @@ class NotFoundError(CognifyError):
 class CognifyValidationError(CognifyError):
     def __init__(self, message: str = "Validation error") -> None:
         super().__init__(
-            status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=HTTP_422_UNPROCESSABLE_CONTENT,
             code="validation_error",
             message=message,
         )

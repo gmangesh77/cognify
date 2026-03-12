@@ -24,9 +24,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
         start = time.monotonic()
         response = await call_next(request)
-        duration_ms = round(
-            (time.monotonic() - start) * 1000, 2
-        )
+        duration_ms = round((time.monotonic() - start) * 1000, 2)
 
         logger.info(
             "request_completed",

@@ -13,9 +13,7 @@ def setup_logging(debug: bool = False) -> None:
     ]
 
     if debug:
-        renderer: structlog.types.Processor = (
-            structlog.dev.ConsoleRenderer()
-        )
+        renderer: structlog.types.Processor = structlog.dev.ConsoleRenderer()
     else:
         renderer = structlog.processors.JSONRenderer()
 

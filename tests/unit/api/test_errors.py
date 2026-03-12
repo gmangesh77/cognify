@@ -1,6 +1,6 @@
 from starlette.status import (
     HTTP_404_NOT_FOUND,
-    HTTP_422_UNPROCESSABLE_ENTITY,
+    HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_429_TOO_MANY_REQUESTS,
 )
 
@@ -15,9 +15,7 @@ from src.api.errors import (
 
 class TestCognifyErrors:
     def test_cognify_error_base(self) -> None:
-        err = CognifyError(
-            status_code=400, code="bad_request", message="Bad"
-        )
+        err = CognifyError(status_code=400, code="bad_request", message="Bad")
         assert err.status_code == 400
         assert err.code == "bad_request"
         assert err.message == "Bad"
@@ -29,7 +27,7 @@ class TestCognifyErrors:
 
     def test_validation_error(self) -> None:
         err = CognifyValidationError(message="Invalid input")
-        assert err.status_code == HTTP_422_UNPROCESSABLE_ENTITY
+        assert err.status_code == HTTP_422_UNPROCESSABLE_CONTENT
         assert err.code == "validation_error"
 
     def test_rate_limit_error(self) -> None:

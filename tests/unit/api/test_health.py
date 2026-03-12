@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 
 import httpx
 import pytest
@@ -30,9 +30,7 @@ async def health_client(
 
 
 class TestHealthEndpoint:
-    async def test_health_returns_200(
-        self, health_client: httpx.AsyncClient
-    ) -> None:
+    async def test_health_returns_200(self, health_client: httpx.AsyncClient) -> None:
         response = await health_client.get("/api/v1/health")
         assert response.status_code == 200
 
@@ -69,7 +67,7 @@ class TestHealthEndpoint:
         response = await health_client.get("/api/v1/health")
         ts = response.json()["timestamp"]
         parsed = datetime.fromisoformat(ts)
-        assert parsed.tzinfo == timezone.utc
+        assert parsed.tzinfo == UTC
 
     async def test_health_status_healthy(
         self, health_client: httpx.AsyncClient

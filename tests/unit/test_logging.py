@@ -8,16 +8,10 @@ class TestLogging:
         setup_logging(debug=False)
         config = structlog.get_config()
         processors = config["processors"]
-        assert any(
-            "JSONRenderer" in type(p).__name__
-            for p in processors
-        )
+        assert any("JSONRenderer" in type(p).__name__ for p in processors)
 
     def test_setup_logging_debug_mode(self) -> None:
         setup_logging(debug=True)
         config = structlog.get_config()
         processors = config["processors"]
-        assert any(
-            "ConsoleRenderer" in type(p).__name__
-            for p in processors
-        )
+        assert any("ConsoleRenderer" in type(p).__name__ for p in processors)
