@@ -82,3 +82,40 @@ Before marking ANY task complete, verify:
 - @docs/observability/OBSERVABILITY_PLAN.md — SLIs, SLOs, alerts
 - @project-management/BACKLOG.md — Product backlog
 - @project-management/RISK_REGISTER.md — Active risks
+
+## Active Development Session State
+Branch: `feature/API-001-fastapi-setup`
+Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest ...`
+
+### Completed (Tasks 1–6)
+- `pyproject.toml` — deps, pytest config (asyncio_mode=auto)
+- `src/config/settings.py` — Settings via pydantic-settings
+- `src/utils/logging.py` — structlog setup (`setup_logging(debug)`)
+- `src/api/errors.py` — CognifyError hierarchy + `build_error_response`
+- `src/api/routers/health.py` — `/api/v1/health` + `/api/v1/health/ready`
+- `src/api/middleware/__init__.py` + `src/api/middleware/correlation_id.py` — CorrelationIdMiddleware, correlation_id_ctx ContextVar
+- `tests/unit/api/test_middleware.py` — 5 correlation ID tests (all passing)
+
+### In Progress (Task 7 — next to resume)
+- Tests already appended to `tests/unit/api/test_middleware.py` (TestSecurityHeadersMiddleware — 3 tests)
+- Need to create: `src/api/middleware/security_headers.py`
+  - Class `SecurityHeadersMiddleware(BaseHTTPMiddleware)`
+  - Sets: `x-content-type-options: nosniff`, `x-frame-options: DENY`, `content-security-policy: default-src 'self'`
+- Run: 8 tests total (5 corr + 3 security)
+- Commit: `feat: add security headers middleware (CSP, X-Frame, X-Content-Type)`
+
+### Pending (Task 8)
+- Append tests to `tests/unit/api/test_middleware.py` (TestRequestLoggingMiddleware — 2 tests)
+- Create: `src/api/middleware/request_logging.py`
+  - Class `RequestLoggingMiddleware(BaseHTTPMiddleware)`
+  - Skip paths: `/docs`, `/openapi.json`, `/redoc`
+  - Log fields: method, path, status_code, duration_ms, correlation_id
+  - Stacks with CorrelationIdMiddleware (add RequestLogging first, then CorrelationId)
+- Run: 10 tests total (5 corr + 3 security + 2 logging)
+- Commit: `feat: add request logging middleware with structlog and correlation IDs`
+
+### Remaining Tasks (9–12)
+- Task 9: App factory, rate limiter, dependency stubs
+- Task 10: Rate limiting tests (429 verification)
+- Task 11: Full suite validation, lint, type check
+- Task 12: Dev server smoke test and final commit

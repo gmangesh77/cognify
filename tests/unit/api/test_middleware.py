@@ -91,3 +91,52 @@ class TestCorrelationIdMiddleware:
             "/test", headers={"X-Request-ID": custom_id}
         )
         assert response.json()["correlation_id"] == custom_id
+
+
+from src.api.middleware.security_headers import SecurityHeadersMiddleware
+
+
+@pytest.fixture
+def app_with_security_headers() -> FastAPI:
+    app = FastAPI()
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    @app.get("/test")
+    async def test_endpoint() -> JSONResponse:
+        return JSONResponse({"ok": True})
+
+    return app
+
+
+@pytest.fixture
+async def sec_client(
+    app_with_security_headers: FastAPI,
+) -> AsyncGenerator[httpx.AsyncClient, None]:
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app_with_security_headers),
+        base_url="http://test",
+    ) as ac:
+        yield ac
+
+
+class TestSecurityHeadersMiddleware:
+    async def test_x_content_type_options(
+        self, sec_client: httpx.AsyncClient
+    ) -> None:
+        response = await sec_client.get("/test")
+        assert response.headers["x-content-type-options"] == "nosniff"
+
+    async def test_x_frame_options(
+        self, sec_client: httpx.AsyncClient
+    ) -> None:
+        response = await sec_client.get("/test")
+        assert response.headers["x-frame-options"] == "DENY"
+
+    async def test_content_security_policy(
+        self, sec_client: httpx.AsyncClient
+    ) -> None:
+        response = await sec_client.get("/test")
+        assert (
+            response.headers["content-security-policy"]
+            == "default-src 'self'"
+        )
