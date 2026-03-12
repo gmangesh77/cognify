@@ -8,90 +8,109 @@
 
 ## Status Legend
 
-| Status | Meaning |
-|--------|---------|
-| Done | Merged or ready to merge — all tests passing, code reviewed |
-| In Progress | Active development on a feature branch |
-| Planned | Spec and/or plan written, not yet started |
-| Backlog | In BACKLOG.md but no spec/plan yet |
+
+| Status      | Meaning                                                     |
+| ----------- | ----------------------------------------------------------- |
+| Done        | Merged or ready to merge — all tests passing, code reviewed |
+| In Progress | Active development on a feature branch                      |
+| Planned     | Spec and/or plan written, not yet started                   |
+| Backlog     | In BACKLOG.md but no spec/plan yet                          |
+
 
 ---
 
 ## Epic 7: API & Authentication
 
-| Ticket | Title | Status | Branch | Plan | Spec |
-|--------|-------|--------|--------|------|------|
-| API-001 | FastAPI Application Setup | Done | `feature/API-001-fastapi-setup` | [plan](../docs/superpowers/plans/2026-03-12-api-001-fastapi-setup.md) | [spec](../docs/superpowers/specs/2026-03-12-api-001-fastapi-setup-design.md) |
-| API-002 | JWT Authentication | Backlog | — | — | — |
-| API-003 | RBAC Authorization | Backlog | — | — | — |
+
+| Ticket  | Title                     | Status  | Branch                          | Plan                                                                  | Spec                                                                         |
+| ------- | ------------------------- | ------- | ------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| API-001 | FastAPI Application Setup | Done    | `feature/API-001-fastapi-setup` | [plan](../docs/superpowers/plans/2026-03-12-api-001-fastapi-setup.md) | [spec](../docs/superpowers/specs/2026-03-12-api-001-fastapi-setup-design.md) |
+| API-002 | JWT Authentication        | Planned | `feature/API-002-jwt-authentication` | [plan](../docs/superpowers/plans/2026-03-13-api-002-jwt-authentication.md) | [spec](../docs/superpowers/specs/2026-03-12-api-002-jwt-authentication-design.md) |
+| API-003 | RBAC Authorization        | Backlog | —                               | —                                                                     | —                                                                            |
+
 
 ## Epic 1: Trend Discovery Engine
 
-| Ticket | Title | Status | Branch | Plan | Spec |
-|--------|-------|--------|--------|------|------|
-| TREND-001 | Google Trends Integration | Backlog | — | — | — |
-| TREND-002 | Reddit Trend Source | Backlog | — | — | — |
-| TREND-003 | Hacker News Integration | Backlog | — | — | — |
-| TREND-004 | NewsAPI Integration | Backlog | — | — | — |
-| TREND-005 | arXiv Paper Feed | Backlog | — | — | — |
-| TREND-006 | Topic Ranking & Dedup | Backlog | — | — | — |
+
+| Ticket    | Title                     | Status  | Branch | Plan | Spec |
+| --------- | ------------------------- | ------- | ------ | ---- | ---- |
+| TREND-001 | Google Trends Integration | Backlog | —      | —    | —    |
+| TREND-002 | Reddit Trend Source       | Backlog | —      | —    | —    |
+| TREND-003 | Hacker News Integration   | Backlog | —      | —    | —    |
+| TREND-004 | NewsAPI Integration       | Backlog | —      | —    | —    |
+| TREND-005 | arXiv Paper Feed          | Backlog | —      | —    | —    |
+| TREND-006 | Topic Ranking & Dedup     | Backlog | —      | —    | —    |
+
 
 ## Epic 2: Multi-Agent Research Pipeline
 
-| Ticket | Title | Status | Branch | Plan | Spec |
-|--------|-------|--------|--------|------|------|
-| RESEARCH-001 | Agent Orchestrator (LangGraph) | Backlog | — | — | — |
-| RESEARCH-002 | Web Search Agent | Backlog | — | — | — |
-| RESEARCH-003 | RAG Pipeline (Weaviate) | Backlog | — | — | — |
-| RESEARCH-004 | Literature Review Agent | Backlog | — | — | — |
-| RESEARCH-005 | Research Session Tracking | Backlog | — | — | — |
+
+| Ticket       | Title                          | Status  | Branch | Plan | Spec |
+| ------------ | ------------------------------ | ------- | ------ | ---- | ---- |
+| RESEARCH-001 | Agent Orchestrator (LangGraph) | Backlog | —      | —    | —    |
+| RESEARCH-002 | Web Search Agent               | Backlog | —      | —    | —    |
+| RESEARCH-003 | RAG Pipeline (Weaviate)        | Backlog | —      | —    | —    |
+| RESEARCH-004 | Literature Review Agent        | Backlog | —      | —    | —    |
+| RESEARCH-005 | Research Session Tracking      | Backlog | —      | —    | —    |
+
 
 ## Epic 3: Content Generation Pipeline
 
-| Ticket | Title | Status | Branch | Plan | Spec |
-|--------|-------|--------|--------|------|------|
-| CONTENT-001 | Article Outline Generation | Backlog | — | — | — |
-| CONTENT-002 | Section-by-Section Drafting | Backlog | — | — | — |
-| CONTENT-003 | SEO Optimization | Backlog | — | — | — |
-| CONTENT-004 | Citation Management | Backlog | — | — | — |
+
+| Ticket      | Title                       | Status  | Branch | Plan | Spec |
+| ----------- | --------------------------- | ------- | ------ | ---- | ---- |
+| CONTENT-001 | Article Outline Generation  | Backlog | —      | —    | —    |
+| CONTENT-002 | Section-by-Section Drafting | Backlog | —      | —    | —    |
+| CONTENT-003 | SEO Optimization            | Backlog | —      | —    | —    |
+| CONTENT-004 | Citation Management         | Backlog | —      | —    | —    |
+
 
 ## Epic 4: Visual Asset Generation
 
-| Ticket | Title | Status | Branch | Plan | Spec |
-|--------|-------|--------|--------|------|------|
-| VISUAL-001 | Data Chart Generation | Backlog | — | — | — |
-| VISUAL-002 | AI Illustration Generation | Backlog | — | — | — |
-| VISUAL-003 | Diagram Generation | Backlog | — | — | — |
+
+| Ticket     | Title                      | Status  | Branch | Plan | Spec |
+| ---------- | -------------------------- | ------- | ------ | ---- | ---- |
+| VISUAL-001 | Data Chart Generation      | Backlog | —      | —    | —    |
+| VISUAL-002 | AI Illustration Generation | Backlog | —      | —    | —    |
+| VISUAL-003 | Diagram Generation         | Backlog | —      | —    | —    |
+
 
 ## Epic 5: Multi-Platform Publishing
 
-| Ticket | Title | Status | Branch | Plan | Spec |
-|--------|-------|--------|--------|------|------|
-| PUBLISH-001 | Ghost CMS Integration | Backlog | — | — | — |
-| PUBLISH-002 | WordPress Integration | Backlog | — | — | — |
-| PUBLISH-003 | Medium Integration | Backlog | — | — | — |
-| PUBLISH-004 | LinkedIn Integration | Backlog | — | — | — |
-| PUBLISH-005 | Publication Tracking | Backlog | — | — | — |
+
+| Ticket      | Title                 | Status  | Branch | Plan | Spec |
+| ----------- | --------------------- | ------- | ------ | ---- | ---- |
+| PUBLISH-001 | Ghost CMS Integration | Backlog | —      | —    | —    |
+| PUBLISH-002 | WordPress Integration | Backlog | —      | —    | —    |
+| PUBLISH-003 | Medium Integration    | Backlog | —      | —    | —    |
+| PUBLISH-004 | LinkedIn Integration  | Backlog | —      | —    | —    |
+| PUBLISH-005 | Publication Tracking  | Backlog | —      | —    | —    |
+
 
 ## Epic 6: Dashboard & Configuration
 
-| Ticket | Title | Status | Branch | Plan | Spec |
-|--------|-------|--------|--------|------|------|
-| DASH-001 | Dashboard Overview | Backlog | — | — | — |
-| DASH-002 | Topic Discovery Screen | Backlog | — | — | — |
-| DASH-003 | Article View & Preview | Backlog | — | — | — |
-| DASH-004 | Research Sessions Screen | Backlog | — | — | — |
-| DASH-005 | Settings & Configuration | Backlog | — | — | — |
+
+| Ticket   | Title                    | Status  | Branch | Plan | Spec |
+| -------- | ------------------------ | ------- | ------ | ---- | ---- |
+| DASH-001 | Dashboard Overview       | Backlog | —      | —    | —    |
+| DASH-002 | Topic Discovery Screen   | Backlog | —      | —    | —    |
+| DASH-003 | Article View & Preview   | Backlog | —      | —    | —    |
+| DASH-004 | Research Sessions Screen | Backlog | —      | —    | —    |
+| DASH-005 | Settings & Configuration | Backlog | —      | —    | —    |
+
 
 ---
 
 ## How to Update This File
 
 When starting a ticket:
+
 1. Change status to **In Progress**, fill in the branch name
 2. Link the plan/spec files once created
 
 When completing a ticket:
+
 1. Change status to **Done**
 2. Ensure plan/spec links are present
 3. Update the corresponding entry in `BACKLOG.md` with `— DONE` suffix and status/plan/spec fields
+
