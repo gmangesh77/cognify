@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -67,3 +67,35 @@ class TestRelevanceScoring:
             ["cybersecurity"],
         )
         assert score == 0
+
+
+class TestRecencyScoring:
+    def test_just_now_scores_100(self) -> None:
+        svc = _make_service()
+        topic = _make_topic(discovered_at=datetime.now(UTC))
+        score = svc._score_recency(topic)
+        assert abs(score - 100.0) < 1.0
+
+    def test_24h_ago_scores_about_50(self) -> None:
+        svc = _make_service()
+        topic = _make_topic(
+            discovered_at=datetime.now(UTC) - timedelta(hours=24),
+        )
+        score = svc._score_recency(topic)
+        assert 45 < score < 55
+
+    def test_72h_ago_scores_about_12(self) -> None:
+        svc = _make_service()
+        topic = _make_topic(
+            discovered_at=datetime.now(UTC) - timedelta(hours=72),
+        )
+        score = svc._score_recency(topic)
+        assert 8 < score < 18
+
+    def test_future_discovered_at_clamped_to_100(self) -> None:
+        svc = _make_service()
+        topic = _make_topic(
+            discovered_at=datetime.now(UTC) + timedelta(hours=1),
+        )
+        score = svc._score_recency(topic)
+        assert abs(score - 100.0) < 0.01

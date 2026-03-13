@@ -65,3 +65,16 @@ class TopicRankingService:
             return 0.0
 
         return (len(intersection) / len(union)) * 100
+
+    # λ = ln(2)/24 — 24h gives score of 50
+    _RECENCY_LAMBDA = math.log(2) / 24
+
+    def _score_recency(self, topic: RawTopic) -> float:
+        now = datetime.now(UTC)
+        discovered = topic.discovered_at
+        if discovered.tzinfo is None:
+            discovered = discovered.replace(tzinfo=UTC)
+        else:
+            discovered = discovered.astimezone(UTC)
+        hours_ago = max((now - discovered).total_seconds() / 3600, 0.0)
+        return 100 * math.exp(-self._RECENCY_LAMBDA * hours_ago)
