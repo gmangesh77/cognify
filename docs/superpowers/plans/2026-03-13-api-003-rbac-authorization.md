@@ -39,7 +39,7 @@
 
 The existing `test_auth_endpoints.py` defines RSA key generation, `auth_settings`, `auth_app`, `auth_client`, and `reset_rate_limiter` fixtures locally. These need to be shared with the new RBAC and admin endpoint tests. Extract them into a shared conftest and add `make_token` / `make_auth_header` helpers.
 
-- [ ] **Step 1: Create `tests/unit/api/conftest.py` with shared fixtures**
+- [x] **Step 1: Create `tests/unit/api/conftest.py` with shared fixtures**
 
 ```python
 """Shared test fixtures for API unit tests.
@@ -145,7 +145,7 @@ async def auth_client(
         yield ac
 ```
 
-- [ ] **Step 2: Remove duplicated fixtures from `test_auth_endpoints.py`**
+- [x] **Step 2: Remove duplicated fixtures from `test_auth_endpoints.py`**
 
 Remove everything from the top of `test_auth_endpoints.py` down to (but not including) `class TestLoginEndpoint`. Replace with imports from conftest. The file should start with:
 
@@ -171,17 +171,17 @@ Remove these items that are now in conftest:
 
 Update all references from `_TEST_PASSWORD` to `TEST_PASSWORD` (imported from conftest).
 
-- [ ] **Step 3: Run existing tests to verify no regressions**
+- [x] **Step 3: Run existing tests to verify no regressions**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_auth_endpoints.py -v`
 Expected: All existing tests PASS (fixtures now come from shared conftest)
 
-- [ ] **Step 4: Run full auth unit tests**
+- [x] **Step 4: Run full auth unit tests**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_auth.py -v`
 Expected: All PASS (these tests have their own local fixtures, unaffected)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/unit/api/conftest.py tests/unit/api/test_auth_endpoints.py
@@ -197,7 +197,7 @@ git commit -m "refactor: extract shared auth test fixtures into conftest"
 
 Write all unit tests for `require_role` factory. These test the dependency logic in isolation by constructing `TokenPayload` objects directly (no HTTP requests, no app needed).
 
-- [ ] **Step 1: Write `tests/unit/api/test_rbac.py`**
+- [x] **Step 1: Write `tests/unit/api/test_rbac.py`**
 
 ```python
 """Unit tests for RBAC authorization dependencies."""
@@ -353,12 +353,12 @@ class TestConvenienceWrappers:
         assert result.role == "viewer"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_rbac.py -v`
 Expected: FAIL — `require_role` does not exist yet in `src/api/dependencies.py`
 
-- [ ] **Step 3: Commit failing tests**
+- [x] **Step 3: Commit failing tests**
 
 ```bash
 git add tests/unit/api/test_rbac.py
@@ -372,7 +372,7 @@ git commit -m "test: add failing RBAC unit tests (red phase)"
 **Files:**
 - Modify: `src/api/dependencies.py`
 
-- [ ] **Step 1: Add `require_role` factory and wrappers to `src/api/dependencies.py`**
+- [x] **Step 1: Add `require_role` factory and wrappers to `src/api/dependencies.py`**
 
 Add the following imports at the top of the file (merge with existing imports):
 
@@ -424,17 +424,17 @@ require_editor_or_above = require_role("admin", "editor")
 require_viewer_or_above = require_role("admin", "editor", "viewer")
 ```
 
-- [ ] **Step 2: Run RBAC unit tests to verify they pass**
+- [x] **Step 2: Run RBAC unit tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_rbac.py -v`
 Expected: All 15 tests PASS
 
-- [ ] **Step 3: Run full test suite to check for regressions**
+- [x] **Step 3: Run full test suite to check for regressions**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/ -v`
 Expected: All tests PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/api/dependencies.py
@@ -450,7 +450,7 @@ git commit -m "feat: add require_role RBAC dependency factory with convenience w
 **Files:**
 - Create: `tests/unit/api/test_admin_endpoints.py`
 
-- [ ] **Step 1: Write `tests/unit/api/test_admin_endpoints.py`**
+- [x] **Step 1: Write `tests/unit/api/test_admin_endpoints.py`**
 
 ```python
 """Endpoint tests for admin routes (RBAC enforcement)."""
@@ -533,12 +533,12 @@ class TestAdminCheckEndpoint:
         assert response.json()["error"]["code"] == "invalid_token"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_admin_endpoints.py -v`
 Expected: FAIL — `/api/v1/admin/check` route does not exist yet (404 or similar)
 
-- [ ] **Step 3: Commit failing tests**
+- [x] **Step 3: Commit failing tests**
 
 ```bash
 git add tests/unit/api/test_admin_endpoints.py
@@ -553,7 +553,7 @@ git commit -m "test: add failing admin endpoint tests (red phase)"
 - Create: `src/api/routers/admin.py`
 - Modify: `src/api/main.py`
 
-- [ ] **Step 1: Create `src/api/routers/admin.py`**
+- [x] **Step 1: Create `src/api/routers/admin.py`**
 
 ```python
 """Admin routes — requires admin role."""
@@ -588,7 +588,7 @@ async def admin_check(
     )
 ```
 
-- [ ] **Step 2: Register `admin_router` in `src/api/main.py`**
+- [x] **Step 2: Register `admin_router` in `src/api/main.py`**
 
 Add import at the top (alongside existing router imports):
 
@@ -606,17 +606,17 @@ Add to the `_register_routers` function, after the existing `auth_router` regist
     )
 ```
 
-- [ ] **Step 3: Run admin endpoint tests to verify they pass**
+- [x] **Step 3: Run admin endpoint tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_admin_endpoints.py -v`
 Expected: All 5 tests PASS
 
-- [ ] **Step 4: Run full test suite**
+- [x] **Step 4: Run full test suite**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/ -v`
 Expected: All tests PASS (no regressions)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/routers/admin.py src/api/main.py
@@ -629,27 +629,27 @@ git commit -m "feat: add admin check endpoint with RBAC enforcement"
 
 **Files:** None (verification only)
 
-- [ ] **Step 1: Run linter**
+- [x] **Step 1: Run linter**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff check src/ tests/`
 Expected: No errors
 
-- [ ] **Step 2: Run formatter check**
+- [x] **Step 2: Run formatter check**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff format --check src/ tests/`
 Expected: No formatting issues
 
-- [ ] **Step 3: Run type checker**
+- [x] **Step 3: Run type checker**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify mypy src/`
 Expected: No errors (or only pre-existing ones)
 
-- [ ] **Step 4: Run full test suite with coverage**
+- [x] **Step 4: Run full test suite with coverage**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/ --cov=src --cov-report=term-missing -v`
 Expected: All tests pass, new code has ≥80% coverage
 
-- [ ] **Step 5: Fix any issues found, then commit**
+- [x] **Step 5: Fix any issues found, then commit**
 
 If lint/type/test issues are found, fix them and commit:
 ```bash
@@ -663,7 +663,7 @@ git commit -m "fix: resolve lint/type issues in RBAC implementation"
 **Files:**
 - Modify: `project-management/PROGRESS.md`
 
-- [ ] **Step 1: Update API-003 row in PROGRESS.md**
+- [x] **Step 1: Update API-003 row in PROGRESS.md**
 
 Change the API-003 row from:
 
@@ -677,7 +677,7 @@ To:
 | API-003 | RBAC Authorization        | Done    | `feature/API-003-rbac-authorization` | [plan](../docs/superpowers/plans/2026-03-13-api-003-rbac-authorization.md) | [spec](../docs/superpowers/specs/2026-03-13-api-003-rbac-authorization-design.md) |
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add project-management/PROGRESS.md

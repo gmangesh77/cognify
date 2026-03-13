@@ -16,6 +16,7 @@ from src.api.middleware.correlation_id import CorrelationIdMiddleware
 from src.api.middleware.request_logging import RequestLoggingMiddleware
 from src.api.middleware.security_headers import SecurityHeadersMiddleware
 from src.api.rate_limiter import limiter
+from src.api.routers.admin import admin_router
 from src.api.routers.auth import auth_router
 from src.api.routers.health import health_router
 from src.config.settings import Settings
@@ -130,4 +131,9 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         auth_router,
         prefix=settings.api_v1_prefix,
         tags=["auth"],
+    )
+    app.include_router(
+        admin_router,
+        prefix=settings.api_v1_prefix,
+        tags=["admin"],
     )
