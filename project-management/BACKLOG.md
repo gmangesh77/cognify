@@ -148,8 +148,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Respects Reddit API rate limits
 - **Story Points**: 5
 
-### TREND-003: Hacker News Integration [Must]
+### TREND-003: Hacker News Integration [Must] — DONE
 **As a** content team member, **I want** Hacker News top stories tracked, **so that** tech community trends are captured.
+- **Status**: Done (branch `feature/TREND-003-hackernews-integration`)
+- **Plan**: [`docs/superpowers/plans/2026-03-13-trend-003-hackernews-integration.md`](../docs/superpowers/plans/2026-03-13-trend-003-hackernews-integration.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-13-trend-003-hackernews-integration-design.md`](../docs/superpowers/specs/2026-03-13-trend-003-hackernews-integration-design.md)
 - **Acceptance Criteria**:
   - Fetches top/new/best stories via Algolia HN API
   - Filters by domain relevance
