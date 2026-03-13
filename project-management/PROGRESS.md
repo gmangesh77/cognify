@@ -19,6 +19,24 @@
 
 ---
 
+## Epic 0: Design System & UI/UX
+
+| Ticket     | Title                                    | Status  | Branch | Plan | Spec |
+| ---------- | ---------------------------------------- | ------- | ------ | ---- | ---- |
+| DESIGN-001 | Design System Setup                      | Backlog | —      | —    | —    |
+| DESIGN-002 | Reusable Components                      | Backlog | —      | —    | —    |
+| DESIGN-003 | Dashboard Screen — Final Design          | Backlog | —      | —    | —    |
+| DESIGN-004 | Topic Discovery Screen — Final Design    | Backlog | —      | —    | —    |
+| DESIGN-005 | Article View Screen — Final Design       | Backlog | —      | —    | —    |
+| DESIGN-006 | Research Sessions Screen — Final Design  | Backlog | —      | —    | —    |
+| DESIGN-007 | Publishing Screen — Final Design         | Backlog | —      | —    | —    |
+| DESIGN-008 | Settings Screen — Final Design           | Backlog | —      | —    | —    |
+| DESIGN-009 | Login & Auth Screens                     | Backlog | —      | —    | —    |
+
+**Design file:** `pencil_designs/cognify.pen` — initial wireframes exist for all 6 main screens. Needs design system, components, and refinement passes.
+
+---
+
 ## Epic 7: API & Authentication
 
 
@@ -26,7 +44,7 @@
 | ------- | ------------------------- | ------- | ------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | API-001 | FastAPI Application Setup | Done    | `feature/API-001-fastapi-setup` | [plan](../docs/superpowers/plans/2026-03-12-api-001-fastapi-setup.md) | [spec](../docs/superpowers/specs/2026-03-12-api-001-fastapi-setup-design.md) |
 | API-002 | JWT Authentication        | Done    | `feature/API-002-jwt-authentication` | [plan](../docs/superpowers/plans/2026-03-13-api-002-jwt-authentication.md) | [spec](../docs/superpowers/specs/2026-03-12-api-002-jwt-authentication-design.md) |
-| API-003 | RBAC Authorization        | Backlog | —                               | —                                                                     | —                                                                            |
+| API-003 | RBAC Authorization        | Done    | `feature/API-003-rbac-authorization` | [plan](../docs/superpowers/plans/2026-03-13-api-003-rbac-authorization.md) | [spec](../docs/superpowers/specs/2026-03-13-api-003-rbac-authorization-design.md) |
 
 
 ## Epic 1: Trend Discovery Engine
@@ -49,7 +67,7 @@
 | ------------ | ------------------------------ | ------- | ------ | ---- | ---- |
 | RESEARCH-001 | Agent Orchestrator (LangGraph) | Backlog | —      | —    | —    |
 | RESEARCH-002 | Web Search Agent               | Backlog | —      | —    | —    |
-| RESEARCH-003 | RAG Pipeline (Weaviate)        | Backlog | —      | —    | —    |
+| RESEARCH-003 | RAG Pipeline (Milvus)          | Backlog | —      | —    | —    |
 | RESEARCH-004 | Literature Review Agent        | Backlog | —      | —    | —    |
 | RESEARCH-005 | Research Session Tracking      | Backlog | —      | —    | —    |
 

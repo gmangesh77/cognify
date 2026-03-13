@@ -118,17 +118,17 @@
 - **Owner**: Product Owner
 - **Status**: Monitoring — addressed by multi-source architecture
 
-### RISK-008: Weaviate Scalability at Knowledge Base Growth
+### RISK-008: Milvus Scalability at Knowledge Base Growth
 - **Category**: Technical / Performance
-- **Description**: As the RAG knowledge base grows (1000+ articles, 50K+ embeddings), Weaviate query performance may degrade, slowing research and generation.
-- **Likelihood**: Low (1) — Weaviate scales well, but needs monitoring
+- **Description**: As the RAG knowledge base grows (1000+ articles, 50K+ embeddings), Milvus query performance may degrade, slowing research and generation.
+- **Likelihood**: Low (1) — Milvus scales well, but needs monitoring
 - **Impact**: Medium (2) — Slower article generation, degraded user experience
 - **Risk Score**: 2 (Low)
 - **Mitigation**:
   - Index partitioning by domain
   - TTL on old embeddings (archive after 90 days)
   - Monitor query latency (alert if P95 > 200ms)
-  - Weaviate sharding configuration for horizontal scaling
+  - Milvus sharding configuration for horizontal scaling
 - **Owner**: Backend Engineer
 - **Status**: Monitoring — planned for post-MVP optimization
 
@@ -145,6 +145,6 @@
 | RISK-005 | Prompt Injection | 4 (Medium) | Active |
 | RISK-006 | Agent Workflow Reliability | 4 (Medium) | Active |
 | RISK-007 | Content Monotony | 2 (Low) | Monitoring |
-| RISK-008 | Weaviate Scalability | 2 (Low) | Monitoring |
+| RISK-008 | Milvus Scalability | 2 (Low) | Monitoring |
 
 **Review cadence**: Risks reviewed every sprint retrospective. New risks added as discovered.

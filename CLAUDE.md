@@ -5,7 +5,7 @@ Self-driving content platform that discovers trends, runs multi-agent research, 
 - **Language**: Python 3.12+ (agents, pipelines, API)
 - **Agent Framework**: LangChain + LangGraph (multi-agent orchestration)
 - **LLMs**: Claude Opus 4 (primary), Claude Sonnet 4 (drafting), Stable Diffusion XL (images)
-- **Vector DB**: Weaviate (RAG embeddings + similarity search)
+- **Vector DB**: Milvus (RAG embeddings + similarity search)
 - **API**: FastAPI (async REST endpoints)
 - **Database**: PostgreSQL 16 (metadata, users, publishing state)
 - **Cache**: Redis (trend signal caching, rate limiting)
@@ -99,5 +99,8 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** API-002 (JWT Authentication) — branch `feature/API-002-jwt-authentication`
-**Next up:** API-003 (RBAC Authorization) — backlog, needs spec + plan
+**Last completed:** API-003 (RBAC Authorization) — branch `feature/API-003-rbac-authorization`
+**Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
+**Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002)
+**Design:** Epic 0 added — 9 design tickets (DESIGN-001 through DESIGN-009), initial wireframes in Pencil
+**Next up:** TREND-006 (Topic Ranking & Dedup) or DESIGN-001 (Design System Setup)
