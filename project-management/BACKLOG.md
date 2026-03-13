@@ -10,8 +10,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 
 **Design file**: `pencil_designs/cognify.pen` (Pencil Desktop)
 
-### DESIGN-001: Design System Setup [Must]
+### DESIGN-001: Design System Setup [Must] — DONE
 **As a** developer, **I want** a design system with variables for colors, typography, and spacing, **so that** all screens share a consistent visual language.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
+- **Plan**: [`docs/superpowers/plans/2026-03-13-design-001-design-system-setup.md`](../docs/superpowers/plans/2026-03-13-design-001-design-system-setup.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-13-design-001-design-system-setup.md`](../docs/superpowers/specs/2026-03-13-design-001-design-system-setup.md)
 - **Acceptance Criteria**:
   - Color palette defined as Pencil variables: primary, secondary, accent, neutrals (50-900), semantic (success, warning, error, info)
   - Typography scale: font families, sizes (xs through 3xl), weights, line heights
@@ -21,8 +24,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 3
 - **Blocks**: All DESIGN and DASH tickets
 
-### DESIGN-002: Reusable Components [Must]
+### DESIGN-002: Reusable Components [Must] — DONE
 **As a** designer, **I want** reusable UI components in Pencil, **so that** screens are consistent and easy to update.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
 - **Acceptance Criteria**:
   - Sidebar navigation component (with icons, active state, collapsed state)
   - Card component (metric card, topic card, article card variants)
@@ -35,8 +39,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 5
 - **Blocks**: All DESIGN screen tickets
 
-### DESIGN-003: Dashboard Screen — Final Design [Must]
+### DESIGN-003: Dashboard Screen — Final Design [Must] — DONE
 **As a** user, **I want** a polished dashboard overview, **so that** I can monitor system activity at a glance.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
 - **Acceptance Criteria**:
   - Modern metric cards with subtle shadows and trend indicators (up/down arrows with %)
   - Trending Topics list with clear visual hierarchy (score, title, source badges, time)
@@ -46,8 +51,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 3
 - **Blocks**: DASH-001
 
-### DESIGN-004: Topic Discovery Screen — Final Design [Must]
+### DESIGN-004: Topic Discovery Screen — Final Design [Must] — DONE
 **As a** user, **I want** a refined topic discovery screen, **so that** browsing and filtering topics is intuitive.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
 - **Acceptance Criteria**:
   - Topic cards with depth (shadows, hover states) and clear badge hierarchy
   - Filter bar with source pills, time range selector, and domain switcher
@@ -57,8 +63,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 3
 - **Blocks**: DASH-002
 
-### DESIGN-005: Article View Screen — Final Design [Must]
+### DESIGN-005: Article View Screen — Final Design [Must] — DONE
 **As a** user, **I want** a polished article preview, **so that** reviewing and publishing is a seamless experience.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
 - **Acceptance Criteria**:
   - Clean article typography (headings, body, code blocks, blockquotes)
   - Agent workflow panel with step icons, durations, and status indicators
@@ -68,8 +75,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 3
 - **Blocks**: DASH-003
 
-### DESIGN-006: Research Sessions Screen — Final Design [Should]
+### DESIGN-006: Research Sessions Screen — Final Design [Should] — DONE
 **As a** user, **I want** a refined research hub, **so that** monitoring agent work is clear and informative.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
 - **Acceptance Criteria**:
   - Session cards with multi-step progress indicators (not just a single bar)
   - Agent step breakdown within each session (expandable)
@@ -79,8 +87,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 3
 - **Blocks**: DASH-004
 
-### DESIGN-007: Publishing Screen — Final Design [Should]
+### DESIGN-007: Publishing Screen — Final Design [Should] — DONE
 **As a** publisher, **I want** a refined publishing dashboard, **so that** tracking publications across platforms is easy.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
 - **Acceptance Criteria**:
   - Platform overview cards with connection status and article counts
   - Published articles table with sortable columns, status badges, and view counts
@@ -90,8 +99,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 3
 - **Blocks**: PUBLISH-005
 
-### DESIGN-008: Settings Screen — Final Design [Must]
+### DESIGN-008: Settings Screen — Final Design [Must] — DONE
 **As an** admin, **I want** a well-organized settings screen, **so that** configuration is intuitive and supports multiple domains.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
 - **Acceptance Criteria**:
   - **Multi-domain management**: domain list/switcher, add/edit/delete domains (not a single dropdown)
   - Per-domain config: trend sources, keywords, SEO settings, LLM preferences
@@ -103,8 +113,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Blocks**: DASH-005
 - **Note**: Current design shows single "Domain Focus: Cybersecurity" — must be redesigned for multi-domain support per `DOMAIN_CONFIG` data model
 
-### DESIGN-009: Login & Auth Screens [Must]
+### DESIGN-009: Login & Auth Screens [Must] — DONE
 **As a** user, **I want** a polished login experience, **so that** authentication feels professional and secure.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
 - **Acceptance Criteria**:
   - Login screen with email/password form, Cognify branding
   - Error states (invalid credentials, rate limited)
