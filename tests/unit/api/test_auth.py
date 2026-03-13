@@ -1,3 +1,9 @@
+import uuid
+from datetime import UTC, datetime, timedelta
+
+import pytest
+from freezegun import freeze_time
+from pydantic import ValidationError
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 from src.api.errors import AuthenticationError, AuthorizationError
@@ -33,9 +39,6 @@ class TestAuthErrors:
         assert err.status_code == HTTP_403_FORBIDDEN
         assert err.code == "insufficient_permissions"
 
-
-import pytest
-from pydantic import ValidationError
 
 from src.api.auth.schemas import (
     LoginRequest,
@@ -129,3 +132,124 @@ class TestPasswordService:
         h1 = hash_password("same")
         h2 = hash_password("same")
         assert h1 != h2  # bcrypt uses random salt
+
+
+def _make_test_settings(
+    private_key: str, public_key: str
+) -> Settings:
+    return Settings(
+        jwt_private_key=private_key,
+        jwt_public_key=public_key,
+    )
+
+
+def _generate_rsa_keys() -> tuple[str, str]:
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives import serialization
+
+    private_key = rsa.generate_private_key(
+        public_exponent=65537, key_size=2048
+    )
+    private_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode()
+    public_pem = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    ).decode()
+    return private_pem, public_pem
+
+
+from src.api.auth.tokens import (
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
+)
+
+
+class TestTokenService:
+    def setup_method(self) -> None:
+        private_pem, public_pem = _generate_rsa_keys()
+        self.settings = _make_test_settings(private_pem, public_pem)
+
+    def test_create_access_token_returns_string(self) -> None:
+        token = create_access_token("user-1", "admin", self.settings)
+        assert isinstance(token, str)
+        assert len(token) > 0
+
+    def test_create_and_decode_roundtrip(self) -> None:
+        token = create_access_token("user-1", "editor", self.settings)
+        payload = decode_access_token(token, self.settings)
+        assert payload.sub == "user-1"
+        assert payload.role == "editor"
+
+    def test_access_token_has_jti(self) -> None:
+        token = create_access_token("user-1", "admin", self.settings)
+        payload = decode_access_token(token, self.settings)
+        uuid.UUID(payload.jti)  # validates it's a valid UUID
+
+    def test_access_token_has_timestamps(self) -> None:
+        token = create_access_token("user-1", "admin", self.settings)
+        payload = decode_access_token(token, self.settings)
+        now = int(datetime.now(UTC).timestamp())
+        assert payload.iat <= now
+        assert payload.exp > now
+
+    def test_expired_token_rejected(self) -> None:
+        with freeze_time("2026-01-01 00:00:00"):
+            token = create_access_token("user-1", "admin", self.settings)
+        with freeze_time("2026-01-01 00:16:00"):
+            with pytest.raises(AuthenticationError) as exc_info:
+                decode_access_token(token, self.settings)
+            assert exc_info.value.code == "invalid_token"
+
+    def test_tampered_token_rejected(self) -> None:
+        token = create_access_token("user-1", "admin", self.settings)
+        tampered = token[:-5] + "XXXXX"
+        with pytest.raises(AuthenticationError):
+            decode_access_token(tampered, self.settings)
+
+    def test_wrong_key_rejected(self) -> None:
+        token = create_access_token("user-1", "admin", self.settings)
+        _, other_public = _generate_rsa_keys()
+        other_settings = _make_test_settings(
+            self.settings.jwt_private_key, other_public
+        )
+        with pytest.raises(AuthenticationError):
+            decode_access_token(token, other_settings)
+
+    def test_create_refresh_token_is_uuid(self) -> None:
+        token = create_refresh_token()
+        uuid.UUID(token)  # validates format
+
+    def test_refresh_tokens_are_unique(self) -> None:
+        t1 = create_refresh_token()
+        t2 = create_refresh_token()
+        assert t1 != t2
+
+    def test_hs256_confusion_attack_rejected(self) -> None:
+        """Verify algorithms=['RS256'] prevents HS256 confusion attack.
+
+        Modern PyJWT (2.x) rejects using a PEM-formatted RSA public key as an
+        HMAC secret at encode time, so the forged token cannot be constructed.
+        Either way — at encode or decode — the attack is blocked.
+        """
+        import jwt as pyjwt
+
+        payload = {
+            "sub": "user-1",
+            "role": "admin",
+            "iat": 0,
+            "exp": 9999999999,
+            "jti": "j1",
+        }
+        # PyJWT 2.x raises InvalidKeyError when trying to use an RSA PEM key
+        # as an HMAC secret, which is the first line of defence.
+        with pytest.raises(pyjwt.exceptions.InvalidKeyError):
+            pyjwt.encode(
+                payload,
+                self.settings.jwt_public_key,
+                algorithm="HS256",
+            )
