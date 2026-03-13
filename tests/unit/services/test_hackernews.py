@@ -65,7 +65,8 @@ class TestDomainFiltering:
     def test_matches_title(self) -> None:
         story = _story(title="Cybersecurity breach report")
         matched = HackerNewsService.filter_by_domain(
-            [story], ["cyber"],
+            [story],
+            ["cyber"],
         )
         assert len(matched) == 1
         assert matched[0][1] == ["cyber"]
@@ -76,28 +77,32 @@ class TestDomainFiltering:
             url="https://cybernews.com/article",
         )
         matched = HackerNewsService.filter_by_domain(
-            [story], ["cyber"],
+            [story],
+            ["cyber"],
         )
         assert len(matched) == 1
 
     def test_case_insensitive(self) -> None:
         story = _story(title="CYBERSECURITY NEWS")
         matched = HackerNewsService.filter_by_domain(
-            [story], ["cyber"],
+            [story],
+            ["cyber"],
         )
         assert len(matched) == 1
 
     def test_no_match_excluded(self) -> None:
         story = _story(title="Cooking recipes")
         matched = HackerNewsService.filter_by_domain(
-            [story], ["cyber"],
+            [story],
+            ["cyber"],
         )
         assert len(matched) == 0
 
     def test_multiple_keywords_any_match(self) -> None:
         story = _story(title="New AI model released")
         matched = HackerNewsService.filter_by_domain(
-            [story], ["cyber", "AI"],
+            [story],
+            ["cyber", "AI"],
         )
         assert len(matched) == 1
         assert matched[0][1] == ["AI"]
@@ -105,7 +110,8 @@ class TestDomainFiltering:
     def test_none_url_handled(self) -> None:
         story = _story(title="Cyber topic", url=None)
         matched = HackerNewsService.filter_by_domain(
-            [story], ["cyber"],
+            [story],
+            ["cyber"],
         )
         assert len(matched) == 1
 

@@ -31,7 +31,7 @@ class HackerNewsClient:
         min_points: int,
         num_results: int,
     ) -> list[HNStoryResponse]:
-        params = {
+        params: dict[str, str | int] = {
             "query": query,
             "tags": "story",
             "numericFilters": f"points>{min_points}",

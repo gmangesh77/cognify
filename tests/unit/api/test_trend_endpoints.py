@@ -184,7 +184,8 @@ class TestTrendEndpoint503:
                 "/api/v1/trends/hackernews/fetch",
                 json=_hn_request(),
                 headers=make_auth_header(
-                    "editor", trend_settings,
+                    "editor",
+                    trend_settings,
                 ),
             )
             assert resp.status_code == 503

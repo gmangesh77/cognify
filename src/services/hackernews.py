@@ -34,11 +34,14 @@ class HackerNewsService:
         )
         query = " ".join(domain_keywords)
         stories = await self._client.fetch_stories(
-            query, min_points, max_results,
+            query,
+            min_points,
+            max_results,
         )
         total_fetched = len(stories)
         filtered = self.filter_by_domain(
-            stories, domain_keywords,
+            stories,
+            domain_keywords,
         )
         logger.debug(
             "hackernews_stories_filtered",
@@ -48,7 +51,9 @@ class HackerNewsService:
         )
         topics = [
             self.map_to_raw_topic(
-                story, kws, self._points_cap,
+                story,
+                kws,
+                self._points_cap,
             )
             for story, kws in filtered
         ]
@@ -91,9 +96,7 @@ class HackerNewsService:
             title = story["title"].lower()
             url = (story.get("url") or "").lower()
             matched = [
-                kw
-                for kw in domain_keywords
-                if kw.lower() in title or kw.lower() in url
+                kw for kw in domain_keywords if kw.lower() in title or kw.lower() in url
             ]
             if matched:
                 results.append((story, matched))
@@ -111,7 +114,8 @@ class HackerNewsService:
         points = story.get("points") or 0
         comments = story.get("num_comments") or 0
         created = datetime.fromtimestamp(
-            story["created_at_i"], tz=UTC,
+            story["created_at_i"],
+            tz=UTC,
         )
         hours_ago = (now - created).total_seconds() / 3600
         url = story.get("url") or (
@@ -124,11 +128,14 @@ class HackerNewsService:
             source="hackernews",
             external_url=url,
             trend_score=HackerNewsService.calculate_score(
-                points, comments, points_cap,
+                points,
+                comments,
+                points_cap,
             ),
             discovered_at=created,
             velocity=HackerNewsService.calculate_velocity(
-                points, hours_ago,
+                points,
+                hours_ago,
             ),
             domain_keywords=matched_keywords,
         )
