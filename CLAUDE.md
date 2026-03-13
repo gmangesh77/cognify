@@ -99,9 +99,5 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** API-001 (FastAPI Application Setup) — branch `feature/API-001-fastapi-setup`
-**Next up:** API-002 (JWT Authentication) — spec + plan written, ready for implementation
-  - Branch: `feature/API-002-jwt-authentication`
-  - Spec: `docs/superpowers/specs/2026-03-12-api-002-jwt-authentication-design.md`
-  - Plan: `docs/superpowers/plans/2026-03-13-api-002-jwt-authentication.md`
-  - **Action:** Invoke `superpowers:subagent-driven-development` to execute the plan (10 tasks, 0/10 complete)
+**Last completed:** API-002 (JWT Authentication) — branch `feature/API-002-jwt-authentication`
+**Next up:** API-003 (RBAC Authorization) — backlog, needs spec + plan

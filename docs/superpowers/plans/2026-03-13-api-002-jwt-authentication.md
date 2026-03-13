@@ -40,7 +40,7 @@
 **Files:**
 - Modify: `pyproject.toml`
 
-- [ ] **Step 1: Add new packages**
+- [x] **Step 1: Add new packages**
 
 Add to `[project] dependencies`:
 ```toml
@@ -54,17 +54,17 @@ Add to `[project.optional-dependencies] dev`:
     "freezegun>=1.4.0",
 ```
 
-- [ ] **Step 2: Install dependencies**
+- [x] **Step 2: Install dependencies**
 
 Run: `pip install -e ".[dev]"`
 Expected: All packages install successfully.
 
-- [ ] **Step 3: Verify imports**
+- [x] **Step 3: Verify imports**
 
 Run: `python -c "import jwt; import bcrypt; from email_validator import validate_email; from freezegun import freeze_time; print('OK')"`
 Expected: Prints `OK`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add pyproject.toml
@@ -80,7 +80,7 @@ git commit -m "chore: add PyJWT, bcrypt, email-validator, freezegun dependencies
 - Modify: `src/api/errors.py`
 - Create: `tests/unit/api/test_auth.py` (initial test file)
 
-- [ ] **Step 1: Write failing tests for new settings and errors**
+- [x] **Step 1: Write failing tests for new settings and errors**
 
 Create `tests/unit/api/test_auth.py`:
 
@@ -121,12 +121,12 @@ class TestAuthErrors:
         assert err.code == "insufficient_permissions"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pytest tests/unit/api/test_auth.py::TestJwtSettings -v && pytest tests/unit/api/test_auth.py::TestAuthErrors -v`
 Expected: FAIL — `ImportError` for `AuthenticationError`.
 
-- [ ] **Step 3: Add JWT settings**
+- [x] **Step 3: Add JWT settings**
 
 Modify `src/config/settings.py` — add these fields to the `Settings` class:
 
@@ -138,7 +138,7 @@ Modify `src/config/settings.py` — add these fields to the `Settings` class:
     jwt_refresh_token_expire_days: int = 7
 ```
 
-- [ ] **Step 4: Add auth error classes**
+- [x] **Step 4: Add auth error classes**
 
 Modify `src/api/errors.py` — replace the existing `starlette.status` import with:
 
@@ -180,12 +180,12 @@ class AuthorizationError(CognifyError):
         )
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `pytest tests/unit/api/test_auth.py -v`
 Expected: 5 tests PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/config/settings.py src/api/errors.py tests/unit/api/test_auth.py
@@ -201,7 +201,7 @@ git commit -m "feat: add JWT settings and auth error classes"
 - Create: `src/api/auth/schemas.py`
 - Modify: `tests/unit/api/test_auth.py` (append schema tests)
 
-- [ ] **Step 1: Write failing tests for schemas**
+- [x] **Step 1: Write failing tests for schemas**
 
 Append to `tests/unit/api/test_auth.py`:
 
@@ -281,12 +281,12 @@ class TestSchemas:
         assert len(valid_roles) == 3
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pytest tests/unit/api/test_auth.py::TestSchemas -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.api.auth'`
 
-- [ ] **Step 3: Create auth package and schemas**
+- [x] **Step 3: Create auth package and schemas**
 
 Create `src/api/auth/__init__.py` (empty).
 
@@ -339,12 +339,12 @@ class UserData(BaseModel):
     role: Role
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pytest tests/unit/api/test_auth.py -v`
 Expected: 15 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/auth/ tests/unit/api/test_auth.py
@@ -361,7 +361,7 @@ git commit -m "feat: add auth schemas with Role type and Pydantic models"
 - Create: `src/api/auth/password.py`
 - Modify: `tests/unit/api/test_auth.py` (append tests)
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Append to `tests/unit/api/test_auth.py`:
 
@@ -388,12 +388,12 @@ class TestPasswordService:
         assert h1 != h2  # bcrypt uses random salt
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pytest tests/unit/api/test_auth.py::TestPasswordService -v`
 Expected: FAIL — `ImportError`
 
-- [ ] **Step 3: Implement password service**
+- [x] **Step 3: Implement password service**
 
 Create `src/api/auth/password.py`:
 
@@ -412,12 +412,12 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pytest tests/unit/api/test_auth.py::TestPasswordService -v`
 Expected: 4 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/auth/password.py tests/unit/api/test_auth.py
@@ -432,7 +432,7 @@ git commit -m "feat: add bcrypt password hashing service"
 - Create: `src/api/auth/tokens.py`
 - Modify: `tests/unit/api/test_auth.py` (append tests)
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Append to `tests/unit/api/test_auth.py`:
 
@@ -558,12 +558,12 @@ class TestTokenService:
             decode_access_token(forged, self.settings)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pytest tests/unit/api/test_auth.py::TestTokenService -v`
 Expected: FAIL — `ImportError`
 
-- [ ] **Step 3: Implement token service**
+- [x] **Step 3: Implement token service**
 
 Create `src/api/auth/tokens.py`:
 
@@ -627,12 +627,12 @@ def decode_access_token(
         )
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pytest tests/unit/api/test_auth.py::TestTokenService -v`
 Expected: 10 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/auth/tokens.py tests/unit/api/test_auth.py
@@ -647,7 +647,7 @@ git commit -m "feat: add JWT token service with RS256 create/decode"
 - Create: `src/api/auth/repository.py`
 - Modify: `tests/unit/api/test_auth.py` (append tests)
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Append to `tests/unit/api/test_auth.py`:
 
@@ -719,12 +719,12 @@ class TestInMemoryUserRepository:
         assert repo.get_by_id("no-such-id") is None
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pytest tests/unit/api/test_auth.py::TestInMemoryRefreshTokenRepository -v`
 Expected: FAIL — `ImportError`
 
-- [ ] **Step 3: Implement repositories**
+- [x] **Step 3: Implement repositories**
 
 Create `src/api/auth/repository.py`:
 
@@ -796,12 +796,12 @@ class InMemoryUserRepository:
         return self._users_by_id.get(user_id)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pytest tests/unit/api/test_auth.py -v`
 Expected: All tests PASS (37 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/auth/repository.py tests/unit/api/test_auth.py
@@ -818,7 +818,7 @@ git commit -m "feat: add repository protocols with in-memory implementations"
 - Create: `src/api/auth/service.py`
 - Modify: `tests/unit/api/test_auth.py` (append tests)
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Append to `tests/unit/api/test_auth.py`:
 
@@ -928,12 +928,12 @@ class TestAuthService:
         self.service.logout("nonexistent-token")  # Should not raise
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pytest tests/unit/api/test_auth.py::TestAuthService -v`
 Expected: FAIL — `ImportError`
 
-- [ ] **Step 3: Implement auth service**
+- [x] **Step 3: Implement auth service**
 
 Create `src/api/auth/service.py`:
 
@@ -1035,17 +1035,17 @@ class AuthService:
 
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pytest tests/unit/api/test_auth.py::TestAuthService -v`
 Expected: 10 tests PASS.
 
-- [ ] **Step 5: Run full test file**
+- [x] **Step 5: Run full test file**
 
 Run: `pytest tests/unit/api/test_auth.py -v`
 Expected: All tests PASS (47 tests).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/api/auth/service.py tests/unit/api/test_auth.py
@@ -1063,7 +1063,7 @@ git commit -m "feat: add AuthService with login, refresh, and logout"
 - Modify: `src/api/dependencies.py`
 - Create: `tests/unit/api/test_auth_endpoints.py`
 
-- [ ] **Step 1: Write failing endpoint tests**
+- [x] **Step 1: Write failing endpoint tests**
 
 Create `tests/unit/api/test_auth_endpoints.py`:
 
@@ -1340,12 +1340,12 @@ class TestGetCurrentUser:
         assert response.status_code == 401
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pytest tests/unit/api/test_auth_endpoints.py -v`
 Expected: FAIL — `ImportError` for auth router or missing routes.
 
-- [ ] **Step 3: Create auth router**
+- [x] **Step 3: Create auth router**
 
 Create `src/api/routers/auth.py`:
 
@@ -1408,7 +1408,7 @@ async def logout(
     return Response(status_code=204)
 ```
 
-- [ ] **Step 4: Replace get_current_user dependency**
+- [x] **Step 4: Replace get_current_user dependency**
 
 Modify `src/api/dependencies.py`:
 
@@ -1446,7 +1446,7 @@ async def get_db_session() -> None:
     """Placeholder — replaced when database layer is added."""
 ```
 
-- [ ] **Step 5: Register auth router in app factory**
+- [x] **Step 5: Register auth router in app factory**
 
 Modify `src/api/main.py` — add imports at top:
 
@@ -1475,12 +1475,12 @@ In `create_app`, after `app.state.limiter = limiter`, add:
     app.state.user_repo = InMemoryUserRepository([])
 ```
 
-- [ ] **Step 6: Run endpoint tests**
+- [x] **Step 6: Run endpoint tests**
 
 Run: `pytest tests/unit/api/test_auth_endpoints.py -v`
 Expected: All tests PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/api/routers/auth.py src/api/dependencies.py src/api/main.py tests/unit/api/test_auth_endpoints.py
@@ -1496,38 +1496,38 @@ git commit -m "feat: add auth endpoints, get_current_user dependency, and app in
 **Files:**
 - Modify: any files with lint/type issues
 
-- [ ] **Step 1: Run full test suite with coverage**
+- [x] **Step 1: Run full test suite with coverage**
 
 Run: `pytest tests/ -v --cov=src --cov-report=term-missing`
 Expected: All tests PASS, coverage >= 80%.
 
-- [ ] **Step 2: Run linting**
+- [x] **Step 2: Run linting**
 
 Run: `ruff check src/ tests/ && ruff format --check src/ tests/`
 Expected: No lint errors. If there are errors, fix them.
 
-- [ ] **Step 3: Run type checking**
+- [x] **Step 3: Run type checking**
 
 Run: `mypy src/`
 Expected: No type errors. If there are errors, fix them. Common fixes:
 - Add `# type: ignore[untyped-decorator]` on `@limiter.limit()` decorators
 - Fix return type annotations
 
-- [ ] **Step 4: Fix any issues found**
+- [x] **Step 4: Fix any issues found**
 
 Iterate on lint, format, and type errors until all clean.
 
-- [ ] **Step 5: Run full validation again**
+- [x] **Step 5: Run full validation again**
 
 Run: `pytest tests/ -v --cov=src --cov-report=term-missing && ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/`
 Expected: All green.
 
-- [ ] **Step 6: Verify existing tests still pass**
+- [x] **Step 6: Verify existing tests still pass**
 
 Run: `pytest tests/unit/api/test_health.py tests/unit/api/test_middleware.py tests/unit/api/test_app.py tests/unit/api/test_errors.py -v`
 Expected: All existing tests still PASS (no regressions).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/ tests/
@@ -1543,7 +1543,7 @@ git commit -m "chore: fix lint/type issues for auth module"
 - Modify: `CLAUDE.md`
 - Modify: `.env.example`
 
-- [ ] **Step 1: Update .env.example with JWT settings**
+- [x] **Step 1: Update .env.example with JWT settings**
 
 Add to `.env.example`:
 
@@ -1555,7 +1555,7 @@ COGNIFY_JWT_ACCESS_TOKEN_EXPIRE_MINUTES=15
 COGNIFY_JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 ```
 
-- [ ] **Step 2: Update PROGRESS.md**
+- [x] **Step 2: Update PROGRESS.md**
 
 Change API-002 row:
 - Status: `Done`
@@ -1563,13 +1563,13 @@ Change API-002 row:
 - Plan: link to this plan file
 - Spec: link to the spec file
 
-- [ ] **Step 3: Update CLAUDE.md session state**
+- [x] **Step 3: Update CLAUDE.md session state**
 
 Update the "Current Status" section:
 - Last completed: API-002
 - Next up: API-003 (RBAC Authorization)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .env.example project-management/PROGRESS.md CLAUDE.md
