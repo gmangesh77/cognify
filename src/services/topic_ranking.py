@@ -189,3 +189,95 @@ class TopicRankingService:
         if source_count == 2:
             return 66.0
         return 33.0
+
+    def calculate_scores(
+        self,
+        topics: list[RawTopic],
+        domain_keywords: list[str],
+        source_counts: dict[str, int],
+    ) -> list[RankedTopic]:
+        velocity_scores = self._score_velocity(topics)
+        scored: list[tuple[float, RawTopic, int]] = []
+
+        for i, topic in enumerate(topics):
+            relevance = self._score_relevance(topic, domain_keywords)
+            recency = self._score_recency(topic)
+            velocity = velocity_scores[i]
+            diversity = self._score_diversity(
+                source_counts.get(topic.title, 1),
+            )
+            composite = (
+                relevance * self._settings.relevance_weight
+                + recency * self._settings.recency_weight
+                + velocity * self._settings.velocity_weight
+                + diversity * self._settings.diversity_weight
+            )
+            scored.append((
+                composite,
+                topic,
+                source_counts.get(topic.title, 1),
+            ))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+
+        return [
+            RankedTopic(
+                **topic.model_dump(),
+                composite_score=round(composite, 2),
+                rank=rank,
+                source_count=sc,
+            )
+            for rank, (composite, topic, sc) in enumerate(
+                scored, start=1
+            )
+        ]
+
+    async def rank_and_deduplicate(
+        self,
+        request: RankTopicsRequest,
+    ) -> RankTopicsResponse:
+        start = time.monotonic()
+        total_input = len(request.topics)
+
+        filtered = self.filter_by_domain(
+            request.topics,
+            request.domain,
+            request.domain_keywords,
+        )
+
+        if not filtered:
+            return RankTopicsResponse(
+                ranked_topics=[],
+                duplicates_removed=[],
+                total_input=total_input,
+                total_after_dedup=0,
+                total_returned=0,
+            )
+
+        deduped, source_counts, dup_info = self.deduplicate(filtered)
+        total_after_dedup = len(deduped)
+
+        ranked = self.calculate_scores(
+            deduped,
+            request.domain_keywords,
+            source_counts,
+        )
+
+        top = ranked[: request.top_n]
+
+        duration_ms = (time.monotonic() - start) * 1000
+        logger.info(
+            "topics_ranked",
+            input_count=total_input,
+            dedup_count=total_after_dedup,
+            returned_count=len(top),
+            duration_ms=round(duration_ms),
+        )
+
+        return RankTopicsResponse(
+            ranked_topics=top,
+            duplicates_removed=dup_info,
+            total_input=total_input,
+            total_after_dedup=total_after_dedup,
+            total_returned=len(top),
+        )

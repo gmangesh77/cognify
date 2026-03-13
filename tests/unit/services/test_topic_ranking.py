@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from src.api.schemas.topics import RawTopic
+from src.api.schemas.topics import RankedTopic, RankTopicsRequest, RawTopic
 from src.config.settings import Settings
 from src.services.topic_ranking import TopicRankingService
 
@@ -321,3 +321,94 @@ class TestDeduplication:
         deduped, counts, dups = svc.deduplicate(topics)
         assert len(deduped) == 1
         assert counts[deduped[0].title] == 1
+
+
+class TestCalculateScores:
+    def test_produces_ranked_topics(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(title="topic A", velocity=10),
+            _make_topic(title="topic B", velocity=50),
+        ]
+        source_counts = {"topic A": 1, "topic B": 2}
+        result = svc.calculate_scores(topics, ["test"], source_counts)
+        assert len(result) == 2
+        assert all(isinstance(t, RankedTopic) for t in result)
+        assert result[0].composite_score >= result[1].composite_score
+
+    def test_ranks_assigned_sequentially(self) -> None:
+        svc = _make_service()
+        topics = [_make_topic(title=f"t{i}") for i in range(3)]
+        counts = {f"t{i}": 1 for i in range(3)}
+        result = svc.calculate_scores(topics, [], counts)
+        ranks = [t.rank for t in result]
+        assert ranks == [1, 2, 3]
+
+
+class TestRankAndDeduplicate:
+    async def test_full_pipeline(self) -> None:
+        svc = _make_service()
+        request = RankTopicsRequest(
+            topics=[
+                RawTopic(
+                    title="duplicate-A cyber breach",
+                    source="reddit",
+                    trend_score=80,
+                    discovered_at=datetime.now(UTC),
+                    velocity=10,
+                    domain_keywords=["cybersecurity"],
+                ),
+                RawTopic(
+                    title="duplicate-A security incident",
+                    source="hackernews",
+                    trend_score=60,
+                    discovered_at=datetime.now(UTC),
+                    velocity=5,
+                    domain_keywords=["cybersecurity"],
+                ),
+                RawTopic(
+                    title="cooking tips unique",
+                    source="reddit",
+                    trend_score=90,
+                    discovered_at=datetime.now(UTC),
+                ),
+            ],
+            domain="cybersecurity",
+            domain_keywords=["cybersecurity", "security"],
+            top_n=10,
+        )
+        response = await svc.rank_and_deduplicate(request)
+        assert response.total_input == 3
+        assert response.total_returned <= 2
+        assert len(response.ranked_topics) == response.total_returned
+        assert response.ranked_topics[0].rank == 1
+
+    async def test_empty_after_filter_returns_empty(self) -> None:
+        svc = _make_service()
+        request = RankTopicsRequest(
+            topics=[_make_topic(title="cooking recipes")],
+            domain="cybersecurity",
+            domain_keywords=["cybersecurity"],
+        )
+        response = await svc.rank_and_deduplicate(request)
+        assert response.total_returned == 0
+        assert response.ranked_topics == []
+
+    async def test_top_n_limits_results(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(
+                title=f"cyber topic {i}",
+                domain_keywords=["cyber"],
+            )
+            for i in range(10)
+        ]
+        request = RankTopicsRequest(
+            topics=topics,
+            domain="cyber",
+            domain_keywords=["cyber"],
+            top_n=3,
+        )
+        response = await svc.rank_and_deduplicate(request)
+        assert response.total_returned == 3
+        assert len(response.ranked_topics) == 3
