@@ -4,6 +4,7 @@ from starlette.status import (
     HTTP_404_NOT_FOUND,
     HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_429_TOO_MANY_REQUESTS,
+    HTTP_503_SERVICE_UNAVAILABLE,
 )
 
 
@@ -77,5 +78,18 @@ class AuthorizationError(CognifyError):
         super().__init__(
             status_code=HTTP_403_FORBIDDEN,
             code="insufficient_permissions",
+            message=message,
+        )
+
+
+class ServiceUnavailableError(CognifyError):
+    def __init__(
+        self,
+        code: str = "service_unavailable",
+        message: str = "Service temporarily unavailable",
+    ) -> None:
+        super().__init__(
+            status_code=HTTP_503_SERVICE_UNAVAILABLE,
+            code=code,
             message=message,
         )

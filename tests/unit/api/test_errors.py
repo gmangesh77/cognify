@@ -9,6 +9,7 @@ from src.api.errors import (
     CognifyValidationError,
     NotFoundError,
     RateLimitError,
+    ServiceUnavailableError,
     build_error_response,
 )
 
@@ -34,6 +35,18 @@ class TestCognifyErrors:
         err = RateLimitError()
         assert err.status_code == HTTP_429_TOO_MANY_REQUESTS
         assert err.code == "rate_limited"
+
+    def test_service_unavailable_error(self) -> None:
+        err = ServiceUnavailableError(message="Model unavailable")
+        assert err.status_code == 503
+        assert err.code == "service_unavailable"
+
+    def test_service_unavailable_custom_code(self) -> None:
+        err = ServiceUnavailableError(
+            code="embedding_service_unavailable",
+            message="Embedding model failed",
+        )
+        assert err.code == "embedding_service_unavailable"
 
     def test_build_error_response(self) -> None:
         body = build_error_response(

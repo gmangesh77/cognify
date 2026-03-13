@@ -13,7 +13,7 @@ CheckStatus = Literal["ok", "unavailable", "degraded"]
 class DependencyChecks(BaseModel):
     database: CheckStatus = "unavailable"
     redis: CheckStatus = "unavailable"
-    weaviate: CheckStatus = "unavailable"
+    milvus: CheckStatus = "unavailable"
     celery: CheckStatus = "unavailable"
 
 
