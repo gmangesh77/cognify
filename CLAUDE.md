@@ -99,5 +99,5 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** API-001 (FastAPI Application Setup) — branch `feature/API-001-fastapi-setup`
-**Next up:** API-002 (JWT Authentication)
+**Last completed:** API-002 (JWT Authentication) — branch `feature/API-002-jwt-authentication`
+**Next up:** API-003 (RBAC Authorization) — backlog, needs spec + plan

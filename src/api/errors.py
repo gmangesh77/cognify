@@ -1,4 +1,6 @@
 from starlette.status import (
+    HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_429_TOO_MANY_REQUESTS,
@@ -50,5 +52,30 @@ class RateLimitError(CognifyError):
         super().__init__(
             status_code=HTTP_429_TOO_MANY_REQUESTS,
             code="rate_limited",
+            message=message,
+        )
+
+
+class AuthenticationError(CognifyError):
+    def __init__(
+        self,
+        code: str = "authentication_failed",
+        message: str = "Authentication failed",
+    ) -> None:
+        super().__init__(
+            status_code=HTTP_401_UNAUTHORIZED,
+            code=code,
+            message=message,
+        )
+
+
+class AuthorizationError(CognifyError):
+    def __init__(
+        self,
+        message: str = "Insufficient permissions",
+    ) -> None:
+        super().__init__(
+            status_code=HTTP_403_FORBIDDEN,
+            code="insufficient_permissions",
             message=message,
         )
