@@ -101,7 +101,7 @@ See @project-management/PROGRESS.md for full ticket status.
 
 **Last completed:** TREND-003 (Hacker News Integration) — branch `feature/TREND-003-hackernews-integration`
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
-**Epic 1 (Trend Discovery):** TREND-006 Done — topic ranking service with semantic dedup
+**Epic 1 (Trend Discovery):** TREND-006 Done, TREND-003 Done, TREND-001 In Progress (Google Trends via pytrends)
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
 **Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002)
-**Next up:** TREND-001 (Google Trends), TREND-002 (Reddit), or DASH-001 (Dashboard frontend)
+**Next up:** TREND-002 (Reddit), TREND-004 (NewsAPI), or DASH-001 (Dashboard frontend)
