@@ -99,9 +99,9 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** API-003 (RBAC Authorization) — branch `feature/API-003-rbac-authorization`
-**In progress:** TREND-006 (Topic Ranking & Dedup) — branch `feature/TREND-006-topic-ranking-dedup`, spec + plan written, implementation next
+**Last completed:** TREND-006 (Topic Ranking & Dedup) — branch `feature/TREND-006-topic-ranking-dedup`
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
+**Epic 1 (Trend Discovery):** TREND-006 Done — topic ranking service with semantic dedup
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
 **Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002)
-**Next up:** Execute TREND-006 plan (16 tasks), then TREND-003 (HN) or DASH-001 (Dashboard frontend)
+**Next up:** TREND-003 (HN Integration) or DASH-001 (Dashboard frontend)

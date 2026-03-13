@@ -21,7 +21,7 @@
 **Files:**
 - Modify: `pyproject.toml`
 
-- [ ] **Step 1: Add sentence-transformers and numpy to dependencies**
+- [x] **Step 1: Add sentence-transformers and numpy to dependencies**
 
 ```toml
 # In [project] dependencies, add after "email-validator":
@@ -29,11 +29,11 @@
     "numpy>=1.26.0",
 ```
 
-- [ ] **Step 2: Install updated dependencies**
+- [x] **Step 2: Install updated dependencies**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pip install -e ".[dev]"`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add pyproject.toml
@@ -48,7 +48,7 @@ git commit -m "chore: add sentence-transformers and numpy dependencies"
 - Modify: `src/config/settings.py`
 - Test: `tests/unit/api/test_app.py` (existing — verify app still starts)
 
-- [ ] **Step 1: Write failing test for new settings fields**
+- [x] **Step 1: Write failing test for new settings fields**
 
 Create `tests/unit/config/__init__.py` (empty file).
 
@@ -75,12 +75,12 @@ class TestRankingSettings:
         assert s.dedup_similarity_threshold == 0.85
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/config/test_settings.py -v`
 Expected: FAIL — `AttributeError: 'Settings' object has no attribute 'relevance_weight'`
 
-- [ ] **Step 3: Add settings fields**
+- [x] **Step 3: Add settings fields**
 
 Add to `src/config/settings.py` class `Settings`, after line 18 (`jwt_refresh_token_expire_days`):
 
@@ -95,12 +95,12 @@ Add to `src/config/settings.py` class `Settings`, after line 18 (`jwt_refresh_to
     dedup_similarity_threshold: float = 0.85
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/config/test_settings.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/config/settings.py tests/unit/config/test_settings.py
@@ -117,7 +117,7 @@ git commit -m "feat: add topic ranking settings (weights, embedding model, dedup
 - Test: `tests/unit/api/test_errors.py` (existing)
 - Test: `tests/unit/api/test_health.py` (existing)
 
-- [ ] **Step 1: Write failing test for ServiceUnavailableError**
+- [x] **Step 1: Write failing test for ServiceUnavailableError**
 
 Add to `tests/unit/api/test_errors.py`:
 
@@ -141,12 +141,12 @@ class TestServiceUnavailableError:
         assert err.code == "embedding_service_unavailable"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_errors.py::TestServiceUnavailableError -v`
 Expected: FAIL — `ImportError: cannot import name 'ServiceUnavailableError'`
 
-- [ ] **Step 3: Add ServiceUnavailableError to errors.py**
+- [x] **Step 3: Add ServiceUnavailableError to errors.py**
 
 Add to `src/api/errors.py`, after `AuthorizationError` class. Also add `HTTP_503_SERVICE_UNAVAILABLE` to the starlette imports:
 
@@ -168,12 +168,12 @@ class ServiceUnavailableError(CognifyError):
         )
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_errors.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Rename weaviate→milvus in health.py**
+- [x] **Step 5: Rename weaviate→milvus in health.py**
 
 In `src/api/routers/health.py` line 16, change:
 ```python
@@ -184,7 +184,7 @@ to:
     milvus: CheckStatus = "unavailable"
 ```
 
-- [ ] **Step 6: Fix health test for milvus rename**
+- [x] **Step 6: Fix health test for milvus rename**
 
 In `tests/unit/api/test_health.py` line 59, change:
 ```python
@@ -195,12 +195,12 @@ to:
         expected_keys = {"database", "redis", "milvus", "celery"}
 ```
 
-- [ ] **Step 7: Run existing health tests**
+- [x] **Step 7: Run existing health tests**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_health.py -v`
 Expected: PASS
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/api/errors.py src/api/routers/health.py tests/unit/api/test_errors.py tests/unit/api/test_health.py
@@ -216,7 +216,7 @@ git commit -m "feat: add ServiceUnavailableError (503), rename weaviate to milvu
 - Create: `src/api/schemas/topics.py`
 - Create: `tests/unit/api/test_topic_schemas.py`
 
-- [ ] **Step 1: Write failing tests for schemas**
+- [x] **Step 1: Write failing tests for schemas**
 
 Create `tests/unit/api/test_topic_schemas.py`:
 
@@ -336,12 +336,12 @@ class TestRankTopicsResponse:
         assert resp.total_input == 0
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_topic_schemas.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.api.schemas'`
 
-- [ ] **Step 3: Create schema files**
+- [x] **Step 3: Create schema files**
 
 Create `src/api/schemas/__init__.py`:
 
@@ -410,12 +410,12 @@ class RankTopicsResponse(BaseModel):
     total_returned: int
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_topic_schemas.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/schemas/ tests/unit/api/test_topic_schemas.py
@@ -434,7 +434,7 @@ git commit -m "feat: add Pydantic schemas for topic ranking (RawTopic, RankedTop
 - Create: `tests/unit/services/conftest.py`
 - Create: `tests/unit/services/test_embeddings.py`
 
-- [ ] **Step 1: Write failing tests for EmbeddingService**
+- [x] **Step 1: Write failing tests for EmbeddingService**
 
 Create `tests/unit/services/__init__.py` (empty file).
 
@@ -506,12 +506,12 @@ class TestEmbeddingService:
         assert svc._model is None
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_embeddings.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.services.embeddings'`
 
-- [ ] **Step 3: Implement EmbeddingService**
+- [x] **Step 3: Implement EmbeddingService**
 
 Create `src/services/embeddings.py`:
 
@@ -557,12 +557,12 @@ class EmbeddingService:
         return similarity  # type: ignore[no-any-return]
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_embeddings.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/embeddings.py tests/unit/services/
@@ -579,7 +579,7 @@ git commit -m "feat: add EmbeddingService with lazy-loaded sentence-transformers
 - Create: `src/services/topic_ranking.py`
 - Create: `tests/unit/services/test_topic_ranking.py`
 
-- [ ] **Step 1: Write failing tests for relevance scoring**
+- [x] **Step 1: Write failing tests for relevance scoring**
 
 Create `tests/unit/services/test_topic_ranking.py`:
 
@@ -655,12 +655,12 @@ class TestRelevanceScoring:
         assert score == 0
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestRelevanceScoring -v`
 Expected: FAIL — `ModuleNotFoundError`
 
-- [ ] **Step 3: Implement TopicRankingService skeleton with relevance scoring**
+- [x] **Step 3: Implement TopicRankingService skeleton with relevance scoring**
 
 Create `src/services/topic_ranking.py`:
 
@@ -734,12 +734,12 @@ class TopicRankingService:
         return (len(intersection) / len(union)) * 100
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestRelevanceScoring -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/topic_ranking.py tests/unit/services/test_topic_ranking.py
@@ -754,7 +754,7 @@ git commit -m "feat: add TopicRankingService skeleton with relevance scoring"
 - Modify: `src/services/topic_ranking.py`
 - Modify: `tests/unit/services/test_topic_ranking.py`
 
-- [ ] **Step 1: Write failing tests for recency scoring**
+- [x] **Step 1: Write failing tests for recency scoring**
 
 Add to `tests/unit/services/test_topic_ranking.py`:
 
@@ -795,12 +795,12 @@ class TestRecencyScoring:
         assert abs(score - 100.0) < 0.01
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestRecencyScoring -v`
 Expected: FAIL — `AttributeError: '_score_recency'`
 
-- [ ] **Step 3: Implement recency scoring**
+- [x] **Step 3: Implement recency scoring**
 
 Add to `TopicRankingService` in `src/services/topic_ranking.py`:
 
@@ -819,12 +819,12 @@ Add to `TopicRankingService` in `src/services/topic_ranking.py`:
         return 100 * math.exp(-self._RECENCY_LAMBDA * hours_ago)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestRecencyScoring -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/topic_ranking.py tests/unit/services/test_topic_ranking.py
@@ -839,7 +839,7 @@ git commit -m "feat: add recency scoring with exponential decay"
 - Modify: `src/services/topic_ranking.py`
 - Modify: `tests/unit/services/test_topic_ranking.py`
 
-- [ ] **Step 1: Write failing tests for velocity scoring**
+- [x] **Step 1: Write failing tests for velocity scoring**
 
 Add to `tests/unit/services/test_topic_ranking.py`:
 
@@ -885,12 +885,12 @@ class TestVelocityScoring:
         assert abs(scores[0] - 50.0) < 0.01
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestVelocityScoring -v`
 Expected: FAIL
 
-- [ ] **Step 3: Implement velocity scoring**
+- [x] **Step 3: Implement velocity scoring**
 
 Add to `TopicRankingService`:
 
@@ -910,12 +910,12 @@ Add to `TopicRankingService`:
         ]
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestVelocityScoring -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/topic_ranking.py tests/unit/services/test_topic_ranking.py
@@ -930,7 +930,7 @@ git commit -m "feat: add velocity scoring with min-max normalization"
 - Modify: `src/services/topic_ranking.py`
 - Modify: `tests/unit/services/test_topic_ranking.py`
 
-- [ ] **Step 1: Write failing tests for diversity scoring**
+- [x] **Step 1: Write failing tests for diversity scoring**
 
 Add to `tests/unit/services/test_topic_ranking.py`:
 
@@ -952,12 +952,12 @@ class TestDiversityScoring:
         assert abs(svc._score_diversity(5) - 100.0) < 1
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestDiversityScoring -v`
 Expected: FAIL
 
-- [ ] **Step 3: Implement diversity scoring**
+- [x] **Step 3: Implement diversity scoring**
 
 Add to `TopicRankingService`:
 
@@ -970,12 +970,12 @@ Add to `TopicRankingService`:
         return 33.0
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestDiversityScoring -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/topic_ranking.py tests/unit/services/test_topic_ranking.py
@@ -989,7 +989,7 @@ git commit -m "feat: add source diversity scoring"
 **Files:**
 - Modify: `tests/unit/services/test_topic_ranking.py`
 
-- [ ] **Step 1: Write test for weight validation**
+- [x] **Step 1: Write test for weight validation**
 
 Add to `tests/unit/services/test_topic_ranking.py`:
 
@@ -1010,12 +1010,12 @@ class TestWeightValidation:
             _make_service(settings=settings)
 ```
 
-- [ ] **Step 2: Run test to verify it passes** (already implemented in Task 6)
+- [x] **Step 2: Run test to verify it passes** (already implemented in Task 6)
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestWeightValidation -v`
 Expected: PASS
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add tests/unit/services/test_topic_ranking.py
@@ -1032,7 +1032,7 @@ git commit -m "test: add weight validation test for TopicRankingService"
 - Modify: `src/services/topic_ranking.py`
 - Modify: `tests/unit/services/test_topic_ranking.py`
 
-- [ ] **Step 1: Write failing tests for domain filtering**
+- [x] **Step 1: Write failing tests for domain filtering**
 
 Add to `tests/unit/services/test_topic_ranking.py`:
 
@@ -1083,12 +1083,12 @@ class TestDomainFiltering:
         assert len(result) == 1
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestDomainFiltering -v`
 Expected: FAIL
 
-- [ ] **Step 3: Implement filter_by_domain**
+- [x] **Step 3: Implement filter_by_domain**
 
 Add to `TopicRankingService`:
 
@@ -1122,12 +1122,12 @@ Add to `TopicRankingService`:
         return result
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestDomainFiltering -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/topic_ranking.py tests/unit/services/test_topic_ranking.py
@@ -1142,7 +1142,7 @@ git commit -m "feat: add domain keyword filtering"
 - Modify: `src/services/topic_ranking.py`
 - Modify: `tests/unit/services/test_topic_ranking.py`
 
-- [ ] **Step 1: Write failing tests for deduplication**
+- [x] **Step 1: Write failing tests for deduplication**
 
 Add to `tests/unit/services/test_topic_ranking.py`:
 
@@ -1250,12 +1250,12 @@ class TestDeduplication:
         assert counts[deduped[0].title] == 1
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestDeduplication -v`
 Expected: FAIL
 
-- [ ] **Step 3: Implement deduplicate**
+- [x] **Step 3: Implement deduplicate**
 
 Add to `TopicRankingService`:
 
@@ -1321,12 +1321,12 @@ Add to `TopicRankingService`:
         return deduped, source_counts, dup_info
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestDeduplication -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/topic_ranking.py tests/unit/services/test_topic_ranking.py
@@ -1341,7 +1341,7 @@ git commit -m "feat: add semantic deduplication using embedding cosine similarit
 - Modify: `src/services/topic_ranking.py`
 - Modify: `tests/unit/services/test_topic_ranking.py`
 
-- [ ] **Step 1: Write failing tests for full orchestration**
+- [x] **Step 1: Write failing tests for full orchestration**
 
 Add to `tests/unit/services/test_topic_ranking.py`:
 
@@ -1437,12 +1437,12 @@ class TestRankAndDeduplicate:
         assert len(response.ranked_topics) == 3
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py::TestCalculateScores tests/unit/services/test_topic_ranking.py::TestRankAndDeduplicate -v`
 Expected: FAIL
 
-- [ ] **Step 3: Implement calculate_scores and rank_and_deduplicate**
+- [x] **Step 3: Implement calculate_scores and rank_and_deduplicate**
 
 Add to `TopicRankingService`:
 
@@ -1534,12 +1534,12 @@ Add to `TopicRankingService`:
         )
 ```
 
-- [ ] **Step 4: Run all service tests**
+- [x] **Step 4: Run all service tests**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_topic_ranking.py -v`
 Expected: ALL PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/topic_ranking.py tests/unit/services/test_topic_ranking.py
@@ -1557,7 +1557,7 @@ git commit -m "feat: add composite scoring and rank_and_deduplicate orchestrator
 - Modify: `src/api/main.py`
 - Create: `tests/unit/api/test_topic_endpoints.py`
 
-- [ ] **Step 1: Write failing endpoint tests**
+- [x] **Step 1: Write failing endpoint tests**
 
 Create `tests/unit/api/test_topic_endpoints.py`:
 
@@ -1757,12 +1757,12 @@ class TestTopicEndpoint503:
             assert data["error"]["code"] == "embedding_service_unavailable"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_topic_endpoints.py -v`
 Expected: FAIL — 404 (no route registered)
 
-- [ ] **Step 3: Create topics router**
+- [x] **Step 3: Create topics router**
 
 Create `src/api/routers/topics.py`:
 
@@ -1824,7 +1824,7 @@ async def rank_topics(
         ) from exc
 ```
 
-- [ ] **Step 4: Register router in main.py**
+- [x] **Step 4: Register router in main.py**
 
 Add to `src/api/main.py`:
 
@@ -1842,17 +1842,17 @@ Add in `_register_routers`, after the admin router block:
     )
 ```
 
-- [ ] **Step 5: Run endpoint tests**
+- [x] **Step 5: Run endpoint tests**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_topic_endpoints.py -v`
 Expected: ALL PASS
 
-- [ ] **Step 6: Run full test suite**
+- [x] **Step 6: Run full test suite**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/ -v --tb=short`
 Expected: ALL PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/api/routers/topics.py src/api/main.py tests/unit/api/test_topic_endpoints.py
@@ -1866,23 +1866,23 @@ git commit -m "feat: add POST /api/v1/topics/rank endpoint with auth and rate li
 **Files:**
 - Potentially fix: any files with lint/type issues
 
-- [ ] **Step 1: Run ruff check**
+- [x] **Step 1: Run ruff check**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff check src/ tests/`
 
-- [ ] **Step 2: Fix any lint issues**
+- [x] **Step 2: Fix any lint issues**
 
-- [ ] **Step 3: Run mypy**
+- [x] **Step 3: Run mypy**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify mypy src/services/ src/api/schemas/ src/api/routers/topics.py`
 
-- [ ] **Step 4: Fix any type issues**
+- [x] **Step 4: Fix any type issues**
 
-- [ ] **Step 5: Run full test suite with coverage**
+- [x] **Step 5: Run full test suite with coverage**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/ --cov=src --cov-report=term-missing -v`
 
-- [ ] **Step 6: Commit any fixes**
+- [x] **Step 6: Commit any fixes**
 
 ```bash
 git add -A
@@ -1897,7 +1897,7 @@ git commit -m "fix: resolve lint and type checking issues"
 - Modify: `project-management/PROGRESS.md`
 - Modify: `project-management/BACKLOG.md`
 
-- [ ] **Step 1: Update PROGRESS.md**
+- [x] **Step 1: Update PROGRESS.md**
 
 In the `Epic 1: Trend Discovery Engine` table, change TREND-006 row from:
 ```
@@ -1908,11 +1908,11 @@ to:
 | TREND-006 | Topic Ranking & Dedup     | Done | `feature/TREND-006-topic-ranking-dedup` | [plan](../docs/superpowers/plans/2026-03-13-trend-006-topic-ranking-dedup.md) | [spec](../docs/superpowers/specs/2026-03-13-trend-006-topic-ranking-dedup-design.md) |
 ```
 
-- [ ] **Step 2: Update BACKLOG.md**
+- [x] **Step 2: Update BACKLOG.md**
 
 Add `— DONE` suffix to TREND-006 heading and add status/plan/spec fields.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add project-management/PROGRESS.md project-management/BACKLOG.md

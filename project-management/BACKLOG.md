@@ -172,9 +172,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Ranks by recency and citation potential
 - **Story Points**: 3
 
-### TREND-006: Topic Ranking & Deduplication [Must] — In Progress
+### TREND-006: Topic Ranking & Deduplication [Must] — DONE
 **As a** user, **I want** topics ranked by composite score and deduplicated, **so that** I see the most relevant unique topics.
-- **Status**: In Progress (branch `feature/TREND-006-topic-ranking-dedup`)
+- **Status**: Done (branch `feature/TREND-006-topic-ranking-dedup`)
 - **Plan**: [`docs/superpowers/plans/2026-03-13-trend-006-topic-ranking-dedup.md`](../docs/superpowers/plans/2026-03-13-trend-006-topic-ranking-dedup.md)
 - **Spec**: [`docs/superpowers/specs/2026-03-13-trend-006-topic-ranking-dedup-design.md`](../docs/superpowers/specs/2026-03-13-trend-006-topic-ranking-dedup-design.md)
 - **Acceptance Criteria**:
