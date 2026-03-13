@@ -99,5 +99,8 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** API-002 (JWT Authentication) — branch `feature/API-002-jwt-authentication`
-**Next up:** API-003 (RBAC Authorization) — spec + plan written, ready to execute on branch `feature/API-003-rbac-authorization`
+**Last completed:** API-003 (RBAC Authorization) — branch `feature/API-003-rbac-authorization`
+**Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
+**Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002)
+**Design:** Epic 0 added — 9 design tickets (DESIGN-001 through DESIGN-009), initial wireframes in Pencil
+**Next up:** TREND-006 (Topic Ranking & Dedup) or DESIGN-001 (Design System Setup)

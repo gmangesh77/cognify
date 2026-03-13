@@ -199,8 +199,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Acceptance Criteria**:
   - Documents chunked (512 tokens, 50-token overlap)
   - Embedded via sentence-transformers (all-MiniLM-L6-v2)
-  - Stored in Milvus with metadata (source, date, topic)
+  - Stored in Milvus with metadata (source, date, topic) — see [ADR-002](../docs/architecture/adrs/ADR-002-milvus-vector-database.md)
   - Top-k retrieval (k=5) by cosine similarity
+  - Milvus Lite for local dev, Milvus standalone for production
   - Knowledge base stats tracked (doc count, embedding count, storage size)
 - **Story Points**: 8
 
@@ -410,8 +411,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Pydantic settings for configuration
 - **Story Points**: 5
 
-### API-002: JWT Authentication [Must]
+### API-002: JWT Authentication [Must] — DONE
 **As a** user, **I want** to authenticate with JWT tokens, **so that** my access is secure.
+- **Status**: Done (branch `feature/API-002-jwt-authentication`)
+- **Plan**: [`docs/superpowers/plans/2026-03-13-api-002-jwt-authentication.md`](../docs/superpowers/plans/2026-03-13-api-002-jwt-authentication.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-12-api-002-jwt-authentication-design.md`](../docs/superpowers/specs/2026-03-12-api-002-jwt-authentication-design.md)
 - **Acceptance Criteria**:
   - Login endpoint returns access token (15min) + refresh token (7d)
   - RS256 algorithm, explicit validation
@@ -419,8 +423,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Logout invalidates refresh token
 - **Story Points**: 5
 
-### API-003: RBAC Authorization [Must]
+### API-003: RBAC Authorization [Must] — DONE
 **As an** admin, **I want** role-based access control, **so that** different users have appropriate permissions.
+- **Status**: Done (branch `feature/API-003-rbac-authorization`)
+- **Plan**: [`docs/superpowers/plans/2026-03-13-api-003-rbac-authorization.md`](../docs/superpowers/plans/2026-03-13-api-003-rbac-authorization.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-13-api-003-rbac-authorization-design.md`](../docs/superpowers/specs/2026-03-13-api-003-rbac-authorization-design.md)
 - **Acceptance Criteria**:
   - Roles: admin (full access), editor (read + write articles), viewer (read-only)
   - Permission checks enforced at route level via FastAPI dependencies

@@ -67,7 +67,7 @@
 | ------------ | ------------------------------ | ------- | ------ | ---- | ---- |
 | RESEARCH-001 | Agent Orchestrator (LangGraph) | Backlog | —      | —    | —    |
 | RESEARCH-002 | Web Search Agent               | Backlog | —      | —    | —    |
-| RESEARCH-003 | RAG Pipeline (Weaviate)        | Backlog | —      | —    | —    |
+| RESEARCH-003 | RAG Pipeline (Milvus)          | Backlog | —      | —    | —    |
 | RESEARCH-004 | Literature Review Agent        | Backlog | —      | —    | —    |
 | RESEARCH-005 | Research Session Tracking      | Backlog | —      | —    | —    |
 
