@@ -1,6 +1,7 @@
 import hashlib
 
 from src.services.embeddings import EmbeddingService
+from src.services.hackernews_client import HackerNewsClient, HNStoryResponse
 
 VECTOR_DIM = 384
 
@@ -28,3 +29,22 @@ class MockEmbeddingService(EmbeddingService):
                 vec[idx] = 1.0
             vectors.append(vec)
         return vectors
+
+
+class MockHackerNewsClient(HackerNewsClient):
+    """Returns canned stories for deterministic testing."""
+
+    def __init__(
+        self,
+        stories: list[HNStoryResponse] | None = None,
+    ) -> None:
+        super().__init__(base_url="http://mock", timeout=1.0)
+        self._stories = stories or []
+
+    async def fetch_stories(
+        self,
+        query: str,
+        min_points: int,
+        num_results: int,
+    ) -> list[HNStoryResponse]:
+        return self._stories[:num_results]
