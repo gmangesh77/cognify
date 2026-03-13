@@ -100,4 +100,4 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 See @project-management/PROGRESS.md for full ticket status.
 
 **Last completed:** API-002 (JWT Authentication) — branch `feature/API-002-jwt-authentication`
-**Next up:** API-003 (RBAC Authorization) — backlog, needs spec + plan
+**Next up:** API-003 (RBAC Authorization) — spec + plan written, ready to execute on branch `feature/API-003-rbac-authorization`
