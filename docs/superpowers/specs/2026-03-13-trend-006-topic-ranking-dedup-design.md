@@ -27,9 +27,9 @@ Build a stateless topic ranking and semantic deduplication service. It accepts r
 | `description` | `str` | `""` | Optional longer text |
 | `source` | `str` | required | Origin: `"google_trends"`, `"reddit"`, `"hackernews"`, etc. |
 | `external_url` | `str` | `""` | Link to source |
-| `trend_score` | `float` (0–100) | required | Normalized score from source |
+| `trend_score` | `float` Field(ge=0, le=100) | required | Normalized score from source |
 | `discovered_at` | `datetime` | required | When the source reported it |
-| `velocity` | `float` (>= 0) | `0` | Rate of score change (points/hour) |
+| `velocity` | `float` Field(ge=0) | `0` | Rate of score change (points/hour) |
 | `domain_keywords` | `list[str]` | `[]` | Tags from the source |
 
 ### RankedTopic (output)
@@ -40,13 +40,13 @@ All `RawTopic` fields, plus:
 |-------|------|-------------|
 | `composite_score` | `float` | Weighted composite score (0–100) |
 | `rank` | `int` | 1-based position |
-| `duplicate_of` | `str \| None` | Title of the topic this was deduped into |
+| `source_count` | `int` | Number of distinct sources in this topic's dedup group |
 
 ### RankTopicsRequest
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `topics` | `list[RawTopic]` | required (min 1) | Raw topics to rank |
+| `topics` | `list[RawTopic]` | required (min 1, max 500) | Raw topics to rank |
 | `domain` | `str` | required | e.g., `"cybersecurity"` |
 | `domain_keywords` | `list[str]` | `[]` | Keywords for relevance filtering |
 | `top_n` | `int` (1–100) | `10` | Number of results to return |
@@ -56,9 +56,19 @@ All `RawTopic` fields, plus:
 | Field | Type | Description |
 |-------|------|-------------|
 | `ranked_topics` | `list[RankedTopic]` | Sorted by composite_score descending |
+| `duplicates_removed` | `list[DuplicateInfo]` | Topics removed during dedup, with `title` and `duplicate_of` fields |
 | `total_input` | `int` | Count of topics received |
 | `total_after_dedup` | `int` | Count after deduplication |
 | `total_returned` | `int` | Final count returned (top_n or less) |
+
+### DuplicateInfo
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `title` | `str` | Title of the removed duplicate |
+| `source` | `str` | Source of the removed duplicate |
+| `duplicate_of` | `str` | Title of the surviving topic it matched |
+| `similarity` | `float` | Cosine similarity score with the surviving topic |
 
 ---
 
@@ -68,20 +78,25 @@ Four dimensions, weighted sum. Weights configurable via `COGNIFY_` environment v
 
 | Dimension | Weight | Input | Calculation |
 |-----------|--------|-------|-------------|
-| Relevance | 0.4 | `domain_keywords` match against title + description + tags | Jaccard similarity: `\|intersection\| / \|union\|` of keyword tokens. Score 0–100. |
-| Recency | 0.3 | `discovered_at` | Exponential decay: `100 * exp(-λ * hours_ago)`. λ calibrated so 24h = 50, 72h ≈ 12. Topics > 7 days ≈ 0. |
-| Velocity | 0.2 | `velocity` field | Min-max normalization across batch to 0–100. All zeros → 50 (neutral). |
+| Relevance | 0.4 | `domain_keywords` match against title + description + tags | Jaccard similarity: `\|intersection\| / \|union\|` of keyword tokens, scaled to 0–100. If either token set is empty, score = 0. |
+| Recency | 0.3 | `discovered_at` | Exponential decay: `100 * exp(-λ * hours_ago)`. λ = ln(2)/24 ≈ 0.02888 (24h = 50, 72h ≈ 12). If `discovered_at` is in the future (clock skew), clamp `hours_ago` to 0 (score = 100). |
+| Velocity | 0.2 | `velocity` field | Min-max normalization across batch to 0–100. When all values are equal (min == max, including all zeros), score = 50 (neutral). |
 | Source diversity | 0.1 | Distinct source count per dedup group | 3+ sources = 100, 2 = 66, 1 = 33. |
 
 **Formula**: `composite = (relevance * w_r) + (recency * w_c) + (velocity * w_v) + (diversity * w_d)`
 
-All individual scores normalized to 0–100, so composite is also 0–100.
+All individual scores normalized to 0–100. Composite is 0–100 only if weights sum to 1.0.
+
+**Weight validation**: On service initialization, validate that `w_r + w_c + w_v + w_d == 1.0` (within float tolerance of 0.001). Raise `ValueError` on startup if not.
 
 ### Edge Cases
 
 - Empty `domain_keywords` on request → relevance scores 50 for all (neutral)
 - Single topic in batch → velocity = 50, diversity = 33
 - All topics from same source → diversity = 33 for all
+- All topics filtered out by domain → return empty `ranked_topics` with `total_after_dedup=0`, `total_returned=0` (no error)
+- All topics are duplicates of each other → single surviving topic gets `source_count` = count of distinct sources across the merged group
+- Topic with empty title and description → Jaccard relevance = 0 (empty token set)
 
 ---
 
@@ -93,7 +108,7 @@ All individual scores normalized to 0–100, so composite is also 0–100.
 2. Embed all texts using `sentence-transformers/all-MiniLM-L6-v2` (384-dim vectors)
 3. Compute pairwise cosine similarity
 4. Group topics with similarity >= 0.85 (configurable threshold)
-5. Per group: keep the topic with highest `trend_score`, aggregate source diversity count, tag others with `duplicate_of`
+5. Per group: keep the topic with highest `trend_score`. Record `source_count` = number of distinct sources in the group. Build `DuplicateInfo` entries for removed topics.
 
 ### Performance
 
@@ -149,13 +164,17 @@ class TopicRankingService:
         topics: list[RawTopic],
         domain_keywords: list[str],
     ) -> list[RawTopic]:
-        """Remove topics with relevance score < 5."""
+        """Remove topics with no keyword overlap. Uses simple keyword presence
+        check (any keyword found in title/description/tags), NOT Jaccard score.
+        If domain_keywords is empty, all topics pass through."""
 
     def deduplicate(
         self,
         topics: list[RawTopic],
-    ) -> tuple[list[RawTopic], dict[str, str]]:
-        """Group by similarity, keep highest scorer. Returns (deduped, duplicate_map)."""
+    ) -> tuple[list[RawTopic], dict[str, int], list[DuplicateInfo]]:
+        """Group by embedding similarity, keep highest trend_score per group.
+        Returns (deduped_topics, source_counts_per_topic, duplicate_info_list).
+        source_counts maps surviving topic title -> distinct source count in its group."""
 
     def calculate_scores(
         self,
@@ -182,13 +201,25 @@ Rate limit: 10/minute
 **Response**: `RankTopicsResponse`
 
 **Error responses**:
-- 422: Pydantic validation (empty topics list, invalid types)
+- 422: Pydantic validation (empty topics list, invalid types, batch > 500)
 - 401/403: Auth/RBAC failures
-- 503: Embedding model failed to load (`embedding_service_unavailable`)
+- 503: Embedding model failed to load — uses new `ServiceUnavailableError(code="embedding_service_unavailable")`
 
 ### Router wiring
 
+`TopicRankingService` is instantiated per-request (stateless, cheap). `EmbeddingService` (which holds the heavy model) is a singleton on `app.state`.
+
 ```python
+@topics_router.post("/topics/rank", response_model=RankTopicsResponse)
+@limiter.limit("10/minute")
+async def rank_topics(
+    request: Request,
+    body: RankTopicsRequest,
+    user: TokenPayload = Depends(require_role("admin", "editor")),
+) -> RankTopicsResponse:
+    service = _get_ranking_service(request)
+    return await service.rank_and_deduplicate(body)
+
 def _get_embedding_service(request: Request) -> EmbeddingService:
     if not hasattr(request.app.state, "embedding_service"):
         request.app.state.embedding_service = EmbeddingService(
@@ -202,6 +233,18 @@ def _get_ranking_service(request: Request) -> TopicRankingService:
         embedding_service=_get_embedding_service(request),
     )
 ```
+
+### Structured Logging
+
+The service logs these events via structlog:
+
+| Event | Level | Fields | When |
+|-------|-------|--------|------|
+| `topics_ranked` | INFO | `input_count`, `dedup_count`, `returned_count`, `duration_ms` | After successful ranking |
+| `topics_filtered` | DEBUG | `before_count`, `after_count`, `domain` | After domain filtering |
+| `duplicates_removed` | DEBUG | `removed_count`, `groups_count` | After dedup |
+| `embedding_model_loaded` | INFO | `model_name`, `load_duration_ms` | On first model load |
+| `embedding_model_failed` | ERROR | `model_name`, `error` | If model fails to load |
 
 ---
 
@@ -239,32 +282,47 @@ tests/unit/api/test_topic_endpoints.py
 
 ```
 src/api/main.py                    — register topics router
+src/api/errors.py                  — add ServiceUnavailableError (503)
+src/api/routers/health.py          — rename weaviate → milvus in DependencyChecks
 src/config/settings.py             — add ranking/embedding settings
 pyproject.toml                     — add sentence-transformers, numpy
 ```
+
+`src/api/schemas/__init__.py` re-exports all schema classes for clean imports.
 
 ---
 
 ## 10. Testing Strategy
 
-### Unit tests (MockEmbeddingService)
+### MockEmbeddingService
+
+Deterministic mock for unit tests:
+- Texts containing "duplicate-A" return the same fixed vector (e.g., `[1, 0, 0, ...]`)
+- Texts containing "duplicate-B" return another identical vector (e.g., `[0, 1, 0, ...]`)
+- All other texts return unique orthogonal vectors based on hash of input text
+- This produces cosine similarity = 1.0 within each duplicate group and ~0.0 between groups
+
+### Unit tests
 
 - **Scoring**: Feed topics where only one dimension varies, assert correct ordering
 - **Relevance**: Topics with matching keywords score higher
-- **Recency**: Recent topics score higher than old ones
-- **Velocity**: High-velocity topics score higher
+- **Recency**: Recent topics score higher than old ones; future `discovered_at` clamped to score 100
+- **Velocity**: High-velocity topics score higher; all-equal velocities → all score 50
 - **Diversity**: Multi-source topics score higher
-- **Dedup**: 5 topics with 2 near-duplicates → 4 returned, correct `duplicate_of`
-- **Filtering**: Topics with no domain relevance removed
-- **Edge cases**: Single topic, all duplicates, empty keywords, all same source, all zero velocity
+- **Dedup**: 5 topics with 2 near-duplicates → 4 returned, correct `DuplicateInfo` in response
+- **Filtering**: Topics with no domain relevance removed; empty keywords → all pass
+- **Edge cases**: Single topic, all duplicates, empty keywords, all same source, all zero velocity, empty title/description (Jaccard = 0)
+- **Weight validation**: Weights not summing to 1.0 → `ValueError`
+- **Batch limit**: 501 topics → 422 validation error
 
 ### Endpoint tests
 
 - Auth required (401 without token)
 - Role required (403 for viewer)
-- Validation (422 for empty topics)
+- Validation (422 for empty topics, 422 for batch > 500)
 - Success path (200 with correct response shape)
 - Embedding failure (503)
+- Empty result after filtering (200 with empty ranked_topics)
 
 ### Coverage targets
 
@@ -272,7 +330,7 @@ pyproject.toml                     — add sentence-transformers, numpy
 |------|--------|
 | `topic_ranking.py` | 80%+ |
 | `topics.py` router | 90%+ |
-| `embeddings.py` | 70%+ |
+| `embeddings.py` | 80%+ |
 | `schemas/topics.py` | 80%+ |
 
 ---
@@ -283,6 +341,7 @@ This design is intentionally stateless. The following integrations happen in lat
 
 | Integration | Ticket | What changes |
 |-------------|--------|-------------|
+| **Trend source adapters** | TREND-001–005 | Each adapter produces `list[RawTopic]`. Batched and passed to `TopicRankingService.rank_and_deduplicate()`. Primary consumer of this service. |
 | **Database persistence** | TREND-001–005 or DASH-001 | Add SQLAlchemy models mirroring Pydantic schemas. Add repository layer. Service interface unchanged. |
 | **Milvus for dedup** | RESEARCH-003 | Move embeddings from in-memory to Milvus ANN search. `EmbeddingService` interface unchanged. |
 | **Cron scheduling** | TREND-001–005 | Ranking runs automatically after each trend scan. Service called from Celery task. |
