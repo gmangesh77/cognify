@@ -78,3 +78,17 @@ class TopicRankingService:
             discovered = discovered.astimezone(UTC)
         hours_ago = max((now - discovered).total_seconds() / 3600, 0.0)
         return 100 * math.exp(-self._RECENCY_LAMBDA * hours_ago)
+
+    def _score_velocity(
+        self,
+        topics: list[RawTopic],
+    ) -> list[float]:
+        velocities = [t.velocity for t in topics]
+        min_v = min(velocities)
+        max_v = max(velocities)
+        if max_v == min_v:
+            return [_NEUTRAL_SCORE] * len(topics)
+        return [
+            ((v - min_v) / (max_v - min_v)) * 100
+            for v in velocities
+        ]

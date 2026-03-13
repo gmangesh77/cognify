@@ -99,3 +99,44 @@ class TestRecencyScoring:
         )
         score = svc._score_recency(topic)
         assert abs(score - 100.0) < 0.01
+
+
+class TestVelocityScoring:
+    def test_highest_velocity_scores_100(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(velocity=10),
+            _make_topic(velocity=50),
+            _make_topic(velocity=100),
+        ]
+        scores = svc._score_velocity(topics)
+        assert abs(scores[2] - 100.0) < 0.01
+
+    def test_lowest_velocity_scores_0(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(velocity=10),
+            _make_topic(velocity=50),
+        ]
+        scores = svc._score_velocity(topics)
+        assert abs(scores[0]) < 0.01
+
+    def test_all_equal_velocity_returns_50(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(velocity=5),
+            _make_topic(velocity=5),
+        ]
+        scores = svc._score_velocity(topics)
+        assert all(abs(s - 50.0) < 0.01 for s in scores)
+
+    def test_all_zero_velocity_returns_50(self) -> None:
+        svc = _make_service()
+        topics = [_make_topic(velocity=0), _make_topic(velocity=0)]
+        scores = svc._score_velocity(topics)
+        assert all(abs(s - 50.0) < 0.01 for s in scores)
+
+    def test_single_topic_returns_50(self) -> None:
+        svc = _make_service()
+        scores = svc._score_velocity([_make_topic(velocity=42)])
+        assert abs(scores[0] - 50.0) < 0.01
