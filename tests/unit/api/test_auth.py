@@ -117,6 +117,7 @@ class TestSchemas:
 
 
 from src.api.auth.password import hash_password, verify_password
+from src.api.auth.service import AuthService
 
 
 class TestPasswordService:
@@ -317,3 +318,104 @@ class TestInMemoryUserRepository:
     def test_get_by_id_not_found(self) -> None:
         repo = InMemoryUserRepository([])
         assert repo.get_by_id("no-such-id") is None
+
+
+class TestAuthService:
+    def setup_method(self) -> None:
+        private_pem, public_pem = _generate_rsa_keys()
+        self.settings = _make_test_settings(private_pem, public_pem)
+        self.refresh_repo = InMemoryRefreshTokenRepository()
+        test_user = UserData(
+            id="user-1",
+            email="test@example.com",
+            password_hash=hash_password("correct-password"),
+            role="editor",
+        )
+        self.user_repo = InMemoryUserRepository([test_user])
+        self.service = AuthService(
+            settings=self.settings,
+            refresh_repo=self.refresh_repo,
+            user_repo=self.user_repo,
+        )
+
+    def test_login_success(self) -> None:
+        result = self.service.login("test@example.com", "correct-password")
+        assert result.access_token
+        assert result.refresh_token
+        assert result.token_type == "bearer"
+        assert result.expires_in == 15 * 60
+
+    def test_login_wrong_password(self) -> None:
+        with pytest.raises(AuthenticationError) as exc_info:
+            self.service.login("test@example.com", "wrong-password")
+        assert exc_info.value.code == "invalid_credentials"
+
+    def test_login_unknown_email(self) -> None:
+        with pytest.raises(AuthenticationError) as exc_info:
+            self.service.login("nobody@example.com", "any-password")
+        assert exc_info.value.code == "invalid_credentials"
+
+    def test_refresh_success(self) -> None:
+        login_result = self.service.login(
+            "test@example.com", "correct-password"
+        )
+        new_result = self.service.refresh(login_result.refresh_token)
+        assert new_result.access_token != login_result.access_token
+        assert new_result.refresh_token != login_result.refresh_token
+
+    def test_refresh_revokes_old_token(self) -> None:
+        login_result = self.service.login(
+            "test@example.com", "correct-password"
+        )
+        old_token = login_result.refresh_token
+        self.service.refresh(old_token)
+        data = self.refresh_repo.get(old_token)
+        assert data is not None
+        assert data.revoked is True
+
+    def test_refresh_with_revoked_token_triggers_revoke_all(self) -> None:
+        login_result = self.service.login(
+            "test@example.com", "correct-password"
+        )
+        old_token = login_result.refresh_token
+        # First refresh — revokes old token
+        new_result = self.service.refresh(old_token)
+        # Replay attack — use the already-revoked token again
+        with pytest.raises(AuthenticationError):
+            self.service.refresh(old_token)
+        # New token should also be revoked (revoke_all_for_user triggered)
+        new_data = self.refresh_repo.get(new_result.refresh_token)
+        assert new_data is not None
+        assert new_data.revoked is True
+
+    def test_refresh_unknown_token(self) -> None:
+        with pytest.raises(AuthenticationError) as exc_info:
+            self.service.refresh("nonexistent-token")
+        assert exc_info.value.code == "invalid_refresh_token"
+
+    def test_refresh_expired_token(self) -> None:
+        login_result = self.service.login(
+            "test@example.com", "correct-password"
+        )
+        # Manually expire the token
+        data = self.refresh_repo.get(login_result.refresh_token)
+        assert data is not None
+        expired_data = data.model_copy(
+            update={"expires_at": datetime.now(UTC) - timedelta(hours=1)}
+        )
+        self.refresh_repo._tokens[login_result.refresh_token] = expired_data  # noqa: SLF001
+        with pytest.raises(AuthenticationError) as exc_info:
+            self.service.refresh(login_result.refresh_token)
+        assert exc_info.value.code == "invalid_refresh_token"
+
+    def test_logout_revokes_token(self) -> None:
+        login_result = self.service.login(
+            "test@example.com", "correct-password"
+        )
+        self.service.logout(login_result.refresh_token)
+        data = self.refresh_repo.get(login_result.refresh_token)
+        assert data is not None
+        assert data.revoked is True
+
+    def test_logout_unknown_token_no_error(self) -> None:
+        self.service.logout("nonexistent-token")  # Should not raise
