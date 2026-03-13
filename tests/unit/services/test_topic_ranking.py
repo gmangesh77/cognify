@@ -219,3 +219,105 @@ class TestDomainFiltering:
         topics = [_make_topic(title="CyberSecurity Breach")]
         result = svc.filter_by_domain(topics, "cyber", ["cybersecurity"])
         assert len(result) == 1
+
+
+class TestDeduplication:
+    def test_duplicates_removed(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(
+                title="duplicate-A first",
+                source="reddit",
+                trend_score=80,
+            ),
+            _make_topic(
+                title="duplicate-A second",
+                source="hackernews",
+                trend_score=60,
+            ),
+            _make_topic(title="unique topic", source="reddit"),
+        ]
+        deduped, counts, dups = svc.deduplicate(topics)
+        assert len(deduped) == 2
+        titles = [t.title for t in deduped]
+        assert "duplicate-A first" in titles
+        assert "duplicate-A second" not in titles
+
+    def test_source_count_aggregated(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(
+                title="duplicate-A v1",
+                source="reddit",
+                trend_score=90,
+            ),
+            _make_topic(
+                title="duplicate-A v2",
+                source="hackernews",
+                trend_score=50,
+            ),
+        ]
+        deduped, counts, dups = svc.deduplicate(topics)
+        assert len(deduped) == 1
+        assert counts[deduped[0].title] == 2
+
+    def test_duplicate_info_populated(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(
+                title="duplicate-A winner",
+                source="reddit",
+                trend_score=90,
+            ),
+            _make_topic(
+                title="duplicate-A loser",
+                source="hackernews",
+                trend_score=50,
+            ),
+        ]
+        _, _, dups = svc.deduplicate(topics)
+        assert len(dups) == 1
+        assert dups[0].title == "duplicate-A loser"
+        assert dups[0].duplicate_of == "duplicate-A winner"
+        assert dups[0].similarity == pytest.approx(1.0)
+
+    def test_all_topics_are_duplicates(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(
+                title="duplicate-A from reddit",
+                source="reddit",
+                trend_score=80,
+            ),
+            _make_topic(
+                title="duplicate-A from hackernews",
+                source="hackernews",
+                trend_score=60,
+            ),
+            _make_topic(
+                title="duplicate-A from google",
+                source="google_trends",
+                trend_score=40,
+            ),
+        ]
+        deduped, counts, dups = svc.deduplicate(topics)
+        assert len(deduped) == 1
+        assert counts[deduped[0].title] == 3
+        assert len(dups) == 2
+
+    def test_no_duplicates_all_survive(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(title="unique one"),
+            _make_topic(title="unique two"),
+        ]
+        deduped, counts, dups = svc.deduplicate(topics)
+        assert len(deduped) == 2
+        assert len(dups) == 0
+
+    def test_single_topic(self) -> None:
+        svc = _make_service()
+        topics = [_make_topic(title="only one")]
+        deduped, counts, dups = svc.deduplicate(topics)
+        assert len(deduped) == 1
+        assert counts[deduped[0].title] == 1

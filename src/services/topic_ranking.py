@@ -121,6 +121,68 @@ class TopicRankingService:
         )
         return result
 
+    def deduplicate(
+        self,
+        topics: list[RawTopic],
+    ) -> tuple[list[RawTopic], dict[str, int], list[DuplicateInfo]]:
+        if len(topics) <= 1:
+            counts = {t.title: 1 for t in topics}
+            return list(topics), counts, []
+
+        texts = [f"{t.title} {t.description}" for t in topics]
+        embeddings = self._embedding.embed(texts)
+        sim_matrix = self._embedding.cosine_similarity_matrix(embeddings)
+        threshold = self._settings.dedup_similarity_threshold
+
+        visited = [False] * len(topics)
+        groups: list[list[int]] = []
+        for i in range(len(topics)):
+            if visited[i]:
+                continue
+            group = [i]
+            visited[i] = True
+            for j in range(i + 1, len(topics)):
+                if not visited[j] and sim_matrix[i][j] >= threshold:
+                    group.append(j)
+                    visited[j] = True
+            groups.append(group)
+
+        deduped: list[RawTopic] = []
+        source_counts: dict[str, int] = {}
+        dup_info: list[DuplicateInfo] = []
+
+        for group in groups:
+            group_topics = [topics[idx] for idx in group]
+            winner_idx_in_group = max(
+                range(len(group)),
+                key=lambda i: group_topics[i].trend_score,  # noqa: B023
+            )
+            winner = group_topics[winner_idx_in_group]
+            winner_orig_idx = group[winner_idx_in_group]
+            sources = {t.source for t in group_topics}
+            source_counts[winner.title] = len(sources)
+            deduped.append(winner)
+
+            for i, orig_idx in enumerate(group):
+                if i != winner_idx_in_group:
+                    dup_info.append(
+                        DuplicateInfo(
+                            title=group_topics[i].title,
+                            source=group_topics[i].source,
+                            duplicate_of=winner.title,
+                            similarity=sim_matrix[orig_idx][
+                                winner_orig_idx
+                            ],
+                        )
+                    )
+
+        logger.debug(
+            "duplicates_removed",
+            removed_count=len(dup_info),
+            groups_count=len(groups),
+        )
+        return deduped, source_counts, dup_info
+
     def _score_diversity(self, source_count: int) -> float:
         if source_count >= 3:
             return 100.0
