@@ -107,3 +107,25 @@ class TestSchemas:
     def test_role_literal_values(self) -> None:
         valid_roles: list[Role] = ["admin", "editor", "viewer"]
         assert len(valid_roles) == 3
+
+
+from src.api.auth.password import hash_password, verify_password
+
+
+class TestPasswordService:
+    def test_hash_and_verify(self) -> None:
+        hashed = hash_password("my-secret-password")
+        assert verify_password("my-secret-password", hashed)
+
+    def test_wrong_password_rejects(self) -> None:
+        hashed = hash_password("my-secret-password")
+        assert not verify_password("wrong-password", hashed)
+
+    def test_hash_uses_cost_factor_12(self) -> None:
+        hashed = hash_password("test")
+        assert hashed.startswith("$2b$12$")
+
+    def test_different_hashes_for_same_input(self) -> None:
+        h1 = hash_password("same")
+        h2 = hash_password("same")
+        assert h1 != h2  # bcrypt uses random salt
