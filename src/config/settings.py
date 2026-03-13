@@ -24,3 +24,9 @@ class Settings(BaseSettings):
     # Embedding / dedup
     embedding_model: str = "all-MiniLM-L6-v2"
     dedup_similarity_threshold: float = 0.85
+    # Hacker News integration
+    hn_api_base_url: str = "https://hn.algolia.com/api/v1"
+    hn_default_max_results: int = 30
+    hn_default_min_points: int = 10
+    hn_points_cap: float = 300.0
+    hn_request_timeout: float = 10.0

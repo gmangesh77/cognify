@@ -16,3 +16,13 @@ class TestRankingSettings:
     def test_default_dedup_threshold(self) -> None:
         s = Settings()
         assert s.dedup_similarity_threshold == 0.85
+
+
+class TestHackerNewsSettings:
+    def test_hn_defaults(self) -> None:
+        s = Settings()
+        assert s.hn_api_base_url == "https://hn.algolia.com/api/v1"
+        assert s.hn_default_max_results == 30
+        assert s.hn_default_min_points == 10
+        assert s.hn_points_cap == 300.0
+        assert s.hn_request_timeout == 10.0
