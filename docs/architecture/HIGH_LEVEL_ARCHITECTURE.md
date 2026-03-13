@@ -34,7 +34,7 @@ graph TD
     end
     subgraph "Data Layer"
         PG[("PostgreSQL 16")]
-        WV[("Weaviate Vector DB")]
+        WV[("Milvus Vector DB")]
         RD[("Redis Cache")]
     end
     subgraph "Task Queue"
@@ -100,7 +100,7 @@ graph TD
 | Agent Framework | LangChain + LangGraph | Mature multi-agent orchestration with stateful workflows |
 | LLMs | Claude Opus 4 / Sonnet 4 | High-quality generation; Sonnet for drafts, Opus for final pass |
 | Image Gen | Stable Diffusion XL | Open-source, self-hostable, high-quality illustrations |
-| Vector DB | Weaviate | Hybrid search (vector + keyword), multi-tenancy, scalable |
+| Vector DB | Milvus | Purpose-built vector search, Apache 2.0, Milvus Lite for dev, proven at scale (see [ADR-002](./adrs/ADR-002-milvus-vector-database.md)) |
 | Database | PostgreSQL 16 | ACID transactions, JSONB for flexible metadata, proven at scale |
 | Cache | Redis | Sub-ms latency for trend signal caching and rate limiting |
 | Task Queue | Celery + Redis | Distributed background processing for long-running agent workflows |
@@ -122,12 +122,12 @@ graph TD
 
 ### Research Agents (parallel)
 - **Responsibility**: Execute web search, fetch documents, query knowledge base, perform literature review
-- **Interfaces**: Receive research plan from Orchestrator; store findings in Weaviate vector DB; return structured summaries
+- **Interfaces**: Receive research plan from Orchestrator; store findings in Milvus vector DB; return structured summaries
 - **Parallelism**: Multiple instances run concurrently on different facets of a topic
 
 ### Writer Agent
 - **Responsibility**: Generates article outline, drafts sections using RAG context, applies SEO optimization, produces structured Markdown
-- **Interfaces**: Reads from Weaviate (retrieved passages); outputs Markdown to Content Formatting Service
+- **Interfaces**: Reads from Milvus (retrieved passages); outputs Markdown to Content Formatting Service
 
 ### Visual Asset Agent
 - **Responsibility**: Generates charts (Matplotlib/Plotly), diagrams (Mermaid), and AI illustrations (Stable Diffusion)
@@ -218,8 +218,8 @@ erDiagram
 
 ### Data Flow
 1. **Trend Discovery**: Cron triggers Trend Agent → polls external APIs → normalizes/ranks → stores Topics in PostgreSQL, caches raw signals in Redis
-2. **Research**: Orchestrator picks top Topic → spawns Research Agents → agents fetch web/docs → index in Weaviate → store structured findings
-3. **Generation**: Writer Agent retrieves RAG context from Weaviate → generates Markdown with citations → Visual Agent adds charts/images
+2. **Research**: Orchestrator picks top Topic → spawns Research Agents → agents fetch web/docs → index in Milvus → store structured findings
+3. **Generation**: Writer Agent retrieves RAG context from Milvus → generates Markdown with citations → Visual Agent adds charts/images
 4. **Publishing**: Formatting Service prepares platform-specific content → Publishing Service pushes via APIs → records Publication status
 
 ## 5. Integration Architecture
@@ -242,8 +242,8 @@ erDiagram
 ## 6. Infrastructure & Deployment
 - **Environments**: Development (local Docker Compose) → Staging (AWS EKS) → Production (AWS EKS)
 - **Deployment**: Containerized services via Docker; orchestrated on Kubernetes with Helm charts
-- **Scaling**: Celery workers scale horizontally based on queue depth; FastAPI pods auto-scale on CPU/memory; Weaviate scales via sharding
-- **Storage**: PostgreSQL on RDS (Multi-AZ), Redis on ElastiCache, Weaviate on dedicated EC2 instances, S3 for generated images
+- **Scaling**: Celery workers scale horizontally based on queue depth; FastAPI pods auto-scale on CPU/memory; Milvus scales via sharding
+- **Storage**: PostgreSQL on RDS (Multi-AZ), Redis on ElastiCache, Milvus on dedicated EC2 instances, S3 for generated images
 
 ## 7. Security Architecture
 - **Authentication**: JWT-based (RS256) with short-lived access tokens (15min) and refresh tokens (7d)
@@ -268,3 +268,4 @@ erDiagram
 ## 9. Architecture Decision Records
 See [docs/architecture/adrs/](./adrs/) for all decisions.
 - [ADR-001: LangGraph for Agent Orchestration](./adrs/ADR-001-langgraph-agent-orchestration.md)
+- [ADR-002: Milvus for Vector Database](./adrs/ADR-002-milvus-vector-database.md)

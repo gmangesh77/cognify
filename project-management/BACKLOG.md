@@ -194,12 +194,12 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Stores findings with source URL and date
 - **Story Points**: 8
 
-### RESEARCH-003: RAG Pipeline (Weaviate) [Must]
+### RESEARCH-003: RAG Pipeline (Milvus) [Must]
 **As a** system, **I want** retrieved documents indexed in a vector database, **so that** agents can retrieve relevant context efficiently.
 - **Acceptance Criteria**:
   - Documents chunked (512 tokens, 50-token overlap)
   - Embedded via sentence-transformers (all-MiniLM-L6-v2)
-  - Stored in Weaviate with metadata (source, date, topic)
+  - Stored in Milvus with metadata (source, date, topic)
   - Top-k retrieval (k=5) by cosine similarity
   - Knowledge base stats tracked (doc count, embedding count, storage size)
 - **Story Points**: 8

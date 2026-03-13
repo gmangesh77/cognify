@@ -23,7 +23,7 @@
 ### Unit Tests (~70%)
 - **Scope**: Individual functions, classes, and methods in isolation
 - **Tools**: pytest, pytest-asyncio, unittest.mock, freezegun
-- **Mocking**: External APIs (LLM, trend sources, publishing APIs), database, Redis, Weaviate
+- **Mocking**: External APIs (LLM, trend sources, publishing APIs), database, Redis, Milvus
 - **Speed target**: Full unit suite < 60 seconds
 - **Examples**:
   - Topic ranking algorithm with various score distributions
@@ -33,8 +33,8 @@
 
 ### Integration Tests (~20%)
 - **Scope**: Service boundaries, database operations, agent workflows, API endpoints
-- **Tools**: pytest, httpx.AsyncClient, TestContainers (PostgreSQL, Redis, Weaviate)
-- **Real dependencies**: PostgreSQL for data persistence, Redis for caching, Weaviate for vector search
+- **Tools**: pytest, httpx.AsyncClient, TestContainers (PostgreSQL, Redis, Milvus)
+- **Real dependencies**: PostgreSQL for data persistence, Redis for caching, Milvus for vector search
 - **Mocked**: LLM APIs (use FakeLLM with recorded responses), external trend APIs
 - **Speed target**: Full integration suite < 5 minutes
 - **Examples**:

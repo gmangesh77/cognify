@@ -79,14 +79,14 @@ Never log: API keys, JWT tokens, user passwords, raw LLM prompts containing user
 | `cognify_llm_calls_total` | Counter | model, agent_role | LLM API calls |
 | `cognify_llm_call_duration_seconds` | Histogram | model | LLM call latency |
 | `cognify_llm_tokens_total` | Counter | model, type (input/output) | Token usage |
-| `cognify_vector_operations_total` | Counter | operation (embed/query) | Weaviate operations |
+| `cognify_vector_operations_total` | Counter | operation (embed/query) | Milvus operations |
 
 ### Infrastructure Metrics (standard)
 - CPU, memory, disk usage per pod
 - PostgreSQL connection pool utilization
 - Redis memory usage and hit/miss ratio
 - Celery queue depth and worker utilization
-- Weaviate query latency and index size
+- Milvus query latency and index size
 
 ## 6. Distributed Tracing (OpenTelemetry)
 
@@ -105,7 +105,7 @@ API Request → Celery Task → Orchestrator Agent → Research Agents (parallel
 - `agent.write` — Writer agent execution
 - `agent.visual` — Visual asset generation
 - `llm.call` — Individual LLM API call (model, tokens, duration)
-- `vectordb.query` — Weaviate similarity search
+- `vectordb.query` — Milvus similarity search
 - `publishing.push` — Platform API call
 
 ### Instrumentation
@@ -162,7 +162,7 @@ async def research_topic(topic: Topic):
 - PostgreSQL query latency and connection pool
 - Redis hit rate and memory
 - Celery worker utilization and queue depth
-- Weaviate query latency and index size
+- Milvus query latency and index size
 
 ## 9. Health Endpoints
 

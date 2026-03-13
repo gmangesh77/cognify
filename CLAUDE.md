@@ -5,7 +5,7 @@ Self-driving content platform that discovers trends, runs multi-agent research, 
 - **Language**: Python 3.12+ (agents, pipelines, API)
 - **Agent Framework**: LangChain + LangGraph (multi-agent orchestration)
 - **LLMs**: Claude Opus 4 (primary), Claude Sonnet 4 (drafting), Stable Diffusion XL (images)
-- **Vector DB**: Weaviate (RAG embeddings + similarity search)
+- **Vector DB**: Milvus (RAG embeddings + similarity search)
 - **API**: FastAPI (async REST endpoints)
 - **Database**: PostgreSQL 16 (metadata, users, publishing state)
 - **Cache**: Redis (trend signal caching, rate limiting)
