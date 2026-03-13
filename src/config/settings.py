@@ -16,3 +16,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "RS256"
     jwt_access_token_expire_minutes: int = 15
     jwt_refresh_token_expire_days: int = 7
+    # Topic ranking weights (must sum to 1.0)
+    relevance_weight: float = 0.4
+    recency_weight: float = 0.3
+    velocity_weight: float = 0.2
+    diversity_weight: float = 0.1
+    # Embedding / dedup
+    embedding_model: str = "all-MiniLM-L6-v2"
+    dedup_similarity_threshold: float = 0.85

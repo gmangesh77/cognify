@@ -56,7 +56,7 @@ class TestHealthEndpoint:
     ) -> None:
         response = await health_client.get("/api/v1/health")
         checks = response.json()["checks"]
-        expected_keys = {"database", "redis", "weaviate", "celery"}
+        expected_keys = {"database", "redis", "milvus", "celery"}
         assert set(checks.keys()) == expected_keys
         for value in checks.values():
             assert value == "unavailable"
