@@ -93,6 +93,34 @@ class TopicRankingService:
             for v in velocities
         ]
 
+    def filter_by_domain(
+        self,
+        topics: list[RawTopic],
+        domain: str,
+        domain_keywords: list[str],
+    ) -> list[RawTopic]:
+        if not domain_keywords:
+            return list(topics)
+
+        kw_set = {kw.lower() for kw in domain_keywords}
+        result: list[RawTopic] = []
+        for topic in topics:
+            tokens: set[str] = set()
+            for text in [topic.title, topic.description]:
+                tokens.update(text.lower().split())
+            for tag in topic.domain_keywords:
+                tokens.update(tag.lower().split())
+            if tokens & kw_set:
+                result.append(topic)
+
+        logger.debug(
+            "topics_filtered",
+            before_count=len(topics),
+            after_count=len(result),
+            domain=domain,
+        )
+        return result
+
     def _score_diversity(self, source_count: int) -> float:
         if source_count >= 3:
             return 100.0

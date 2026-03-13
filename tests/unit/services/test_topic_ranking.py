@@ -173,3 +173,49 @@ class TestWeightValidation:
         )
         with pytest.raises(ValueError, match="must sum to 1.0"):
             _make_service(settings=settings)
+
+
+class TestDomainFiltering:
+    def test_matching_topics_pass(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(title="cybersecurity breach"),
+            _make_topic(title="cooking recipes"),
+        ]
+        result = svc.filter_by_domain(topics, "cyber", ["cybersecurity"])
+        assert len(result) == 1
+        assert result[0].title == "cybersecurity breach"
+
+    def test_empty_keywords_passes_all(self) -> None:
+        svc = _make_service()
+        topics = [_make_topic(), _make_topic()]
+        result = svc.filter_by_domain(topics, "cyber", [])
+        assert len(result) == 2
+
+    def test_matches_in_description(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(
+                title="Big news",
+                description="A cybersecurity vulnerability",
+            ),
+        ]
+        result = svc.filter_by_domain(topics, "cyber", ["cybersecurity"])
+        assert len(result) == 1
+
+    def test_matches_in_domain_keywords(self) -> None:
+        svc = _make_service()
+        topics = [
+            _make_topic(
+                title="Generic",
+                domain_keywords=["cybersecurity"],
+            ),
+        ]
+        result = svc.filter_by_domain(topics, "cyber", ["cybersecurity"])
+        assert len(result) == 1
+
+    def test_case_insensitive(self) -> None:
+        svc = _make_service()
+        topics = [_make_topic(title="CyberSecurity Breach")]
+        result = svc.filter_by_domain(topics, "cyber", ["cybersecurity"])
+        assert len(result) == 1
