@@ -27,9 +27,7 @@ class AuthService:
                 message="Invalid email or password",
             )
 
-        access_token = create_access_token(
-            user.id, user.role, self._settings
-        )
+        access_token = create_access_token(user.id, user.role, self._settings)
         refresh_token = create_refresh_token()
         expires_at = datetime.now(UTC) + timedelta(
             days=self._settings.jwt_refresh_token_expire_days
@@ -71,16 +69,12 @@ class AuthService:
                 code="invalid_refresh_token",
                 message="User not found",
             )
-        access_token = create_access_token(
-            data.user_id, user.role, self._settings
-        )
+        access_token = create_access_token(data.user_id, user.role, self._settings)
         new_refresh_token = create_refresh_token()
         expires_at = datetime.now(UTC) + timedelta(
             days=self._settings.jwt_refresh_token_expire_days
         )
-        self._refresh_repo.save(
-            data.user_id, new_refresh_token, expires_at
-        )
+        self._refresh_repo.save(data.user_id, new_refresh_token, expires_at)
 
         return TokenResponse(
             access_token=access_token,

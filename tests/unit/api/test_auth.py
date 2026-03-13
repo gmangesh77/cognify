@@ -6,6 +6,26 @@ from freezegun import freeze_time
 from pydantic import ValidationError
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
+from src.api.auth.password import hash_password, verify_password
+from src.api.auth.repository import (
+    InMemoryRefreshTokenRepository,
+    InMemoryUserRepository,
+)
+from src.api.auth.schemas import (
+    LoginRequest,
+    RefreshRequest,
+    RefreshTokenData,
+    Role,
+    TokenPayload,
+    TokenResponse,
+    UserData,
+)
+from src.api.auth.service import AuthService
+from src.api.auth.tokens import (
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
+)
 from src.api.errors import AuthenticationError, AuthorizationError
 from src.config.settings import Settings
 
@@ -40,21 +60,6 @@ class TestAuthErrors:
         assert err.code == "insufficient_permissions"
 
 
-from src.api.auth.repository import (
-    InMemoryRefreshTokenRepository,
-    InMemoryUserRepository,
-)
-from src.api.auth.schemas import (
-    LoginRequest,
-    RefreshRequest,
-    RefreshTokenData,
-    Role,
-    TokenPayload,
-    TokenResponse,
-    UserData,
-)
-
-
 class TestSchemas:
     def test_login_request_valid(self) -> None:
         req = LoginRequest(email="test@example.com", password="password123")
@@ -81,20 +86,14 @@ class TestSchemas:
         assert resp.token_type == "bearer"
 
     def test_token_payload_role_validation(self) -> None:
-        payload = TokenPayload(
-            sub="user-1", role="admin", exp=999, iat=0, jti="j1"
-        )
+        payload = TokenPayload(sub="user-1", role="admin", exp=999, iat=0, jti="j1")
         assert payload.role == "admin"
 
     def test_token_payload_invalid_role(self) -> None:
         with pytest.raises(ValidationError):
-            TokenPayload(
-                sub="user-1", role="superadmin", exp=999, iat=0, jti="j1"
-            )
+            TokenPayload(sub="user-1", role="superadmin", exp=999, iat=0, jti="j1")
 
     def test_refresh_token_data_defaults(self) -> None:
-        from datetime import UTC, datetime
-
         data = RefreshTokenData(
             user_id="u1",
             token="t1",
@@ -116,10 +115,6 @@ class TestSchemas:
         assert len(valid_roles) == 3
 
 
-from src.api.auth.password import hash_password, verify_password
-from src.api.auth.service import AuthService
-
-
 class TestPasswordService:
     def test_hash_and_verify(self) -> None:
         hashed = hash_password("my-secret-password")
@@ -139,9 +134,7 @@ class TestPasswordService:
         assert h1 != h2  # bcrypt uses random salt
 
 
-def _make_test_settings(
-    private_key: str, public_key: str
-) -> Settings:
+def _make_test_settings(private_key: str, public_key: str) -> Settings:
     return Settings(
         jwt_private_key=private_key,
         jwt_public_key=public_key,
@@ -149,29 +142,24 @@ def _make_test_settings(
 
 
 def _generate_rsa_keys() -> tuple[str, str]:
-    from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
 
-    private_key = rsa.generate_private_key(
-        public_exponent=65537, key_size=2048
-    )
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     private_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     ).decode()
-    public_pem = private_key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    ).decode()
+    public_pem = (
+        private_key.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        .decode()
+    )
     return private_pem, public_pem
-
-
-from src.api.auth.tokens import (
-    create_access_token,
-    create_refresh_token,
-    decode_access_token,
-)
 
 
 class TestTokenService:
@@ -298,9 +286,7 @@ class TestInMemoryRefreshTokenRepository:
 
 class TestInMemoryUserRepository:
     def test_get_by_email_found(self) -> None:
-        user = UserData(
-            id="u1", email="a@b.com", password_hash="h", role="admin"
-        )
+        user = UserData(id="u1", email="a@b.com", password_hash="h", role="admin")
         repo = InMemoryUserRepository([user])
         assert repo.get_by_email("a@b.com") == user
 
@@ -309,9 +295,7 @@ class TestInMemoryUserRepository:
         assert repo.get_by_email("x@y.com") is None
 
     def test_get_by_id_found(self) -> None:
-        user = UserData(
-            id="u1", email="a@b.com", password_hash="h", role="admin"
-        )
+        user = UserData(id="u1", email="a@b.com", password_hash="h", role="admin")
         repo = InMemoryUserRepository([user])
         assert repo.get_by_id("u1") == user
 
@@ -356,17 +340,13 @@ class TestAuthService:
         assert exc_info.value.code == "invalid_credentials"
 
     def test_refresh_success(self) -> None:
-        login_result = self.service.login(
-            "test@example.com", "correct-password"
-        )
+        login_result = self.service.login("test@example.com", "correct-password")
         new_result = self.service.refresh(login_result.refresh_token)
         assert new_result.access_token != login_result.access_token
         assert new_result.refresh_token != login_result.refresh_token
 
     def test_refresh_revokes_old_token(self) -> None:
-        login_result = self.service.login(
-            "test@example.com", "correct-password"
-        )
+        login_result = self.service.login("test@example.com", "correct-password")
         old_token = login_result.refresh_token
         self.service.refresh(old_token)
         data = self.refresh_repo.get(old_token)
@@ -374,9 +354,7 @@ class TestAuthService:
         assert data.revoked is True
 
     def test_refresh_with_revoked_token_triggers_revoke_all(self) -> None:
-        login_result = self.service.login(
-            "test@example.com", "correct-password"
-        )
+        login_result = self.service.login("test@example.com", "correct-password")
         old_token = login_result.refresh_token
         # First refresh — revokes old token
         new_result = self.service.refresh(old_token)
@@ -394,9 +372,7 @@ class TestAuthService:
         assert exc_info.value.code == "invalid_refresh_token"
 
     def test_refresh_expired_token(self) -> None:
-        login_result = self.service.login(
-            "test@example.com", "correct-password"
-        )
+        login_result = self.service.login("test@example.com", "correct-password")
         # Manually expire the token
         data = self.refresh_repo.get(login_result.refresh_token)
         assert data is not None
@@ -409,9 +385,7 @@ class TestAuthService:
         assert exc_info.value.code == "invalid_refresh_token"
 
     def test_logout_revokes_token(self) -> None:
-        login_result = self.service.login(
-            "test@example.com", "correct-password"
-        )
+        login_result = self.service.login("test@example.com", "correct-password")
         self.service.logout(login_result.refresh_token)
         data = self.refresh_repo.get(login_result.refresh_token)
         assert data is not None

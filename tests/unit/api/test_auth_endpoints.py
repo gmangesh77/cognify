@@ -1,5 +1,4 @@
 from collections.abc import AsyncGenerator
-from datetime import UTC, datetime, timedelta
 
 import fastapi
 import httpx
@@ -21,18 +20,20 @@ def _generate_rsa_keys() -> tuple[str, str]:
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
 
-    private_key = rsa.generate_private_key(
-        public_exponent=65537, key_size=2048
-    )
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     private_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     ).decode()
-    public_pem = private_key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    ).decode()
+    public_pem = (
+        private_key.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        .decode()
+    )
     return private_pem, public_pem
 
 
@@ -86,9 +87,7 @@ async def auth_client(
 
 
 class TestLoginEndpoint:
-    async def test_login_success(
-        self, auth_client: httpx.AsyncClient
-    ) -> None:
+    async def test_login_success(self, auth_client: httpx.AsyncClient) -> None:
         response = await auth_client.post(
             "/api/v1/auth/login",
             json={
@@ -103,9 +102,7 @@ class TestLoginEndpoint:
         assert data["token_type"] == "bearer"
         assert data["expires_in"] == 900
 
-    async def test_login_wrong_password(
-        self, auth_client: httpx.AsyncClient
-    ) -> None:
+    async def test_login_wrong_password(self, auth_client: httpx.AsyncClient) -> None:
         response = await auth_client.post(
             "/api/v1/auth/login",
             json={
@@ -116,9 +113,7 @@ class TestLoginEndpoint:
         assert response.status_code == 401
         assert response.json()["error"]["code"] == "invalid_credentials"
 
-    async def test_login_unknown_email(
-        self, auth_client: httpx.AsyncClient
-    ) -> None:
+    async def test_login_unknown_email(self, auth_client: httpx.AsyncClient) -> None:
         response = await auth_client.post(
             "/api/v1/auth/login",
             json={
@@ -129,9 +124,7 @@ class TestLoginEndpoint:
         assert response.status_code == 401
         assert response.json()["error"]["code"] == "invalid_credentials"
 
-    async def test_login_invalid_body(
-        self, auth_client: httpx.AsyncClient
-    ) -> None:
+    async def test_login_invalid_body(self, auth_client: httpx.AsyncClient) -> None:
         response = await auth_client.post(
             "/api/v1/auth/login",
             json={"email": "not-email", "password": "short"},
@@ -140,9 +133,7 @@ class TestLoginEndpoint:
 
 
 class TestRefreshEndpoint:
-    async def _login(
-        self, client: httpx.AsyncClient
-    ) -> dict[str, object]:
+    async def _login(self, client: httpx.AsyncClient) -> dict[str, object]:
         response = await client.post(
             "/api/v1/auth/login",
             json={
@@ -152,9 +143,7 @@ class TestRefreshEndpoint:
         )
         return response.json()
 
-    async def test_refresh_success(
-        self, auth_client: httpx.AsyncClient
-    ) -> None:
+    async def test_refresh_success(self, auth_client: httpx.AsyncClient) -> None:
         login_data = await self._login(auth_client)
         response = await auth_client.post(
             "/api/v1/auth/refresh",
@@ -165,9 +154,7 @@ class TestRefreshEndpoint:
         assert data["access_token"] != login_data["access_token"]
         assert data["refresh_token"] != login_data["refresh_token"]
 
-    async def test_refresh_revoked_token(
-        self, auth_client: httpx.AsyncClient
-    ) -> None:
+    async def test_refresh_revoked_token(self, auth_client: httpx.AsyncClient) -> None:
         login_data = await self._login(auth_client)
         # First refresh succeeds
         await auth_client.post(
@@ -181,9 +168,7 @@ class TestRefreshEndpoint:
         )
         assert response.status_code == 401
 
-    async def test_refresh_unknown_token(
-        self, auth_client: httpx.AsyncClient
-    ) -> None:
+    async def test_refresh_unknown_token(self, auth_client: httpx.AsyncClient) -> None:
         response = await auth_client.post(
             "/api/v1/auth/refresh",
             json={"refresh_token": "no-such-token"},
@@ -192,9 +177,7 @@ class TestRefreshEndpoint:
 
 
 class TestLogoutEndpoint:
-    async def test_logout_success(
-        self, auth_client: httpx.AsyncClient
-    ) -> None:
+    async def test_logout_success(self, auth_client: httpx.AsyncClient) -> None:
         login_response = await auth_client.post(
             "/api/v1/auth/login",
             json={
@@ -209,9 +192,7 @@ class TestLogoutEndpoint:
         )
         assert response.status_code == 204
 
-    async def test_logout_unknown_token(
-        self, auth_client: httpx.AsyncClient
-    ) -> None:
+    async def test_logout_unknown_token(self, auth_client: httpx.AsyncClient) -> None:
         response = await auth_client.post(
             "/api/v1/auth/logout",
             json={"refresh_token": "unknown-token"},

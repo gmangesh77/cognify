@@ -7,14 +7,14 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from src.api.errors import CognifyError, build_error_response
-from src.api.middleware.correlation_id import CorrelationIdMiddleware
-from src.api.middleware.request_logging import RequestLoggingMiddleware
-from src.api.middleware.security_headers import SecurityHeadersMiddleware
 from src.api.auth.repository import (
     InMemoryRefreshTokenRepository,
     InMemoryUserRepository,
 )
+from src.api.errors import CognifyError, build_error_response
+from src.api.middleware.correlation_id import CorrelationIdMiddleware
+from src.api.middleware.request_logging import RequestLoggingMiddleware
+from src.api.middleware.security_headers import SecurityHeadersMiddleware
 from src.api.rate_limiter import limiter
 from src.api.routers.auth import auth_router
 from src.api.routers.health import health_router

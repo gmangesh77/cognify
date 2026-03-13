@@ -22,9 +22,7 @@ def _get_auth_service(request: Request) -> AuthService:
     summary="Login with email and password",
 )
 @limiter.limit("5/minute")
-async def login(
-    request: Request, body: LoginRequest
-) -> TokenResponse:
+async def login(request: Request, body: LoginRequest) -> TokenResponse:
     service = _get_auth_service(request)
     return service.login(body.email, body.password)
 
@@ -35,9 +33,7 @@ async def login(
     summary="Refresh access token",
 )
 @limiter.limit("10/minute")
-async def refresh(
-    request: Request, body: RefreshRequest
-) -> TokenResponse:
+async def refresh(request: Request, body: RefreshRequest) -> TokenResponse:
     service = _get_auth_service(request)
     return service.refresh(body.refresh_token)
 
@@ -48,9 +44,7 @@ async def refresh(
     summary="Logout and revoke refresh token",
 )
 @limiter.limit("10/minute")
-async def logout(
-    request: Request, body: RefreshRequest
-) -> Response:
+async def logout(request: Request, body: RefreshRequest) -> Response:
     service = _get_auth_service(request)
     service.logout(body.refresh_token)
     return Response(status_code=204)

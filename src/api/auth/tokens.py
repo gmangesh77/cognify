@@ -8,9 +8,7 @@ from src.api.errors import AuthenticationError
 from src.config.settings import Settings
 
 
-def create_access_token(
-    user_id: str, role: str, settings: Settings
-) -> str:
+def create_access_token(user_id: str, role: str, settings: Settings) -> str:
     now = datetime.now(UTC)
     payload = {
         "sub": user_id,
@@ -34,9 +32,7 @@ def create_refresh_token() -> str:
     return str(uuid.uuid4())
 
 
-def decode_access_token(
-    token: str, settings: Settings
-) -> TokenPayload:
+def decode_access_token(token: str, settings: Settings) -> TokenPayload:
     try:
         # Hardcode RS256 to prevent algorithm confusion attacks (RFC 8725)
         payload = jwt.decode(
@@ -45,13 +41,13 @@ def decode_access_token(
             algorithms=["RS256"],
         )
         return TokenPayload(**payload)
-    except jwt.ExpiredSignatureError:
+    except jwt.ExpiredSignatureError as err:
         raise AuthenticationError(
             code="invalid_token",
             message="Token has expired",
-        )
-    except jwt.InvalidTokenError:
+        ) from err
+    except jwt.InvalidTokenError as err:
         raise AuthenticationError(
             code="invalid_token",
             message="Invalid or expired token",
-        )
+        ) from err

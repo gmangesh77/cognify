@@ -5,9 +5,7 @@ from src.api.auth.schemas import RefreshTokenData, UserData
 
 
 class RefreshTokenRepository(Protocol):
-    def save(
-        self, user_id: str, token: str, expires_at: datetime
-    ) -> None: ...
+    def save(self, user_id: str, token: str, expires_at: datetime) -> None: ...
 
     def get(self, token: str) -> RefreshTokenData | None: ...
 
@@ -26,9 +24,7 @@ class InMemoryRefreshTokenRepository:
     def __init__(self) -> None:
         self._tokens: dict[str, RefreshTokenData] = {}
 
-    def save(
-        self, user_id: str, token: str, expires_at: datetime
-    ) -> None:
+    def save(self, user_id: str, token: str, expires_at: datetime) -> None:
         self._tokens[token] = RefreshTokenData(
             user_id=user_id,
             token=token,
@@ -41,16 +37,12 @@ class InMemoryRefreshTokenRepository:
     def revoke(self, token: str) -> None:
         if token in self._tokens:
             data = self._tokens[token]
-            self._tokens[token] = data.model_copy(
-                update={"revoked": True}
-            )
+            self._tokens[token] = data.model_copy(update={"revoked": True})
 
     def revoke_all_for_user(self, user_id: str) -> None:
         for key, data in self._tokens.items():
             if data.user_id == user_id:
-                self._tokens[key] = data.model_copy(
-                    update={"revoked": True}
-                )
+                self._tokens[key] = data.model_copy(update={"revoked": True})
 
 
 class InMemoryUserRepository:
