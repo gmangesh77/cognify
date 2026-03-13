@@ -157,3 +157,19 @@ class TestDiversityScoring:
         svc = _make_service()
         assert abs(svc._score_diversity(3) - 100.0) < 1
         assert abs(svc._score_diversity(5) - 100.0) < 1
+
+
+class TestWeightValidation:
+    def test_valid_weights_accepted(self) -> None:
+        svc = _make_service()  # defaults sum to 1.0
+        assert svc is not None
+
+    def test_invalid_weights_raise_error(self) -> None:
+        settings = Settings(
+            relevance_weight=0.5,
+            recency_weight=0.5,
+            velocity_weight=0.5,
+            diversity_weight=0.5,
+        )
+        with pytest.raises(ValueError, match="must sum to 1.0"):
+            _make_service(settings=settings)
