@@ -258,3 +258,22 @@ class TestGetCurrentUser:
             headers={"Authorization": "Bearer invalid-jwt-token"},
         )
         assert response.status_code == 401
+
+    async def test_malformed_bearer_scheme(
+        self,
+        auth_app: FastAPI,
+        auth_client: httpx.AsyncClient,
+    ) -> None:
+        from src.api.dependencies import get_current_user
+
+        @auth_app.get("/api/v1/protected4")
+        async def protected4(
+            current_user: object = fastapi.Depends(get_current_user),
+        ) -> dict[str, str]:
+            return {"ok": "yes"}
+
+        response = await auth_client.get(
+            "/api/v1/protected4",
+            headers={"Authorization": "Basic some-token"},
+        )
+        assert response.status_code == 401

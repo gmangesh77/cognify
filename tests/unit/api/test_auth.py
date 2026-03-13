@@ -391,5 +391,12 @@ class TestAuthService:
         assert data is not None
         assert data.revoked is True
 
+    def test_refresh_user_deleted_after_login(self) -> None:
+        result = self.service.login("test@example.com", "correct-password")
+        self.service._user_repo = InMemoryUserRepository([])  # noqa: SLF001
+        with pytest.raises(AuthenticationError) as exc_info:
+            self.service.refresh(result.refresh_token)
+        assert exc_info.value.code == "invalid_refresh_token"
+
     def test_logout_unknown_token_no_error(self) -> None:
         self.service.logout("nonexistent-token")  # Should not raise
