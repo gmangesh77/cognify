@@ -5,6 +5,116 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 
 ---
 
+## Epic 0: Design System & UI/UX
+**Goal**: Establish a consistent design system and finalize all screen designs in Pencil before frontend implementation.
+
+**Design file**: `pencil_designs/cognify.pen` (Pencil Desktop)
+
+### DESIGN-001: Design System Setup [Must]
+**As a** developer, **I want** a design system with variables for colors, typography, and spacing, **so that** all screens share a consistent visual language.
+- **Acceptance Criteria**:
+  - Color palette defined as Pencil variables: primary, secondary, accent, neutrals (50-900), semantic (success, warning, error, info)
+  - Typography scale: font families, sizes (xs through 3xl), weights, line heights
+  - Spacing tokens: 4px grid system (4, 8, 12, 16, 20, 24, 32, 40, 48, 64)
+  - Border radii, shadows, and elevation levels defined
+  - Dark mode consideration (variable-based theming)
+- **Story Points**: 3
+- **Blocks**: All DESIGN and DASH tickets
+
+### DESIGN-002: Reusable Components [Must]
+**As a** designer, **I want** reusable UI components in Pencil, **so that** screens are consistent and easy to update.
+- **Acceptance Criteria**:
+  - Sidebar navigation component (with icons, active state, collapsed state)
+  - Card component (metric card, topic card, article card variants)
+  - Button component (primary, secondary, ghost, destructive; sm/md/lg sizes)
+  - Badge/tag component (status badges: live, scheduled, failed, trending, new, rising)
+  - Table component (header row, data row, sortable columns)
+  - Form inputs (text field, dropdown, toggle, checkbox)
+  - Modal/dialog component
+  - Empty state component
+- **Story Points**: 5
+- **Blocks**: All DESIGN screen tickets
+
+### DESIGN-003: Dashboard Screen — Final Design [Must]
+**As a** user, **I want** a polished dashboard overview, **so that** I can monitor system activity at a glance.
+- **Acceptance Criteria**:
+  - Modern metric cards with subtle shadows and trend indicators (up/down arrows with %)
+  - Trending Topics list with clear visual hierarchy (score, title, source badges, time)
+  - Recent Articles list with status chips and publish dates
+  - Responsive grid layout with proper spacing
+  - Uses design system components from DESIGN-001/002
+- **Story Points**: 3
+- **Blocks**: DASH-001
+
+### DESIGN-004: Topic Discovery Screen — Final Design [Must]
+**As a** user, **I want** a refined topic discovery screen, **so that** browsing and filtering topics is intuitive.
+- **Acceptance Criteria**:
+  - Topic cards with depth (shadows, hover states) and clear badge hierarchy
+  - Filter bar with source pills, time range selector, and domain switcher
+  - Score visualization (progress bar or gauge, not just number)
+  - "Generate Article" CTA with clear affordance
+  - Empty state for when no topics match filters
+- **Story Points**: 3
+- **Blocks**: DASH-002
+
+### DESIGN-005: Article View Screen — Final Design [Must]
+**As a** user, **I want** a polished article preview, **so that** reviewing and publishing is a seamless experience.
+- **Acceptance Criteria**:
+  - Clean article typography (headings, body, code blocks, blockquotes)
+  - Agent workflow panel with step icons, durations, and status indicators
+  - Sources section with clickable links and citation markers
+  - Publish action bar with platform selection checkboxes
+  - Inline chart/image rendering within article body
+- **Story Points**: 3
+- **Blocks**: DASH-003
+
+### DESIGN-006: Research Sessions Screen — Final Design [Should]
+**As a** user, **I want** a refined research hub, **so that** monitoring agent work is clear and informative.
+- **Acceptance Criteria**:
+  - Session cards with multi-step progress indicators (not just a single bar)
+  - Agent step breakdown within each session (expandable)
+  - Knowledge base stats with visual gauges (storage, document count)
+  - Data source connectors with live/disconnected status icons
+  - "New Research" flow with topic selection
+- **Story Points**: 3
+- **Blocks**: DASH-004
+
+### DESIGN-007: Publishing Screen — Final Design [Should]
+**As a** publisher, **I want** a refined publishing dashboard, **so that** tracking publications across platforms is easy.
+- **Acceptance Criteria**:
+  - Platform overview cards with connection status and article counts
+  - Published articles table with sortable columns, status badges, and view counts
+  - Retry action for failed publications
+  - "Add Platform" flow with credential input
+  - Scheduling UI for future publications
+- **Story Points**: 3
+- **Blocks**: PUBLISH-005
+
+### DESIGN-008: Settings Screen — Final Design [Must]
+**As an** admin, **I want** a well-organized settings screen, **so that** configuration is intuitive and supports multiple domains.
+- **Acceptance Criteria**:
+  - **Multi-domain management**: domain list/switcher, add/edit/delete domains (not a single dropdown)
+  - Per-domain config: trend sources, keywords, SEO settings, LLM preferences
+  - General settings section with clear grouping and section dividers
+  - API key management with masked values, status indicators, and rotate actions
+  - LLM configuration with model dropdowns and token budget sliders
+  - SEO defaults with toggle switches and descriptions
+- **Story Points**: 5
+- **Blocks**: DASH-005
+- **Note**: Current design shows single "Domain Focus: Cybersecurity" — must be redesigned for multi-domain support per `DOMAIN_CONFIG` data model
+
+### DESIGN-009: Login & Auth Screens [Must]
+**As a** user, **I want** a polished login experience, **so that** authentication feels professional and secure.
+- **Acceptance Criteria**:
+  - Login screen with email/password form, Cognify branding
+  - Error states (invalid credentials, rate limited)
+  - Loading/submitting state
+  - Consistent with dashboard design language
+- **Story Points**: 2
+- **Blocks**: Frontend auth implementation
+
+---
+
 ## Epic 1: Trend Discovery Engine
 **Goal**: Automatically discover trending topics in a configured domain from multiple data sources.
 
@@ -323,6 +433,7 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 
 | Epic | Must | Should | Could | Total Stories | Total Points |
 |------|------|--------|-------|--------------|-------------|
+| Design System & UI/UX | 7 | 2 | 0 | 9 | 30 |
 | Trend Discovery | 4 | 2 | 0 | 6 | 27 |
 | Research Pipeline | 4 | 1 | 0 | 5 | 39 |
 | Content Generation | 4 | 0 | 0 | 4 | 21 |
@@ -330,4 +441,4 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 | Publishing | 2 | 1 | 2 | 5 | 23 |
 | Dashboard & Config | 4 | 1 | 0 | 5 | 31 |
 | API & Auth | 3 | 0 | 0 | 3 | 15 |
-| **Total** | **22** | **6** | **3** | **31** | **169** |
+| **Total** | **29** | **8** | **3** | **40** | **199** |

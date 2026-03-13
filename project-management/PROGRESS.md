@@ -19,6 +19,24 @@
 
 ---
 
+## Epic 0: Design System & UI/UX
+
+| Ticket     | Title                                    | Status  | Branch | Plan | Spec |
+| ---------- | ---------------------------------------- | ------- | ------ | ---- | ---- |
+| DESIGN-001 | Design System Setup                      | Backlog | —      | —    | —    |
+| DESIGN-002 | Reusable Components                      | Backlog | —      | —    | —    |
+| DESIGN-003 | Dashboard Screen — Final Design          | Backlog | —      | —    | —    |
+| DESIGN-004 | Topic Discovery Screen — Final Design    | Backlog | —      | —    | —    |
+| DESIGN-005 | Article View Screen — Final Design       | Backlog | —      | —    | —    |
+| DESIGN-006 | Research Sessions Screen — Final Design  | Backlog | —      | —    | —    |
+| DESIGN-007 | Publishing Screen — Final Design         | Backlog | —      | —    | —    |
+| DESIGN-008 | Settings Screen — Final Design           | Backlog | —      | —    | —    |
+| DESIGN-009 | Login & Auth Screens                     | Backlog | —      | —    | —    |
+
+**Design file:** `pencil_designs/cognify.pen` — initial wireframes exist for all 6 main screens. Needs design system, components, and refinement passes.
+
+---
+
 ## Epic 7: API & Authentication
 
 
