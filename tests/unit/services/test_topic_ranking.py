@@ -140,3 +140,20 @@ class TestVelocityScoring:
         svc = _make_service()
         scores = svc._score_velocity([_make_topic(velocity=42)])
         assert abs(scores[0] - 50.0) < 0.01
+
+
+class TestDiversityScoring:
+    def test_single_source_scores_33(self) -> None:
+        svc = _make_service()
+        score = svc._score_diversity(1)
+        assert abs(score - 33.0) < 1
+
+    def test_two_sources_scores_66(self) -> None:
+        svc = _make_service()
+        score = svc._score_diversity(2)
+        assert abs(score - 66.0) < 1
+
+    def test_three_or_more_sources_scores_100(self) -> None:
+        svc = _make_service()
+        assert abs(svc._score_diversity(3) - 100.0) < 1
+        assert abs(svc._score_diversity(5) - 100.0) < 1

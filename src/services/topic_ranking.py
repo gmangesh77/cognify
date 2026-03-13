@@ -92,3 +92,10 @@ class TopicRankingService:
             ((v - min_v) / (max_v - min_v)) * 100
             for v in velocities
         ]
+
+    def _score_diversity(self, source_count: int) -> float:
+        if source_count >= 3:
+            return 100.0
+        if source_count == 2:
+            return 66.0
+        return 33.0
