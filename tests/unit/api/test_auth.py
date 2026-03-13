@@ -40,6 +40,10 @@ class TestAuthErrors:
         assert err.code == "insufficient_permissions"
 
 
+from src.api.auth.repository import (
+    InMemoryRefreshTokenRepository,
+    InMemoryUserRepository,
+)
 from src.api.auth.schemas import (
     LoginRequest,
     RefreshRequest,
@@ -253,3 +257,63 @@ class TestTokenService:
                 self.settings.jwt_public_key,
                 algorithm="HS256",
             )
+
+
+class TestInMemoryRefreshTokenRepository:
+    def setup_method(self) -> None:
+        self.repo = InMemoryRefreshTokenRepository()
+        self.expires = datetime.now(UTC) + timedelta(days=7)
+
+    def test_save_and_get(self) -> None:
+        self.repo.save("user-1", "token-abc", self.expires)
+        data = self.repo.get("token-abc")
+        assert data is not None
+        assert data.user_id == "user-1"
+        assert data.token == "token-abc"
+        assert data.revoked is False
+
+    def test_get_nonexistent_returns_none(self) -> None:
+        assert self.repo.get("no-such-token") is None
+
+    def test_revoke_marks_as_revoked(self) -> None:
+        self.repo.save("user-1", "token-abc", self.expires)
+        self.repo.revoke("token-abc")
+        data = self.repo.get("token-abc")
+        assert data is not None
+        assert data.revoked is True
+
+    def test_revoke_all_for_user(self) -> None:
+        self.repo.save("user-1", "tok-1", self.expires)
+        self.repo.save("user-1", "tok-2", self.expires)
+        self.repo.save("user-2", "tok-3", self.expires)
+        self.repo.revoke_all_for_user("user-1")
+        assert self.repo.get("tok-1") is not None
+        assert self.repo.get("tok-1").revoked is True
+        assert self.repo.get("tok-2") is not None
+        assert self.repo.get("tok-2").revoked is True
+        assert self.repo.get("tok-3") is not None
+        assert self.repo.get("tok-3").revoked is False
+
+
+class TestInMemoryUserRepository:
+    def test_get_by_email_found(self) -> None:
+        user = UserData(
+            id="u1", email="a@b.com", password_hash="h", role="admin"
+        )
+        repo = InMemoryUserRepository([user])
+        assert repo.get_by_email("a@b.com") == user
+
+    def test_get_by_email_not_found(self) -> None:
+        repo = InMemoryUserRepository([])
+        assert repo.get_by_email("x@y.com") is None
+
+    def test_get_by_id_found(self) -> None:
+        user = UserData(
+            id="u1", email="a@b.com", password_hash="h", role="admin"
+        )
+        repo = InMemoryUserRepository([user])
+        assert repo.get_by_id("u1") == user
+
+    def test_get_by_id_not_found(self) -> None:
+        repo = InMemoryUserRepository([])
+        assert repo.get_by_id("no-such-id") is None
