@@ -21,7 +21,7 @@
 **Files:**
 - Modify: `pyproject.toml`
 
-- [ ] **Step 1: Move httpx from dev to prod dependencies**
+- [x] **Step 1: Move httpx from dev to prod dependencies**
 
 In `pyproject.toml`, add `"httpx>=0.27.0"` to the `dependencies` list and remove it from `[project.optional-dependencies] dev`.
 
@@ -51,12 +51,12 @@ dev = [
 ]
 ```
 
-- [ ] **Step 2: Verify existing tests still pass**
+- [x] **Step 2: Verify existing tests still pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/ -q`
 Expected: All existing tests pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add pyproject.toml
@@ -71,7 +71,7 @@ git commit -m "chore: promote httpx to production dependency"
 - Modify: `src/config/settings.py`
 - Test: `tests/unit/config/test_settings.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `tests/unit/config/test_settings.py`:
 
@@ -86,12 +86,12 @@ class TestHackerNewsSettings:
         assert s.hn_request_timeout == 10.0
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/config/test_settings.py::TestHackerNewsSettings -v`
 Expected: FAIL — `Settings` has no field `hn_api_base_url`.
 
-- [ ] **Step 3: Add HN settings fields**
+- [x] **Step 3: Add HN settings fields**
 
 Add to `src/config/settings.py` after the `dedup_similarity_threshold` line:
 
@@ -104,12 +104,12 @@ Add to `src/config/settings.py` after the `dedup_similarity_threshold` line:
     hn_request_timeout: float = 10.0
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/config/test_settings.py::TestHackerNewsSettings -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/config/settings.py tests/unit/config/test_settings.py
@@ -124,7 +124,7 @@ git commit -m "feat: add Hacker News integration settings"
 - Create: `src/api/schemas/trends.py`
 - Test: `tests/unit/api/test_trend_schemas.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/api/test_trend_schemas.py`:
 
@@ -180,12 +180,12 @@ class TestHNFetchResponse:
         assert resp.topics == []
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_trend_schemas.py -v`
 Expected: FAIL — cannot import `HNFetchRequest`.
 
-- [ ] **Step 3: Create the schemas**
+- [x] **Step 3: Create the schemas**
 
 Verify that `src/api/schemas/__init__.py` exists (it does — created in TREND-006). No changes needed to `__init__.py` since the new schemas are imported directly by the router.
 
@@ -209,12 +209,12 @@ class HNFetchResponse(BaseModel):
     total_after_filter: int
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_trend_schemas.py -v`
 Expected: All 7 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/schemas/trends.py tests/unit/api/test_trend_schemas.py
@@ -231,7 +231,7 @@ git commit -m "feat: add HNFetchRequest and HNFetchResponse schemas"
 - Create: `src/services/hackernews_client.py`
 - Create: `tests/unit/services/test_hackernews_client.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/services/test_hackernews_client.py`:
 
@@ -354,12 +354,12 @@ class TestFetchStories:
                 await client.fetch_stories("cyber", 10, 30)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews_client.py -v`
 Expected: FAIL — cannot import `HackerNewsClient`.
 
-- [ ] **Step 3: Implement HackerNewsClient**
+- [x] **Step 3: Implement HackerNewsClient**
 
 Create `src/services/hackernews_client.py`:
 
@@ -427,12 +427,12 @@ class HackerNewsClient:
         return hits
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews_client.py -v`
 Expected: All 5 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/hackernews_client.py tests/unit/services/test_hackernews_client.py
@@ -449,7 +449,7 @@ git commit -m "feat: add HackerNewsClient with Algolia HN API integration"
 - Create: `src/services/hackernews.py`
 - Create: `tests/unit/services/test_hackernews.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/services/test_hackernews.py`:
 
@@ -478,12 +478,12 @@ class TestScoreNormalization:
         assert score == 70.0
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py::TestScoreNormalization -v`
 Expected: FAIL — cannot import `HackerNewsService`.
 
-- [ ] **Step 3: Implement calculate_score**
+- [x] **Step 3: Implement calculate_score**
 
 Create `src/services/hackernews.py`:
 
@@ -504,12 +504,12 @@ class HackerNewsService:
         return min(100.0, (raw / points_cap) * 100)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py::TestScoreNormalization -v`
 Expected: All 4 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/hackernews.py tests/unit/services/test_hackernews.py
@@ -524,7 +524,7 @@ git commit -m "feat: add HackerNewsService with score normalization"
 - Modify: `src/services/hackernews.py`
 - Modify: `tests/unit/services/test_hackernews.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `tests/unit/services/test_hackernews.py`:
 
@@ -550,12 +550,12 @@ class TestVelocityCalculation:
         assert vel == 0.0
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py::TestVelocityCalculation -v`
 Expected: FAIL — `HackerNewsService` has no `calculate_velocity`.
 
-- [ ] **Step 3: Implement calculate_velocity**
+- [x] **Step 3: Implement calculate_velocity**
 
 Add to `src/services/hackernews.py` in the `HackerNewsService` class:
 
@@ -566,12 +566,12 @@ Add to `src/services/hackernews.py` in the `HackerNewsService` class:
         return points / hours
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py::TestVelocityCalculation -v`
 Expected: All 4 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/hackernews.py tests/unit/services/test_hackernews.py
@@ -586,7 +586,7 @@ git commit -m "feat: add velocity calculation (points per hour)"
 - Modify: `src/services/hackernews.py`
 - Modify: `tests/unit/services/test_hackernews.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `tests/unit/services/test_hackernews.py`:
 
@@ -657,12 +657,12 @@ class TestDomainFiltering:
         assert len(matched) == 1
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py::TestDomainFiltering -v`
 Expected: FAIL — `HackerNewsService` has no `filter_by_domain`.
 
-- [ ] **Step 3: Implement filter_by_domain**
+- [x] **Step 3: Implement filter_by_domain**
 
 `filter_by_domain` returns a list of `(story, matched_keywords)` tuples for stories that match at least one keyword. Add to `src/services/hackernews.py`:
 
@@ -692,12 +692,12 @@ class HackerNewsService:
         return results
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py::TestDomainFiltering -v`
 Expected: All 6 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/hackernews.py tests/unit/services/test_hackernews.py
@@ -712,7 +712,7 @@ git commit -m "feat: add domain keyword filtering for HN stories"
 - Modify: `src/services/hackernews.py`
 - Modify: `tests/unit/services/test_hackernews.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `tests/unit/services/test_hackernews.py`:
 
@@ -787,12 +787,12 @@ class TestStoryMapping:
         assert topic.velocity == 0.0
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py::TestStoryMapping -v`
 Expected: FAIL — `HackerNewsService` has no `map_to_raw_topic`.
 
-- [ ] **Step 3: Implement map_to_raw_topic**
+- [x] **Step 3: Implement map_to_raw_topic**
 
 Add to `src/services/hackernews.py`:
 
@@ -840,12 +840,12 @@ class HackerNewsService:
         )
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py::TestStoryMapping -v`
 Expected: All 5 tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/hackernews.py tests/unit/services/test_hackernews.py
@@ -861,7 +861,7 @@ git commit -m "feat: add story-to-RawTopic field mapping"
 - Modify: `tests/unit/services/test_hackernews.py`
 - Modify: `tests/unit/services/conftest.py`
 
-- [ ] **Step 1: Create MockHackerNewsClient**
+- [x] **Step 1: Create MockHackerNewsClient**
 
 Add to `tests/unit/services/conftest.py`:
 
@@ -888,7 +888,7 @@ class MockHackerNewsClient(HackerNewsClient):
         return self._stories[:num_results]
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Add to `tests/unit/services/test_hackernews.py`:
 
@@ -958,12 +958,12 @@ class TestFetchAndNormalize:
         assert result.total_after_filter == 0
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py::TestFetchAndNormalize -v`
 Expected: FAIL — `HackerNewsService.__init__` doesn't accept `client`.
 
-- [ ] **Step 4: Refactor HackerNewsService to accept client and implement fetch_and_normalize**
+- [x] **Step 4: Refactor HackerNewsService to accept client and implement fetch_and_normalize**
 
 Update `src/services/hackernews.py` — add `__init__` and `fetch_and_normalize`. **IMPORTANT: All existing `@staticmethod` decorators on `calculate_score`, `calculate_velocity`, `filter_by_domain`, and `map_to_raw_topic` MUST be preserved.**
 
@@ -1041,12 +1041,12 @@ class HackerNewsService:
     # ... keep ALL existing @staticmethod methods unchanged ...
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_hackernews.py -v`
 Expected: All tests PASS. Static method tests continue to work since `@staticmethod` decorators are preserved.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/services/hackernews.py tests/unit/services/test_hackernews.py tests/unit/services/conftest.py
@@ -1064,7 +1064,7 @@ git commit -m "feat: add fetch_and_normalize orchestrator with MockHackerNewsCli
 - Modify: `src/api/main.py`
 - Create: `tests/unit/api/test_trend_endpoints.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/unit/api/test_trend_endpoints.py`:
 
@@ -1263,12 +1263,12 @@ class TestTrendEndpoint503:
             assert data["error"]["code"] == "hackernews_unavailable"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_trend_endpoints.py -v`
 Expected: FAIL — cannot import from `src.api.routers.trends`.
 
-- [ ] **Step 3: Create trends router**
+- [x] **Step 3: Create trends router**
 
 Create `src/api/routers/trends.py`:
 
@@ -1338,7 +1338,7 @@ async def fetch_hackernews(
         ) from exc
 ```
 
-- [ ] **Step 4: Register trends_router in main.py**
+- [x] **Step 4: Register trends_router in main.py**
 
 Add to `src/api/main.py` — import at top:
 
@@ -1356,17 +1356,17 @@ Add in `_register_routers` function after the topics_router block:
     )
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_trend_endpoints.py -v`
 Expected: All 8 tests PASS.
 
-- [ ] **Step 6: Run full test suite**
+- [x] **Step 6: Run full test suite**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/ -q`
 Expected: All tests pass (existing + new).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/api/routers/trends.py src/api/main.py tests/unit/api/test_trend_endpoints.py
@@ -1381,27 +1381,27 @@ git commit -m "feat: add POST /api/v1/trends/hackernews/fetch endpoint"
 
 **Files:** All new/modified files
 
-- [ ] **Step 1: Run ruff check**
+- [x] **Step 1: Run ruff check**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff check src/ tests/`
 Expected: No errors. If errors, fix and re-run.
 
-- [ ] **Step 2: Run ruff format**
+- [x] **Step 2: Run ruff format**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff format --check src/ tests/`
 Expected: No reformatting needed. If needed, run `ruff format src/ tests/` and commit fixes.
 
-- [ ] **Step 3: Run mypy**
+- [x] **Step 3: Run mypy**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify mypy src/ --strict`
 Expected: No errors. Fix any type issues.
 
-- [ ] **Step 4: Run full test suite with coverage**
+- [x] **Step 4: Run full test suite with coverage**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest --cov=src --cov-report=term-missing -q`
 Expected: All tests pass, coverage ≥ 80% on new files, overall ≥ 98%.
 
-- [ ] **Step 5: Commit any fixes**
+- [x] **Step 5: Commit any fixes**
 
 ```bash
 git add -A
@@ -1419,7 +1419,7 @@ git commit -m "fix: resolve lint formatting and mypy type issues"
 - Modify: `project-management/BACKLOG.md`
 - Modify: `CLAUDE.md`
 
-- [ ] **Step 1: Update PROGRESS.md**
+- [x] **Step 1: Update PROGRESS.md**
 
 Change TREND-003 row:
 - Status: `Done`
@@ -1427,15 +1427,15 @@ Change TREND-003 row:
 - Plan: `[plan](../docs/superpowers/plans/2026-03-13-trend-003-hackernews-integration.md)`
 - Spec: `[spec](../docs/superpowers/specs/2026-03-13-trend-003-hackernews-integration-design.md)`
 
-- [ ] **Step 2: Update BACKLOG.md**
+- [x] **Step 2: Update BACKLOG.md**
 
 Add `— DONE` to TREND-003 heading. Add status and plan/spec fields.
 
-- [ ] **Step 3: Update CLAUDE.md Current Status**
+- [x] **Step 3: Update CLAUDE.md Current Status**
 
 Update "Last completed" and "Next up" lines.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add project-management/PROGRESS.md project-management/BACKLOG.md CLAUDE.md
