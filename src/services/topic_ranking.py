@@ -88,10 +88,7 @@ class TopicRankingService:
         max_v = max(velocities)
         if max_v == min_v:
             return [_NEUTRAL_SCORE] * len(topics)
-        return [
-            ((v - min_v) / (max_v - min_v)) * 100
-            for v in velocities
-        ]
+        return [((v - min_v) / (max_v - min_v)) * 100 for v in velocities]
 
     def filter_by_domain(
         self,
@@ -170,9 +167,7 @@ class TopicRankingService:
                             title=group_topics[i].title,
                             source=group_topics[i].source,
                             duplicate_of=winner.title,
-                            similarity=sim_matrix[orig_idx][
-                                winner_orig_idx
-                            ],
+                            similarity=sim_matrix[orig_idx][winner_orig_idx],
                         )
                     )
 
@@ -212,11 +207,13 @@ class TopicRankingService:
                 + velocity * self._settings.velocity_weight
                 + diversity * self._settings.diversity_weight
             )
-            scored.append((
-                composite,
-                topic,
-                source_counts.get(topic.title, 1),
-            ))
+            scored.append(
+                (
+                    composite,
+                    topic,
+                    source_counts.get(topic.title, 1),
+                )
+            )
 
         scored.sort(key=lambda x: x[0], reverse=True)
 
@@ -227,9 +224,7 @@ class TopicRankingService:
                 rank=rank,
                 source_count=sc,
             )
-            for rank, (composite, topic, sc) in enumerate(
-                scored, start=1
-            )
+            for rank, (composite, topic, sc) in enumerate(scored, start=1)
         ]
 
     async def rank_and_deduplicate(

@@ -19,7 +19,8 @@ def _get_embedding_service(request: Request) -> EmbeddingService:
         request.app.state.embedding_service = EmbeddingService(
             model_name=request.app.state.settings.embedding_model,
         )
-    return request.app.state.embedding_service
+    service: EmbeddingService = request.app.state.embedding_service
+    return service
 
 
 def _get_ranking_service(request: Request) -> TopicRankingService:
@@ -29,7 +30,7 @@ def _get_ranking_service(request: Request) -> TopicRankingService:
     )
 
 
-@limiter.limit("10/minute")  # type: ignore[untyped-decorator]
+@limiter.limit("10/minute")
 @topics_router.post(
     "/topics/rank",
     response_model=RankTopicsResponse,

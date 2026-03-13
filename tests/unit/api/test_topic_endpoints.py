@@ -150,10 +150,12 @@ class TestTopicEndpointSuccess:
         resp = await topic_client.post(
             "/api/v1/topics/rank",
             json=_rank_request(
-                topics=[_topic_payload(
-                    title="cooking recipe",
-                    domain_keywords=["food"],
-                )],
+                topics=[
+                    _topic_payload(
+                        title="cooking recipe",
+                        domain_keywords=["food"],
+                    )
+                ],
                 domain_keywords=["cybersecurity"],
             ),
             headers=make_auth_header("editor", topic_settings),
@@ -182,15 +184,14 @@ class TestTopicEndpoint503:
         ) as client:
             resp = await client.post(
                 "/api/v1/topics/rank",
-                json=_rank_request(topics=[
-                    _topic_payload(title="topic 1"),
-                    _topic_payload(title="topic 2"),
-                ]),
+                json=_rank_request(
+                    topics=[
+                        _topic_payload(title="topic 1"),
+                        _topic_payload(title="topic 2"),
+                    ]
+                ),
                 headers=make_auth_header("editor", topic_settings),
             )
             assert resp.status_code == 503
             data = resp.json()
-            assert (
-                data["error"]["code"]
-                == "embedding_service_unavailable"
-            )
+            assert data["error"]["code"] == "embedding_service_unavailable"
