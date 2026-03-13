@@ -23,17 +23,17 @@
 
 | Ticket     | Title                                    | Status  | Branch | Plan | Spec |
 | ---------- | ---------------------------------------- | ------- | ------ | ---- | ---- |
-| DESIGN-001 | Design System Setup                      | Backlog | —      | —    | —    |
-| DESIGN-002 | Reusable Components                      | Backlog | —      | —    | —    |
-| DESIGN-003 | Dashboard Screen — Final Design          | Backlog | —      | —    | —    |
-| DESIGN-004 | Topic Discovery Screen — Final Design    | Backlog | —      | —    | —    |
-| DESIGN-005 | Article View Screen — Final Design       | Backlog | —      | —    | —    |
-| DESIGN-006 | Research Sessions Screen — Final Design  | Backlog | —      | —    | —    |
-| DESIGN-007 | Publishing Screen — Final Design         | Backlog | —      | —    | —    |
-| DESIGN-008 | Settings Screen — Final Design           | Backlog | —      | —    | —    |
-| DESIGN-009 | Login & Auth Screens                     | Backlog | —      | —    | —    |
+| DESIGN-001 | Design System Setup                      | Done | `feature/API-003-rbac-authorization` | [plan](../docs/superpowers/plans/2026-03-13-design-001-design-system-setup.md) | [spec](../docs/superpowers/specs/2026-03-13-design-001-design-system-setup.md) |
+| DESIGN-002 | Reusable Components                      | Done | `feature/API-003-rbac-authorization` | — | — |
+| DESIGN-003 | Dashboard Screen — Final Design          | Done | `feature/API-003-rbac-authorization` | — | — |
+| DESIGN-004 | Topic Discovery Screen — Final Design    | Done | `feature/API-003-rbac-authorization` | — | — |
+| DESIGN-005 | Article View Screen — Final Design       | Done | `feature/API-003-rbac-authorization` | — | — |
+| DESIGN-006 | Research Sessions Screen — Final Design  | Done | `feature/API-003-rbac-authorization` | — | — |
+| DESIGN-007 | Publishing Screen — Final Design         | Done | `feature/API-003-rbac-authorization` | — | — |
+| DESIGN-008 | Settings Screen — Final Design           | Done | `feature/API-003-rbac-authorization` | — | — |
+| DESIGN-009 | Login & Auth Screens                     | Done | `feature/API-003-rbac-authorization` | — | — |
 
-**Design file:** `pencil_designs/cognify.pen` — initial wireframes exist for all 6 main screens. Needs design system, components, and refinement passes.
+**Design file:** `pencil_designs/cognify.pen` — all screens redesigned with design system variables, reusable components, and polished layouts.
 
 ---
 
