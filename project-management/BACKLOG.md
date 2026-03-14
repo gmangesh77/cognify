@@ -165,8 +165,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Scores by points and comment count
 - **Story Points**: 3
 
-### TREND-004: NewsAPI Integration [Should]
+### TREND-004: NewsAPI Integration [Should] — DONE
 **As a** content team member, **I want** news headlines aggregated from NewsAPI, **so that** mainstream coverage is included.
+- **Status**: Done (branch `feature/TREND-004-newsapi-integration`)
+- **Plan**: [`docs/superpowers/plans/2026-03-15-trend-004-newsapi-integration.md`](../docs/superpowers/plans/2026-03-15-trend-004-newsapi-integration.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-15-trend-004-newsapi-integration-design.md`](../docs/superpowers/specs/2026-03-15-trend-004-newsapi-integration-design.md)
 - **Acceptance Criteria**:
   - Fetches headlines by category and keyword
   - Deduplicates similar headlines across sources
