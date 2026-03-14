@@ -1,6 +1,6 @@
 # TREND-001: Google Trends Integration — Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Fetch trending searches and related queries from Google Trends via pytrends, filter by domain relevance, normalize scores, and expose as `RawTopic` objects via a REST endpoint.
 
@@ -46,7 +46,7 @@
 **Files:**
 - Modify: `pyproject.toml:10-22`
 
-- [ ] **Step 1: Add pytrends to dependencies**
+- [x] **Step 1: Add pytrends to dependencies**
 
 In `pyproject.toml`, add `"pytrends>=4.10.0"` to the `dependencies` list:
 
@@ -67,12 +67,12 @@ dependencies = [
 ]
 ```
 
-- [ ] **Step 2: Install**
+- [x] **Step 2: Install**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pip install -e ".[dev]"`
 Expected: pytrends installed successfully
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add pyproject.toml
@@ -86,7 +86,7 @@ git commit -m "feat(trend-001): add pytrends dependency"
 **Files:**
 - Modify: `src/config/settings.py:32-33`
 
-- [ ] **Step 1: Add gt_* settings fields**
+- [x] **Step 1: Add gt_* settings fields**
 
 Append after line 32 (after `hn_request_timeout`) in `src/config/settings.py`:
 
@@ -99,12 +99,12 @@ Append after line 32 (after `hn_request_timeout`) in `src/config/settings.py`:
     gt_request_timeout: float = 15.0
 ```
 
-- [ ] **Step 2: Verify settings load**
+- [x] **Step 2: Verify settings load**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify python -c "from src.config.settings import Settings; s = Settings(); print(s.gt_language, s.gt_timezone_offset, s.gt_request_timeout)"`
 Expected: `en-US 360 15.0`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/config/settings.py
@@ -119,7 +119,7 @@ git commit -m "feat(trend-001): add gt_* settings for Google Trends"
 - Create: `src/services/google_trends_client.py`
 - Create: `tests/unit/services/test_google_trends_client.py`
 
-- [ ] **Step 1: Write the client test file**
+- [x] **Step 1: Write the client test file**
 
 Create `tests/unit/services/test_google_trends_client.py`:
 
@@ -282,12 +282,12 @@ class TestFetchRelatedQueries:
         assert isinstance(results[0]["value"], int)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_google_trends_client.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.services.google_trends_client'`
 
-- [ ] **Step 3: Write the client implementation**
+- [x] **Step 3: Write the client implementation**
 
 Create `src/services/google_trends_client.py`:
 
@@ -394,12 +394,12 @@ class GoogleTrendsClient:
             raise GoogleTrendsAPIError(str(exc)) from exc
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_google_trends_client.py -v`
 Expected: 6 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/google_trends_client.py tests/unit/services/test_google_trends_client.py
@@ -414,7 +414,7 @@ git commit -m "feat(trend-001): add GoogleTrendsClient with pytrends wrapper"
 - Modify: `src/api/schemas/trends.py:1-16`
 - Create: `tests/unit/api/test_google_trends_schemas.py`
 
-- [ ] **Step 1: Write schema tests**
+- [x] **Step 1: Write schema tests**
 
 Create `tests/unit/api/test_google_trends_schemas.py`:
 
@@ -468,12 +468,12 @@ class TestGTFetchResponse:
         assert resp.topics == []
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_google_trends_schemas.py -v`
 Expected: FAIL — `ImportError: cannot import name 'GTFetchRequest'`
 
-- [ ] **Step 3: Add schemas to trends.py**
+- [x] **Step 3: Add schemas to trends.py**
 
 Append to `src/api/schemas/trends.py` (after the existing `HNFetchResponse` class):
 
@@ -493,12 +493,12 @@ class GTFetchResponse(BaseModel):
     total_after_filter: int
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_google_trends_schemas.py -v`
 Expected: 6 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/schemas/trends.py tests/unit/api/test_google_trends_schemas.py
@@ -515,7 +515,7 @@ git commit -m "feat(trend-001): add GTFetchRequest/GTFetchResponse schemas"
 - Create: `src/services/google_trends.py`
 - Create: `tests/unit/services/test_google_trends.py`
 
-- [ ] **Step 1: Write scoring and velocity tests**
+- [x] **Step 1: Write scoring and velocity tests**
 
 Create `tests/unit/services/test_google_trends.py`:
 
@@ -657,12 +657,12 @@ class TestMapToRawTopic:
         assert topic.velocity == 5.0
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_google_trends.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.services.google_trends'`
 
-- [ ] **Step 3: Write the service implementation**
+- [x] **Step 3: Write the service implementation**
 
 Create `src/services/google_trends.py`:
 
@@ -844,12 +844,12 @@ class GoogleTrendsService:
         return list(seen.values())
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_google_trends.py -v`
 Expected: All tests pass
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/google_trends.py tests/unit/services/test_google_trends.py
@@ -864,7 +864,7 @@ git commit -m "feat(trend-001): add GoogleTrendsService with scoring, filtering,
 - Modify: `tests/unit/services/test_google_trends.py` (append)
 - Modify: `tests/unit/services/conftest.py`
 
-- [ ] **Step 1: Add MockGoogleTrendsClient to conftest**
+- [x] **Step 1: Add MockGoogleTrendsClient to conftest**
 
 Append to `tests/unit/services/conftest.py`:
 
@@ -904,7 +904,7 @@ class MockGoogleTrendsClient(GoogleTrendsClient):
         return self._related
 ```
 
-- [ ] **Step 2: Add dedup and pipeline tests**
+- [x] **Step 2: Add dedup and pipeline tests**
 
 Append to `tests/unit/services/test_google_trends.py`:
 
@@ -1023,12 +1023,12 @@ class TestFetchAndNormalize:
         assert result.total_after_filter == 10
 ```
 
-- [ ] **Step 3: Run tests to verify they pass**
+- [x] **Step 3: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_google_trends.py -v`
 Expected: All tests pass
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/unit/services/conftest.py tests/unit/services/test_google_trends.py
@@ -1045,7 +1045,7 @@ git commit -m "feat(trend-001): add dedup and pipeline tests with MockGoogleTren
 - Modify: `src/api/routers/trends.py:1-64`
 - Create: `tests/unit/api/test_google_trends_endpoints.py`
 
-- [ ] **Step 1: Write endpoint tests**
+- [x] **Step 1: Write endpoint tests**
 
 Create `tests/unit/api/test_google_trends_endpoints.py`:
 
@@ -1253,12 +1253,12 @@ class TestGTEndpoint503:
             )
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_google_trends_endpoints.py -v`
 Expected: FAIL — no route `/trends/google/fetch`
 
-- [ ] **Step 3: Add Google Trends route to router**
+- [x] **Step 3: Add Google Trends route to router**
 
 Modify `src/api/routers/trends.py` — add imports and the new endpoint. The full file becomes:
 
@@ -1382,12 +1382,12 @@ async def fetch_google_trends(
         ) from exc
 ```
 
-- [ ] **Step 4: Run endpoint tests to verify they pass**
+- [x] **Step 4: Run endpoint tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_google_trends_endpoints.py -v`
 Expected: 8 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/routers/trends.py tests/unit/api/test_google_trends_endpoints.py
@@ -1400,31 +1400,31 @@ git commit -m "feat(trend-001): add POST /trends/google/fetch endpoint"
 
 **Files:** None (verification only)
 
-- [ ] **Step 1: Run ruff format**
+- [x] **Step 1: Run ruff format**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff format src/ tests/`
 Expected: Files formatted (or already formatted)
 
-- [ ] **Step 2: Run ruff check**
+- [x] **Step 2: Run ruff check**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff check src/ tests/`
 Expected: All checks passed!
 
-- [ ] **Step 3: Run mypy**
+- [x] **Step 3: Run mypy**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify mypy src/`
 Expected: Success — no errors found
 
-- [ ] **Step 4: Run full test suite with coverage**
+- [x] **Step 4: Run full test suite with coverage**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest --cov=src --cov-report=term-missing -v`
 Expected: All tests pass, coverage ≥80% on new files
 
-- [ ] **Step 5: Fix any issues**
+- [x] **Step 5: Fix any issues**
 
 If any lint/type/test issues: fix them and re-run the failing check.
 
-- [ ] **Step 6: Commit any fixes**
+- [x] **Step 6: Commit any fixes**
 
 ```bash
 git add -A
