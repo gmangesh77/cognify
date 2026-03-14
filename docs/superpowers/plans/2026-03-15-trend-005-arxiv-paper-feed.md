@@ -35,7 +35,7 @@
 **Files:**
 - Modify: `src/config/settings.py:51-57`
 
-- [ ] **Step 1: Add arXiv settings fields**
+- [x] **Step 1: Add arXiv settings fields**
 
 Add after the NewsAPI settings block (line 57) in `src/config/settings.py`:
 
@@ -50,13 +50,13 @@ Add after the NewsAPI settings block (line 57) in `src/config/settings.py`:
     ]
 ```
 
-- [ ] **Step 2: Verify settings load**
+- [x] **Step 2: Verify settings load**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify python -c "from src.config.settings import Settings; s = Settings(); print(s.arxiv_api_base_url, s.arxiv_default_categories)"`
 
 Expected: `https://export.arxiv.org/api/query ['cs.CR', 'cs.AI', 'cs.LG']`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/config/settings.py
@@ -71,7 +71,7 @@ git commit -m "feat(trend-005): add arXiv settings to config"
 - Create: `src/services/arxiv_client.py`
 - Create: `tests/unit/services/test_arxiv_client.py`
 
-- [ ] **Step 1: Write the failing tests for ArxivClient**
+- [x] **Step 1: Write the failing tests for ArxivClient**
 
 Create `tests/unit/services/test_arxiv_client.py`:
 
@@ -349,13 +349,13 @@ class TestFetchPapers:
             assert params["sortBy"] == "submittedDate"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_arxiv_client.py -v`
 
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.services.arxiv_client'`
 
-- [ ] **Step 3: Implement ArxivClient**
+- [x] **Step 3: Implement ArxivClient**
 
 Create `src/services/arxiv_client.py`:
 
@@ -502,13 +502,13 @@ class ArxivClient:
         return [_parse_entry(e) for e in entries]
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_arxiv_client.py -v`
 
 Expected: All 8 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/arxiv_client.py tests/unit/services/test_arxiv_client.py
@@ -524,7 +524,7 @@ git commit -m "feat(trend-005): add arXiv API client with XML parsing and tests"
 **Files:**
 - Modify: `src/api/schemas/trends.py`
 
-- [ ] **Step 1: Add arXiv schemas**
+- [x] **Step 1: Add arXiv schemas**
 
 Append to `src/api/schemas/trends.py` (after `NewsAPIFetchResponse`):
 
@@ -544,13 +544,13 @@ class ArxivFetchResponse(BaseModel):
     total_after_filter: int
 ```
 
-- [ ] **Step 2: Verify import**
+- [x] **Step 2: Verify import**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify python -c "from src.api.schemas.trends import ArxivFetchRequest, ArxivFetchResponse; print('OK')"`
 
 Expected: `OK`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/api/schemas/trends.py
@@ -566,7 +566,7 @@ git commit -m "feat(trend-005): add arXiv request/response schemas"
 - Create: `tests/unit/services/test_arxiv.py`
 - Modify: `tests/unit/services/conftest.py` — add MockArxivClient
 
-- [ ] **Step 1: Add MockArxivClient to conftest**
+- [x] **Step 1: Add MockArxivClient to conftest**
 
 Add to `tests/unit/services/conftest.py` (after MockNewsAPIClient):
 
@@ -593,7 +593,7 @@ class MockArxivClient(ArxivClient):
         return self._papers[:max_results]
 ```
 
-- [ ] **Step 2: Write the failing tests for ArxivService**
+- [x] **Step 2: Write the failing tests for ArxivService**
 
 Create `tests/unit/services/test_arxiv.py`:
 
@@ -879,13 +879,13 @@ class TestFetchAndNormalize:
         assert result.total_fetched == 3
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_arxiv.py -v`
 
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.services.arxiv'`
 
-- [ ] **Step 4: Implement ArxivService**
+- [x] **Step 4: Implement ArxivService**
 
 Create `src/services/arxiv.py`:
 
@@ -1048,13 +1048,13 @@ class ArxivService:
         )
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_arxiv.py tests/unit/services/test_arxiv_client.py -v`
 
 Expected: All tests PASS (after Task 4 Step 1 adds the schema)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/services/arxiv.py tests/unit/services/test_arxiv.py tests/unit/services/conftest.py
@@ -1071,7 +1071,7 @@ git commit -m "feat(trend-005): add arXiv service with scoring, filtering, dedup
 - Modify: `src/api/routers/trends.py`
 - Create: `tests/unit/api/test_arxiv_endpoints.py`
 
-- [ ] **Step 1: Write the failing endpoint tests**
+- [x] **Step 1: Write the failing endpoint tests**
 
 Create `tests/unit/api/test_arxiv_endpoints.py`:
 
@@ -1288,13 +1288,13 @@ class TestArxivEndpoint503:
             assert data["error"]["code"] == "arxiv_unavailable"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_arxiv_endpoints.py -v`
 
 Expected: FAIL — 404 (endpoint doesn't exist yet)
 
-- [ ] **Step 3: Add arxiv endpoint to trends router**
+- [x] **Step 3: Add arxiv endpoint to trends router**
 
 Add imports at top of `src/api/routers/trends.py`:
 
@@ -1355,13 +1355,13 @@ async def fetch_arxiv(
         ) from exc
 ```
 
-- [ ] **Step 4: Run all arXiv tests to verify they pass**
+- [x] **Step 4: Run all arXiv tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_arxiv_endpoints.py tests/unit/services/test_arxiv.py tests/unit/services/test_arxiv_client.py -v`
 
 Expected: All tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/routers/trends.py tests/unit/api/test_arxiv_endpoints.py
@@ -1372,23 +1372,23 @@ git commit -m "feat(trend-005): add arXiv API endpoint with auth, rate limiting,
 
 ### Task 6: Full Regression + Lint + Format
 
-- [ ] **Step 1: Run full test suite**
+- [x] **Step 1: Run full test suite**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest --cov=src --cov-report=term-missing -v`
 
 Expected: All tests pass, no regressions in existing sources.
 
-- [ ] **Step 2: Run ruff check and format**
+- [x] **Step 2: Run ruff check and format**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff check src/ tests/ && "C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff format --check src/ tests/`
 
 Expected: No lint or format errors. If any, fix and re-run.
 
-- [ ] **Step 3: Run ruff format (apply fixes if needed)**
+- [x] **Step 3: Run ruff format (apply fixes if needed)**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff format src/ tests/`
 
-- [ ] **Step 4: Commit formatting fixes (if any)**
+- [x] **Step 4: Commit formatting fixes (if any)**
 
 ```bash
 git add -u
@@ -1399,7 +1399,7 @@ git commit -m "style(trend-005): apply ruff formatting to arXiv modules"
 
 ### Task 7: Update Project Tracking
 
-- [ ] **Step 1: Update PROGRESS.md**
+- [x] **Step 1: Update PROGRESS.md**
 
 Change TREND-005 row to:
 
@@ -1407,7 +1407,7 @@ Change TREND-005 row to:
 | TREND-005 | arXiv Paper Feed          | Done | `feature/TREND-005-arxiv-paper-feed` | [plan](../docs/superpowers/plans/2026-03-15-trend-005-arxiv-paper-feed.md) | [spec](../docs/superpowers/specs/2026-03-15-trend-005-arxiv-paper-feed-design.md) |
 ```
 
-- [ ] **Step 2: Update BACKLOG.md**
+- [x] **Step 2: Update BACKLOG.md**
 
 Add status, plan, and spec links to the TREND-005 entry:
 
@@ -1419,7 +1419,7 @@ Add status, plan, and spec links to the TREND-005 entry:
 - **Spec**: [`docs/superpowers/specs/2026-03-15-trend-005-arxiv-paper-feed-design.md`](../docs/superpowers/specs/2026-03-15-trend-005-arxiv-paper-feed-design.md)
 ```
 
-- [ ] **Step 3: Commit tracking updates**
+- [x] **Step 3: Commit tracking updates**
 
 ```bash
 git add project-management/PROGRESS.md project-management/BACKLOG.md
