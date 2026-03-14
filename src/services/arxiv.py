@@ -47,9 +47,7 @@ class ArxivService:
             cats = " ".join(paper["categories"]).lower()
             authors = " ".join(paper["authors"]).lower()
             text = f"{title} {abstract} {cats} {authors}"
-            matched = [
-                kw for kw in domain_keywords if kw.lower() in text
-            ]
+            matched = [kw for kw in domain_keywords if kw.lower() in text]
             if matched:
                 results.append((paper, matched))
         return results
@@ -108,7 +106,8 @@ class ArxivService:
         )
         total_fetched = len(papers)
         filtered = self.filter_by_domain(
-            papers, domain_keywords,
+            papers,
+            domain_keywords,
         )
         logger.debug(
             "arxiv_items_filtered",

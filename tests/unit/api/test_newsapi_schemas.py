@@ -33,13 +33,15 @@ class TestNewsAPIFetchRequest:
     def test_max_results_too_high(self) -> None:
         with pytest.raises(ValidationError):
             NewsAPIFetchRequest(
-                domain_keywords=["x"], max_results=101,
+                domain_keywords=["x"],
+                max_results=101,
             )
 
     def test_max_results_too_low(self) -> None:
         with pytest.raises(ValidationError):
             NewsAPIFetchRequest(
-                domain_keywords=["x"], max_results=0,
+                domain_keywords=["x"],
+                max_results=0,
             )
 
 

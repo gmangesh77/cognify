@@ -40,7 +40,9 @@ class TestFetchTopHeadlines:
                 timeout=5.0,
             )
             articles = await client.fetch_top_headlines(
-                "technology", "us", 30,
+                "technology",
+                "us",
+                30,
             )
         assert len(articles) == 1
         assert articles[0]["title"] == "Cybersecurity Alert"
@@ -64,7 +66,9 @@ class TestFetchTopHeadlines:
                 timeout=5.0,
             )
             articles = await client.fetch_top_headlines(
-                "technology", "us", 30,
+                "technology",
+                "us",
+                30,
             )
         assert articles == []
 
@@ -88,7 +92,9 @@ class TestFetchTopHeadlines:
             )
             with pytest.raises(NewsAPIError, match="apiKeyInvalid"):
                 await client.fetch_top_headlines(
-                    "technology", "us", 30,
+                    "technology",
+                    "us",
+                    30,
                 )
 
     async def test_http_error_raises(self) -> None:
@@ -111,7 +117,9 @@ class TestFetchTopHeadlines:
             )
             with pytest.raises(NewsAPIError, match="500"):
                 await client.fetch_top_headlines(
-                    "technology", "us", 30,
+                    "technology",
+                    "us",
+                    30,
                 )
 
     async def test_timeout_raises(self) -> None:
@@ -129,7 +137,9 @@ class TestFetchTopHeadlines:
             )
             with pytest.raises(NewsAPIError, match="timed out"):
                 await client.fetch_top_headlines(
-                    "technology", "us", 30,
+                    "technology",
+                    "us",
+                    30,
                 )
 
     async def test_connection_error_raises(self) -> None:
@@ -147,7 +157,9 @@ class TestFetchTopHeadlines:
             )
             with pytest.raises(NewsAPIError, match="refused"):
                 await client.fetch_top_headlines(
-                    "technology", "us", 30,
+                    "technology",
+                    "us",
+                    30,
                 )
 
     async def test_removed_articles_filtered(self) -> None:
@@ -173,7 +185,9 @@ class TestFetchTopHeadlines:
                 timeout=5.0,
             )
             result = await client.fetch_top_headlines(
-                "technology", "us", 30,
+                "technology",
+                "us",
+                30,
             )
         assert len(result) == 1
         assert result[0]["title"] == "Cybersecurity Alert"

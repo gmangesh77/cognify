@@ -79,7 +79,8 @@ class TestDomainFiltering:
     def test_matches_title(self) -> None:
         paper = _paper(title="Cybersecurity attack model")
         matched = ArxivService.filter_by_domain(
-            [paper], ["cyber"],
+            [paper],
+            ["cyber"],
         )
         assert len(matched) == 1
         assert matched[0][1] == ["cyber"]
@@ -90,7 +91,8 @@ class TestDomainFiltering:
             abstract="A study on cybersecurity threats.",
         )
         matched = ArxivService.filter_by_domain(
-            [paper], ["cyber"],
+            [paper],
+            ["cyber"],
         )
         assert len(matched) == 1
 
@@ -101,7 +103,8 @@ class TestDomainFiltering:
             categories=["cs.CR"],
         )
         matched = ArxivService.filter_by_domain(
-            [paper], ["cs.CR"],
+            [paper],
+            ["cs.CR"],
         )
         assert len(matched) == 1
 
@@ -112,28 +115,32 @@ class TestDomainFiltering:
             authors=["Cyber Expert"],
         )
         matched = ArxivService.filter_by_domain(
-            [paper], ["cyber"],
+            [paper],
+            ["cyber"],
         )
         assert len(matched) == 1
 
     def test_case_insensitive(self) -> None:
         paper = _paper(title="CYBERSECURITY Analysis")
         matched = ArxivService.filter_by_domain(
-            [paper], ["cyber"],
+            [paper],
+            ["cyber"],
         )
         assert len(matched) == 1
 
     def test_no_match_excluded(self) -> None:
         paper = _paper(title="Cooking with AI")
         matched = ArxivService.filter_by_domain(
-            [paper], ["cyber"],
+            [paper],
+            ["cyber"],
         )
         assert len(matched) == 0
 
     def test_multiple_keywords(self) -> None:
         paper = _paper(title="New AI model for attacks")
         matched = ArxivService.filter_by_domain(
-            [paper], ["cyber", "AI"],
+            [paper],
+            ["cyber", "AI"],
         )
         assert len(matched) == 1
         assert matched[0][1] == ["AI"]
@@ -162,7 +169,10 @@ class TestTopicMapping:
     def test_long_abstract_truncated(self) -> None:
         paper = _paper(abstract="x" * 500)
         topic = ArxivService.map_to_raw_topic(
-            paper, 50.0, 0.5, ["test"],
+            paper,
+            50.0,
+            0.5,
+            ["test"],
         )
         assert len(topic.description) == 200
 

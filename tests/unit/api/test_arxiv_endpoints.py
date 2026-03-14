@@ -86,7 +86,8 @@ class TestArxivEndpointAuth:
             "/api/v1/trends/arxiv/fetch",
             json=_arxiv_request(),
             headers=make_auth_header(
-                "viewer", arxiv_settings,
+                "viewer",
+                arxiv_settings,
             ),
         )
         assert resp.status_code == 403
@@ -100,7 +101,8 @@ class TestArxivEndpointAuth:
             "/api/v1/trends/arxiv/fetch",
             json=_arxiv_request(),
             headers=make_auth_header(
-                "editor", arxiv_settings,
+                "editor",
+                arxiv_settings,
             ),
         )
         assert resp.status_code == 200
@@ -114,7 +116,8 @@ class TestArxivEndpointAuth:
             "/api/v1/trends/arxiv/fetch",
             json=_arxiv_request(),
             headers=make_auth_header(
-                "admin", arxiv_settings,
+                "admin",
+                arxiv_settings,
             ),
         )
         assert resp.status_code == 200
@@ -130,7 +133,8 @@ class TestArxivEndpointValidation:
             "/api/v1/trends/arxiv/fetch",
             json=_arxiv_request(domain_keywords=[]),
             headers=make_auth_header(
-                "editor", arxiv_settings,
+                "editor",
+                arxiv_settings,
             ),
         )
         assert resp.status_code == 422
@@ -146,7 +150,8 @@ class TestArxivEndpointSuccess:
             "/api/v1/trends/arxiv/fetch",
             json=_arxiv_request(),
             headers=make_auth_header(
-                "editor", arxiv_settings,
+                "editor",
+                arxiv_settings,
             ),
         )
         assert resp.status_code == 200
@@ -167,7 +172,8 @@ class TestArxivEndpointSuccess:
                 domain_keywords=["cooking"],
             ),
             headers=make_auth_header(
-                "editor", arxiv_settings,
+                "editor",
+                arxiv_settings,
             ),
         )
         assert resp.status_code == 200

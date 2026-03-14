@@ -1,5 +1,6 @@
 import hashlib
 
+from src.services.arxiv_client import ArxivClient, ArxivPaper
 from src.services.embeddings import EmbeddingService
 from src.services.google_trends_client import (
     GoogleTrendsClient,
@@ -7,7 +8,6 @@ from src.services.google_trends_client import (
     GTTrendingSearch,
 )
 from src.services.hackernews_client import HackerNewsClient, HNStoryResponse
-from src.services.arxiv_client import ArxivClient, ArxivPaper
 from src.services.newsapi_client import NewsAPIArticle, NewsAPIClient
 from src.services.reddit_client import RedditClient, RedditPostResponse
 
