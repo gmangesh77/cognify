@@ -157,3 +157,114 @@ class TestCrosspostDedup:
         deduped, count = RedditService.deduplicate_crossposts(posts)
         assert len(deduped) == 1
         assert count == 2  # 3 posts -> 1 = 2 removed
+
+
+class TestDomainFiltering:
+    def test_matches_title(self) -> None:
+        post = _post(title="Cybersecurity breach report")
+        matched = RedditService.filter_by_domain(
+            [post], ["cyber"],
+        )
+        assert len(matched) == 1
+        assert matched[0][1] == ["cyber"]
+
+    def test_matches_selftext(self) -> None:
+        post = _post(
+            title="A normal title",
+            selftext="Deep dive into cybersecurity trends",
+        )
+        matched = RedditService.filter_by_domain(
+            [post], ["cyber"],
+        )
+        assert len(matched) == 1
+
+    def test_matches_subreddit_name(self) -> None:
+        post = _post(
+            title="A normal title",
+            selftext="Normal text",
+            subreddit="cybersecurity",
+        )
+        matched = RedditService.filter_by_domain(
+            [post], ["cyber"],
+        )
+        assert len(matched) == 1
+
+    def test_case_insensitive(self) -> None:
+        post = _post(title="CYBERSECURITY NEWS")
+        matched = RedditService.filter_by_domain(
+            [post], ["cyber"],
+        )
+        assert len(matched) == 1
+
+    def test_no_match_excluded(self) -> None:
+        post = _post(title="Cooking recipes", selftext="Delicious food", subreddit="cooking")
+        matched = RedditService.filter_by_domain(
+            [post], ["cyber"],
+        )
+        assert len(matched) == 0
+
+    def test_multiple_keywords_any_match(self) -> None:
+        post = _post(title="New AI model released")
+        matched = RedditService.filter_by_domain(
+            [post], ["cyber", "AI"],
+        )
+        assert len(matched) == 1
+        assert matched[0][1] == ["AI"]
+
+
+class TestMapToRawTopic:
+    def test_full_mapping(self) -> None:
+        post = _post(
+            id="abc123",
+            title="Cyber Attack Analysis",
+            selftext="Detailed analysis of the attack.",
+            score=150,
+            num_comments=40,
+            created_utc=1710000000.0,
+            permalink="/r/cybersecurity/comments/abc123/cyber_attack/",
+            subreddit="cybersecurity",
+        )
+        topic = RedditService.map_to_raw_topic(
+            post,
+            matched_keywords=["cyber"],
+            score_cap=1000.0,
+            now=datetime(2024, 3, 10, 0, 0, tzinfo=UTC),
+        )
+        assert topic.title == "Cyber Attack Analysis"
+        assert topic.source == "reddit"
+        assert topic.external_url == "https://www.reddit.com/r/cybersecurity/comments/abc123/cyber_attack/"
+        assert topic.domain_keywords == ["cyber"]
+        assert topic.description == "Detailed analysis of the attack."
+        assert 0 <= topic.trend_score <= 100
+        assert topic.velocity > 0
+
+    def test_empty_selftext(self) -> None:
+        post = _post(selftext="")
+        topic = RedditService.map_to_raw_topic(
+            post,
+            matched_keywords=["test"],
+            score_cap=1000.0,
+            now=datetime(2024, 3, 10, 0, 0, tzinfo=UTC),
+        )
+        assert topic.description == ""
+
+    def test_long_selftext_truncated(self) -> None:
+        post = _post(selftext="x" * 500)
+        topic = RedditService.map_to_raw_topic(
+            post,
+            matched_keywords=["test"],
+            score_cap=1000.0,
+            now=datetime(2024, 3, 10, 0, 0, tzinfo=UTC),
+        )
+        assert len(topic.description) == 200
+
+    def test_zero_score_and_comments(self) -> None:
+        post = _post(score=0, num_comments=0)
+        topic = RedditService.map_to_raw_topic(
+            post,
+            matched_keywords=["test"],
+            score_cap=1000.0,
+            now=datetime(2024, 3, 10, 0, 0, tzinfo=UTC),
+        )
+        assert topic.velocity == 0.0
+        assert topic.trend_score >= 0  # recency_bonus still contributes

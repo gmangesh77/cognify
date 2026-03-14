@@ -118,3 +118,57 @@ class RedditService:
         original_count = len(posts)
         removed = original_count - len(survivors)
         return survivors, removed
+
+    @staticmethod
+    def filter_by_domain(
+        posts: list[RedditPostResponse],
+        domain_keywords: list[str],
+    ) -> list[tuple[RedditPostResponse, list[str]]]:
+        results: list[tuple[RedditPostResponse, list[str]]] = []
+        for post in posts:
+            title = post["title"].lower()
+            selftext = post["selftext"].lower()
+            subreddit = post["subreddit"].lower()
+            matched = [
+                kw
+                for kw in domain_keywords
+                if kw.lower() in title
+                or kw.lower() in selftext
+                or kw.lower() in subreddit
+            ]
+            if matched:
+                results.append((post, matched))
+        return results
+
+    @staticmethod
+    def map_to_raw_topic(
+        post: RedditPostResponse,
+        matched_keywords: list[str],
+        score_cap: float,
+        now: datetime | None = None,
+    ) -> RawTopic:
+        if now is None:
+            now = datetime.now(UTC)
+        created = datetime.fromtimestamp(
+            post["created_utc"],
+            tz=UTC,
+        )
+        hours_ago = (now - created).total_seconds() / 3600
+        return RawTopic(
+            title=post["title"],
+            description=post["selftext"][:200],
+            source="reddit",
+            external_url=f"https://www.reddit.com{post['permalink']}",
+            trend_score=RedditService.calculate_score(
+                post["score"],
+                post["num_comments"],
+                hours_ago,
+                score_cap,
+            ),
+            discovered_at=created,
+            velocity=RedditService.calculate_velocity(
+                post["score"],
+                hours_ago,
+            ),
+            domain_keywords=matched_keywords,
+        )
