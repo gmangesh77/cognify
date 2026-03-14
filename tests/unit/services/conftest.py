@@ -7,6 +7,7 @@ from src.services.google_trends_client import (
     GTTrendingSearch,
 )
 from src.services.hackernews_client import HackerNewsClient, HNStoryResponse
+from src.services.newsapi_client import NewsAPIArticle, NewsAPIClient
 from src.services.reddit_client import RedditClient, RedditPostResponse
 
 VECTOR_DIM = 384
@@ -107,3 +108,26 @@ class MockGoogleTrendsClient(GoogleTrendsClient):
         keywords: list[str],
     ) -> list[GTRelatedQuery]:
         return self._related
+
+
+class MockNewsAPIClient(NewsAPIClient):
+    """Returns canned articles for deterministic testing."""
+
+    def __init__(
+        self,
+        articles: list[NewsAPIArticle] | None = None,
+    ) -> None:
+        super().__init__(
+            api_key="mock",
+            base_url="http://mock",
+            timeout=1.0,
+        )
+        self._articles = articles or []
+
+    async def fetch_top_headlines(
+        self,
+        category: str,
+        country: str,
+        page_size: int,
+    ) -> list[NewsAPIArticle]:
+        return self._articles[:page_size]
