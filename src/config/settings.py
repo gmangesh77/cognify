@@ -48,3 +48,9 @@ class Settings(BaseSettings):
     ]
     reddit_score_cap: float = 1000.0
     reddit_request_timeout: float = 15.0
+    # NewsAPI integration
+    newsapi_api_key: str = ""
+    newsapi_base_url: str = "https://newsapi.org/v2"
+    newsapi_request_timeout: float = 10.0
+    newsapi_default_category: str = "technology"
+    newsapi_default_country: str = "us"

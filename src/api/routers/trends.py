@@ -10,6 +10,8 @@ from src.api.schemas.trends import (
     GTFetchResponse,
     HNFetchRequest,
     HNFetchResponse,
+    NewsAPIFetchRequest,
+    NewsAPIFetchResponse,
     RedditFetchRequest,
     RedditFetchResponse,
 )
@@ -22,6 +24,11 @@ from src.services.hackernews import HackerNewsService
 from src.services.hackernews_client import (
     HackerNewsAPIError,
     HackerNewsClient,
+)
+from src.services.newsapi import NewsAPIService
+from src.services.newsapi_client import (
+    NewsAPIClient,
+    NewsAPIError,
 )
 from src.services.reddit import RedditService
 from src.services.reddit_client import (
@@ -173,4 +180,49 @@ async def fetch_reddit(
         raise ServiceUnavailableError(
             code="reddit_unavailable",
             message="Reddit API is not available",
+        ) from exc
+
+
+def _get_newsapi_service(request: Request) -> NewsAPIService:
+    settings = request.app.state.settings
+    if hasattr(request.app.state, "newsapi_client"):
+        client = request.app.state.newsapi_client
+    else:
+        client = NewsAPIClient(
+            api_key=settings.newsapi_api_key,
+            base_url=settings.newsapi_base_url,
+            timeout=settings.newsapi_request_timeout,
+        )
+    return NewsAPIService(client=client)
+
+
+@limiter.limit("5/minute")
+@trends_router.post(
+    "/trends/newsapi/fetch",
+    response_model=NewsAPIFetchResponse,
+    summary="Fetch trending NewsAPI headlines",
+)
+async def fetch_newsapi(
+    request: Request,
+    body: NewsAPIFetchRequest,
+    user: TokenPayload = Depends(require_role("admin", "editor")),
+) -> NewsAPIFetchResponse:
+    service = _get_newsapi_service(request)
+    try:
+        return await service.fetch_and_normalize(
+            domain_keywords=body.domain_keywords,
+            category=body.category,
+            country=body.country,
+            max_results=body.max_results,
+        )
+    except NewsAPIError as exc:
+        logger.error(
+            "newsapi_api_error",
+            error=str(exc),
+            category=body.category,
+            country=body.country,
+        )
+        raise ServiceUnavailableError(
+            code="newsapi_unavailable",
+            message="NewsAPI is not available",
         ) from exc
