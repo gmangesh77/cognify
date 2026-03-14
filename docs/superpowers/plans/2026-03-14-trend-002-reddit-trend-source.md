@@ -31,7 +31,7 @@
 **Files:**
 - Modify: `pyproject.toml`
 
-- [ ] **Step 1: Add asyncpraw to dependencies**
+- [x] **Step 1: Add asyncpraw to dependencies**
 
 In `pyproject.toml`, add `"asyncpraw>=7.7.0"` to `dependencies` list after `"pytrends>=4.9.0"`:
 
@@ -41,7 +41,7 @@ In `pyproject.toml`, add `"asyncpraw>=7.7.0"` to `dependencies` list after `"pyt
 ]
 ```
 
-- [ ] **Step 2: Add mypy override for asyncpraw**
+- [x] **Step 2: Add mypy override for asyncpraw**
 
 In `pyproject.toml`, add a new `[[tool.mypy.overrides]]` section after the existing pytrends override:
 
@@ -51,12 +51,12 @@ module = "asyncpraw.*"
 ignore_missing_imports = true
 ```
 
-- [ ] **Step 3: Install the dependency**
+- [x] **Step 3: Install the dependency**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pip install asyncpraw>=7.7.0`
 Expected: Successful install
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add pyproject.toml
@@ -70,7 +70,7 @@ git commit -m "chore: add asyncpraw dependency and mypy override for TREND-002"
 **Files:**
 - Modify: `src/config/settings.py`
 
-- [ ] **Step 1: Add Reddit settings fields**
+- [x] **Step 1: Add Reddit settings fields**
 
 Add after the Google Trends settings block (line 38) in `src/config/settings.py`:
 
@@ -91,12 +91,12 @@ Add after the Google Trends settings block (line 38) in `src/config/settings.py`
 
 Note: Using plain `str` for `reddit_client_secret` to stay consistent with existing `jwt_private_key`/`jwt_public_key` pattern. The spec called for `SecretStr` but the codebase doesn't use it yet — we'll follow the existing convention and migrate all secrets to `SecretStr` in a follow-up tech-debt ticket.
 
-- [ ] **Step 2: Verify settings load**
+- [x] **Step 2: Verify settings load**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify python -c "from src.config.settings import Settings; s = Settings(); print(s.reddit_default_subreddits)"`
 Expected: `['cybersecurity', 'programming', 'netsec', 'technology']`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/config/settings.py
@@ -111,7 +111,7 @@ git commit -m "feat(trend-002): add Reddit integration settings"
 - Modify: `src/api/schemas/trends.py`
 - Test: `tests/unit/api/test_trend_schemas.py`
 
-- [ ] **Step 1: Write failing schema tests**
+- [x] **Step 1: Write failing schema tests**
 
 Append to `tests/unit/api/test_trend_schemas.py`:
 
@@ -185,12 +185,12 @@ class TestRedditFetchResponse:
         assert resp.topics == []
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_trend_schemas.py::TestRedditFetchRequest -v`
 Expected: FAIL — `ImportError: cannot import name 'RedditFetchRequest'`
 
-- [ ] **Step 3: Implement schemas**
+- [x] **Step 3: Implement schemas**
 
 Add to `src/api/schemas/trends.py` after the existing GT schemas:
 
@@ -219,12 +219,12 @@ class RedditFetchResponse(BaseModel):
 
 Note: Add the `Literal` import at the top of the file alongside the existing `pydantic` imports.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_trend_schemas.py -v`
 Expected: All tests PASS (existing HN/GT schema tests + new Reddit schema tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/schemas/trends.py tests/unit/api/test_trend_schemas.py
@@ -241,7 +241,7 @@ git commit -m "feat(trend-002): add Reddit request/response schemas with validat
 - Create: `src/services/reddit_client.py`
 - Test: `tests/unit/services/test_reddit_client.py`
 
-- [ ] **Step 1: Write failing client tests**
+- [x] **Step 1: Write failing client tests**
 
 Create `tests/unit/services/test_reddit_client.py`:
 
@@ -363,12 +363,12 @@ class TestFetchSubredditPosts:
                 )
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit_client.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.services.reddit_client'`
 
-- [ ] **Step 3: Implement RedditClient**
+- [x] **Step 3: Implement RedditClient**
 
 Create `src/services/reddit_client.py`:
 
@@ -465,12 +465,12 @@ class RedditClient:
             ) from exc
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit_client.py -v`
 Expected: All PASS
 
-- [ ] **Step 5: Add MockRedditClient to test conftest**
+- [x] **Step 5: Add MockRedditClient to test conftest**
 
 Add the import at the top of `tests/unit/services/conftest.py`:
 
@@ -506,7 +506,7 @@ class MockRedditClient(RedditClient):
         return self._posts.get(subreddit, [])[:limit]
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/services/reddit_client.py tests/unit/services/test_reddit_client.py tests/unit/services/conftest.py
@@ -523,7 +523,7 @@ git commit -m "feat(trend-002): implement RedditClient with asyncpraw wrapper"
 - Create: `src/services/reddit.py`
 - Test: `tests/unit/services/test_reddit.py`
 
-- [ ] **Step 1: Write failing score/velocity tests**
+- [x] **Step 1: Write failing score/velocity tests**
 
 Create `tests/unit/services/test_reddit.py`:
 
@@ -632,12 +632,12 @@ class TestVelocityCalculation:
         assert vel == 0.0
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit.py::TestScoreNormalization -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.services.reddit'`
 
-- [ ] **Step 3: Implement score/velocity methods**
+- [x] **Step 3: Implement score/velocity methods**
 
 Create `src/services/reddit.py` with initial scoring methods:
 
@@ -700,12 +700,12 @@ class RedditService:
         return score / hours
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit.py::TestScoreNormalization tests/unit/services/test_reddit.py::TestVelocityCalculation -v`
 Expected: All PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/reddit.py tests/unit/services/test_reddit.py
@@ -720,7 +720,7 @@ git commit -m "feat(trend-002): add Reddit scoring and velocity calculations"
 - Modify: `src/services/reddit.py`
 - Modify: `tests/unit/services/test_reddit.py`
 
-- [ ] **Step 1: Write failing dedup tests**
+- [x] **Step 1: Write failing dedup tests**
 
 Append to `tests/unit/services/test_reddit.py`:
 
@@ -782,12 +782,12 @@ class TestCrosspostDedup:
         assert count == 2  # 3 posts → 1 = 2 removed
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit.py::TestCrosspostDedup -v`
 Expected: FAIL — `AttributeError: type object 'RedditService' has no attribute 'deduplicate_crossposts'`
 
-- [ ] **Step 3: Implement dedup method**
+- [x] **Step 3: Implement dedup method**
 
 Add to `RedditService` class in `src/services/reddit.py`:
 
@@ -857,12 +857,12 @@ Add to `RedditService` class in `src/services/reddit.py`:
         return survivors, removed
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit.py::TestCrosspostDedup -v`
 Expected: All PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/reddit.py tests/unit/services/test_reddit.py
@@ -877,7 +877,7 @@ git commit -m "feat(trend-002): implement crosspost deduplication with fuzzy tit
 - Modify: `src/services/reddit.py`
 - Modify: `tests/unit/services/test_reddit.py`
 
-- [ ] **Step 1: Write failing filter and mapping tests**
+- [x] **Step 1: Write failing filter and mapping tests**
 
 Append to `tests/unit/services/test_reddit.py`:
 
@@ -993,12 +993,12 @@ class TestMapToRawTopic:
         assert topic.trend_score >= 0  # recency_bonus still contributes
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit.py::TestDomainFiltering tests/unit/services/test_reddit.py::TestMapToRawTopic -v`
 Expected: FAIL — `AttributeError: type object 'RedditService' has no attribute 'filter_by_domain'`
 
-- [ ] **Step 3: Implement filter_by_domain and map_to_raw_topic**
+- [x] **Step 3: Implement filter_by_domain and map_to_raw_topic**
 
 Add to `RedditService` class in `src/services/reddit.py`:
 
@@ -1058,12 +1058,12 @@ Add to `RedditService` class in `src/services/reddit.py`:
         )
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit.py::TestDomainFiltering tests/unit/services/test_reddit.py::TestMapToRawTopic -v`
 Expected: All PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/reddit.py tests/unit/services/test_reddit.py
@@ -1078,7 +1078,7 @@ git commit -m "feat(trend-002): implement domain filtering and RawTopic field ma
 - Modify: `src/services/reddit.py`
 - Modify: `tests/unit/services/test_reddit.py`
 
-- [ ] **Step 1: Write failing pipeline tests**
+- [x] **Step 1: Write failing pipeline tests**
 
 Append to `tests/unit/services/test_reddit.py`:
 
@@ -1239,12 +1239,12 @@ class TestFetchAndNormalize:
             )
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit.py::TestFetchAndNormalize -v`
 Expected: FAIL — `AttributeError: ... has no attribute 'fetch_and_normalize'`
 
-- [ ] **Step 3: Implement fetch_and_normalize**
+- [x] **Step 3: Implement fetch_and_normalize**
 
 Add to `RedditService` class in `src/services/reddit.py`:
 
@@ -1342,12 +1342,12 @@ Add to `RedditService` class in `src/services/reddit.py`:
         )
 ```
 
-- [ ] **Step 4: Run all service tests**
+- [x] **Step 4: Run all service tests**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/services/test_reddit.py -v`
 Expected: All PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/reddit.py tests/unit/services/test_reddit.py
@@ -1364,7 +1364,7 @@ git commit -m "feat(trend-002): implement fetch_and_normalize pipeline with part
 - Modify: `src/api/routers/trends.py`
 - Modify: `tests/unit/api/test_trend_endpoints.py`
 
-- [ ] **Step 1: Write failing endpoint tests**
+- [x] **Step 1: Write failing endpoint tests**
 
 Append to `tests/unit/api/test_trend_endpoints.py`:
 
@@ -1583,12 +1583,12 @@ class TestRedditEndpoint503:
             assert data["error"]["code"] == "reddit_unavailable"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_trend_endpoints.py::TestRedditEndpointAuth -v`
 Expected: FAIL — 404 (endpoint doesn't exist yet)
 
-- [ ] **Step 3: Implement the Reddit endpoint**
+- [x] **Step 3: Implement the Reddit endpoint**
 
 Add to `src/api/routers/trends.py`:
 
@@ -1668,12 +1668,12 @@ async def fetch_reddit(
         ) from exc
 ```
 
-- [ ] **Step 4: Run all endpoint tests**
+- [x] **Step 4: Run all endpoint tests**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest tests/unit/api/test_trend_endpoints.py -v`
 Expected: All PASS (existing HN tests + new Reddit tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/routers/trends.py tests/unit/api/test_trend_endpoints.py
@@ -1686,22 +1686,22 @@ git commit -m "feat(trend-002): add POST /api/v1/trends/reddit/fetch endpoint"
 
 **Files:** None (verification only)
 
-- [ ] **Step 1: Run full test suite**
+- [x] **Step 1: Run full test suite**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest --cov=src --cov-report=term-missing -v`
 Expected: All tests PASS, coverage ≥80% on new files
 
-- [ ] **Step 2: Run linter**
+- [x] **Step 2: Run linter**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff check src/ tests/ && "C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ruff format --check src/ tests/`
 Expected: No errors
 
-- [ ] **Step 3: Run mypy**
+- [x] **Step 3: Run mypy**
 
 Run: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify mypy src/`
 Expected: No errors (asyncpraw module ignored via override)
 
-- [ ] **Step 4: Fix any issues found, commit**
+- [x] **Step 4: Fix any issues found, commit**
 
 If lint/type errors found, fix and commit:
 
@@ -1718,7 +1718,7 @@ git commit -m "fix(trend-002): resolve lint and type check issues"
 - Modify: `project-management/PROGRESS.md`
 - Modify: `project-management/BACKLOG.md`
 
-- [ ] **Step 1: Update PROGRESS.md**
+- [x] **Step 1: Update PROGRESS.md**
 
 Update the TREND-002 row in `project-management/PROGRESS.md`:
 
@@ -1726,7 +1726,7 @@ Update the TREND-002 row in `project-management/PROGRESS.md`:
 | TREND-002 | Reddit Trend Source       | In Progress | `feature/TREND-002-reddit-trend-source` | [plan](../docs/superpowers/plans/2026-03-14-trend-002-reddit-trend-source.md) | [spec](../docs/superpowers/specs/2026-03-14-trend-002-reddit-trend-source-design.md) |
 ```
 
-- [ ] **Step 2: Update BACKLOG.md**
+- [x] **Step 2: Update BACKLOG.md**
 
 Update the TREND-002 entry in `project-management/BACKLOG.md` to add status and links:
 
@@ -1737,7 +1737,7 @@ Update the TREND-002 entry in `project-management/BACKLOG.md` to add status and 
 - **Spec**: [`docs/superpowers/specs/2026-03-14-trend-002-reddit-trend-source-design.md`](../docs/superpowers/specs/2026-03-14-trend-002-reddit-trend-source-design.md)
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add project-management/PROGRESS.md project-management/BACKLOG.md

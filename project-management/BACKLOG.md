@@ -142,9 +142,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Graceful handling when API is unavailable (cached fallback)
 - **Story Points**: 5
 
-### TREND-002: Reddit Trend Source [Must]
+### TREND-002: Reddit Trend Source [Must] — DONE
 **As a** content team member, **I want** trending Reddit posts monitored via PRAW, **so that** community-driven topics are captured.
-- **Status**: In Progress (branch `feature/TREND-002-reddit-trend-source`)
+- **Status**: Done (branch `feature/TREND-002-reddit-trend-source`)
 - **Plan**: [`docs/superpowers/plans/2026-03-14-trend-002-reddit-trend-source.md`](../docs/superpowers/plans/2026-03-14-trend-002-reddit-trend-source.md)
 - **Spec**: [`docs/superpowers/specs/2026-03-14-trend-002-reddit-trend-source-design.md`](../docs/superpowers/specs/2026-03-14-trend-002-reddit-trend-source-design.md)
 - **Acceptance Criteria**:
