@@ -30,3 +30,9 @@ class Settings(BaseSettings):
     hn_default_min_points: int = 10
     hn_points_cap: float = 300.0
     hn_request_timeout: float = 10.0
+    # Google Trends integration
+    gt_language: str = "en-US"
+    gt_timezone_offset: int = 360
+    gt_default_country: str = "united_states"
+    gt_default_max_results: int = 30
+    gt_request_timeout: float = 15.0

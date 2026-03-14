@@ -5,7 +5,17 @@ from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_role
 from src.api.errors import ServiceUnavailableError
 from src.api.rate_limiter import limiter
-from src.api.schemas.trends import HNFetchRequest, HNFetchResponse
+from src.api.schemas.trends import (
+    GTFetchRequest,
+    GTFetchResponse,
+    HNFetchRequest,
+    HNFetchResponse,
+)
+from src.services.google_trends import GoogleTrendsService
+from src.services.google_trends_client import (
+    GoogleTrendsAPIError,
+    GoogleTrendsClient,
+)
 from src.services.hackernews import HackerNewsService
 from src.services.hackernews_client import (
     HackerNewsAPIError,
@@ -34,6 +44,21 @@ def _get_hn_service(request: Request) -> HackerNewsService:
     )
 
 
+def _get_gt_service(request: Request) -> GoogleTrendsService:
+    settings = request.app.state.settings
+    # Test injection: tests set app.state.gt_client to a mock.
+    # In production, a fresh short-lived client is created per request.
+    if hasattr(request.app.state, "gt_client"):
+        client = request.app.state.gt_client
+    else:
+        client = GoogleTrendsClient(
+            language=settings.gt_language,
+            timezone_offset=settings.gt_timezone_offset,
+            timeout=settings.gt_request_timeout,
+        )
+    return GoogleTrendsService(client=client)
+
+
 @limiter.limit("5/minute")
 @trends_router.post(
     "/trends/hackernews/fetch",
@@ -60,4 +85,33 @@ async def fetch_hackernews(
         raise ServiceUnavailableError(
             code="hackernews_unavailable",
             message="Hacker News API is not available",
+        ) from exc
+
+
+@limiter.limit("5/minute")
+@trends_router.post(
+    "/trends/google/fetch",
+    response_model=GTFetchResponse,
+    summary="Fetch Google Trends topics",
+)
+async def fetch_google_trends(
+    request: Request,
+    body: GTFetchRequest,
+    user: TokenPayload = Depends(require_role("admin", "editor")),
+) -> GTFetchResponse:
+    service = _get_gt_service(request)
+    try:
+        return await service.fetch_and_normalize(
+            domain_keywords=body.domain_keywords,
+            country=body.country,
+            max_results=body.max_results,
+        )
+    except GoogleTrendsAPIError as exc:
+        logger.error(
+            "google_trends_api_error",
+            error=str(exc),
+        )
+        raise ServiceUnavailableError(
+            code="google_trends_unavailable",
+            message="Google Trends API is not available",
         ) from exc

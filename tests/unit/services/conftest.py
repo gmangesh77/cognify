@@ -1,6 +1,11 @@
 import hashlib
 
 from src.services.embeddings import EmbeddingService
+from src.services.google_trends_client import (
+    GoogleTrendsClient,
+    GTRelatedQuery,
+    GTTrendingSearch,
+)
 from src.services.hackernews_client import HackerNewsClient, HNStoryResponse
 
 VECTOR_DIM = 384
@@ -48,3 +53,31 @@ class MockHackerNewsClient(HackerNewsClient):
         num_results: int,
     ) -> list[HNStoryResponse]:
         return self._stories[:num_results]
+
+
+class MockGoogleTrendsClient(GoogleTrendsClient):
+    """Returns canned trending/related data for deterministic testing."""
+
+    def __init__(
+        self,
+        trending: list[GTTrendingSearch] | None = None,
+        related: list[GTRelatedQuery] | None = None,
+    ) -> None:
+        # Skip parent __init__ — TrendReq() in super().__init__
+        # attempts real HTTP initialization. Unlike MockHackerNewsClient
+        # which can call super() with dummy URL/timeout, pytrends
+        # TrendReq has no equivalent safe constructor args.
+        self._trending = trending or []
+        self._related = related or []
+
+    async def fetch_trending_searches(
+        self,
+        country: str,
+    ) -> list[GTTrendingSearch]:
+        return self._trending
+
+    async def fetch_related_queries(
+        self,
+        keywords: list[str],
+    ) -> list[GTRelatedQuery]:
+        return self._related
