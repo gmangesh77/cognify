@@ -268,3 +268,159 @@ class TestMapToRawTopic:
         )
         assert topic.velocity == 0.0
         assert topic.trend_score >= 0  # recency_bonus still contributes
+
+
+# Pipeline tests use default created_utc timestamps. Since fetch_and_normalize
+# calls datetime.now(UTC) internally (no now= override), scores will be based on
+# actual wall-clock time. Tests assert on structure and counts rather than exact
+# score values.
+
+
+class TestFetchAndNormalize:
+    async def test_full_pipeline(self) -> None:
+        posts: dict[str, list[RedditPostResponse]] = {
+            "cybersecurity": [
+                _post(id="1", title="Cybersecurity breach", score=200, num_comments=50, subreddit="cybersecurity"),
+                _post(id="2", title="Cooking recipes", score=300, num_comments=100, subreddit="cybersecurity"),
+            ],
+            "netsec": [
+                _post(id="3", title="Network security tips", score=150, num_comments=30, subreddit="netsec"),
+            ],
+        }
+        mock_client = MockRedditClient(posts=posts)
+        service = RedditService(
+            client=mock_client,
+            score_cap=1000.0,
+        )
+        result = await service.fetch_and_normalize(
+            domain_keywords=["cyber", "security"],
+            subreddits=["cybersecurity", "netsec"],
+            max_results=20,
+            sort="hot",
+            time_filter="day",
+        )
+        assert result.total_fetched == 3
+        assert result.subreddits_scanned == 2
+        assert result.total_after_filter >= 1  # at least cyber/security posts match
+        assert all(t.source == "reddit" for t in result.topics)
+
+    async def test_empty_results(self) -> None:
+        mock_client = MockRedditClient(posts={})
+        service = RedditService(
+            client=mock_client,
+            score_cap=1000.0,
+        )
+        result = await service.fetch_and_normalize(
+            domain_keywords=["cyber"],
+            subreddits=["empty"],
+            max_results=20,
+            sort="hot",
+            time_filter="day",
+        )
+        assert result.total_fetched == 0
+        assert result.topics == []
+
+    async def test_no_matches_after_filter(self) -> None:
+        posts: dict[str, list[RedditPostResponse]] = {
+            "cooking": [
+                _post(id="1", title="Best recipes", subreddit="cooking"),
+            ],
+        }
+        mock_client = MockRedditClient(posts=posts)
+        service = RedditService(
+            client=mock_client,
+            score_cap=1000.0,
+        )
+        result = await service.fetch_and_normalize(
+            domain_keywords=["cyber"],
+            subreddits=["cooking"],
+            max_results=20,
+            sort="hot",
+            time_filter="day",
+        )
+        assert result.total_fetched == 1
+        assert result.total_after_filter == 0
+        assert result.topics == []
+
+    async def test_crosspost_dedup_in_pipeline(self) -> None:
+        """Same crosspost_parent across subreddits -> deduped."""
+        posts: dict[str, list[RedditPostResponse]] = {
+            "cybersecurity": [
+                _post(id="1", title="Cyber breach", score=100, crosspost_parent="parent_1", subreddit="cybersecurity"),
+            ],
+            "netsec": [
+                _post(id="2", title="Cyber breach copy", score=200, crosspost_parent="parent_1", subreddit="netsec"),
+            ],
+        }
+        mock_client = MockRedditClient(posts=posts)
+        service = RedditService(
+            client=mock_client,
+            score_cap=1000.0,
+        )
+        result = await service.fetch_and_normalize(
+            domain_keywords=["cyber"],
+            subreddits=["cybersecurity", "netsec"],
+            max_results=20,
+            sort="hot",
+            time_filter="day",
+        )
+        assert result.total_fetched == 2
+        assert result.total_after_dedup == 1
+
+    async def test_partial_subreddit_failure(self) -> None:
+        """One subreddit fails, others still processed."""
+
+        class PartialFailClient(MockRedditClient):
+            async def fetch_subreddit_posts(
+                self,
+                subreddit: str,
+                sort: str,
+                time_filter: str,
+                limit: int,
+            ) -> list[RedditPostResponse]:
+                if subreddit == "private_sub":
+                    raise RedditAPIError("Subreddit is private")
+                return await super().fetch_subreddit_posts(
+                    subreddit, sort, time_filter, limit,
+                )
+
+        posts: dict[str, list[RedditPostResponse]] = {
+            "cybersecurity": [
+                _post(id="1", title="Cyber news", score=100, subreddit="cybersecurity"),
+            ],
+        }
+        client = PartialFailClient(posts=posts)
+        service = RedditService(client=client, score_cap=1000.0)
+        result = await service.fetch_and_normalize(
+            domain_keywords=["cyber"],
+            subreddits=["cybersecurity", "private_sub"],
+            max_results=20,
+            sort="hot",
+            time_filter="day",
+        )
+        assert result.subreddits_scanned == 1
+        assert result.total_fetched == 1
+
+    async def test_all_subreddits_fail_raises(self) -> None:
+        """All subreddits fail -> RedditAPIError raised."""
+
+        class AllFailClient(MockRedditClient):
+            async def fetch_subreddit_posts(
+                self,
+                subreddit: str,
+                sort: str,
+                time_filter: str,
+                limit: int,
+            ) -> list[RedditPostResponse]:
+                raise RedditAPIError("API down")
+
+        client = AllFailClient(posts={})
+        service = RedditService(client=client, score_cap=1000.0)
+        with pytest.raises(RedditAPIError, match="All subreddits failed"):
+            await service.fetch_and_normalize(
+                domain_keywords=["cyber"],
+                subreddits=["sub1", "sub2"],
+                max_results=20,
+                sort="hot",
+                time_filter="day",
+            )

@@ -172,3 +172,95 @@ class RedditService:
             ),
             domain_keywords=matched_keywords,
         )
+
+    async def fetch_and_normalize(
+        self,
+        domain_keywords: list[str],
+        subreddits: list[str],
+        max_results: int,
+        sort: str,
+        time_filter: str,
+    ) -> RedditFetchResponse:
+        start = time.monotonic()
+        logger.info(
+            "reddit_fetch_started",
+            domain_keywords=domain_keywords,
+            subreddits=subreddits,
+            max_results=max_results,
+            sort=sort,
+        )
+
+        all_posts: list[RedditPostResponse] = []
+        scanned = 0
+        for subreddit in subreddits:
+            try:
+                posts = await self._client.fetch_subreddit_posts(
+                    subreddit,
+                    sort,
+                    time_filter,
+                    max_results,
+                )
+                all_posts.extend(posts)
+                scanned += 1
+            except RedditAPIError:
+                logger.warning(
+                    "reddit_subreddit_failed",
+                    subreddit=subreddit,
+                )
+                continue
+
+        if scanned == 0:
+            raise RedditAPIError(
+                "All subreddits failed",
+            )
+
+        total_fetched = len(all_posts)
+
+        deduped, removed = self.deduplicate_crossposts(all_posts)
+        logger.debug(
+            "reddit_crossposts_deduped",
+            before_count=total_fetched,
+            after_count=len(deduped),
+            groups_merged=removed,
+        )
+
+        filtered = self.filter_by_domain(deduped, domain_keywords)
+        logger.debug(
+            "reddit_posts_filtered",
+            before_count=len(deduped),
+            after_count=len(filtered),
+            domain_keywords=domain_keywords,
+        )
+
+        topics = sorted(
+            [
+                self.map_to_raw_topic(
+                    post,
+                    kws,
+                    self._score_cap,
+                )
+                for post, kws in filtered
+            ],
+            key=lambda t: t.trend_score,
+            reverse=True,
+        )
+
+        duration_ms = round(
+            (time.monotonic() - start) * 1000,
+        )
+        logger.info(
+            "reddit_fetch_completed",
+            total_fetched=total_fetched,
+            total_after_dedup=len(deduped),
+            total_after_filter=len(topics),
+            subreddits_scanned=scanned,
+            duration_ms=duration_ms,
+        )
+
+        return RedditFetchResponse(
+            topics=topics,
+            total_fetched=total_fetched,
+            total_after_dedup=len(deduped),
+            total_after_filter=len(topics),
+            subreddits_scanned=scanned,
+        )
