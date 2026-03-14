@@ -176,8 +176,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Stores source metadata (publication, date, URL)
 - **Story Points**: 3
 
-### TREND-005: arXiv Paper Feed [Should]
+### TREND-005: arXiv Paper Feed [Should] — DONE
 **As a** researcher, **I want** recent arXiv papers in my domain tracked, **so that** academic trends are captured.
+- **Status**: Done (branch `feature/TREND-005-arxiv-paper-feed`)
+- **Plan**: [`docs/superpowers/plans/2026-03-15-trend-005-arxiv-paper-feed.md`](../docs/superpowers/plans/2026-03-15-trend-005-arxiv-paper-feed.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-15-trend-005-arxiv-paper-feed-design.md`](../docs/superpowers/specs/2026-03-15-trend-005-arxiv-paper-feed-design.md)
 - **Acceptance Criteria**:
   - Monitors arXiv RSS/API for configured categories
   - Extracts title, abstract, authors, and categories
