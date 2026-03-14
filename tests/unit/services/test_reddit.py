@@ -100,3 +100,60 @@ class TestVelocityCalculation:
     def test_zero_score(self) -> None:
         vel = RedditService.calculate_velocity(0, 5.0)
         assert vel == 0.0
+
+
+class TestCrosspostDedup:
+    def test_crosspost_parent_groups(self) -> None:
+        """Posts with same crosspost_parent merged, highest score kept."""
+        posts = [
+            _post(id="1", title="Post A", score=50, crosspost_parent="parent_1", subreddit="sub1"),
+            _post(id="2", title="Post A copy", score=200, crosspost_parent="parent_1", subreddit="sub2"),
+            _post(id="3", title="Unique post", score=100, crosspost_parent=None, subreddit="sub1"),
+        ]
+        deduped, count = RedditService.deduplicate_crossposts(posts)
+        assert len(deduped) == 2
+        # The parent_1 group kept highest score (200)
+        parent_group = [p for p in deduped if p["crosspost_parent"] == "parent_1"]
+        assert len(parent_group) == 1
+        assert parent_group[0]["score"] == 200
+
+    def test_fuzzy_title_groups(self) -> None:
+        """Posts with very similar titles (>0.85 ratio) merged."""
+        posts = [
+            _post(id="1", title="Breaking: Major cybersecurity breach at Company X", score=300, subreddit="sub1"),
+            _post(id="2", title="Breaking: Major cybersecurity breach at Company X!", score=100, subreddit="sub2"),
+            _post(id="3", title="Completely different topic", score=50, subreddit="sub1"),
+        ]
+        deduped, count = RedditService.deduplicate_crossposts(posts)
+        assert len(deduped) == 2
+        # Similar titles merged, highest score kept
+        breach_post = [p for p in deduped if "breach" in p["title"]]
+        assert len(breach_post) == 1
+        assert breach_post[0]["score"] == 300
+
+    def test_unique_posts_preserved(self) -> None:
+        """All unique posts pass through unchanged."""
+        posts = [
+            _post(id="1", title="Cybersecurity breach investigation report", score=100),
+            _post(id="2", title="New Python framework released today", score=200),
+            _post(id="3", title="Machine learning advances in healthcare", score=300),
+        ]
+        deduped, count = RedditService.deduplicate_crossposts(posts)
+        assert len(deduped) == 3
+        assert count == 0
+
+    def test_empty_input(self) -> None:
+        deduped, count = RedditService.deduplicate_crossposts([])
+        assert deduped == []
+        assert count == 0
+
+    def test_subreddit_count_tracked(self) -> None:
+        """Merged groups report correct subreddit count."""
+        posts = [
+            _post(id="1", title="Same Post", score=50, crosspost_parent="parent_1", subreddit="sub1"),
+            _post(id="2", title="Same Post", score=100, crosspost_parent="parent_1", subreddit="sub2"),
+            _post(id="3", title="Same Post", score=75, crosspost_parent="parent_1", subreddit="sub3"),
+        ]
+        deduped, count = RedditService.deduplicate_crossposts(posts)
+        assert len(deduped) == 1
+        assert count == 2  # 3 posts -> 1 = 2 removed
