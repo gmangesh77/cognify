@@ -7,6 +7,7 @@ from src.services.google_trends_client import (
     GTTrendingSearch,
 )
 from src.services.hackernews_client import HackerNewsClient, HNStoryResponse
+from src.services.arxiv_client import ArxivClient, ArxivPaper
 from src.services.newsapi_client import NewsAPIArticle, NewsAPIClient
 from src.services.reddit_client import RedditClient, RedditPostResponse
 
@@ -131,3 +132,22 @@ class MockNewsAPIClient(NewsAPIClient):
         page_size: int,
     ) -> list[NewsAPIArticle]:
         return self._articles[:page_size]
+
+
+class MockArxivClient(ArxivClient):
+    """Returns canned papers for deterministic testing."""
+
+    def __init__(
+        self,
+        papers: list[ArxivPaper] | None = None,
+    ) -> None:
+        super().__init__(base_url="http://mock", timeout=1.0)
+        self._papers = papers or []
+
+    async def fetch_papers(
+        self,
+        categories: list[str],
+        max_results: int,
+        sort_by: str,
+    ) -> list[ArxivPaper]:
+        return self._papers[:max_results]
