@@ -47,3 +47,16 @@ class RedditFetchResponse(BaseModel):
     total_after_dedup: int
     total_after_filter: int
     subreddits_scanned: int
+
+
+class NewsAPIFetchRequest(BaseModel):
+    domain_keywords: list[str] = Field(min_length=1)
+    max_results: int = Field(default=30, ge=1, le=100)
+    category: str = Field(default="technology")
+    country: str = Field(default="us")
+
+
+class NewsAPIFetchResponse(BaseModel):
+    topics: list[RawTopic]
+    total_fetched: int
+    total_after_filter: int
