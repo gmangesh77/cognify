@@ -99,10 +99,10 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** TREND-003 (Hacker News Integration) — branch `feature/TREND-003-hackernews-integration`
+**Last completed:** TREND-001 (Google Trends Integration) — merged to main
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
-**Epic 1 (Trend Discovery):** TREND-006 Done, TREND-003 Done, TREND-001 In Progress — spec + plan written, ready for execution
+**Epic 1 (Trend Discovery):** TREND-006 Done, TREND-003 Done, TREND-001 Done, TREND-002 In Progress — spec + plan written, ready for execution
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
 **Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002)
-**Next action:** Execute TREND-001 plan (8 tasks, branch `feature/TREND-001-google-trends-integration`)
-**After TREND-001:** TREND-002 (Reddit), TREND-004 (NewsAPI), or DASH-001 (Dashboard frontend)
+**Next action:** Execute TREND-002 plan (11 tasks, branch `feature/TREND-002-reddit-trend-source`)
+**After TREND-002:** TREND-004 (NewsAPI), TREND-005 (arXiv), or DASH-001 (Dashboard frontend)

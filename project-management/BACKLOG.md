@@ -129,9 +129,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 ## Epic 1: Trend Discovery Engine
 **Goal**: Automatically discover trending topics in a configured domain from multiple data sources.
 
-### TREND-001: Google Trends Integration [Must]
+### TREND-001: Google Trends Integration [Must] — DONE
 **As a** content team member, **I want** the system to fetch trending topics from Google Trends API, **so that** I can identify rising search interest in my domain.
-- **Status**: In Progress (branch `feature/TREND-001-google-trends-integration`)
+- **Status**: Done (branch `feature/TREND-001-google-trends-integration`)
 - **Plan**: [`docs/superpowers/plans/2026-03-13-trend-001-google-trends-integration.md`](../docs/superpowers/plans/2026-03-13-trend-001-google-trends-integration.md)
 - **Spec**: [`docs/superpowers/specs/2026-03-13-trend-001-google-trends-integration-design.md`](../docs/superpowers/specs/2026-03-13-trend-001-google-trends-integration-design.md)
 - **Acceptance Criteria**:
