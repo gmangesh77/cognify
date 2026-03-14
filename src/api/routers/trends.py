@@ -10,6 +10,8 @@ from src.api.schemas.trends import (
     GTFetchResponse,
     HNFetchRequest,
     HNFetchResponse,
+    RedditFetchRequest,
+    RedditFetchResponse,
 )
 from src.services.google_trends import GoogleTrendsService
 from src.services.google_trends_client import (
@@ -20,6 +22,11 @@ from src.services.hackernews import HackerNewsService
 from src.services.hackernews_client import (
     HackerNewsAPIError,
     HackerNewsClient,
+)
+from src.services.reddit import RedditService
+from src.services.reddit_client import (
+    RedditAPIError,
+    RedditClient,
 )
 
 logger = structlog.get_logger()
@@ -114,4 +121,56 @@ async def fetch_google_trends(
         raise ServiceUnavailableError(
             code="google_trends_unavailable",
             message="Google Trends API is not available",
+        ) from exc
+
+
+def _get_reddit_service(request: Request) -> RedditService:
+    settings = request.app.state.settings
+    # Test injection: tests set app.state.reddit_client to a mock.
+    # In production, a fresh short-lived client is created per request.
+    if hasattr(request.app.state, "reddit_client"):
+        client = request.app.state.reddit_client
+    else:
+        client = RedditClient(
+            client_id=settings.reddit_client_id,
+            client_secret=settings.reddit_client_secret,
+            user_agent=settings.reddit_user_agent,
+            timeout=settings.reddit_request_timeout,
+        )
+    return RedditService(
+        client=client,
+        score_cap=settings.reddit_score_cap,
+    )
+
+
+@limiter.limit("5/minute")
+@trends_router.post(
+    "/trends/reddit/fetch",
+    response_model=RedditFetchResponse,
+    summary="Fetch trending Reddit posts",
+)
+async def fetch_reddit(
+    request: Request,
+    body: RedditFetchRequest,
+    user: TokenPayload = Depends(require_role("admin", "editor")),
+) -> RedditFetchResponse:
+    settings = request.app.state.settings
+    subreddits = body.subreddits or settings.reddit_default_subreddits
+    service = _get_reddit_service(request)
+    try:
+        return await service.fetch_and_normalize(
+            domain_keywords=body.domain_keywords,
+            subreddits=subreddits,
+            max_results=body.max_results,
+            sort=body.sort,
+            time_filter=body.time_filter,
+        )
+    except RedditAPIError as exc:
+        logger.error(
+            "reddit_api_error",
+            error=str(exc),
+        )
+        raise ServiceUnavailableError(
+            code="reddit_unavailable",
+            message="Reddit API is not available",
         ) from exc
