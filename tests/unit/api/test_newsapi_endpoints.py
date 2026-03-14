@@ -85,7 +85,8 @@ class TestNewsAPIEndpointAuth:
             "/api/v1/trends/newsapi/fetch",
             json=_newsapi_request(),
             headers=make_auth_header(
-                "viewer", newsapi_settings,
+                "viewer",
+                newsapi_settings,
             ),
         )
         assert resp.status_code == 403
@@ -99,7 +100,8 @@ class TestNewsAPIEndpointAuth:
             "/api/v1/trends/newsapi/fetch",
             json=_newsapi_request(),
             headers=make_auth_header(
-                "editor", newsapi_settings,
+                "editor",
+                newsapi_settings,
             ),
         )
         assert resp.status_code == 200
@@ -113,7 +115,8 @@ class TestNewsAPIEndpointAuth:
             "/api/v1/trends/newsapi/fetch",
             json=_newsapi_request(),
             headers=make_auth_header(
-                "admin", newsapi_settings,
+                "admin",
+                newsapi_settings,
             ),
         )
         assert resp.status_code == 200
@@ -129,7 +132,8 @@ class TestNewsAPIEndpointValidation:
             "/api/v1/trends/newsapi/fetch",
             json=_newsapi_request(domain_keywords=[]),
             headers=make_auth_header(
-                "editor", newsapi_settings,
+                "editor",
+                newsapi_settings,
             ),
         )
         assert resp.status_code == 422
@@ -145,7 +149,8 @@ class TestNewsAPIEndpointSuccess:
             "/api/v1/trends/newsapi/fetch",
             json=_newsapi_request(),
             headers=make_auth_header(
-                "editor", newsapi_settings,
+                "editor",
+                newsapi_settings,
             ),
         )
         assert resp.status_code == 200
@@ -166,7 +171,8 @@ class TestNewsAPIEndpointSuccess:
                 domain_keywords=["cooking"],
             ),
             headers=make_auth_header(
-                "editor", newsapi_settings,
+                "editor",
+                newsapi_settings,
             ),
         )
         assert resp.status_code == 200

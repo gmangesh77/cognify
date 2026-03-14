@@ -99,9 +99,9 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** TREND-002 (Reddit Trend Source) — on feature branch, ready for merge
+**Last completed:** TREND-005 (arXiv Paper Feed) — on feature branch, ready for merge
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
-**Epic 1 (Trend Discovery):** TREND-006 Done, TREND-003 Done, TREND-001 Done, TREND-002 Done
+**Epic 1 (Trend Discovery):** All 6 tickets Done (TREND-001 through TREND-006) — Epic complete
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
 **Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002)
-**Next action:** TREND-004 (NewsAPI), TREND-005 (arXiv), or DASH-001 (Dashboard frontend)
+**Next action:** DASH-001 (Dashboard frontend) or RESEARCH-001 (Agent Orchestrator)

@@ -131,7 +131,10 @@ class TestTopicMapping:
             url="https://example.com/cyber",
         )
         topic = NewsAPIService.map_to_raw_topic(
-            article, score=75.0, velocity=0.5, matched_keywords=["cyber"],
+            article,
+            score=75.0,
+            velocity=0.5,
+            matched_keywords=["cyber"],
         )
         assert topic.title == "Cyber Alert"
         assert topic.source == "newsapi"

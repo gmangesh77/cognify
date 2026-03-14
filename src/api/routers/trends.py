@@ -6,6 +6,8 @@ from src.api.dependencies import require_role
 from src.api.errors import ServiceUnavailableError
 from src.api.rate_limiter import limiter
 from src.api.schemas.trends import (
+    ArxivFetchRequest,
+    ArxivFetchResponse,
     GTFetchRequest,
     GTFetchResponse,
     HNFetchRequest,
@@ -14,6 +16,11 @@ from src.api.schemas.trends import (
     NewsAPIFetchResponse,
     RedditFetchRequest,
     RedditFetchResponse,
+)
+from src.services.arxiv import ArxivService
+from src.services.arxiv_client import (
+    ArxivAPIError,
+    ArxivClient,
 )
 from src.services.google_trends import GoogleTrendsService
 from src.services.google_trends_client import (
@@ -225,4 +232,45 @@ async def fetch_newsapi(
         raise ServiceUnavailableError(
             code="newsapi_unavailable",
             message="NewsAPI is not available",
+        ) from exc
+
+
+def _get_arxiv_service(request: Request) -> ArxivService:
+    settings = request.app.state.settings
+    if hasattr(request.app.state, "arxiv_client"):
+        client = request.app.state.arxiv_client
+    else:
+        client = ArxivClient(
+            base_url=settings.arxiv_api_base_url,
+            timeout=settings.arxiv_request_timeout,
+        )
+    return ArxivService(client=client)
+
+
+@limiter.limit("5/minute")
+@trends_router.post(
+    "/trends/arxiv/fetch",
+    response_model=ArxivFetchResponse,
+    summary="Fetch trending arXiv papers",
+)
+async def fetch_arxiv(
+    request: Request,
+    body: ArxivFetchRequest,
+    user: TokenPayload = Depends(require_role("admin", "editor")),
+) -> ArxivFetchResponse:
+    service = _get_arxiv_service(request)
+    try:
+        return await service.fetch_and_normalize(
+            domain_keywords=body.domain_keywords,
+            categories=body.categories,
+            max_results=body.max_results,
+        )
+    except ArxivAPIError as exc:
+        logger.error(
+            "arxiv_api_error",
+            error=str(exc),
+        )
+        raise ServiceUnavailableError(
+            code="arxiv_unavailable",
+            message="arXiv API is not available",
         ) from exc

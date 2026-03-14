@@ -54,3 +54,11 @@ class Settings(BaseSettings):
     newsapi_request_timeout: float = 10.0
     newsapi_default_category: str = "technology"
     newsapi_default_country: str = "us"
+    # arXiv integration
+    arxiv_api_base_url: str = "https://export.arxiv.org/api/query"
+    arxiv_request_timeout: float = 15.0
+    arxiv_default_categories: list[str] = [
+        "cs.CR",
+        "cs.AI",
+        "cs.LG",
+    ]
