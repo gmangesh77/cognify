@@ -106,9 +106,27 @@ class TestCrosspostDedup:
     def test_crosspost_parent_groups(self) -> None:
         """Posts with same crosspost_parent merged, highest score kept."""
         posts = [
-            _post(id="1", title="Post A", score=50, crosspost_parent="parent_1", subreddit="sub1"),
-            _post(id="2", title="Post A copy", score=200, crosspost_parent="parent_1", subreddit="sub2"),
-            _post(id="3", title="Unique post", score=100, crosspost_parent=None, subreddit="sub1"),
+            _post(
+                id="1",
+                title="Post A",
+                score=50,
+                crosspost_parent="parent_1",
+                subreddit="sub1",
+            ),
+            _post(
+                id="2",
+                title="Post A copy",
+                score=200,
+                crosspost_parent="parent_1",
+                subreddit="sub2",
+            ),
+            _post(
+                id="3",
+                title="Unique post",
+                score=100,
+                crosspost_parent=None,
+                subreddit="sub1",
+            ),
         ]
         deduped, count = RedditService.deduplicate_crossposts(posts)
         assert len(deduped) == 2
@@ -120,9 +138,21 @@ class TestCrosspostDedup:
     def test_fuzzy_title_groups(self) -> None:
         """Posts with very similar titles (>0.85 ratio) merged."""
         posts = [
-            _post(id="1", title="Breaking: Major cybersecurity breach at Company X", score=300, subreddit="sub1"),
-            _post(id="2", title="Breaking: Major cybersecurity breach at Company X!", score=100, subreddit="sub2"),
-            _post(id="3", title="Completely different topic", score=50, subreddit="sub1"),
+            _post(
+                id="1",
+                title="Breaking: Major cybersecurity breach at Company X",
+                score=300,
+                subreddit="sub1",
+            ),
+            _post(
+                id="2",
+                title="Breaking: Major cybersecurity breach at Company X!",
+                score=100,
+                subreddit="sub2",
+            ),
+            _post(
+                id="3", title="Completely different topic", score=50, subreddit="sub1"
+            ),
         ]
         deduped, count = RedditService.deduplicate_crossposts(posts)
         assert len(deduped) == 2
@@ -150,9 +180,27 @@ class TestCrosspostDedup:
     def test_subreddit_count_tracked(self) -> None:
         """Merged groups report correct subreddit count."""
         posts = [
-            _post(id="1", title="Same Post", score=50, crosspost_parent="parent_1", subreddit="sub1"),
-            _post(id="2", title="Same Post", score=100, crosspost_parent="parent_1", subreddit="sub2"),
-            _post(id="3", title="Same Post", score=75, crosspost_parent="parent_1", subreddit="sub3"),
+            _post(
+                id="1",
+                title="Same Post",
+                score=50,
+                crosspost_parent="parent_1",
+                subreddit="sub1",
+            ),
+            _post(
+                id="2",
+                title="Same Post",
+                score=100,
+                crosspost_parent="parent_1",
+                subreddit="sub2",
+            ),
+            _post(
+                id="3",
+                title="Same Post",
+                score=75,
+                crosspost_parent="parent_1",
+                subreddit="sub3",
+            ),
         ]
         deduped, count = RedditService.deduplicate_crossposts(posts)
         assert len(deduped) == 1
@@ -163,7 +211,8 @@ class TestDomainFiltering:
     def test_matches_title(self) -> None:
         post = _post(title="Cybersecurity breach report")
         matched = RedditService.filter_by_domain(
-            [post], ["cyber"],
+            [post],
+            ["cyber"],
         )
         assert len(matched) == 1
         assert matched[0][1] == ["cyber"]
@@ -174,7 +223,8 @@ class TestDomainFiltering:
             selftext="Deep dive into cybersecurity trends",
         )
         matched = RedditService.filter_by_domain(
-            [post], ["cyber"],
+            [post],
+            ["cyber"],
         )
         assert len(matched) == 1
 
@@ -185,28 +235,34 @@ class TestDomainFiltering:
             subreddit="cybersecurity",
         )
         matched = RedditService.filter_by_domain(
-            [post], ["cyber"],
+            [post],
+            ["cyber"],
         )
         assert len(matched) == 1
 
     def test_case_insensitive(self) -> None:
         post = _post(title="CYBERSECURITY NEWS")
         matched = RedditService.filter_by_domain(
-            [post], ["cyber"],
+            [post],
+            ["cyber"],
         )
         assert len(matched) == 1
 
     def test_no_match_excluded(self) -> None:
-        post = _post(title="Cooking recipes", selftext="Delicious food", subreddit="cooking")
+        post = _post(
+            title="Cooking recipes", selftext="Delicious food", subreddit="cooking"
+        )
         matched = RedditService.filter_by_domain(
-            [post], ["cyber"],
+            [post],
+            ["cyber"],
         )
         assert len(matched) == 0
 
     def test_multiple_keywords_any_match(self) -> None:
         post = _post(title="New AI model released")
         matched = RedditService.filter_by_domain(
-            [post], ["cyber", "AI"],
+            [post],
+            ["cyber", "AI"],
         )
         assert len(matched) == 1
         assert matched[0][1] == ["AI"]
@@ -232,7 +288,10 @@ class TestMapToRawTopic:
         )
         assert topic.title == "Cyber Attack Analysis"
         assert topic.source == "reddit"
-        assert topic.external_url == "https://www.reddit.com/r/cybersecurity/comments/abc123/cyber_attack/"
+        assert (
+            topic.external_url
+            == "https://www.reddit.com/r/cybersecurity/comments/abc123/cyber_attack/"
+        )
         assert topic.domain_keywords == ["cyber"]
         assert topic.description == "Detailed analysis of the attack."
         assert 0 <= topic.trend_score <= 100
@@ -280,11 +339,29 @@ class TestFetchAndNormalize:
     async def test_full_pipeline(self) -> None:
         posts: dict[str, list[RedditPostResponse]] = {
             "cybersecurity": [
-                _post(id="1", title="Cybersecurity breach", score=200, num_comments=50, subreddit="cybersecurity"),
-                _post(id="2", title="Cooking recipes", score=300, num_comments=100, subreddit="cybersecurity"),
+                _post(
+                    id="1",
+                    title="Cybersecurity breach",
+                    score=200,
+                    num_comments=50,
+                    subreddit="cybersecurity",
+                ),
+                _post(
+                    id="2",
+                    title="Cooking recipes",
+                    score=300,
+                    num_comments=100,
+                    subreddit="cybersecurity",
+                ),
             ],
             "netsec": [
-                _post(id="3", title="Network security tips", score=150, num_comments=30, subreddit="netsec"),
+                _post(
+                    id="3",
+                    title="Network security tips",
+                    score=150,
+                    num_comments=30,
+                    subreddit="netsec",
+                ),
             ],
         }
         mock_client = MockRedditClient(posts=posts)
@@ -346,10 +423,22 @@ class TestFetchAndNormalize:
         """Same crosspost_parent across subreddits -> deduped."""
         posts: dict[str, list[RedditPostResponse]] = {
             "cybersecurity": [
-                _post(id="1", title="Cyber breach", score=100, crosspost_parent="parent_1", subreddit="cybersecurity"),
+                _post(
+                    id="1",
+                    title="Cyber breach",
+                    score=100,
+                    crosspost_parent="parent_1",
+                    subreddit="cybersecurity",
+                ),
             ],
             "netsec": [
-                _post(id="2", title="Cyber breach copy", score=200, crosspost_parent="parent_1", subreddit="netsec"),
+                _post(
+                    id="2",
+                    title="Cyber breach copy",
+                    score=200,
+                    crosspost_parent="parent_1",
+                    subreddit="netsec",
+                ),
             ],
         }
         mock_client = MockRedditClient(posts=posts)
@@ -381,7 +470,10 @@ class TestFetchAndNormalize:
                 if subreddit == "private_sub":
                     raise RedditAPIError("Subreddit is private")
                 return await super().fetch_subreddit_posts(
-                    subreddit, sort, time_filter, limit,
+                    subreddit,
+                    sort,
+                    time_filter,
+                    limit,
                 )
 
         posts: dict[str, list[RedditPostResponse]] = {

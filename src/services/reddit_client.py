@@ -1,6 +1,6 @@
 from typing import TypedDict
 
-import asyncpraw  # type: ignore[import-untyped]
+import asyncpraw
 
 
 class RedditPostResponse(TypedDict):

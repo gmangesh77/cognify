@@ -40,11 +40,7 @@ class RedditService:
         recency_bonus = 100.0 * math.exp(
             -_RECENCY_LAMBDA * hours_ago,
         )
-        raw = (
-            (score * 0.3)
-            + (comment_velocity * 0.5)
-            + (recency_bonus * 0.2)
-        )
+        raw = (score * 0.3) + (comment_velocity * 0.5) + (recency_bonus * 0.2)
         return min(100.0, (raw / score_cap) * 100)
 
     @staticmethod

@@ -60,7 +60,10 @@ class TestFetchSubredditPosts:
                 timeout=5.0,
             )
             posts = await client.fetch_subreddit_posts(
-                "test", "hot", "day", 10,
+                "test",
+                "hot",
+                "day",
+                10,
             )
 
         assert len(posts) == 1
@@ -88,7 +91,10 @@ class TestFetchSubredditPosts:
                 timeout=5.0,
             )
             posts = await client.fetch_subreddit_posts(
-                "empty", "hot", "day", 10,
+                "empty",
+                "hot",
+                "day",
+                10,
             )
 
         assert posts == []
@@ -111,5 +117,8 @@ class TestFetchSubredditPosts:
             )
             with pytest.raises(RedditAPIError, match="API failure"):
                 await client.fetch_subreddit_posts(
-                    "test", "hot", "day", 10,
+                    "test",
+                    "hot",
+                    "day",
+                    10,
                 )
