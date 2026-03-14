@@ -60,3 +60,17 @@ class NewsAPIFetchResponse(BaseModel):
     topics: list[RawTopic]
     total_fetched: int
     total_after_filter: int
+
+
+class ArxivFetchRequest(BaseModel):
+    domain_keywords: list[str] = Field(min_length=1)
+    categories: list[str] = Field(
+        default=["cs.CR", "cs.AI", "cs.LG"],
+    )
+    max_results: int = Field(default=30, ge=1, le=100)
+
+
+class ArxivFetchResponse(BaseModel):
+    topics: list[RawTopic]
+    total_fetched: int
+    total_after_filter: int
