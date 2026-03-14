@@ -49,11 +49,7 @@ class NewsAPIService:
             source_name = article["source"]["name"].lower()
             content = (article.get("content") or "").lower()
             text = f"{title} {desc} {source_name} {content}"
-            matched = [
-                kw
-                for kw in domain_keywords
-                if kw.lower() in text
-            ]
+            matched = [kw for kw in domain_keywords if kw.lower() in text]
             if matched:
                 results.append((article, matched))
         return results
@@ -164,7 +160,10 @@ class NewsAPIService:
             except (ValueError, TypeError):
                 hours_ago = 24.0  # fallback for bad dates
             score = self.calculate_score(
-                index, total, hours_ago, len(kws),
+                index,
+                total,
+                hours_ago,
+                len(kws),
             )
             velocity = self.calculate_velocity(hours_ago)
             topics.append(

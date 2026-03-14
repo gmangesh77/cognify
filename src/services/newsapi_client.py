@@ -74,6 +74,4 @@ class NewsAPIClient:
             code = data.get("code", "unknown")
             raise NewsAPIError(f"NewsAPI error: {code}")
         articles: list[NewsAPIArticle] = data.get("articles", [])
-        return [
-            a for a in articles if a.get("title") != "[Removed]"
-        ]
+        return [a for a in articles if a.get("title") != "[Removed]"]
