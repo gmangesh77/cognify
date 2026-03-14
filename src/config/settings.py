@@ -36,3 +36,15 @@ class Settings(BaseSettings):
     gt_default_country: str = "united_states"
     gt_default_max_results: int = 30
     gt_request_timeout: float = 15.0
+    # Reddit integration
+    reddit_client_id: str = ""
+    reddit_client_secret: str = ""
+    reddit_user_agent: str = "cognify:v1.0 (by /u/cognify-bot)"
+    reddit_default_subreddits: list[str] = [
+        "cybersecurity",
+        "programming",
+        "netsec",
+        "technology",
+    ]
+    reddit_score_cap: float = 1000.0
+    reddit_request_timeout: float = 15.0

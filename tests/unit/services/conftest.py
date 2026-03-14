@@ -7,6 +7,7 @@ from src.services.google_trends_client import (
     GTTrendingSearch,
 )
 from src.services.hackernews_client import HackerNewsClient, HNStoryResponse
+from src.services.reddit_client import RedditClient, RedditPostResponse
 
 VECTOR_DIM = 384
 
@@ -53,6 +54,31 @@ class MockHackerNewsClient(HackerNewsClient):
         num_results: int,
     ) -> list[HNStoryResponse]:
         return self._stories[:num_results]
+
+
+class MockRedditClient(RedditClient):
+    """Returns canned posts per subreddit for deterministic testing."""
+
+    def __init__(
+        self,
+        posts: dict[str, list[RedditPostResponse]] | None = None,
+    ) -> None:
+        super().__init__(
+            client_id="mock",
+            client_secret="mock",
+            user_agent="mock",
+            timeout=1.0,
+        )
+        self._posts = posts or {}
+
+    async def fetch_subreddit_posts(
+        self,
+        subreddit: str,
+        sort: str,
+        time_filter: str,
+        limit: int,
+    ) -> list[RedditPostResponse]:
+        return self._posts.get(subreddit, [])[:limit]
 
 
 class MockGoogleTrendsClient(GoogleTrendsClient):
