@@ -269,3 +269,5 @@ erDiagram
 See [docs/architecture/adrs/](./adrs/) for all decisions.
 - [ADR-001: LangGraph for Agent Orchestration](./adrs/ADR-001-langgraph-agent-orchestration.md)
 - [ADR-002: Milvus for Vector Database](./adrs/ADR-002-milvus-vector-database.md)
+- [ADR-003: CanonicalArticle as Content Pipeline Boundary](./adrs/ADR-003-canonical-article-boundary.md)
+- [ADR-004: Centralized Publishing with Transformer/Adapter Pattern](./adrs/ADR-004-publishing-transformer-adapter-pattern.md)

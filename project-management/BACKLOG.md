@@ -201,6 +201,37 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 
 ---
 
+## Epic 8: Architecture Foundation
+**Goal**: Establish core contracts and patterns identified in the Architecture Modularity Review before building the research and content pipelines.
+
+**Reference**: [`docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md`](../docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md)
+
+### ARCH-001: CanonicalArticle Model & Content Contracts [Must]
+**As a** developer, **I want** the CanonicalArticle Pydantic model and related content contracts defined, **so that** the research pipeline and publishing pipeline share a clear output/input boundary.
+- **Acceptance Criteria**:
+  - `CanonicalArticle` Pydantic model defined in `src/models/` with fields: id, title, subtitle, body_markdown, summary, key_claims, content_type, seo (SEOMetadata), citations (list[Citation]), visuals (list[ImageAsset]), authors, domain, generated_at, provenance (Provenance), ai_generated
+  - Supporting models: `SEOMetadata`, `Citation`, `ImageAsset`, `Provenance`
+  - `Transformer` protocol defined: `transform(CanonicalArticle) -> PlatformPayload`
+  - `Adapter` protocol defined: `publish(PlatformPayload, schedule_at) -> PublicationResult`
+  - Unit tests validating model construction and serialization
+  - No behavioral logic — pure model/contract definitions
+- **Story Points**: 3
+- **Blocks**: RESEARCH-001, CONTENT-001, PUBLISH-001
+
+### ARCH-002: TrendSource Protocol & Registry [Should]
+**As a** developer, **I want** a formal TrendSource protocol and source registry, **so that** trend sources are interchangeable and the router boilerplate is eliminated.
+- **Acceptance Criteria**:
+  - `TrendSource` protocol: `source_name: str`, `fetch_and_normalize(config) -> list[RawTopic]`
+  - `TrendFetchConfig` Pydantic model for unified fetch parameters
+  - Source registry that discovers and manages active trend sources
+  - Single registry-driven router endpoint replaces 5 copy-paste handlers
+  - All 5 existing sources (HN, Google Trends, Reddit, NewsAPI, arXiv) implement the protocol
+  - Existing tests continue to pass (no behavioral changes)
+- **Story Points**: 5
+- **Note**: Refactors existing code in `src/api/routers/trends.py` and `src/services/trends/`
+
+---
+
 ## Epic 2: Multi-Agent Research Pipeline
 **Goal**: Autonomously research a selected topic using parallel AI agents with RAG.
 
@@ -377,8 +408,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 ## Epic 6: Dashboard & Configuration
 **Goal**: Provide a web dashboard for monitoring, configuration, and manual control.
 
-### DASH-001: Dashboard Overview [Must]
+### DASH-001: Dashboard Overview [Must] — DONE
 **As a** user, **I want** a dashboard showing key metrics, **so that** I can monitor system activity at a glance.
+- **Status**: Done (branch `feature/DASH-001-dashboard-overview`, PR #12)
+- **Plan**: [`docs/superpowers/plans/2026-03-15-dash-001-dashboard-overview.md`](../docs/superpowers/plans/2026-03-15-dash-001-dashboard-overview.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-15-dash-001-dashboard-overview-design.md`](../docs/superpowers/specs/2026-03-15-dash-001-dashboard-overview-design.md)
 - **Acceptance Criteria**:
   - Metric cards: Topics Discovered, Articles Generated, Avg Research Time, Published count
   - Trending Topics list with scores and source badges
@@ -471,10 +505,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 |------|------|--------|-------|--------------|-------------|
 | Design System & UI/UX | 7 | 2 | 0 | 9 | 30 |
 | Trend Discovery | 4 | 2 | 0 | 6 | 27 |
+| Architecture Foundation | 1 | 1 | 0 | 2 | 8 |
 | Research Pipeline | 4 | 1 | 0 | 5 | 39 |
 | Content Generation | 4 | 0 | 0 | 4 | 21 |
 | Visual Assets | 1 | 1 | 1 | 3 | 13 |
 | Publishing | 2 | 1 | 2 | 5 | 23 |
 | Dashboard & Config | 4 | 1 | 0 | 5 | 31 |
 | API & Auth | 3 | 0 | 0 | 3 | 15 |
-| **Total** | **29** | **8** | **3** | **40** | **199** |
+| **Total** | **30** | **9** | **3** | **42** | **207** |

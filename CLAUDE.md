@@ -99,9 +99,10 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** TREND-005 (arXiv Paper Feed) — on feature branch, ready for merge
+**Last completed:** DASH-001 (Dashboard Overview) — merged (PR #12)
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
 **Epic 1 (Trend Discovery):** All 6 tickets Done (TREND-001 through TREND-006) — Epic complete
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
-**Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002)
-**Next action:** DASH-001 (Dashboard frontend) or RESEARCH-001 (Agent Orchestrator)
+**Epic 6 (Dashboard):** DASH-001 Done — Next.js 15 frontend with Tailwind v4, shadcn/ui, 43 tests
+**Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002). See @docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md for modularity analysis.
+**Next action:** ARCH-001 (CanonicalArticle contracts) → RESEARCH-001 (Agent Orchestrator)
