@@ -1,6 +1,6 @@
 """Tests for content pipeline models."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID, uuid4
 
 import pytest

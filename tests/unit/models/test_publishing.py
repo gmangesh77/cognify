@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
+from src.models.content import CanonicalArticle
 from src.models.publishing import (
     Adapter,
     PlatformPayload,
@@ -13,7 +14,6 @@ from src.models.publishing import (
     PublicationStatus,
     Transformer,
 )
-from src.models.content import CanonicalArticle
 
 
 class TestPlatformPayload:
