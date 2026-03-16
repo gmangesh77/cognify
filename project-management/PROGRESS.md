@@ -65,7 +65,7 @@
 
 | Ticket   | Title                                  | Status  | Branch | Plan | Spec |
 | -------- | -------------------------------------- | ------- | ------ | ---- | ---- |
-| ARCH-001 | CanonicalArticle Model & Contracts     | Backlog | —      | —    | —    |
+| ARCH-001 | CanonicalArticle Model & Contracts     | Done | `feature/ARCH-001-canonical-article-contracts` | [plan](../docs/superpowers/plans/2026-03-17-arch-001-canonical-article-contracts.md) | [spec](../docs/superpowers/specs/2026-03-17-arch-001-canonical-article-contracts-design.md) |
 | ARCH-002 | TrendSource Protocol & Registry        | Backlog | —      | —    | —    |
 
 

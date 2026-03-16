@@ -206,8 +206,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 
 **Reference**: [`docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md`](../docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md)
 
-### ARCH-001: CanonicalArticle Model & Content Contracts [Must]
+### ARCH-001: CanonicalArticle Model & Content Contracts [Must] — DONE
 **As a** developer, **I want** the CanonicalArticle Pydantic model and related content contracts defined, **so that** the research pipeline and publishing pipeline share a clear output/input boundary.
+- **Status**: Done (branch `feature/ARCH-001-canonical-article-contracts`, PR #14)
+- **Plan**: [`docs/superpowers/plans/2026-03-17-arch-001-canonical-article-contracts.md`](../docs/superpowers/plans/2026-03-17-arch-001-canonical-article-contracts.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-17-arch-001-canonical-article-contracts-design.md`](../docs/superpowers/specs/2026-03-17-arch-001-canonical-article-contracts-design.md)
 - **Acceptance Criteria**:
   - `CanonicalArticle` Pydantic model defined in `src/models/` with fields: id, title, subtitle, body_markdown, summary, key_claims, content_type, seo (SEOMetadata), citations (list[Citation]), visuals (list[ImageAsset]), authors, domain, generated_at, provenance (Provenance), ai_generated
   - Supporting models: `SEOMetadata`, `Citation`, `ImageAsset`, `Provenance`
