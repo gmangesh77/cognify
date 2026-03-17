@@ -72,7 +72,12 @@ class TestSerpAPIClientSearch:
     async def test_skips_results_without_snippet(self) -> None:
         resp_data = {
             "organic_results": [
-                {"position": 1, "title": "Good", "link": "https://a.com", "snippet": "Has snippet"},
+                {
+                    "position": 1,
+                    "title": "Good",
+                    "link": "https://a.com",
+                    "snippet": "Has snippet",
+                },
                 {"position": 2, "title": "Bad", "link": "https://b.com"},
             ]
         }
