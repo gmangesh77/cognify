@@ -33,9 +33,7 @@ logger = structlog.get_logger()
 class ChunkService(TypingProtocol):
     """Protocol for chunking text into document chunks."""
 
-    def chunk(
-        self, text: str, metadata: ChunkMetadata
-    ) -> list[DocumentChunk]: ...
+    def chunk(self, text: str, metadata: ChunkMetadata) -> list[DocumentChunk]: ...
 
 
 class VectorStore(TypingProtocol):
@@ -181,9 +179,7 @@ def build_graph(
     return graph.compile()
 
 
-async def _index_new_findings(
-    state: ResearchState, deps: IndexingDeps
-) -> int:
+async def _index_new_findings(state: ResearchState, deps: IndexingDeps) -> int:
     """Index only un-indexed findings into Milvus.
 
     Returns count of NEW findings processed.
@@ -220,7 +216,5 @@ def _chunk_findings(
                 topic_id=str(topic.id),
                 session_id=session_id,
             )
-            all_chunks.extend(
-                chunker.chunk(source.snippet, metadata)
-            )
+            all_chunks.extend(chunker.chunk(source.snippet, metadata))
     return all_chunks

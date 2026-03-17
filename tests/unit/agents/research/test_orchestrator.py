@@ -69,9 +69,7 @@ def _make_indexing_deps(
 ) -> IndexingDeps:
     mock_store = AsyncMock()
     if insert_side_effect:
-        mock_store.insert_chunks = AsyncMock(
-            side_effect=insert_side_effect
-        )
+        mock_store.insert_chunks = AsyncMock(side_effect=insert_side_effect)
     else:
         mock_store.insert_chunks = AsyncMock(return_value=3)
     mock_embedder = MagicMock()
@@ -148,9 +146,7 @@ class TestIndexFindingsNode:
         deps = _make_indexing_deps()
         llm = FakeListChatModel(responses=[_plan_json(3), _eval_json(True)])
         dispatcher = AsyncIODispatcher(timeout_seconds=10)
-        graph = build_graph(
-            llm, dispatcher, stub_research_agent, indexing_deps=deps
-        )
+        graph = build_graph(llm, dispatcher, stub_research_agent, indexing_deps=deps)
         result = await graph.ainvoke(_initial_state())
         assert result["status"] == "complete"
         assert deps.vector_store.insert_chunks.called
@@ -166,14 +162,10 @@ class TestIndexFindingsNode:
 
     async def test_index_failure_does_not_crash_graph(self) -> None:
         """Indexing errors are caught; graph still completes."""
-        deps = _make_indexing_deps(
-            insert_side_effect=Exception("Milvus down")
-        )
+        deps = _make_indexing_deps(insert_side_effect=Exception("Milvus down"))
         llm = FakeListChatModel(responses=[_plan_json(3), _eval_json(True)])
         dispatcher = AsyncIODispatcher(timeout_seconds=10)
-        graph = build_graph(
-            llm, dispatcher, stub_research_agent, indexing_deps=deps
-        )
+        graph = build_graph(llm, dispatcher, stub_research_agent, indexing_deps=deps)
         result = await graph.ainvoke(_initial_state())
         assert result["status"] == "complete"
 

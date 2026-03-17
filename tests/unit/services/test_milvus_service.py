@@ -33,7 +33,8 @@ def _make_chunks(
 
 
 def _make_embeddings(
-    num: int = 3, dim: int = 384,
+    num: int = 3,
+    dim: int = 384,
 ) -> list[list[float]]:
     """Create simple normalized embeddings for testing."""
     rng = np.random.default_rng(42)
@@ -61,7 +62,8 @@ def milvus_db(mock_client: MagicMock) -> MilvusService:
         return_value=mock_client,
     ):
         svc = MilvusService(
-            uri="mock://test", collection_name="test_chunks",
+            uri="mock://test",
+            collection_name="test_chunks",
         )
     svc.ensure_collection()
     return svc
@@ -69,14 +71,17 @@ def milvus_db(mock_client: MagicMock) -> MilvusService:
 
 class TestMilvusServiceEnsureCollection:
     def test_creates_collection_when_missing(
-        self, milvus_db: MilvusService, mock_client: MagicMock,
+        self,
+        milvus_db: MilvusService,
+        mock_client: MagicMock,
     ) -> None:
         mock_client.create_collection.assert_called_once()
         call_kwargs = mock_client.create_collection.call_args
         assert call_kwargs.kwargs["collection_name"] == "test_chunks"
 
     def test_skips_create_when_exists(
-        self, mock_client: MagicMock,
+        self,
+        mock_client: MagicMock,
     ) -> None:
         mock_client.has_collection.return_value = True
         with patch(
@@ -84,7 +89,8 @@ class TestMilvusServiceEnsureCollection:
             return_value=mock_client,
         ):
             svc = MilvusService(
-                uri="mock://test", collection_name="test_chunks",
+                uri="mock://test",
+                collection_name="test_chunks",
             )
         svc.ensure_collection()
         mock_client.create_collection.assert_not_called()
@@ -92,7 +98,8 @@ class TestMilvusServiceEnsureCollection:
 
 class TestMilvusServiceInsert:
     async def test_insert_chunks(
-        self, milvus_db: MilvusService,
+        self,
+        milvus_db: MilvusService,
     ) -> None:
         chunks = _make_chunks(3)
         embeddings = _make_embeddings(3)
@@ -119,7 +126,8 @@ class TestMilvusServiceInsert:
         assert "created_at" in data[0]
 
     async def test_insert_mismatched_lengths_raises(
-        self, milvus_db: MilvusService,
+        self,
+        milvus_db: MilvusService,
     ) -> None:
         chunks = _make_chunks(3)
         embeddings = _make_embeddings(2)
@@ -127,7 +135,8 @@ class TestMilvusServiceInsert:
             await milvus_db.insert_chunks(chunks, embeddings)
 
     async def test_insert_empty_returns_zero(
-        self, milvus_db: MilvusService,
+        self,
+        milvus_db: MilvusService,
     ) -> None:
         count = await milvus_db.insert_chunks([], [])
         assert count == 0
@@ -200,7 +209,9 @@ class TestMilvusServiceSearch:
         mock_client.search.return_value = []
         emb = _make_embeddings(1)
         results = await milvus_db.search(
-            emb[0], "nonexistent", top_k=10,
+            emb[0],
+            "nonexistent",
+            top_k=10,
         )
         assert results == []
 
@@ -224,7 +235,9 @@ class TestMilvusServiceSearch:
         ]
         emb = _make_embeddings(1)
         results = await milvus_db.search(
-            emb[0], "topic-a", top_k=10,
+            emb[0],
+            "topic-a",
+            top_k=10,
         )
         assert len(results) == 1
         assert results[0].text == "topic-a only"
@@ -271,7 +284,9 @@ class TestMilvusServiceStats:
 
 class TestMilvusServiceClose:
     def test_close_calls_client_close(
-        self, milvus_db: MilvusService, mock_client: MagicMock,
+        self,
+        milvus_db: MilvusService,
+        mock_client: MagicMock,
     ) -> None:
         milvus_db.close()
         mock_client.close.assert_called_once()

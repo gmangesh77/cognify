@@ -59,29 +59,42 @@ class MilvusService:
         """Build the collection schema."""
         fields = [
             FieldSchema(
-                "id", DataType.VARCHAR,
-                is_primary=True, max_length=64,
+                "id",
+                DataType.VARCHAR,
+                is_primary=True,
+                max_length=64,
             ),
             FieldSchema(
-                "embedding", DataType.FLOAT_VECTOR,
+                "embedding",
+                DataType.FLOAT_VECTOR,
                 dim=_EMBEDDING_DIM,
             ),
             FieldSchema("text", DataType.VARCHAR, max_length=65535),
             FieldSchema(
-                "source_url", DataType.VARCHAR, max_length=2048,
+                "source_url",
+                DataType.VARCHAR,
+                max_length=2048,
             ),
             FieldSchema(
-                "source_title", DataType.VARCHAR, max_length=1024,
+                "source_title",
+                DataType.VARCHAR,
+                max_length=1024,
             ),
             FieldSchema(
-                "topic_id", DataType.VARCHAR, max_length=64,
+                "topic_id",
+                DataType.VARCHAR,
+                max_length=64,
             ),
             FieldSchema(
-                "session_id", DataType.VARCHAR, max_length=64,
+                "session_id",
+                DataType.VARCHAR,
+                max_length=64,
             ),
             FieldSchema("chunk_index", DataType.INT64),
             FieldSchema(
-                "created_at", DataType.VARCHAR, max_length=32,
+                "created_at",
+                DataType.VARCHAR,
+                max_length=32,
             ),
         ]
         return CollectionSchema(fields=fields)
@@ -104,17 +117,16 @@ class MilvusService:
     ) -> int:
         """Insert chunks with embeddings. Returns count inserted."""
         if len(chunks) != len(embeddings):
-            msg = (
-                f"Chunks length {len(chunks)} "
-                f"!= embeddings length {len(embeddings)}"
-            )
+            msg = f"Chunks length {len(chunks)} != embeddings length {len(embeddings)}"
             raise ValueError(msg)
         if not chunks:
             return 0
         data = self._prepare_insert_data(chunks, embeddings)
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self._sync_insert, data,
+            None,
+            self._sync_insert,
+            data,
         )
 
     def _prepare_insert_data(
@@ -142,7 +154,8 @@ class MilvusService:
     def _sync_insert(self, data: list[dict[str, object]]) -> int:
         """Synchronous insert (called via run_in_executor)."""
         self._client.insert(
-            collection_name=self._collection_name, data=data,
+            collection_name=self._collection_name,
+            data=data,
         )
         return len(data)
 
@@ -155,8 +168,11 @@ class MilvusService:
         """Top-k similarity search with topic_id filter."""
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self._sync_search,
-            query_embedding, topic_id, top_k,
+            None,
+            self._sync_search,
+            query_embedding,
+            topic_id,
+            top_k,
         )
 
     def _sync_search(
@@ -172,7 +188,10 @@ class MilvusService:
             limit=top_k,
             filter=f'topic_id == "{topic_id}"',
             output_fields=[
-                "text", "source_url", "source_title", "chunk_index",
+                "text",
+                "source_url",
+                "source_title",
+                "chunk_index",
             ],
         )
         if not results or not results[0]:
@@ -189,16 +208,20 @@ class MilvusService:
         ]
 
     async def get_stats(
-        self, topic_id: str | None = None,
+        self,
+        topic_id: str | None = None,
     ) -> KnowledgeBaseStats:
         """Collection-level stats."""
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self._sync_get_stats, topic_id,
+            None,
+            self._sync_get_stats,
+            topic_id,
         )
 
     def _sync_get_stats(
-        self, topic_id: str | None,
+        self,
+        topic_id: str | None,
     ) -> KnowledgeBaseStats:
         """Synchronous stats (called via run_in_executor)."""
         stats = self._client.get_collection_stats(

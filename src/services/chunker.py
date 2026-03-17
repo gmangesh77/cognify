@@ -22,9 +22,7 @@ class TokenChunker:
         self._overlap = overlap
         self._enc = tiktoken.get_encoding("cl100k_base")
 
-    def chunk(
-        self, text: str, metadata: ChunkMetadata
-    ) -> list[DocumentChunk]:
+    def chunk(self, text: str, metadata: ChunkMetadata) -> list[DocumentChunk]:
         """Split text into chunks. Returns empty list for empty text."""
         stripped = text.strip()
         if not stripped:

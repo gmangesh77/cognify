@@ -76,13 +76,14 @@
 | ------------ | ------------------------------ | ------- | ------ | ---- | ---- |
 | RESEARCH-001 | Agent Orchestrator (LangGraph) | Done | `feature/RESEARCH-001-agent-orchestrator` | [plan](../docs/superpowers/plans/2026-03-17-research-001-agent-orchestrator.md) | [spec](../docs/superpowers/specs/2026-03-17-research-001-agent-orchestrator-design.md) |
 | RESEARCH-002 | Web Search Agent               | Done | `feature/RESEARCH-002-web-search-agent` | [plan](../docs/superpowers/plans/2026-03-17-research-002-web-search-agent.md) | [spec](../docs/superpowers/specs/2026-03-17-research-002-web-search-agent-design.md) |
-| RESEARCH-003 | RAG Pipeline (Milvus)          | Backlog | —      | —    | —    |
+| RESEARCH-003 | RAG Pipeline (Milvus)          | Done | `feature/RESEARCH-003-rag-pipeline` | [plan](../docs/superpowers/plans/2026-03-17-research-003-rag-pipeline.md) | [spec](../docs/superpowers/specs/2026-03-17-research-003-rag-pipeline-design.md) |
 | RESEARCH-004 | Literature Review Agent        | Backlog | —      | —    | —    |
 | RESEARCH-005 | Research Session Tracking      | Backlog | —      | —    | —    |
 
 **Stubs from RESEARCH-001 to replace:**
 - ~~RESEARCH-002: Replace `stub_research_agent` with real web search agent~~ — Done (`WebSearchAgent` in `src/agents/research/web_search.py`)
-- RESEARCH-003: Replace `stub_research_agent` in `src/agents/research/stub.py` with RAG pipeline agent. Replace `AsyncIODispatcher` in `src/services/task_dispatch.py` with `CeleryDispatcher`.
+- ~~RESEARCH-003: RAG pipeline~~ — Done (MilvusService, MilvusRetriever, TokenChunker, index_findings node)
+- Future Celery ticket: Replace `AsyncIODispatcher` in `src/services/task_dispatch.py` with `CeleryDispatcher` (deferred from RESEARCH-003).
 - Future infra ticket: Replace `MemorySaver` with `PostgresSaver` in orchestrator. Replace in-memory repositories in `src/services/research.py` with real PostgreSQL repos.
 
 
