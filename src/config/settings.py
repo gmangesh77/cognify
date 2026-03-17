@@ -62,3 +62,8 @@ class Settings(BaseSettings):
         "cs.AI",
         "cs.LG",
     ]
+    # SerpAPI integration
+    serpapi_api_key: str = ""
+    serpapi_base_url: str = "https://serpapi.com/search"
+    serpapi_timeout: float = 10.0
+    serpapi_results_per_query: int = 10
