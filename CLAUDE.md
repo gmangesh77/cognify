@@ -99,7 +99,7 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** ARCH-001 (CanonicalArticle contracts) — PR #14, ready for merge
+**Last completed:** ARCH-001 (CanonicalArticle contracts) — merged (PR #14)
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
 **Epic 1 (Trend Discovery):** All 6 tickets Done (TREND-001 through TREND-006) — Epic complete
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
