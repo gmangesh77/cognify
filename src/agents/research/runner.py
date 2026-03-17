@@ -33,6 +33,7 @@ class LangGraphResearchOrchestrator:
             "findings": [],
             "evaluation": None,
             "round_number": 0,
+            "indexed_count": 0,
             "session_id": session_id,
             "status": "initial",
             "error": None,
