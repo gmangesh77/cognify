@@ -74,11 +74,16 @@
 
 | Ticket       | Title                          | Status  | Branch | Plan | Spec |
 | ------------ | ------------------------------ | ------- | ------ | ---- | ---- |
-| RESEARCH-001 | Agent Orchestrator (LangGraph) | Backlog | —      | —    | —    |
+| RESEARCH-001 | Agent Orchestrator (LangGraph) | Done | `feature/RESEARCH-001-agent-orchestrator` | [plan](../docs/superpowers/plans/2026-03-17-research-001-agent-orchestrator.md) | [spec](../docs/superpowers/specs/2026-03-17-research-001-agent-orchestrator-design.md) |
 | RESEARCH-002 | Web Search Agent               | Backlog | —      | —    | —    |
 | RESEARCH-003 | RAG Pipeline (Milvus)          | Backlog | —      | —    | —    |
 | RESEARCH-004 | Literature Review Agent        | Backlog | —      | —    | —    |
 | RESEARCH-005 | Research Session Tracking      | Backlog | —      | —    | —    |
+
+**Stubs from RESEARCH-001 to replace:**
+- RESEARCH-002: Replace `stub_research_agent` in `src/agents/research/stub.py` with real web search agent
+- RESEARCH-003: Replace `stub_research_agent` in `src/agents/research/stub.py` with RAG pipeline agent. Replace `AsyncIODispatcher` in `src/services/task_dispatch.py` with `CeleryDispatcher`.
+- Future infra ticket: Replace `MemorySaver` with `PostgresSaver` in orchestrator. Replace in-memory repositories in `src/services/research.py` with real PostgreSQL repos.
 
 
 ## Epic 3: Content Generation Pipeline

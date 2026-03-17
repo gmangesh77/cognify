@@ -29,13 +29,13 @@ graph TD
     subgraph "Service Layer"
         S1["Topic Ranking Service"]
         S2["SEO Optimization Service"]
-        S3["Publishing Service"]
-        S4["Content Formatting Service"]
+        S3["Publishing Service (Transformer/Adapter per platform)"]
     end
     subgraph "Data Layer"
         PG[("PostgreSQL 16")]
         WV[("Milvus Vector DB")]
         RD[("Redis Cache")]
+        CA[("CanonicalArticle (PG + S3)")]
     end
     subgraph "Task Queue"
         CL["Celery Workers"]
@@ -74,8 +74,10 @@ graph TD
     V --> LLM
     S1 --> PG
     S1 --> RD
+    W --> CA
+    V --> CA
+    CA --> S3
     S3 --> PUB
-    S4 --> S3
     O --> CL
     CL --> RB
     R --> WV
@@ -85,6 +87,7 @@ graph TD
 
 ### Architecture Principles
 - **Agent-first design**: All content generation flows through LangGraph multi-agent orchestration
+- **Canonical boundary**: Content generation produces a single platform-neutral **CanonicalArticle**; all publishing consumes it via Transformer/Adapter pairs (no platform logic in the content engine). See [ADR-003](./adrs/ADR-003-canonical-article-boundary.md), [ADR-004](./adrs/ADR-004-publishing-transformer-adapter-pattern.md).
 - **Separation of concerns**: Agents, services, API, and data layers are fully decoupled
 - **API-first**: All functionality exposed through documented FastAPI REST + WebSocket endpoints
 - **Security by default**: Authentication and authorization on every endpoint; API keys encrypted
@@ -126,17 +129,17 @@ graph TD
 - **Parallelism**: Multiple instances run concurrently on different facets of a topic
 
 ### Writer Agent
-- **Responsibility**: Generates article outline, drafts sections using RAG context, applies SEO optimization, produces structured Markdown
-- **Interfaces**: Reads from Milvus (retrieved passages); outputs Markdown to Content Formatting Service
+- **Responsibility**: Generates article outline, drafts sections using RAG context, applies SEO optimization, and produces a **CanonicalArticle** (platform-neutral contract). Does not produce platform-specific output (see [ADR-003](./adrs/ADR-003-canonical-article-boundary.md)).
+- **Interfaces**: Reads from Milvus (retrieved passages); outputs **CanonicalArticle** to PostgreSQL + S3 (assets). No knowledge of publishing platforms.
 
 ### Visual Asset Agent
 - **Responsibility**: Generates charts (Matplotlib/Plotly), diagrams (Mermaid), and AI illustrations (Stable Diffusion)
-- **Interfaces**: Receives data/prompts from Writer Agent; outputs image files + Markdown references
+- **Interfaces**: Receives data/prompts from Writer Agent; outputs image assets and references that the Writer compiles into the **CanonicalArticle**
 
 ### Publishing Service
-- **Responsibility**: Formats content for target platforms, manages API credentials, pushes posts, tracks publication state
-- **Interfaces**: Ghost Admin API, WordPress REST API, Medium API, LinkedIn Marketing API
-- **Features**: Scheduling, retry with backoff, publication status tracking
+- **Responsibility**: Single owner of cross-cutting publishing concerns: scheduling, credentials, retry/backoff, rate limiting, publication state tracking, and post-publish hooks (e.g. `llms.txt` regeneration). Delegates platform-specific work to **Platform Transformer** (pure: CanonicalArticle → PlatformPayload) and **Platform Adapter** (I/O: PlatformPayload → external API) pairs per platform. See [ADR-004](./adrs/ADR-004-publishing-transformer-adapter-pattern.md).
+- **Interfaces**: Consumes **CanonicalArticle** from DB; for each target platform, runs the platform Transformer then Adapter. Integrates with Ghost, WordPress, Medium, LinkedIn (and additional platforms via new transformer + adapter only).
+- **Features**: Scheduling, retry with backoff, publication status tracking; AI discoverability (JSON-LD, AI crawler policies) handled in transformers.
 
 ### API Gateway (FastAPI)
 - **Responsibility**: Authentication, request validation, routing, rate limiting, CORS, correlation IDs
@@ -216,11 +219,13 @@ erDiagram
     }
 ```
 
+The **ARTICLE** entity (and associated assets in S3) persists the **CanonicalArticle** contract — the platform-neutral output of content generation. Publishing reads this canonical form and transforms it per platform via Transformer/Adapter pairs ([ADR-003](./adrs/ADR-003-canonical-article-boundary.md), [ADR-004](./adrs/ADR-004-publishing-transformer-adapter-pattern.md)).
+
 ### Data Flow
 1. **Trend Discovery**: Cron triggers Trend Agent → polls external APIs → normalizes/ranks → stores Topics in PostgreSQL, caches raw signals in Redis
 2. **Research**: Orchestrator picks top Topic → spawns Research Agents → agents fetch web/docs → index in Milvus → store structured findings
-3. **Generation**: Writer Agent retrieves RAG context from Milvus → generates Markdown with citations → Visual Agent adds charts/images
-4. **Publishing**: Formatting Service prepares platform-specific content → Publishing Service pushes via APIs → records Publication status
+3. **Generation**: Writer Agent retrieves RAG context from Milvus → produces **CanonicalArticle** (body_markdown, SEO, citations, key_claims, provenance, etc.); Visual Agent adds charts/images referenced in it. CanonicalArticle is persisted to PostgreSQL + S3. Content generation has no knowledge of publishing platforms.
+4. **Publishing**: Publishing Service reads **CanonicalArticle** → for each target platform, runs **Platform Transformer** (CanonicalArticle → PlatformPayload; pure, no I/O) → **Platform Adapter** (PlatformPayload → external API). Service owns scheduling, retries, credentials, and publication state.
 
 ## 5. Integration Architecture
 

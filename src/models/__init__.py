@@ -15,6 +15,16 @@ from src.models.publishing import (
     PublicationStatus,
     Transformer,
 )
+from src.models.research import (
+    EvaluationResult,
+    FacetFindings,
+    FacetTask,
+    ResearchFacet,
+    ResearchPlan,
+    SourceDocument,
+    TopicInput,
+)
+from src.models.research_db import AgentStep, ResearchSession
 
 __all__ = [
     "CanonicalArticle",
@@ -28,4 +38,13 @@ __all__ = [
     "PublicationResult",
     "PublicationStatus",
     "Transformer",
+    "EvaluationResult",
+    "FacetFindings",
+    "FacetTask",
+    "ResearchFacet",
+    "ResearchPlan",
+    "SourceDocument",
+    "TopicInput",
+    "AgentStep",
+    "ResearchSession",
 ]
