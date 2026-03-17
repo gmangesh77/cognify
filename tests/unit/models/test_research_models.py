@@ -172,3 +172,35 @@ class TestSerialization:
         data = plan.model_dump()
         restored = ResearchPlan.model_validate(data)
         assert restored == plan
+
+
+from src.models.research_db import AgentStep, ResearchSession
+
+
+class TestResearchSession:
+    def test_construct_with_defaults(self) -> None:
+        session = ResearchSession(
+            topic_id=uuid4(), started_at=datetime.now(UTC)
+        )
+        assert session.status == "planning"
+        assert session.round_count == 0
+        assert session.completed_at is None
+
+    def test_model_copy_update(self) -> None:
+        session = ResearchSession(
+            topic_id=uuid4(), started_at=datetime.now(UTC)
+        )
+        updated = session.model_copy(update={"status": "complete"})
+        assert updated.status == "complete"
+        assert session.status == "planning"  # original unchanged
+
+
+class TestAgentStep:
+    def test_construct_with_defaults(self) -> None:
+        step = AgentStep(
+            session_id=uuid4(),
+            step_name="plan_research",
+            started_at=datetime.now(UTC),
+        )
+        assert step.status == "running"
+        assert step.duration_ms is None
