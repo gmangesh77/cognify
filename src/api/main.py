@@ -19,6 +19,7 @@ from src.api.rate_limiter import limiter
 from src.api.routers.admin import admin_router
 from src.api.routers.auth import auth_router
 from src.api.routers.health import health_router
+from src.api.routers.research import research_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
 from src.config.settings import Settings
@@ -148,4 +149,9 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         trends_router,
         prefix=settings.api_v1_prefix,
         tags=["trends"],
+    )
+    app.include_router(
+        research_router,
+        prefix=settings.api_v1_prefix,
+        tags=["research"],
     )
