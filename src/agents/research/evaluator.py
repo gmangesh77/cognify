@@ -32,8 +32,8 @@ _USER_TEMPLATE = (
     "Topic: {title} ({domain})\n\n"
     "Findings per facet:\n{findings_summary}\n\n"
     "Are these findings sufficient? Identify weak facets by index.\n"
-    "Return JSON: {{\"is_complete\": bool, \"weak_facets\": [int], "
-    "\"reasoning\": \"...\"}}"
+    'Return JSON: {{"is_complete": bool, "weak_facets": [int], '
+    '"reasoning": "..."}}'
 )
 
 
@@ -61,9 +61,7 @@ def _apply_guardrails(
         )
 
     # Guardrail: zero-source facets are always weak
-    zero_source = [
-        f.facet_index for f in findings if len(f.sources) == 0
-    ]
+    zero_source = [f.facet_index for f in findings if len(f.sources) == 0]
     if zero_source:
         all_weak = list(set(result.weak_facets) | set(zero_source))
         return EvaluationResult(
@@ -78,6 +76,7 @@ def _apply_guardrails(
 @dataclass(frozen=True)
 class EvaluationContext:
     """Bundles evaluation inputs to respect 3-param limit."""
+
     topic: TopicInput
     findings: list[FacetFindings]
     round_number: int

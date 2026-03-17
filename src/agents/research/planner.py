@@ -26,17 +26,15 @@ _USER_TEMPLATE = (
     "Title: {title}\n"
     "Description: {description}\n"
     "Domain: {domain}\n\n"
-    "Return JSON: {{\"facets\": [{{\"index\": 0, \"title\": \"...\", "
-    "\"description\": \"...\", \"search_queries\": [\"...\"]}}], "
-    "\"reasoning\": \"...\"}}"
+    'Return JSON: {{"facets": [{{"index": 0, "title": "...", '
+    '"description": "...", "search_queries": ["..."]}}], '
+    '"reasoning": "..."}}'
 )
 
 _MAX_RETRIES = 2
 
 
-async def generate_research_plan(
-    topic: TopicInput, llm: BaseChatModel
-) -> ResearchPlan:
+async def generate_research_plan(topic: TopicInput, llm: BaseChatModel) -> ResearchPlan:
     """Generate a research plan from a topic via LLM."""
     user_msg = _USER_TEMPLATE.format(
         title=topic.title,

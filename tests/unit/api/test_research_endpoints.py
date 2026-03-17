@@ -34,12 +34,15 @@ def research_app(auth_settings: Settings, test_topic_id: str) -> FastAPI:
     app = create_app(auth_settings)
     topic_repo = InMemoryTopicRepository()
     from uuid import UUID
-    topic_repo.seed(TopicInput(
-        id=UUID(test_topic_id),
-        title="Test Topic",
-        description="Desc",
-        domain="tech",
-    ))
+
+    topic_repo.seed(
+        TopicInput(
+            id=UUID(test_topic_id),
+            title="Test Topic",
+            description="Desc",
+            domain="tech",
+        )
+    )
     repos = ResearchRepositories(
         sessions=InMemoryResearchSessionRepository(),
         steps=InMemoryAgentStepRepository(),
@@ -63,7 +66,10 @@ async def research_client(
 
 class TestCreateSession:
     async def test_returns_201(
-        self, research_client: httpx.AsyncClient, auth_settings: Settings, test_topic_id: str
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
     ) -> None:
         headers = make_auth_header("editor", auth_settings)
         resp = await research_client.post(
@@ -77,7 +83,10 @@ class TestCreateSession:
         assert data["status"] == "planning"
 
     async def test_viewer_cannot_create(
-        self, research_client: httpx.AsyncClient, auth_settings: Settings, test_topic_id: str
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
     ) -> None:
         headers = make_auth_header("viewer", auth_settings)
         resp = await research_client.post(
@@ -101,7 +110,10 @@ class TestCreateSession:
 
 class TestGetSession:
     async def test_returns_session(
-        self, research_client: httpx.AsyncClient, auth_settings: Settings, test_topic_id: str
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
     ) -> None:
         headers = make_auth_header("editor", auth_settings)
         create_resp = await research_client.post(
@@ -130,7 +142,10 @@ class TestGetSession:
 
 class TestListSessions:
     async def test_returns_paginated_list(
-        self, research_client: httpx.AsyncClient, auth_settings: Settings, test_topic_id: str
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
     ) -> None:
         headers = make_auth_header("editor", auth_settings)
         await research_client.post(

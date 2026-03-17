@@ -22,6 +22,7 @@ logger = structlog.get_logger()
 
 # --- Repository protocols ---
 
+
 class ResearchSessionRepository(Protocol):
     async def create(self, session: ResearchSession) -> ResearchSession: ...
     async def get(self, session_id: UUID) -> ResearchSession | None: ...
@@ -42,6 +43,7 @@ class TopicRepository(Protocol):
 
 
 # --- In-memory implementations ---
+
 
 class InMemoryResearchSessionRepository:
     def __init__(self) -> None:
@@ -97,6 +99,7 @@ class InMemoryTopicRepository:
 
 # --- Service ---
 
+
 @dataclass(frozen=True)
 class ResearchRepositories:
     sessions: ResearchSessionRepository
@@ -128,9 +131,7 @@ class ResearchService:
     async def start_session(self, topic_id: UUID) -> ResearchSession:
         if not await self._repos.topics.exists(topic_id):
             raise NotFoundError(f"Topic {topic_id} not found")
-        session = ResearchSession(
-            topic_id=topic_id, started_at=datetime.now(UTC)
-        )
+        session = ResearchSession(topic_id=topic_id, started_at=datetime.now(UTC))
         return await self._repos.sessions.create(session)
 
     async def get_topic(self, topic_id: UUID) -> TopicInput:
@@ -151,13 +152,9 @@ class ResearchService:
         self, status: str | None, page: int, size: int
     ) -> PaginatedSessions:
         items, total = await self._repos.sessions.list(status, page, size)
-        return PaginatedSessions(
-            items=items, total=total, page=page, size=size
-        )
+        return PaginatedSessions(items=items, total=total, page=page, size=size)
 
-    async def run_and_finalize(
-        self, session_id: UUID, topic: TopicInput
-    ) -> None:
+    async def run_and_finalize(self, session_id: UUID, topic: TopicInput) -> None:
         try:
             await self._orchestrator.run(session_id, topic)
         except Exception as exc:

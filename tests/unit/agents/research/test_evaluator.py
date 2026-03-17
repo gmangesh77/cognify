@@ -24,9 +24,7 @@ def _make_topic() -> TopicInput:
     )
 
 
-def _make_findings(
-    facet_index: int, num_sources: int = 2
-) -> FacetFindings:
+def _make_findings(facet_index: int, num_sources: int = 2) -> FacetFindings:
     sources = [
         SourceDocument(
             url=f"https://example.com/{facet_index}/{i}",
@@ -44,48 +42,38 @@ def _make_findings(
     )
 
 
-def _eval_json(
-    is_complete: bool, weak_facets: list[int] | None = None
-) -> str:
-    return json.dumps({
-        "is_complete": is_complete,
-        "weak_facets": weak_facets or [],
-        "reasoning": "Test reasoning",
-    })
+def _eval_json(is_complete: bool, weak_facets: list[int] | None = None) -> str:
+    return json.dumps(
+        {
+            "is_complete": is_complete,
+            "weak_facets": weak_facets or [],
+            "reasoning": "Test reasoning",
+        }
+    )
 
 
 class TestEvaluateCompleteness:
     async def test_returns_complete(self) -> None:
         llm = FakeListChatModel(responses=[_eval_json(True)])
         findings = [_make_findings(0), _make_findings(1)]
-        ctx = EvaluationContext(
-            topic=_make_topic(), findings=findings, round_number=1
-        )
+        ctx = EvaluationContext(topic=_make_topic(), findings=findings, round_number=1)
         result = await evaluate_completeness(ctx, llm=llm)
         assert isinstance(result, EvaluationResult)
         assert result.is_complete is True
 
     async def test_identifies_weak_facets(self) -> None:
-        llm = FakeListChatModel(
-            responses=[_eval_json(False, [1])]
-        )
+        llm = FakeListChatModel(responses=[_eval_json(False, [1])])
         findings = [_make_findings(0), _make_findings(1)]
-        ctx = EvaluationContext(
-            topic=_make_topic(), findings=findings, round_number=1
-        )
+        ctx = EvaluationContext(topic=_make_topic(), findings=findings, round_number=1)
         result = await evaluate_completeness(ctx, llm=llm)
         assert result.is_complete is False
         assert 1 in result.weak_facets
 
     async def test_guardrail_forces_complete_at_max_rounds(self) -> None:
         # LLM says incomplete, but round 2 guardrail forces complete
-        llm = FakeListChatModel(
-            responses=[_eval_json(False, [0, 1])]
-        )
+        llm = FakeListChatModel(responses=[_eval_json(False, [0, 1])])
         findings = [_make_findings(0), _make_findings(1)]
-        ctx = EvaluationContext(
-            topic=_make_topic(), findings=findings, round_number=2
-        )
+        ctx = EvaluationContext(topic=_make_topic(), findings=findings, round_number=2)
         result = await evaluate_completeness(ctx, llm=llm)
         assert result.is_complete is True
 
@@ -94,13 +82,9 @@ class TestEvaluateCompleteness:
         llm = FakeListChatModel(responses=[_eval_json(True)])
         findings = [
             _make_findings(0, num_sources=2),
-            FacetFindings(
-                facet_index=1, sources=[], claims=[], summary=""
-            ),
+            FacetFindings(facet_index=1, sources=[], claims=[], summary=""),
         ]
-        ctx = EvaluationContext(
-            topic=_make_topic(), findings=findings, round_number=1
-        )
+        ctx = EvaluationContext(topic=_make_topic(), findings=findings, round_number=1)
         result = await evaluate_completeness(ctx, llm=llm)
         # Even though LLM says complete, zero-source guardrail overrides
         assert result.is_complete is False

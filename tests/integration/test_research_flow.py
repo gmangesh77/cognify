@@ -52,7 +52,12 @@ _PRIVATE_KEY, _PUBLIC_KEY = _generate_test_keys()
 
 def _plan_json() -> str:
     facets = [
-        {"index": i, "title": f"F{i}", "description": f"D{i}", "search_queries": [f"q{i}"]}
+        {
+            "index": i,
+            "title": f"F{i}",
+            "description": f"D{i}",
+            "search_queries": [f"q{i}"],
+        }
         for i in range(3)
     ]
     return json.dumps({"facets": facets, "reasoning": "Plan"})
@@ -81,7 +86,9 @@ def integration_app(integration_settings: Settings) -> FastAPI:
 
     topic_id = uuid4()
     topic_repo = InMemoryTopicRepository()
-    topic_repo.seed(TopicInput(id=topic_id, title="Test", description="D", domain="tech"))
+    topic_repo.seed(
+        TopicInput(id=topic_id, title="Test", description="D", domain="tech")
+    )
 
     repos = ResearchRepositories(
         sessions=InMemoryResearchSessionRepository(),
@@ -107,7 +114,10 @@ async def integration_client(
 
 class TestResearchFlow:
     async def test_create_and_get_session(
-        self, integration_client: httpx.AsyncClient, integration_settings: Settings, integration_app: FastAPI
+        self,
+        integration_client: httpx.AsyncClient,
+        integration_settings: Settings,
+        integration_app: FastAPI,
     ) -> None:
         topic_id = integration_app.state._test_topic_id
         headers = make_auth_header("editor", integration_settings)

@@ -179,17 +179,13 @@ from src.models.research_db import AgentStep, ResearchSession
 
 class TestResearchSession:
     def test_construct_with_defaults(self) -> None:
-        session = ResearchSession(
-            topic_id=uuid4(), started_at=datetime.now(UTC)
-        )
+        session = ResearchSession(topic_id=uuid4(), started_at=datetime.now(UTC))
         assert session.status == "planning"
         assert session.round_count == 0
         assert session.completed_at is None
 
     def test_model_copy_update(self) -> None:
-        session = ResearchSession(
-            topic_id=uuid4(), started_at=datetime.now(UTC)
-        )
+        session = ResearchSession(topic_id=uuid4(), started_at=datetime.now(UTC))
         updated = session.model_copy(update={"status": "complete"})
         assert updated.status == "complete"
         assert session.status == "planning"  # original unchanged

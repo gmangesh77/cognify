@@ -36,12 +36,14 @@ def _make_repos(
 ) -> ResearchRepositories:
     topics = InMemoryTopicRepository()
     for tid in topic_ids or []:
-        topics.seed(TopicInput(
-            id=tid,
-            title="Test",
-            description="Desc",
-            domain="tech",
-        ))
+        topics.seed(
+            TopicInput(
+                id=tid,
+                title="Test",
+                description="Desc",
+                domain="tech",
+            )
+        )
     return ResearchRepositories(
         sessions=InMemoryResearchSessionRepository(),
         steps=InMemoryAgentStepRepository(),

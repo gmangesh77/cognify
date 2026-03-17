@@ -42,9 +42,7 @@ class AsyncIODispatcher:
         self, facet: ResearchFacet, agent_fn: AgentFunction
     ) -> FacetFindings:
         try:
-            return await asyncio.wait_for(
-                agent_fn(facet), timeout=self._timeout
-            )
+            return await asyncio.wait_for(agent_fn(facet), timeout=self._timeout)
         except (TimeoutError, Exception) as exc:
             logger.warning(
                 "facet_dispatch_failed",
