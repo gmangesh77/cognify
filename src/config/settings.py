@@ -67,3 +67,11 @@ class Settings(BaseSettings):
     serpapi_base_url: str = "https://serpapi.com/search"
     serpapi_timeout: float = 10.0
     serpapi_results_per_query: int = 10
+    # Milvus
+    milvus_uri: str = "./milvus_data.db"
+    milvus_collection_name: str = "research_chunks"
+    # Chunking
+    chunk_size_tokens: int = 512
+    chunk_overlap_tokens: int = 50
+    # Retrieval
+    top_k_retrieval: int = 5
