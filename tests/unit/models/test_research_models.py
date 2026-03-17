@@ -200,3 +200,78 @@ class TestAgentStep:
         )
         assert step.status == "running"
         assert step.duration_ms is None
+
+
+from src.models.research import (
+    ChunkMetadata,
+    ChunkResult,
+    DocumentChunk,
+    KnowledgeBaseStats,
+)
+
+
+class TestChunkMetadata:
+    def test_construct(self) -> None:
+        meta = ChunkMetadata(
+            source_url="https://example.com",
+            source_title="Test",
+            topic_id="topic-1",
+            session_id="session-1",
+        )
+        assert meta.source_url == "https://example.com"
+
+    def test_frozen(self) -> None:
+        meta = ChunkMetadata(
+            source_url="https://example.com",
+            source_title="Test",
+            topic_id="t",
+            session_id="s",
+        )
+        with pytest.raises(ValidationError):
+            meta.source_url = "changed"  # type: ignore[misc]
+
+
+class TestDocumentChunk:
+    def test_construct(self) -> None:
+        chunk = DocumentChunk(
+            text="Some chunk text",
+            source_url="https://example.com",
+            source_title="Test",
+            topic_id="topic-1",
+            session_id="session-1",
+            chunk_index=0,
+        )
+        assert chunk.chunk_index == 0
+        assert chunk.text == "Some chunk text"
+
+
+class TestChunkResult:
+    def test_construct(self) -> None:
+        result = ChunkResult(
+            text="Retrieved chunk",
+            source_url="https://example.com",
+            source_title="Test",
+            score=0.95,
+            chunk_index=0,
+        )
+        assert result.score == 0.95
+
+
+class TestKnowledgeBaseStats:
+    def test_construct_with_topic(self) -> None:
+        stats = KnowledgeBaseStats(
+            total_chunks=100,
+            total_documents=25,
+            collection_name="research_chunks",
+            topic_id="topic-1",
+        )
+        assert stats.total_chunks == 100
+        assert stats.topic_id == "topic-1"
+
+    def test_construct_without_topic(self) -> None:
+        stats = KnowledgeBaseStats(
+            total_chunks=100,
+            total_documents=25,
+            collection_name="research_chunks",
+        )
+        assert stats.topic_id is None

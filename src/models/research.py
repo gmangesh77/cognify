@@ -68,3 +68,42 @@ class EvaluationResult(BaseModel, frozen=True):
     is_complete: bool
     weak_facets: list[int]
     reasoning: str
+
+
+class ChunkMetadata(BaseModel, frozen=True):
+    """Metadata for a document chunk (passed to TokenChunker)."""
+
+    source_url: str
+    source_title: str
+    topic_id: str
+    session_id: str
+
+
+class DocumentChunk(BaseModel, frozen=True):
+    """A chunked document ready for embedding and Milvus storage."""
+
+    text: str
+    source_url: str
+    source_title: str
+    topic_id: str
+    session_id: str
+    chunk_index: int
+
+
+class ChunkResult(BaseModel, frozen=True):
+    """A retrieved chunk from Milvus similarity search."""
+
+    text: str
+    source_url: str
+    source_title: str
+    score: float
+    chunk_index: int
+
+
+class KnowledgeBaseStats(BaseModel, frozen=True):
+    """Knowledge base statistics from Milvus."""
+
+    total_chunks: int
+    total_documents: int
+    collection_name: str
+    topic_id: str | None = None

@@ -27,6 +27,7 @@ class ResearchState(TypedDict):
     findings: Annotated[list[FacetFindings], operator.add]
     evaluation: EvaluationResult | None
     round_number: int
+    indexed_count: int
     session_id: UUID  # Passed as UUID, LangGraph MemorySaver preserves it
     status: str
     error: str | None
