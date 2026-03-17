@@ -1,7 +1,7 @@
 # Low-Level Design: Agent Orchestration & Content Pipeline
 
 ## 1. Overview
-The agent orchestration system is Cognify's core — it coordinates trend detection, multi-agent research, content generation, and visual asset creation through a LangGraph StateGraph. This document details the internal design of the orchestrator, its agent interfaces, and the content pipeline.
+The agent orchestration system is Cognify's core — it coordinates trend detection, multi-agent research, content generation, and visual asset creation through a LangGraph StateGraph. Content generation produces a single **CanonicalArticle** (platform-neutral contract); publishing consumes it via **Platform Transformer** (pure: CanonicalArticle → PlatformPayload) and **Platform Adapter** (I/O: PlatformPayload → API) pairs per platform. See [ADR-003](../adrs/ADR-003-canonical-article-boundary.md) and [ADR-004](../adrs/ADR-004-publishing-transformer-adapter-pattern.md). This document details the internal design of the orchestrator, its agent interfaces, and the content pipeline.
 
 ## 2. Detailed Design
 ```mermaid
@@ -12,8 +12,8 @@ classDiagram
         +plan_research(topic: Topic) PlanResult
         +spawn_researchers(plan: PlanResult) list[ResearchResult]
         +synthesize(results: list[ResearchResult]) SynthesisResult
-        +generate_article(synthesis: SynthesisResult) Article
-        +review_and_finalize(article: Article) Article
+        +generate_article(synthesis: SynthesisResult) CanonicalArticle
+        +review_and_finalize(article: CanonicalArticle) CanonicalArticle
     }
 
     class AgentState {
@@ -22,7 +22,7 @@ classDiagram
         +PlanResult plan
         +list[ResearchResult] findings
         +SynthesisResult synthesis
-        +Article article
+        +CanonicalArticle article
         +list[str] errors
         +dict metadata
     }
@@ -46,7 +46,7 @@ classDiagram
         +generate_outline(topic: Topic, findings: list[ResearchResult]) Outline
         +draft_section(section: OutlineSection, context: list[Chunk]) str
         +apply_seo(content: str, keywords: list[str]) str
-        +compile_article(sections: list[str], citations: list[Citation]) Article
+        +compile_article(sections: list[str], citations: list[Citation], assets: list[ImageAsset]) CanonicalArticle
     }
 
     class VisualAssetAgent {
@@ -55,15 +55,19 @@ classDiagram
         +generate_illustration(prompt: str) ImageAsset
     }
 
-    class ContentFormatter {
-        +to_markdown(article: Article, assets: list[ImageAsset]) str
-        +to_html(article: Article, assets: list[ImageAsset]) str
-        +to_platform_format(content: str, platform: Platform) PlatformContent
+    class PlatformTransformer {
+        <<Protocol>>
+        +transform(article: CanonicalArticle) PlatformPayload
+    }
+
+    class PlatformAdapter {
+        <<Protocol>>
+        +publish(payload: PlatformPayload, schedule_at: datetime?) PublicationResult
     }
 
     class PublishingService {
-        +publish(content: PlatformContent, platform: Platform) Publication
-        +schedule(content: PlatformContent, platform: Platform, at: datetime) Publication
+        +publish(article: CanonicalArticle, platform: Platform) Publication
+        +schedule(article: CanonicalArticle, platform: Platform, at: datetime) Publication
         +get_status(publication_id: str) PublicationStatus
     }
 
@@ -74,6 +78,19 @@ classDiagram
         +str source
         +str domain
         +datetime discovered_at
+    }
+
+    class CanonicalArticle {
+        +UUID id
+        +str title
+        +str body_markdown
+        +str summary
+        +list[str] key_claims
+        +SEOMetadata seo
+        +list[Citation] citations
+        +list[ImageAsset] visuals
+        +Provenance provenance
+        +bool ai_generated
     }
 
     class Article {
@@ -91,10 +108,13 @@ classDiagram
     OrchestratorAgent --> ResearchAgent
     OrchestratorAgent --> WriterAgent
     OrchestratorAgent --> VisualAssetAgent
-    WriterAgent --> ContentFormatter
-    ContentFormatter --> PublishingService
+    WriterAgent --> CanonicalArticle
+    PublishingService --> PlatformTransformer
+    PublishingService --> PlatformAdapter
+    PlatformTransformer ..> CanonicalArticle : consumes
+    PlatformAdapter ..> PlatformTransformer : consumes
     ResearchAgent --> Topic
-    WriterAgent --> Article
+    Article ..|> CanonicalArticle
 ```
 
 ## 3. API Specifications
@@ -160,7 +180,9 @@ class Topic(SQLModel, table=True):
     discovered_at: datetime = Field(default_factory=datetime.utcnow)
 ```
 
-### Article
+### Article (persists CanonicalArticle contract)
+The `Article` table persists the **CanonicalArticle** contract (see [ADR-003](../adrs/ADR-003-canonical-article-boundary.md)). Schema may be extended with `summary`, `key_claims`, `provenance`, `ai_generated`, etc., as the CanonicalArticle model is implemented.
+
 ```python
 class Article(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid4, primary_key=True)
@@ -202,13 +224,13 @@ class ResearchSession(SQLModel, table=True):
 ### Agent Orchestration Flow
 1. Orchestrator receives topic → creates research plan (3-5 facets)
 2. For each facet, spawn a ResearchAgent in parallel via Celery
-3. Each agent: web search → fetch docs → chunk → embed in Weaviate → summarize
+3. Each agent: web search → fetch docs → chunk → embed in vector DB → summarize
 4. Orchestrator waits for all agents (timeout: 5min) → collects results
 5. Synthesis: merge findings, resolve conflicts, rank by citation quality
-6. Writer Agent: outline → draft per section (RAG retrieval) → SEO pass → compile
-7. Visual Agent: generate charts for data mentions, diagrams for concepts, illustration for hero image
+6. Writer Agent: outline → draft per section (RAG retrieval) → SEO pass → **compile_article** produces **CanonicalArticle** (persisted to DB + S3). Content generation has no knowledge of publishing platforms.
+7. Visual Agent: generate charts for data mentions, diagrams for concepts, illustration for hero image; assets are referenced in the CanonicalArticle.
 8. Review gate: automated quality check (readability, citation count, SEO score)
-9. If quality threshold met → status = READY; else → flag for human review
+9. If quality threshold met → status = READY (CanonicalArticle stored). **Publishing**: when user requests publish, Publishing Service loads CanonicalArticle → runs **Platform Transformer** (CanonicalArticle → PlatformPayload; pure, no I/O) → **Platform Adapter** (PlatformPayload → external API). Service owns retries, scheduling, credentials, and publication state ([ADR-004](../adrs/ADR-004-publishing-transformer-adapter-pattern.md)).
 
 ### SEO Optimization Rules
 - Title: 50-60 chars, primary keyword in first 30 chars
@@ -277,18 +299,20 @@ sequenceDiagram
     O->>O: Synthesize findings
     O->>W: Generate article
     W->>WV: RAG retrieval (relevant passages)
-    W->>W: Outline → Draft → SEO pass
-    W-->>O: Article draft
+    W->>W: Outline → Draft → SEO pass → compile_article
+    W-->>O: CanonicalArticle
 
     O->>V: Generate visuals
     V->>V: Charts + diagrams + illustration
-    V-->>O: Visual assets
+    V-->>O: Visual assets (referenced in CanonicalArticle)
 
-    O->>PG: Save article (status=READY)
+    O->>PG: Save CanonicalArticle (ARTICLE + S3 assets, status=READY)
     O-->>Q: Orchestration complete
 
     U->>API: POST /articles/{id}/publish {platform: "ghost"}
-    API->>PUB: Push to Ghost
+    API->>PUB: publish(CanonicalArticle, platform)
+    PUB->>PUB: GhostTransformer.transform(article) → PlatformPayload
+    PUB->>PUB: GhostAdapter.publish(payload)
     PUB->>PG: Record publication
     PUB-->>API: Published URL
     API-->>U: 200 {publication}
