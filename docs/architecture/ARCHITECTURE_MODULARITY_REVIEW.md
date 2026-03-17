@@ -125,8 +125,8 @@ BizTalk's core insight: **separate message content from message transport, and s
 |---|---|---|
 | **Receive Adapter** | `*_client.py` (HN, Reddit, etc.) | Working well |
 | **Receive Pipeline** | `*_service.py` (normalize → `RawTopic`) | Working, needs protocol |
-| **Canonical Schema** | `RawTopic` (inbound), `CanonicalArticle` (outbound) | Inbound done, outbound needed |
-| **Orchestration** | LangGraph StateGraph | Planned (Epic 2) |
+| **Canonical Schema** | `RawTopic` (inbound), `CanonicalArticle` (outbound) | Both defined (ARCH-001) |
+| **Orchestration** | LangGraph StateGraph | Implemented (RESEARCH-001) |
 | **Maps** | Platform Transformers | Not built yet |
 | **Send Adapter** | Platform Adapters | Not built yet |
 
@@ -461,7 +461,7 @@ This is not a separate epic — it threads through existing tickets:
 | **Content engine decoupling** | **N/A** | Not built yet — design-time opportunity |
 | **Platform transformation layer** | **N/A** | Not built yet — must be separate from content engine |
 | **Publishing adapter pattern** | **N/A** | Not built yet — centralized service with transformer/adapter pairs |
-| **LangGraph as orchestrator** | **N/A** | Planned — should be the single orchestrator, no separate pipeline framework |
+| **LangGraph as orchestrator** | **A** | Implemented (RESEARCH-001) — StateGraph with plan/dispatch/index/evaluate/finalize nodes |
 | **AI discoverability** | **D** | Not addressed; CONTENT-003 covers only traditional SEO |
 | **Configuration extensibility** | **B** | Pydantic Settings works; per-domain config not yet modeled |
 
