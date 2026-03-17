@@ -238,8 +238,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 ## Epic 2: Multi-Agent Research Pipeline
 **Goal**: Autonomously research a selected topic using parallel AI agents with RAG.
 
-### RESEARCH-001: Agent Orchestrator (LangGraph) [Must]
+### RESEARCH-001: Agent Orchestrator (LangGraph) [Must] — DONE
 **As a** system, **I want** an orchestrator that plans research and coordinates sub-agents, **so that** research is comprehensive and efficient.
+- **Status**: Done (branch `feature/RESEARCH-001-agent-orchestrator`, PR #15)
+- **Plan**: [`docs/superpowers/plans/2026-03-17-research-001-agent-orchestrator.md`](../docs/superpowers/plans/2026-03-17-research-001-agent-orchestrator.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-17-research-001-agent-orchestrator-design.md`](../docs/superpowers/specs/2026-03-17-research-001-agent-orchestrator-design.md)
 - **Acceptance Criteria**:
   - Receives topic, generates research plan (3-5 facets)
   - Spawns research agents in parallel via Celery
@@ -247,6 +250,7 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Evaluates completeness and triggers additional research if needed
   - State persisted in PostgreSQL for recovery
 - **Story Points**: 13
+- **Blocks**: RESEARCH-002, RESEARCH-003, RESEARCH-005, CONTENT-001
 
 ### RESEARCH-002: Web Search Agent [Must]
 **As a** research agent, **I want** to search the web via SerpAPI, **so that** I can gather current information.

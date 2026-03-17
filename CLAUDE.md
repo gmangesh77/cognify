@@ -99,10 +99,11 @@ Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\c
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** ARCH-001 (CanonicalArticle contracts) — merged (PR #14)
+**Last completed:** RESEARCH-001 (Agent Orchestrator) — merged (PR #15)
+**Epic 2 (Research):** RESEARCH-001 Done — LangGraph orchestrator with stub agents, 502 tests, 97.79% coverage
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
 **Epic 1 (Trend Discovery):** All 6 tickets Done (TREND-001 through TREND-006) — Epic complete
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
 **Epic 6 (Dashboard):** DASH-001 Done — Next.js 15 frontend with Tailwind v4, shadcn/ui, 43 tests
-**Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002). See @docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md for modularity analysis.
-**Next action:** RESEARCH-001 (Agent Orchestrator) — ARCH-001 unblocks it
+**Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002). Architecture docs updated to reflect CanonicalArticle boundary (ADR-003) and Transformer/Adapter pattern (ADR-004). See @docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md for modularity analysis.
+**Next action:** RESEARCH-002 (Web Search Agent) or RESEARCH-003 (RAG Pipeline) — both unblocked by RESEARCH-001
