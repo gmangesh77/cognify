@@ -252,8 +252,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 13
 - **Blocks**: RESEARCH-002, RESEARCH-003, RESEARCH-005, CONTENT-001
 
-### RESEARCH-002: Web Search Agent [Must]
+### RESEARCH-002: Web Search Agent [Must] — DONE
 **As a** research agent, **I want** to search the web via SerpAPI, **so that** I can gather current information.
+- **Status**: Done (branch `feature/RESEARCH-002-web-search-agent`, PR #16)
+- **Plan**: [`docs/superpowers/plans/2026-03-17-research-002-web-search-agent.md`](../docs/superpowers/plans/2026-03-17-research-002-web-search-agent.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-17-research-002-web-search-agent-design.md`](../docs/superpowers/specs/2026-03-17-research-002-web-search-agent-design.md)
 - **Acceptance Criteria**:
   - Executes search queries derived from research plan
   - Fetches and cleans top 10 results per query
