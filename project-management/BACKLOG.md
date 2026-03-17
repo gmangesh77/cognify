@@ -264,8 +264,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Stores findings with source URL and date
 - **Story Points**: 8
 
-### RESEARCH-003: RAG Pipeline (Milvus) [Must]
+### RESEARCH-003: RAG Pipeline (Milvus) [Must] — DONE
 **As a** system, **I want** retrieved documents indexed in a vector database, **so that** agents can retrieve relevant context efficiently.
+- **Status**: Done (branch `feature/RESEARCH-003-rag-pipeline`, PR #17)
+- **Plan**: [`docs/superpowers/plans/2026-03-17-research-003-rag-pipeline.md`](../docs/superpowers/plans/2026-03-17-research-003-rag-pipeline.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-17-research-003-rag-pipeline-design.md`](../docs/superpowers/specs/2026-03-17-research-003-rag-pipeline-design.md)
 - **Acceptance Criteria**:
   - Documents chunked (512 tokens, 50-token overlap)
   - Embedded via sentence-transformers (all-MiniLM-L6-v2)
