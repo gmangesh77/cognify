@@ -261,7 +261,7 @@ sequenceDiagram
     participant R as Research Agents
     participant W as Writer Agent
     participant V as Visual Agent
-    participant WV as Weaviate
+    participant WV as Milvus
     participant PG as PostgreSQL
     participant PUB as Publishing Service
 

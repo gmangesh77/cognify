@@ -45,7 +45,7 @@ graph LR
 services:
   - postgres:16
   - redis:7
-  - weaviate:latest
+  - milvus/milvus:latest
 steps:
   - pytest tests/integration/ -v --tb=short
 ```
