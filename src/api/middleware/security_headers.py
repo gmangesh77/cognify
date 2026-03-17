@@ -13,5 +13,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["x-content-type-options"] = "nosniff"
         response.headers["x-frame-options"] = "DENY"
-        response.headers["content-security-policy"] = "default-src 'self'"
+        # Relaxed CSP for /docs and /redoc (Swagger UI loads from CDN)
+        path = request.url.path
+        if path in ("/docs", "/redoc", "/openapi.json"):
+            response.headers["content-security-policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: https://fastapi.tiangolo.com"
+            )
+        else:
+            response.headers["content-security-policy"] = "default-src 'self'"
         return response
