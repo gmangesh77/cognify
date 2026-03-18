@@ -1,0 +1,57 @@
+"""Content pipeline models — outline generation and article drafting.
+
+Intermediate models for the content pipeline stages (CONTENT-001 through
+CONTENT-004). Not part of the final CanonicalArticle contract.
+"""
+
+from datetime import datetime
+from enum import StrEnum
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, Field
+
+from src.models.content import ContentType
+
+
+class DraftStatus(StrEnum):
+    """Valid article draft statuses."""
+
+    OUTLINE_GENERATING = "outline_generating"
+    OUTLINE_COMPLETE = "outline_complete"
+    DRAFTING = "drafting"
+    COMPLETE = "complete"
+    FAILED = "failed"
+
+
+class OutlineSection(BaseModel, frozen=True):
+    """A single section in an article outline."""
+
+    index: int
+    title: str
+    description: str
+    key_points: list[str]
+    target_word_count: int
+    relevant_facets: list[int]
+
+
+class ArticleOutline(BaseModel, frozen=True):
+    """LLM-generated article outline from research findings."""
+
+    title: str
+    subtitle: str | None = None
+    content_type: ContentType
+    sections: list[OutlineSection]
+    total_target_words: int
+    reasoning: str
+
+
+class ArticleDraft(BaseModel):
+    """Tracks article generation state."""
+
+    id: UUID = Field(default_factory=uuid4)
+    session_id: UUID
+    topic_id: UUID
+    outline: ArticleOutline | None = None
+    status: DraftStatus = DraftStatus.OUTLINE_GENERATING
+    created_at: datetime
+    completed_at: datetime | None = None
