@@ -19,6 +19,7 @@ from src.api.middleware.request_logging import RequestLoggingMiddleware
 from src.api.middleware.security_headers import SecurityHeadersMiddleware
 from src.api.rate_limiter import limiter
 from src.api.routers.admin import admin_router
+from src.api.routers.articles import articles_router
 from src.api.routers.auth import auth_router
 from src.api.routers.health import health_router
 from src.api.routers.research import research_router
@@ -183,4 +184,9 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         research_router,
         prefix=settings.api_v1_prefix,
         tags=["research"],
+    )
+    app.include_router(
+        articles_router,
+        prefix=settings.api_v1_prefix,
+        tags=["articles"],
     )
