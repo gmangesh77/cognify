@@ -15,7 +15,7 @@ Cognify monitors domains of interest, automatically discovers trending topics fr
 | **Agent Framework** | LangChain + LangGraph |
 | **LLMs** | Claude Opus 4 (primary), Claude Sonnet 4 (drafting) |
 | **Image Generation** | Stable Diffusion XL |
-| **Vector DB** | Weaviate (RAG embeddings + similarity search) |
+| **Vector DB** | Milvus (RAG embeddings + similarity search) — see [ADR-002](docs/architecture/adrs/ADR-002-milvus-vector-database.md) |
 | **Database** | PostgreSQL 16 |
 | **Cache** | Redis |
 | **Task Queue** | Celery + Redis |

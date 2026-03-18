@@ -8,9 +8,18 @@ from src.api.main import create_app
 from src.config.settings import Settings
 
 
+@pytest.fixture(autouse=True)
+def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prevent .env file from polluting test settings."""
+    monkeypatch.setenv("COGNIFY_DEBUG", "false")
+    monkeypatch.delenv("COGNIFY_JWT_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("COGNIFY_JWT_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("COGNIFY_LOG_LEVEL", raising=False)
+
+
 @pytest.fixture
 def settings() -> Settings:
-    return Settings()
+    return Settings(_env_file=None)  # type: ignore[call-arg]
 
 
 @pytest.fixture

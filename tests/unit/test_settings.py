@@ -5,7 +5,7 @@ from src.config.settings import Settings
 
 class TestSettings:
     def test_default_values(self) -> None:
-        settings = Settings()
+        settings = Settings(_env_file=None)  # type: ignore[call-arg]
         assert settings.app_name == "Cognify"
         assert settings.app_version == "0.1.0"
         assert settings.debug is False
@@ -17,6 +17,6 @@ class TestSettings:
     def test_env_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("COGNIFY_DEBUG", "true")
         monkeypatch.setenv("COGNIFY_LOG_LEVEL", "DEBUG")
-        settings = Settings()
+        settings = Settings(_env_file=None)  # type: ignore[call-arg]
         assert settings.debug is True
         assert settings.log_level == "DEBUG"

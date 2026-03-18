@@ -175,7 +175,7 @@ async def research_topic(topic: Topic):
   "checks": {
     "database": "ok",
     "redis": "ok",
-    "weaviate": "ok",
+    "milvus": "ok",
     "celery": "ok"
   }
 }

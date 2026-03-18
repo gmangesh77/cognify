@@ -38,3 +38,5 @@ Thumbs.db
 # Claude Code
 .claude/settings.local.json
 .superpowers/
+private.pem
+public.pem

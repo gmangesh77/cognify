@@ -264,8 +264,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Stores findings with source URL and date
 - **Story Points**: 8
 
-### RESEARCH-003: RAG Pipeline (Milvus) [Must]
+### RESEARCH-003: RAG Pipeline (Milvus) [Must] — DONE
 **As a** system, **I want** retrieved documents indexed in a vector database, **so that** agents can retrieve relevant context efficiently.
+- **Status**: Done (branch `feature/RESEARCH-003-rag-pipeline`, PR #17)
+- **Plan**: [`docs/superpowers/plans/2026-03-17-research-003-rag-pipeline.md`](../docs/superpowers/plans/2026-03-17-research-003-rag-pipeline.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-17-research-003-rag-pipeline-design.md`](../docs/superpowers/specs/2026-03-17-research-003-rag-pipeline-design.md)
 - **Acceptance Criteria**:
   - Documents chunked (512 tokens, 50-token overlap)
   - Embedded via sentence-transformers (all-MiniLM-L6-v2)
@@ -297,8 +300,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 ## Epic 3: Content Generation Pipeline
 **Goal**: Generate high-quality, SEO-optimized long-form articles from research findings.
 
-### CONTENT-001: Article Outline Generation [Must]
+### CONTENT-001: Article Outline Generation [Must] — DONE
 **As a** writer agent, **I want** to generate a structured outline from research findings, **so that** articles have clear structure.
+- **Status**: Done (branch `feature/CONTENT-001-article-outline`, PR #18)
+- **Plan**: [`docs/superpowers/plans/2026-03-18-content-001-article-outline.md`](../docs/superpowers/plans/2026-03-18-content-001-article-outline.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-18-content-001-article-outline-design.md`](../docs/superpowers/specs/2026-03-18-content-001-article-outline-design.md)
 - **Acceptance Criteria**:
   - LLM generates outline with 4-8 sections from research findings
   - Sections ordered for narrative flow (intro → findings → analysis → conclusion)
@@ -435,9 +441,12 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Acceptance Criteria**:
   - Grid of topic cards with trend badges (Trending, New, Rising, Steady)
   - Filter by source, time range, and domain
+  - **Domain selector dropdown** (populated from configured domains in Settings) — user selects domain before scanning
+  - "New Scan" button triggers scan for the selected domain only
   - "Generate Article" action button per topic
   - Shows trend score, description, and source tags
 - **Story Points**: 5
+- **Design update (2026-03-18)**: Domain selector added to filter bar in Pencil design. "New Scan" button removed from Dashboard (was ambiguous without domain context); scan is initiated only from Topic Discovery with a selected domain.
 
 ### DASH-003: Article View & Preview [Must]
 **As a** user, **I want** to preview generated articles with agent workflow details, **so that** I can review before publishing.

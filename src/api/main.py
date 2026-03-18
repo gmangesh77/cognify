@@ -7,16 +7,19 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from src.api.auth.password import hash_password
 from src.api.auth.repository import (
     InMemoryRefreshTokenRepository,
     InMemoryUserRepository,
 )
+from src.api.auth.schemas import UserData
 from src.api.errors import CognifyError, build_error_response
 from src.api.middleware.correlation_id import CorrelationIdMiddleware
 from src.api.middleware.request_logging import RequestLoggingMiddleware
 from src.api.middleware.security_headers import SecurityHeadersMiddleware
 from src.api.rate_limiter import limiter
 from src.api.routers.admin import admin_router
+from src.api.routers.articles import articles_router
 from src.api.routers.auth import auth_router
 from src.api.routers.health import health_router
 from src.api.routers.research import research_router
@@ -42,13 +45,40 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.limiter = limiter
     app.state.refresh_repo = InMemoryRefreshTokenRepository()
-    app.state.user_repo = InMemoryUserRepository([])
+    app.state.user_repo = InMemoryUserRepository(_seed_dev_users(settings))
 
     _register_exception_handlers(app)
     _register_middleware(app, settings)
     _register_routers(app, settings)
 
     return app
+
+
+def _seed_dev_users(settings: Settings) -> list[UserData]:
+    """Seed demo users for development. Skipped when debug=False."""
+    if not settings.debug:
+        return []
+    logger.info("seeding_dev_users")
+    return [
+        UserData(
+            id="user-1",
+            email="admin@cognify.dev",
+            password_hash=hash_password("admin123"),
+            role="admin",
+        ),
+        UserData(
+            id="user-2",
+            email="editor@cognify.dev",
+            password_hash=hash_password("editor123"),
+            role="editor",
+        ),
+        UserData(
+            id="user-3",
+            email="viewer@cognify.dev",
+            password_hash=hash_password("viewer123"),
+            role="viewer",
+        ),
+    ]
 
 
 def _register_exception_handlers(app: FastAPI) -> None:
@@ -154,4 +184,9 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         research_router,
         prefix=settings.api_v1_prefix,
         tags=["research"],
+    )
+    app.include_router(
+        articles_router,
+        prefix=settings.api_v1_prefix,
+        tags=["articles"],
     )

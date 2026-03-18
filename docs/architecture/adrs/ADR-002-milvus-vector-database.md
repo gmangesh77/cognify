@@ -121,4 +121,4 @@ Switching from Weaviate to Milvus affects:
 | `requirements.txt` / `pyproject.toml` | `pymilvus` + `langchain-milvus` instead of `weaviate-client` + `langchain-weaviate` |
 | Observability plan | Update `cognify_vector_operations_total` metric labels |
 
-No existing code is affected — the vector DB has not been implemented yet (RESEARCH-003 is in Backlog status).
+**Update (2026-03-17):** RESEARCH-003 is now Done (PR #17). Milvus integration implemented: `MilvusService`, `MilvusRetriever`, `TokenChunker`, and `index_findings` orchestrator node. Uses `pymilvus` directly (not `langchain-milvus`). Milvus Lite for dev, configurable URI for production.
