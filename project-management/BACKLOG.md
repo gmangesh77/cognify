@@ -300,8 +300,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 ## Epic 3: Content Generation Pipeline
 **Goal**: Generate high-quality, SEO-optimized long-form articles from research findings.
 
-### CONTENT-001: Article Outline Generation [Must]
+### CONTENT-001: Article Outline Generation [Must] — DONE
 **As a** writer agent, **I want** to generate a structured outline from research findings, **so that** articles have clear structure.
+- **Status**: Done (branch `feature/CONTENT-001-article-outline`, PR #18)
+- **Plan**: [`docs/superpowers/plans/2026-03-18-content-001-article-outline.md`](../docs/superpowers/plans/2026-03-18-content-001-article-outline.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-18-content-001-article-outline-design.md`](../docs/superpowers/specs/2026-03-18-content-001-article-outline-design.md)
 - **Acceptance Criteria**:
   - LLM generates outline with 4-8 sections from research findings
   - Sections ordered for narrative flow (intro → findings → analysis → conclusion)
