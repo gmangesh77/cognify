@@ -92,7 +92,7 @@
 
 | Ticket      | Title                       | Status  | Branch | Plan | Spec |
 | ----------- | --------------------------- | ------- | ------ | ---- | ---- |
-| CONTENT-001 | Article Outline Generation  | Backlog | —      | —    | —    |
+| CONTENT-001 | Article Outline Generation  | Done | `feature/CONTENT-001-article-outline` | [plan](../docs/superpowers/plans/2026-03-18-content-001-article-outline.md) | [spec](../docs/superpowers/specs/2026-03-18-content-001-article-outline-design.md) |
 | CONTENT-002 | Section-by-Section Drafting | Backlog | —      | —    | —    |
 | CONTENT-003 | SEO Optimization            | Backlog | —      | —    | —    |
 | CONTENT-004 | Citation Management         | Backlog | —      | —    | —    |

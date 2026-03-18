@@ -23,14 +23,24 @@ from tests.unit.api.conftest import make_auth_header
 
 
 def _outline_json() -> str:
-    return json.dumps({
-        "title": "Test", "content_type": "article",
-        "sections": [
-            {"index": 0, "title": "Intro", "description": "D",
-             "key_points": ["P"], "target_word_count": 300, "relevant_facets": [0]},
-        ],
-        "total_target_words": 300, "reasoning": "Simple",
-    })
+    return json.dumps(
+        {
+            "title": "Test",
+            "content_type": "article",
+            "sections": [
+                {
+                    "index": 0,
+                    "title": "Intro",
+                    "description": "D",
+                    "key_points": ["P"],
+                    "target_word_count": 300,
+                    "relevant_facets": [0],
+                },
+            ],
+            "total_target_words": 300,
+            "reasoning": "Simple",
+        }
+    )
 
 
 @pytest.fixture
@@ -43,20 +53,30 @@ async def articles_app(auth_settings: Settings, test_session_id: str) -> FastAPI
     app = create_app(auth_settings)
     session_repo = InMemoryResearchSessionRepository()
 
-    findings = [FacetFindings(
-        facet_index=0,
-        sources=[SourceDocument(
-            url="https://a.com", title="A", snippet="S",
-            retrieved_at=datetime.now(UTC),
-        )],
-        claims=["Claim"], summary="Summary",
-    )]
+    findings = [
+        FacetFindings(
+            facet_index=0,
+            sources=[
+                SourceDocument(
+                    url="https://a.com",
+                    title="A",
+                    snippet="S",
+                    retrieved_at=datetime.now(UTC),
+                )
+            ],
+            claims=["Claim"],
+            summary="Summary",
+        )
+    ]
     session = ResearchSession(
         id=UUID(test_session_id),
-        topic_id=uuid4(), status="complete",
+        topic_id=uuid4(),
+        status="complete",
         started_at=datetime.now(UTC),
         findings_data=[f.model_dump() for f in findings],
-        topic_title="Test Topic", topic_description="Desc", topic_domain="tech",
+        topic_title="Test Topic",
+        topic_description="Desc",
+        topic_domain="tech",
     )
     await session_repo.create(session)
 

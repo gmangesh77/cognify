@@ -20,30 +20,50 @@ from src.services.research import InMemoryResearchSessionRepository
 
 
 def _outline_json() -> str:
-    return json.dumps({
-        "title": "Test Article", "content_type": "article",
-        "sections": [
-            {"index": 0, "title": "Intro", "description": "D",
-             "key_points": ["P"], "target_word_count": 300, "relevant_facets": [0]},
-        ],
-        "total_target_words": 300, "reasoning": "Simple",
-    })
+    return json.dumps(
+        {
+            "title": "Test Article",
+            "content_type": "article",
+            "sections": [
+                {
+                    "index": 0,
+                    "title": "Intro",
+                    "description": "D",
+                    "key_points": ["P"],
+                    "target_word_count": 300,
+                    "relevant_facets": [0],
+                },
+            ],
+            "total_target_words": 300,
+            "reasoning": "Simple",
+        }
+    )
 
 
 def _make_complete_session() -> ResearchSession:
-    findings = [FacetFindings(
-        facet_index=0,
-        sources=[SourceDocument(
-            url="https://a.com", title="A", snippet="S",
-            retrieved_at=datetime.now(UTC),
-        )],
-        claims=["Claim"], summary="Summary",
-    )]
+    findings = [
+        FacetFindings(
+            facet_index=0,
+            sources=[
+                SourceDocument(
+                    url="https://a.com",
+                    title="A",
+                    snippet="S",
+                    retrieved_at=datetime.now(UTC),
+                )
+            ],
+            claims=["Claim"],
+            summary="Summary",
+        )
+    ]
     return ResearchSession(
-        topic_id=uuid4(), status="complete",
+        topic_id=uuid4(),
+        status="complete",
         started_at=datetime.now(UTC),
         findings_data=[f.model_dump() for f in findings],
-        topic_title="Test Topic", topic_description="Test desc", topic_domain="tech",
+        topic_title="Test Topic",
+        topic_description="Test desc",
+        topic_domain="tech",
     )
 
 
@@ -77,7 +97,9 @@ class TestGenerateOutline:
 
     async def test_rejects_incomplete_session(self) -> None:
         session = ResearchSession(
-            topic_id=uuid4(), status="planning", started_at=datetime.now(UTC),
+            topic_id=uuid4(),
+            status="planning",
+            started_at=datetime.now(UTC),
         )
         svc, _ = await _make_service(session)
         with pytest.raises(ValueError, match="not complete"):

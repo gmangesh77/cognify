@@ -74,7 +74,9 @@ def _to_outline_response(draft: ArticleDraft) -> ArticleOutlineResponse:
         raise ValueError(msg)
     sections = [
         OutlineSectionResponse(
-            index=s.index, title=s.title, description=s.description,
+            index=s.index,
+            title=s.title,
+            description=s.description,
             key_points=list(s.key_points),
             target_word_count=s.target_word_count,
             relevant_facets=list(s.relevant_facets),
@@ -82,8 +84,12 @@ def _to_outline_response(draft: ArticleDraft) -> ArticleOutlineResponse:
         for s in o.sections
     ]
     return ArticleOutlineResponse(
-        draft_id=draft.id, title=o.title, subtitle=o.subtitle,
-        content_type=o.content_type, sections=sections,
+        draft_id=draft.id,
+        title=o.title,
+        subtitle=o.subtitle,
+        content_type=o.content_type,
+        sections=sections,
         total_target_words=o.total_target_words,
-        reasoning=o.reasoning, status=draft.status,
+        reasoning=o.reasoning,
+        status=draft.status,
     )

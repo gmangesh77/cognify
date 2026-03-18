@@ -17,9 +17,7 @@ from src.models.research import (
 
 
 def _make_topic() -> TopicInput:
-    return TopicInput(
-        id=uuid4(), title="Test", description="Desc", domain="tech"
-    )
+    return TopicInput(id=uuid4(), title="Test", description="Desc", domain="tech")
 
 
 def _make_plan() -> ResearchPlan:

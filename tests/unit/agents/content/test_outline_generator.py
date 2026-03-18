@@ -25,10 +25,14 @@ def _make_findings(num_facets: int = 3) -> list[FacetFindings]:
     return [
         FacetFindings(
             facet_index=i,
-            sources=[SourceDocument(
-                url=f"https://example.com/{i}", title=f"Source {i}",
-                snippet=f"Content about facet {i}", retrieved_at=datetime.now(UTC),
-            )],
+            sources=[
+                SourceDocument(
+                    url=f"https://example.com/{i}",
+                    title=f"Source {i}",
+                    snippet=f"Content about facet {i}",
+                    retrieved_at=datetime.now(UTC),
+                )
+            ],
             claims=[f"Claim {i}a", f"Claim {i}b"],
             summary=f"Summary of facet {i} research findings.",
         )
@@ -39,21 +43,25 @@ def _make_findings(num_facets: int = 3) -> list[FacetFindings]:
 def _outline_json(num_sections: int = 5) -> str:
     sections = [
         {
-            "index": i, "title": f"Section {i}",
+            "index": i,
+            "title": f"Section {i}",
             "description": f"Covers aspect {i}",
             "key_points": [f"Point {i}a", f"Point {i}b", f"Point {i}c"],
-            "target_word_count": 300, "relevant_facets": [i % 3],
+            "target_word_count": 300,
+            "relevant_facets": [i % 3],
         }
         for i in range(num_sections)
     ]
-    return json.dumps({
-        "title": "AI Security Trends: A Comprehensive Analysis",
-        "subtitle": "Emerging threats and defense strategies",
-        "content_type": "article",
-        "sections": sections,
-        "total_target_words": num_sections * 300,
-        "reasoning": "Structured for narrative flow.",
-    })
+    return json.dumps(
+        {
+            "title": "AI Security Trends: A Comprehensive Analysis",
+            "subtitle": "Emerging threats and defense strategies",
+            "content_type": "article",
+            "sections": sections,
+            "total_target_words": num_sections * 300,
+            "reasoning": "Structured for narrative flow.",
+        }
+    )
 
 
 class TestGenerateOutline:

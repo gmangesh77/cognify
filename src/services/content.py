@@ -55,9 +55,7 @@ class ContentRepositories:
 
 
 class ContentService:
-    def __init__(
-        self, repos: ContentRepositories, llm: BaseChatModel
-    ) -> None:
+    def __init__(self, repos: ContentRepositories, llm: BaseChatModel) -> None:
         self._repos = repos
         self._llm = llm
 
@@ -83,12 +81,8 @@ class ContentService:
             raise ValueError(msg)
         return session
 
-    def _reconstruct_findings(
-        self, session: ResearchSession
-    ) -> list[FacetFindings]:
-        return [
-            FacetFindings.model_validate(f) for f in session.findings_data
-        ]
+    def _reconstruct_findings(self, session: ResearchSession) -> list[FacetFindings]:
+        return [FacetFindings.model_validate(f) for f in session.findings_data]
 
     def _build_topic_input(self, session: ResearchSession) -> TopicInput:
         return TopicInput(
@@ -102,15 +96,17 @@ class ContentService:
         self, topic: TopicInput, findings: list[FacetFindings]
     ) -> ArticleOutline:
         graph = build_content_graph(self._llm)
-        result = await graph.ainvoke({
-            "topic": topic,
-            "research_plan": None,
-            "findings": findings,
-            "session_id": topic.id,
-            "outline": None,
-            "status": "outline_generating",
-            "error": None,
-        })
+        result = await graph.ainvoke(
+            {
+                "topic": topic,
+                "research_plan": None,
+                "findings": findings,
+                "session_id": topic.id,
+                "outline": None,
+                "status": "outline_generating",
+                "error": None,
+            }
+        )
         if result["status"] == "failed":
             raise ValueError(result.get("error", "Outline generation failed"))
         return result["outline"]

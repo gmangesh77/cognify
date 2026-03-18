@@ -32,7 +32,7 @@ from src.config.settings import Settings
 
 class TestJwtSettings:
     def test_default_jwt_settings(self) -> None:
-        settings = Settings()
+        settings = Settings(_env_file=None)  # type: ignore[call-arg]
         assert settings.jwt_private_key == ""
         assert settings.jwt_public_key == ""
         assert settings.jwt_algorithm == "RS256"

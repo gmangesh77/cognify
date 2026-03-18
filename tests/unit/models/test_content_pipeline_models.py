@@ -29,8 +29,12 @@ class TestOutlineSection:
 
     def test_frozen(self) -> None:
         section = OutlineSection(
-            index=0, title="Intro", description="Desc",
-            key_points=["P"], target_word_count=200, relevant_facets=[0],
+            index=0,
+            title="Intro",
+            description="Desc",
+            key_points=["P"],
+            target_word_count=200,
+            relevant_facets=[0],
         )
         with pytest.raises(ValidationError):
             section.title = "Changed"  # type: ignore[misc]
@@ -40,15 +44,20 @@ class TestArticleOutline:
     def test_construct(self) -> None:
         sections = [
             OutlineSection(
-                index=i, title=f"Section {i}", description=f"Desc {i}",
-                key_points=[f"Point {i}"], target_word_count=300,
+                index=i,
+                title=f"Section {i}",
+                description=f"Desc {i}",
+                key_points=[f"Point {i}"],
+                target_word_count=300,
                 relevant_facets=[i % 3],
             )
             for i in range(5)
         ]
         outline = ArticleOutline(
-            title="Test Article", content_type="article",
-            sections=sections, total_target_words=1500,
+            title="Test Article",
+            content_type="article",
+            sections=sections,
+            total_target_words=1500,
             reasoning="Good structure",
         )
         assert len(outline.sections) == 5
@@ -56,12 +65,20 @@ class TestArticleOutline:
 
     def test_serialization_roundtrip(self) -> None:
         outline = ArticleOutline(
-            title="Test", content_type="analysis",
-            sections=[OutlineSection(
-                index=0, title="S", description="D",
-                key_points=["P"], target_word_count=200, relevant_facets=[0],
-            )],
-            total_target_words=200, reasoning="R",
+            title="Test",
+            content_type="analysis",
+            sections=[
+                OutlineSection(
+                    index=0,
+                    title="S",
+                    description="D",
+                    key_points=["P"],
+                    target_word_count=200,
+                    relevant_facets=[0],
+                )
+            ],
+            total_target_words=200,
+            reasoning="R",
         )
         data = outline.model_dump()
         restored = ArticleOutline.model_validate(data)
@@ -78,7 +95,8 @@ class TestDraftStatus:
 class TestArticleDraft:
     def test_construct_defaults(self) -> None:
         draft = ArticleDraft(
-            session_id=uuid4(), topic_id=uuid4(),
+            session_id=uuid4(),
+            topic_id=uuid4(),
             created_at=datetime.now(UTC),
         )
         assert draft.status == DraftStatus.OUTLINE_GENERATING
@@ -86,16 +104,26 @@ class TestArticleDraft:
 
     def test_with_outline(self) -> None:
         outline = ArticleOutline(
-            title="Test", content_type="article",
-            sections=[OutlineSection(
-                index=0, title="S", description="D",
-                key_points=["P"], target_word_count=200, relevant_facets=[0],
-            )],
-            total_target_words=200, reasoning="R",
+            title="Test",
+            content_type="article",
+            sections=[
+                OutlineSection(
+                    index=0,
+                    title="S",
+                    description="D",
+                    key_points=["P"],
+                    target_word_count=200,
+                    relevant_facets=[0],
+                )
+            ],
+            total_target_words=200,
+            reasoning="R",
         )
         draft = ArticleDraft(
-            session_id=uuid4(), topic_id=uuid4(),
-            outline=outline, status=DraftStatus.OUTLINE_COMPLETE,
+            session_id=uuid4(),
+            topic_id=uuid4(),
+            outline=outline,
+            status=DraftStatus.OUTLINE_COMPLETE,
             created_at=datetime.now(UTC),
         )
         assert draft.outline is not None
