@@ -156,16 +156,44 @@ class ResearchService:
 
     async def run_and_finalize(self, session_id: UUID, topic: TopicInput) -> None:
         try:
-            await self._orchestrator.run(session_id, topic)
+            result = await self._orchestrator.run(session_id, topic)
+            await self._persist_success(session_id, topic, result)
         except Exception as exc:
             logger.error(
                 "orchestrator_failed",
                 session_id=str(session_id),
                 error=str(exc),
             )
-            session = await self._repos.sessions.get(session_id)
-            if session:
-                updated = session.model_copy(
-                    update={"status": "failed", "completed_at": datetime.now(UTC)}
-                )
-                await self._repos.sessions.update(updated)
+            await self._persist_failure(session_id)
+
+    async def _persist_success(
+        self, session_id: UUID, topic: TopicInput, result: object
+    ) -> None:
+        """Persist findings and mark session complete."""
+        session = await self._repos.sessions.get(session_id)
+        if not session:
+            return
+        findings_raw = result.get("findings", []) if isinstance(result, dict) else []  # type: ignore[union-attr]
+        findings_data = [
+            f.model_dump() if hasattr(f, "model_dump") else f for f in findings_raw
+        ]
+        updated = session.model_copy(
+            update={
+                "status": "complete",
+                "findings_data": findings_data,
+                "topic_title": topic.title,
+                "topic_description": topic.description,
+                "topic_domain": topic.domain,
+                "completed_at": datetime.now(UTC),
+            }
+        )
+        await self._repos.sessions.update(updated)
+
+    async def _persist_failure(self, session_id: UUID) -> None:
+        """Mark session as failed."""
+        session = await self._repos.sessions.get(session_id)
+        if session:
+            updated = session.model_copy(
+                update={"status": "failed", "completed_at": datetime.now(UTC)}
+            )
+            await self._repos.sessions.update(updated)

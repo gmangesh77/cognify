@@ -19,6 +19,10 @@ class ResearchSession(BaseModel):
     agent_plan: dict[str, object] = Field(default_factory=dict)
     round_count: int = 0
     findings_count: int = 0
+    findings_data: list[dict[str, object]] = Field(default_factory=list)
+    topic_title: str = ""
+    topic_description: str = ""
+    topic_domain: str = ""
     duration_seconds: float | None = None
     started_at: datetime
     completed_at: datetime | None = None
