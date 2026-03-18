@@ -438,9 +438,12 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Acceptance Criteria**:
   - Grid of topic cards with trend badges (Trending, New, Rising, Steady)
   - Filter by source, time range, and domain
+  - **Domain selector dropdown** (populated from configured domains in Settings) — user selects domain before scanning
+  - "New Scan" button triggers scan for the selected domain only
   - "Generate Article" action button per topic
   - Shows trend score, description, and source tags
 - **Story Points**: 5
+- **Design update (2026-03-18)**: Domain selector added to filter bar in Pencil design. "New Scan" button removed from Dashboard (was ambiguous without domain context); scan is initiated only from Topic Discovery with a selected domain.
 
 ### DASH-003: Article View & Preview [Must]
 **As a** user, **I want** to preview generated articles with agent workflow details, **so that** I can review before publishing.
