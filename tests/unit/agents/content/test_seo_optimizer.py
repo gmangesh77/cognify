@@ -20,22 +20,32 @@ from src.models.content_pipeline import (
 
 
 def _seo_json() -> str:
-    return json.dumps({
-        "title": "Test Article About AI Security Trends",
-        "description": "A comprehensive analysis of emerging AI security threats and mitigation strategies for 2026.",
-        "keywords": ["AI security", "cybersecurity", "threat analysis", "2026 trends", "mitigation"],
-    })
+    return json.dumps(
+        {
+            "title": "Test Article About AI Security Trends",
+            "description": "A comprehensive analysis of emerging AI security threats and mitigation strategies for 2026.",
+            "keywords": [
+                "AI security",
+                "cybersecurity",
+                "threat analysis",
+                "2026 trends",
+                "mitigation",
+            ],
+        }
+    )
 
 
 def _discoverability_json() -> str:
-    return json.dumps({
-        "summary": "This article examines emerging AI security threats in 2026.",
-        "key_claims": [
-            "AI-powered phishing attacks increased 300% in 2025 [1]",
-            "Zero-trust architecture reduces breach risk by 60% [2]",
-            "Most organizations lack AI-specific response plans [3]",
-        ],
-    })
+    return json.dumps(
+        {
+            "summary": "This article examines emerging AI security threats in 2026.",
+            "key_claims": [
+                "AI-powered phishing attacks increased 300% in 2025 [1]",
+                "Zero-trust architecture reduces breach risk by 60% [2]",
+                "Most organizations lack AI-specific response plans [3]",
+            ],
+        }
+    )
 
 
 def _make_section_drafts() -> list[SectionDraft]:
@@ -45,7 +55,9 @@ def _make_section_drafts() -> list[SectionDraft]:
             title="Introduction",
             body_markdown="AI security is evolving [1].",
             word_count=5,
-            citations_used=[CitationRef(index=1, source_url="https://a.com", source_title="A")],
+            citations_used=[
+                CitationRef(index=1, source_url="https://a.com", source_title="A")
+            ],
         ),
     ]
 
@@ -100,7 +112,9 @@ class TestGenerateAiDiscoverability:
 
 class TestBuildStructuredData:
     def test_builds_json_ld(self) -> None:
-        seo = SEOMetadata(title="Test Title", description="Test desc.", keywords=["ai", "test"])
+        seo = SEOMetadata(
+            title="Test Title", description="Test desc.", keywords=["ai", "test"]
+        )
         result = build_structured_data(seo, "My Article", "2026-03-19T00:00:00Z")
         assert isinstance(result, StructuredDataLD)
         assert result.headline == "My Article"

@@ -123,10 +123,12 @@ async def generate_seo_metadata(
     logger.info("seo_metadata_generation_started", title=article_title)
     messages: list[SystemMessage | HumanMessage] = [
         SystemMessage(content=_SEO_SYSTEM),
-        HumanMessage(content=_SEO_USER.format(
-            title=article_title,
-            body_excerpt=body_text[:2000],
-        )),
+        HumanMessage(
+            content=_SEO_USER.format(
+                title=article_title,
+                body_excerpt=body_text[:2000],
+            )
+        ),
     ]
     return await _parse_seo_response(llm, messages)
 
@@ -155,10 +157,12 @@ async def generate_ai_discoverability(
     logger.info("ai_discoverability_generation_started")
     messages: list[SystemMessage | HumanMessage] = [
         SystemMessage(content=_DISCOVER_SYSTEM),
-        HumanMessage(content=_DISCOVER_USER.format(
-            sections_text=_format_sections(drafts),
-            citations_text=_format_citations(citations),
-        )),
+        HumanMessage(
+            content=_DISCOVER_USER.format(
+                sections_text=_format_sections(drafts),
+                citations_text=_format_citations(citations),
+            )
+        ),
     ]
     return await _parse_discoverability_response(llm, messages)
 
@@ -169,10 +173,12 @@ def build_structured_data(
     generated_at: str,
 ) -> StructuredDataLD:
     """Build Schema.org JSON-LD structured data from SEO metadata."""
-    return StructuredDataLD(
-        headline=article_title,
-        description=seo.description,
-        keywords=seo.keywords,
-        date_published=generated_at,
-        date_modified=generated_at,
+    return StructuredDataLD.model_validate(
+        {
+            "headline": article_title,
+            "description": seo.description,
+            "keywords": seo.keywords,
+            "datePublished": generated_at,
+            "dateModified": generated_at,
+        }
     )

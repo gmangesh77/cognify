@@ -6,7 +6,12 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from src.models.content import Provenance, SEOMetadata, SchemaOrgAuthor, StructuredDataLD
+from src.models.content import (
+    Provenance,
+    SEOMetadata,
+    SchemaOrgAuthor,
+    StructuredDataLD,
+)
 from src.models.content_pipeline import (
     AIDiscoverabilityResult,
     ArticleDraft,

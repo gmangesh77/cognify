@@ -20,12 +20,12 @@ from src.agents.content.seo_optimizer import (
     generate_seo_metadata,
 )
 from src.config.settings import Settings
-from src.models.content import Provenance, SEOMetadata
+from src.models.content import Provenance
 from src.models.content_pipeline import (
     ArticleOutline,
     CitationRef,
-    SEOResult,
     SectionDraft,
+    SEOResult,
 )
 
 if TYPE_CHECKING:
@@ -90,7 +90,9 @@ async def _run_seo(
 
     provenance = _build_provenance(state, settings)
     structured = build_structured_data(
-        seo, outline.title, datetime.now(UTC).isoformat(),
+        seo,
+        outline.title,
+        datetime.now(UTC).isoformat(),
     )
     seo = seo.model_copy(update={"structured_data": structured})
 

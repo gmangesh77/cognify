@@ -16,12 +16,17 @@ from src.api.schemas.articles import (
     CitationRefResponse,
     GenerateArticleRequest,
     OutlineSectionResponse,
-    SEOResultResponse,
     SectionDraftResponse,
+    SEOResultResponse,
     StructuredDataLDResponse,
 )
 from src.models.content import StructuredDataLD
-from src.models.content_pipeline import ArticleDraft, CitationRef, SEOResult, SectionDraft
+from src.models.content_pipeline import (
+    ArticleDraft,
+    CitationRef,
+    SectionDraft,
+    SEOResult,
+)
 from src.services.content import ContentService
 
 logger = structlog.get_logger()

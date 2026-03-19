@@ -55,18 +55,22 @@ def _draft_text() -> str:
 
 
 def _seo_json() -> str:
-    return json.dumps({
-        "title": "Test SEO Title for the Article",
-        "description": "A test description that is long enough to pass validation for the SEO metadata.",
-        "keywords": ["test", "seo", "ai"],
-    })
+    return json.dumps(
+        {
+            "title": "Test SEO Title for the Article",
+            "description": "A test description that is long enough to pass validation for the SEO metadata.",
+            "keywords": ["test", "seo", "ai"],
+        }
+    )
 
 
 def _discoverability_json() -> str:
-    return json.dumps({
-        "summary": "Test summary of the article content.",
-        "key_claims": ["Key claim one [1]", "Key claim two [1]"],
-    })
+    return json.dumps(
+        {
+            "summary": "Test summary of the article content.",
+            "key_claims": ["Key claim one [1]", "Key claim two [1]"],
+        }
+    )
 
 
 def _make_fake_retriever() -> AsyncMock:

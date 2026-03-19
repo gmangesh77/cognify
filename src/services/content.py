@@ -129,7 +129,9 @@ class ContentService:
         draft: ArticleDraft,
     ) -> dict[str, object]:
         """Run the content pipeline with existing outline."""
-        graph = build_content_graph(self._deps.llm, self._deps.retriever, self._deps.settings)
+        graph = build_content_graph(
+            self._deps.llm, self._deps.retriever, self._deps.settings
+        )
         result: dict[str, object] = await graph.ainvoke(
             {
                 "topic": topic,

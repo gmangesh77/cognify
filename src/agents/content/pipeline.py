@@ -24,9 +24,9 @@ from src.agents.content.seo_node import make_seo_node
 from src.config.settings import Settings
 from src.models.content_pipeline import (
     ArticleOutline,
-    SEOResult,
     SectionDraft,
     SectionQueries,
+    SEOResult,
 )
 from src.models.research import FacetFindings, ResearchPlan, TopicInput
 from src.services.milvus_retriever import MilvusRetriever
