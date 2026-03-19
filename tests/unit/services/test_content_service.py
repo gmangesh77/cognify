@@ -2,6 +2,7 @@
 
 import json
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -9,7 +10,7 @@ from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
 from src.api.errors import NotFoundError
 from src.models.content_pipeline import ArticleDraft, DraftStatus
-from src.models.research import FacetFindings, SourceDocument
+from src.models.research import ChunkResult, FacetFindings, SourceDocument
 from src.models.research_db import ResearchSession
 from src.services.content import (
     ContentRepositories,
@@ -117,3 +118,74 @@ class TestGetDraft:
         svc, _ = await _make_service()
         with pytest.raises(NotFoundError):
             await svc.get_draft(uuid4())
+
+
+async def _make_service_with_retriever(
+    session: ResearchSession | None = None,
+) -> tuple[ContentService, ResearchSession]:
+    session = session or _make_complete_session()
+    session_repo = InMemoryResearchSessionRepository()
+    await session_repo.create(session)
+
+    queries_json = json.dumps(
+        [{"section_index": 0, "queries": ["q0"]}]
+    )
+    llm = FakeListChatModel(
+        responses=[
+            _outline_json(),  # outline generation
+            queries_json,  # query generation
+            "Draft text with [1] citation about research.",  # section draft
+            "Expanded draft text with [1] citation about research findings.",  # re-draft (validation)
+        ]
+    )
+    repos = ContentRepositories(
+        drafts=InMemoryArticleDraftRepository(),
+        research=session_repo,
+    )
+    retriever = AsyncMock()
+    retriever.retrieve = AsyncMock(
+        return_value=[
+            ChunkResult(
+                text="Chunk",
+                source_url="https://a.com",
+                source_title="A",
+                score=0.9,
+                chunk_index=0,
+            ),
+        ]
+    )
+    return ContentService(repos, llm, retriever=retriever), session
+
+
+class TestDraftArticle:
+    async def test_drafts_article_from_outline(self) -> None:
+        svc, session = await _make_service_with_retriever()
+        outline_draft = await svc.generate_outline(session.id)
+        assert outline_draft.status == DraftStatus.OUTLINE_COMPLETE
+        result = await svc.draft_article(outline_draft.id)
+        assert result.status == DraftStatus.DRAFT_COMPLETE
+        assert len(result.section_drafts) > 0
+        assert result.total_word_count > 0
+
+    async def test_rejects_unknown_draft(self) -> None:
+        svc, _ = await _make_service_with_retriever()
+        with pytest.raises(NotFoundError):
+            await svc.draft_article(uuid4())
+
+    async def test_rejects_draft_not_outline_complete(self) -> None:
+        svc, session = await _make_service_with_retriever()
+        draft = ArticleDraft(
+            session_id=session.id,
+            topic_id=session.topic_id,
+            status=DraftStatus.OUTLINE_GENERATING,
+            created_at=datetime.now(UTC),
+        )
+        await svc._repos.drafts.create(draft)
+        with pytest.raises(ValueError, match="not ready"):
+            await svc.draft_article(draft.id)
+
+    async def test_requires_retriever(self) -> None:
+        svc, session = await _make_service()  # no retriever
+        outline_draft = await svc.generate_outline(session.id)
+        with pytest.raises(ValueError, match="retriever required"):
+            await svc.draft_article(outline_draft.id)

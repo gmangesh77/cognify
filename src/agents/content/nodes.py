@@ -33,6 +33,9 @@ def make_outline_node(llm: BaseChatModel):  # noqa: ANN202
     """Factory for the outline generation node."""
 
     async def outline_node(state: ContentState) -> dict:  # type: ignore[type-arg]
+        if state.get("outline") is not None:
+            logger.info("outline_already_present_skipping")
+            return {"status": "outline_complete"}
         topic = state["topic"]
         if not isinstance(topic, TopicInput):
             topic = TopicInput.model_validate(topic)
