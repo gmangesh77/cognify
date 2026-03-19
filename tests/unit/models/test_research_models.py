@@ -275,3 +275,115 @@ class TestKnowledgeBaseStats:
             collection_name="research_chunks",
         )
         assert stats.topic_id is None
+
+
+class TestSourceDocumentMetadata:
+    """Tests for published_at and author fields on SourceDocument."""
+
+    def test_defaults_to_none(self) -> None:
+        doc = SourceDocument(
+            url="https://example.com",
+            title="Test",
+            snippet="Content",
+            retrieved_at=datetime.now(UTC),
+        )
+        assert doc.published_at is None
+        assert doc.author is None
+
+    def test_populated(self) -> None:
+        pub = datetime(2026, 3, 15, tzinfo=UTC)
+        doc = SourceDocument(
+            url="https://example.com",
+            title="Test",
+            snippet="Content",
+            retrieved_at=datetime.now(UTC),
+            published_at=pub,
+            author="Jane Doe",
+        )
+        assert doc.published_at == pub
+        assert doc.author == "Jane Doe"
+
+
+class TestChunkMetadataNewFields:
+    """Tests for published_at and author fields on ChunkMetadata."""
+
+    def test_defaults_to_none(self) -> None:
+        meta = ChunkMetadata(
+            source_url="https://example.com",
+            source_title="Test",
+            topic_id="t",
+            session_id="s",
+        )
+        assert meta.published_at is None
+        assert meta.author is None
+
+    def test_populated(self) -> None:
+        meta = ChunkMetadata(
+            source_url="https://example.com",
+            source_title="Test",
+            topic_id="t",
+            session_id="s",
+            published_at="2026-03-15T00:00:00+00:00",
+            author="Jane Doe",
+        )
+        assert meta.published_at == "2026-03-15T00:00:00+00:00"
+        assert meta.author == "Jane Doe"
+
+
+class TestDocumentChunkNewFields:
+    """Tests for published_at and author fields on DocumentChunk."""
+
+    def test_defaults_to_none(self) -> None:
+        chunk = DocumentChunk(
+            text="Some text",
+            source_url="https://example.com",
+            source_title="Test",
+            topic_id="t",
+            session_id="s",
+            chunk_index=0,
+        )
+        assert chunk.published_at is None
+        assert chunk.author is None
+
+    def test_populated(self) -> None:
+        chunk = DocumentChunk(
+            text="Some text",
+            source_url="https://example.com",
+            source_title="Test",
+            topic_id="t",
+            session_id="s",
+            chunk_index=0,
+            published_at="2026-03-15T00:00:00+00:00",
+            author="Jane Doe",
+        )
+        assert chunk.published_at == "2026-03-15T00:00:00+00:00"
+        assert chunk.author == "Jane Doe"
+
+
+class TestChunkResultNewFields:
+    """Tests for published_at and author fields on ChunkResult."""
+
+    def test_defaults_to_none(self) -> None:
+        result = ChunkResult(
+            text="Retrieved chunk",
+            source_url="https://example.com",
+            source_title="Test",
+            score=0.95,
+            chunk_index=0,
+        )
+        assert result.published_at is None
+        assert result.author is None
+
+    def test_populated(self) -> None:
+        pub = datetime(2026, 3, 15, tzinfo=UTC)
+        result = ChunkResult(
+            text="Retrieved chunk",
+            source_url="https://example.com",
+            source_title="Test",
+            score=0.95,
+            chunk_index=0,
+            published_at=pub,
+            author="Jane Doe",
+        )
+        assert result.published_at == pub
+        assert result.author == "Jane Doe"
