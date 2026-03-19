@@ -312,8 +312,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Outline reviewable before drafting proceeds
 - **Story Points**: 5
 
-### CONTENT-002: Section-by-Section Drafting with RAG [Must]
+### CONTENT-002: Section-by-Section Drafting with RAG [Must] — DONE
 **As a** writer agent, **I want** to draft each section using relevant context from the knowledge base, **so that** content is grounded in research.
+- **Status**: Done (branch `feature/CONTENT-002-section-drafting`, PR #19)
+- **Plan**: [`docs/superpowers/plans/2026-03-19-content-002-section-drafting.md`](../docs/superpowers/plans/2026-03-19-content-002-section-drafting.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-19-content-002-section-drafting-design.md`](../docs/superpowers/specs/2026-03-19-content-002-section-drafting-design.md)
 - **Acceptance Criteria**:
   - Each section drafted with top-k RAG context (k=5 relevant chunks)
   - All factual claims include inline citations

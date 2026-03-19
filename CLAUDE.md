@@ -101,13 +101,13 @@ Package manager: **uv** — all commands use `uv run` prefix (no activation need
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** CONTENT-001 (Article Outline Generation) — PR #18
-**Epic 3 (Content Gen):** CONTENT-001 Done — separate content pipeline graph, LLM outline generator, ContentService, articles API
+**Last completed:** CONTENT-002 (Section-by-Section Drafting with RAG) — PR #19
+**Epic 3 (Content Gen):** CONTENT-001, CONTENT-002 Done — content pipeline graph, outline generator, section drafter with RAG, query generator, validation, ContentService, articles API
 **Epic 2 (Research):** RESEARCH-001, RESEARCH-002, RESEARCH-003 Done — orchestrator + web search + RAG pipeline
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
 **Epic 1 (Trend Discovery):** All 6 tickets Done (TREND-001 through TREND-006) — Epic complete
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
 **Epic 6 (Dashboard):** DASH-001 Done — Next.js 15 frontend with Tailwind v4, shadcn/ui, 43 tests
 **Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002). Architecture docs updated to reflect CanonicalArticle boundary (ADR-003) and Transformer/Adapter pattern (ADR-004). See @docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md for modularity analysis.
-**Test suite:** 576 tests, 97.75% coverage
-**Next action:** CONTENT-002 (Section-by-Section Drafting with RAG) — continues the content pipeline
+**Test suite:** 615 tests, 97.85% coverage
+**Next action:** CONTENT-003 (SEO Optimization) — continues the content pipeline
