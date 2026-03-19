@@ -127,9 +127,7 @@ async def _make_service_with_retriever(
     session_repo = InMemoryResearchSessionRepository()
     await session_repo.create(session)
 
-    queries_json = json.dumps(
-        [{"section_index": 0, "queries": ["q0"]}]
-    )
+    queries_json = json.dumps([{"section_index": 0, "queries": ["q0"]}])
     llm = FakeListChatModel(
         responses=[
             _outline_json(),  # outline generation

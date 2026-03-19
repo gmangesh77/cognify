@@ -114,7 +114,7 @@ class WebSearchAgent:
         ]
         try:
             resp = await self._llm.ainvoke(messages)
-            data = json.loads(resp.content)
+            data = json.loads(str(resp.content))
             claims = data["claims"]
             summary = data["summary"]
             return claims, summary

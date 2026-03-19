@@ -47,7 +47,7 @@ class ContentState(TypedDict):
 def build_content_graph(
     llm: BaseChatModel,
     retriever: MilvusRetriever | None = None,
-) -> CompiledStateGraph:
+) -> CompiledStateGraph:  # type: ignore[type-arg]
     """Build and compile the content pipeline graph."""
     graph = StateGraph(ContentState)
     graph.add_node("generate_outline", make_outline_node(llm))

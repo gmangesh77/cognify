@@ -31,10 +31,10 @@ project-management/ # Backlog, sprints, risk register
 
 ## Commands
 - Build: `docker compose build`
-- Test: `pytest --cov=src --cov-report=term-missing`
-- Lint: `ruff check src/ && ruff format --check src/ && mypy src/`
-- Dev: `uvicorn src.api.main:app --reload --port 8000`
-- Single test: `pytest tests/path/to/test_file.py::test_name -v`
+- Test: `uv run pytest --cov=src --cov-report=term-missing`
+- Lint: `uv run ruff check src/ && uv run ruff format --check src/ && uv run mypy src/`
+- Dev: `uv run uvicorn src.api.main:app --reload --port 8000`
+- Single test: `uv run pytest tests/path/to/test_file.py::test_name -v`
 
 ## Architecture Decisions
 - See @docs/architecture/HIGH_LEVEL_ARCHITECTURE.md for system design
@@ -94,7 +94,9 @@ Naming convention: `{date}-{ticket-id}-{description}.md` (e.g., `2026-03-12-api-
 **New session checklist**: Read `project-management/PROGRESS.md` to see what's done/in-progress, then check the relevant plan file for detailed task state.
 
 ## Environment
-Conda env: `cognify` — run tests with `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify pytest ...`
+Package manager: **uv** — all commands use `uv run` prefix (no activation needed).
+- Install deps: `uv sync --dev`
+- Conda fallback: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ...`
 
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.

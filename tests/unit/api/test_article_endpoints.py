@@ -46,9 +46,7 @@ def _outline_json() -> str:
 
 
 def _queries_json() -> str:
-    return json.dumps(
-        [{"section_index": 0, "queries": ["test query"]}]
-    )
+    return json.dumps([{"section_index": 0, "queries": ["test query"]}])
 
 
 def _draft_text() -> str:
@@ -138,7 +136,8 @@ def drafting_session_id() -> str:
 
 @pytest.fixture
 async def drafting_app(
-    auth_settings: Settings, drafting_session_id: str,
+    auth_settings: Settings,
+    drafting_session_id: str,
 ) -> FastAPI:
     """App wired for section drafting (retriever + multi-response LLM)."""
     app = create_app(auth_settings)
@@ -174,7 +173,8 @@ async def drafting_client(drafting_app: FastAPI) -> httpx.AsyncClient:
 
 @pytest.fixture
 async def draft_id_with_outline(
-    drafting_app: FastAPI, drafting_session_id: str,
+    drafting_app: FastAPI,
+    drafting_session_id: str,
 ) -> str:
     """Generate an outline via the service; return draft ID."""
     svc: ContentService = drafting_app.state.content_service

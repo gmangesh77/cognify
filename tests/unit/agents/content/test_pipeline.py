@@ -121,10 +121,9 @@ class TestContentPipeline:
 
 
 def _queries_json(section_count: int = 2) -> str:
-    return json.dumps([
-        {"section_index": i, "queries": [f"q{i}"]}
-        for i in range(section_count)
-    ])
+    return json.dumps(
+        [{"section_index": i, "queries": [f"q{i}"]} for i in range(section_count)]
+    )
 
 
 def _mock_retriever() -> AsyncMock:
@@ -151,15 +150,17 @@ class TestContentPipelineWithDrafting:
         llm = FakeListChatModel(responses=responses)
         retriever = _mock_retriever()
         graph = build_content_graph(llm, retriever=retriever)
-        result = await graph.ainvoke({
-            "topic": _make_topic(),
-            "research_plan": _make_plan(),
-            "findings": _make_findings(),
-            "session_id": uuid4(),
-            "outline": None,
-            "status": "outline_generating",
-            "error": None,
-        })
+        result = await graph.ainvoke(
+            {
+                "topic": _make_topic(),
+                "research_plan": _make_plan(),
+                "findings": _make_findings(),
+                "session_id": uuid4(),
+                "outline": None,
+                "status": "outline_generating",
+                "error": None,
+            }
+        )
         assert result["status"] == "draft_complete"
         assert len(result["section_drafts"]) == 2
         assert result["total_word_count"] > 0
@@ -167,15 +168,17 @@ class TestContentPipelineWithDrafting:
     async def test_graph_without_retriever_stops_at_outline(self) -> None:
         llm = FakeListChatModel(responses=[_outline_json()])
         graph = build_content_graph(llm)  # no retriever
-        result = await graph.ainvoke({
-            "topic": _make_topic(),
-            "research_plan": _make_plan(),
-            "findings": _make_findings(),
-            "session_id": uuid4(),
-            "outline": None,
-            "status": "outline_generating",
-            "error": None,
-        })
+        result = await graph.ainvoke(
+            {
+                "topic": _make_topic(),
+                "research_plan": _make_plan(),
+                "findings": _make_findings(),
+                "session_id": uuid4(),
+                "outline": None,
+                "status": "outline_generating",
+                "error": None,
+            }
+        )
         assert result["status"] == "outline_complete"
         assert result.get("section_drafts") is None
 
@@ -184,13 +187,15 @@ class TestContentPipelineWithDrafting:
         llm = FakeListChatModel(responses=responses)
         retriever = _mock_retriever()
         graph = build_content_graph(llm, retriever=retriever)
-        result = await graph.ainvoke({
-            "topic": _make_topic(),
-            "research_plan": _make_plan(),
-            "findings": _make_findings(),
-            "session_id": uuid4(),
-            "outline": None,
-            "status": "outline_generating",
-            "error": None,
-        })
+        result = await graph.ainvoke(
+            {
+                "topic": _make_topic(),
+                "research_plan": _make_plan(),
+                "findings": _make_findings(),
+                "session_id": uuid4(),
+                "outline": None,
+                "status": "outline_generating",
+                "error": None,
+            }
+        )
         assert result["status"] == "failed"

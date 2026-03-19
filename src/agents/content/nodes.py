@@ -6,7 +6,7 @@ returns an async node function compatible with LangGraph StateGraph.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from langchain_core.language_models import BaseChatModel
@@ -29,10 +29,10 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 
-def make_outline_node(llm: BaseChatModel):  # noqa: ANN202
+def make_outline_node(llm: BaseChatModel) -> Any:  # noqa: ANN401
     """Factory for the outline generation node."""
 
-    async def outline_node(state: ContentState) -> dict:  # type: ignore[type-arg]
+    async def outline_node(state: ContentState) -> dict[str, object]:
         if state.get("outline") is not None:
             logger.info("outline_already_present_skipping")
             return {"status": "outline_complete"}
@@ -58,10 +58,10 @@ def make_outline_node(llm: BaseChatModel):  # noqa: ANN202
     return outline_node
 
 
-def make_queries_node(llm: BaseChatModel):  # noqa: ANN202
+def make_queries_node(llm: BaseChatModel) -> Any:  # noqa: ANN401
     """Factory for the query generation node."""
 
-    async def queries_node(state: ContentState) -> dict:  # type: ignore[type-arg]
+    async def queries_node(state: ContentState) -> dict[str, object]:
         outline = _coerce_outline(state)
         try:
             queries = await generate_section_queries(outline, llm)
@@ -74,10 +74,10 @@ def make_queries_node(llm: BaseChatModel):  # noqa: ANN202
     return queries_node
 
 
-def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever):  # noqa: ANN202
+def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever) -> Any:  # noqa: ANN401
     """Factory for the section drafting node."""
 
-    async def draft_node(state: ContentState) -> dict:  # type: ignore[type-arg]
+    async def draft_node(state: ContentState) -> dict[str, object]:
         topic = _coerce_topic(state)
         outline = _coerce_outline(state)
         queries_list = state.get("section_queries", [])
@@ -98,15 +98,19 @@ def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever):  # noqa: AN
     return draft_node
 
 
-def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever):  # noqa: ANN202
+def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever) -> Any:  # noqa: ANN401
     """Factory for the article validation node."""
 
-    async def validate_node(state: ContentState) -> dict:  # type: ignore[type-arg]
+    async def validate_node(state: ContentState) -> dict[str, object]:
         drafts = list(state.get("section_drafts", []))
         result = validate_drafts(drafts)
         if result.needs_expansion and result.shortest_index is not None:
             drafts = await _redraft_shortest(
-                state, drafts, result.shortest_index, llm, retriever,
+                state,
+                drafts,
+                result.shortest_index,
+                llm,
+                retriever,
             )
             result = validate_drafts(drafts)
         total = sum(d.word_count for d in drafts)
@@ -168,7 +172,11 @@ def _find_queries(
 ) -> SectionQueries:
     """Find queries for a section, coercing dicts if needed."""
     for item in queries_list:
-        sq = item if isinstance(item, SectionQueries) else SectionQueries.model_validate(item)
+        sq = (
+            item
+            if isinstance(item, SectionQueries)
+            else SectionQueries.model_validate(item)
+        )
         if sq.section_index == section_index:
             return sq
     return SectionQueries(section_index=section_index, queries=[])

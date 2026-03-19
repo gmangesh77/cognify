@@ -118,17 +118,20 @@ class ContentService:
         )
         if result["status"] == "failed":
             raise ValueError(result.get("error", "Outline generation failed"))
-        return result["outline"]
+        outline = result["outline"]
+        if not isinstance(outline, ArticleOutline):
+            return ArticleOutline.model_validate(outline)
+        return outline
 
     async def _run_drafting(
         self,
         topic: TopicInput,
         findings: list[FacetFindings],
         draft: ArticleDraft,
-    ) -> dict:
+    ) -> dict[str, object]:
         """Run the content pipeline with existing outline."""
         graph = build_content_graph(self._llm, self._retriever)
-        result = await graph.ainvoke(
+        result: dict[str, object] = await graph.ainvoke(
             {
                 "topic": topic,
                 "research_plan": None,
@@ -162,10 +165,13 @@ class ContentService:
         return await self._repos.drafts.create(draft)
 
     async def _store_drafted(
-        self, draft: ArticleDraft, result: dict,
+        self,
+        draft: ArticleDraft,
+        result: dict[str, object],
     ) -> ArticleDraft:
         """Persist completed section drafts to the draft record."""
-        drafts = result.get("section_drafts", [])
+        raw_drafts = result.get("section_drafts", [])
+        drafts: list[object] = list(raw_drafts) if isinstance(raw_drafts, list) else []
         citations = _aggregate_citations(drafts)
         updated = draft.model_copy(
             update={
@@ -185,8 +191,8 @@ class ContentService:
 
 
 def _aggregate_citations(
-    drafts: list,
-) -> list:
+    drafts: list[object],
+) -> list[object]:
     """Collect unique citations from all section drafts by URL."""
     seen: dict[str, object] = {}
     for d in drafts:

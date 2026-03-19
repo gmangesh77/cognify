@@ -22,7 +22,7 @@ class ResearchOrchestrator(Protocol):
 class LangGraphResearchOrchestrator:
     """Runs the compiled LangGraph research graph."""
 
-    def __init__(self, compiled_graph: CompiledStateGraph) -> None:
+    def __init__(self, compiled_graph: CompiledStateGraph) -> None:  # type: ignore[type-arg]
         self._graph = compiled_graph
 
     async def run(self, session_id: UUID, topic: TopicInput) -> ResearchState:
