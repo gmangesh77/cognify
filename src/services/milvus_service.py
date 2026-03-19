@@ -31,6 +31,16 @@ logger = structlog.get_logger()
 _EMBEDDING_DIM = 384
 
 
+def _parse_iso_datetime(value: str) -> datetime | None:
+    """Parse an ISO datetime string, returning None for empty/invalid."""
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
 class MilvusServiceError(Exception):
     """Raised when Milvus operations fail."""
 
@@ -92,6 +102,16 @@ class MilvusService:
             ),
             FieldSchema("chunk_index", DataType.INT64),
             FieldSchema(
+                "published_at",
+                DataType.VARCHAR,
+                max_length=64,
+            ),
+            FieldSchema(
+                "author",
+                DataType.VARCHAR,
+                max_length=512,
+            ),
+            FieldSchema(
                 "created_at",
                 DataType.VARCHAR,
                 max_length=32,
@@ -146,6 +166,8 @@ class MilvusService:
                 "topic_id": chunk.topic_id,
                 "session_id": chunk.session_id,
                 "chunk_index": chunk.chunk_index,
+                "published_at": chunk.published_at or "",
+                "author": chunk.author or "",
                 "created_at": now,
             }
             for chunk, emb in zip(chunks, embeddings, strict=True)
@@ -192,6 +214,8 @@ class MilvusService:
                 "source_url",
                 "source_title",
                 "chunk_index",
+                "published_at",
+                "author",
             ],
         )
         if not results or not results[0]:
@@ -203,6 +227,10 @@ class MilvusService:
                 source_title=hit["entity"]["source_title"],
                 score=hit["distance"],
                 chunk_index=hit["entity"]["chunk_index"],
+                published_at=_parse_iso_datetime(
+                    hit["entity"].get("published_at", ""),
+                ),
+                author=hit["entity"].get("author", "") or None,
             )
             for hit in results[0]
         ]
