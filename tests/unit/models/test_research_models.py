@@ -7,14 +7,19 @@ import pytest
 from pydantic import ValidationError
 
 from src.models.research import (
+    ChunkMetadata,
+    ChunkResult,
+    DocumentChunk,
     EvaluationResult,
     FacetFindings,
     FacetTask,
+    KnowledgeBaseStats,
     ResearchFacet,
     ResearchPlan,
     SourceDocument,
     TopicInput,
 )
+from src.models.research_db import AgentStep, ResearchSession
 
 
 class TestTopicInput:
@@ -174,9 +179,6 @@ class TestSerialization:
         assert restored == plan
 
 
-from src.models.research_db import AgentStep, ResearchSession
-
-
 class TestResearchSession:
     def test_construct_with_defaults(self) -> None:
         session = ResearchSession(topic_id=uuid4(), started_at=datetime.now(UTC))
@@ -200,14 +202,6 @@ class TestAgentStep:
         )
         assert step.status == "running"
         assert step.duration_ms is None
-
-
-from src.models.research import (
-    ChunkMetadata,
-    ChunkResult,
-    DocumentChunk,
-    KnowledgeBaseStats,
-)
 
 
 class TestChunkMetadata:

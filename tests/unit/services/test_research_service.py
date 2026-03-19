@@ -1,12 +1,11 @@
 """Tests for the ResearchService."""
 
-from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
 
+from src.api.errors import NotFoundError
 from src.models.research import TopicInput
-from src.models.research_db import AgentStep, ResearchSession
 from src.services.research import (
     InMemoryAgentStepRepository,
     InMemoryResearchSessionRepository,
@@ -14,7 +13,6 @@ from src.services.research import (
     ResearchRepositories,
     ResearchService,
 )
-from src.api.errors import NotFoundError
 
 
 class FakeOrchestrator:
