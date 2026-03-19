@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from src.models.content import ContentType
+from src.models.content import ContentType, Provenance, SEOMetadata
 
 
 class DraftStatus(StrEnum):
@@ -73,6 +73,23 @@ class SectionDraft(BaseModel, frozen=True):
     citations_used: list[CitationRef]
 
 
+class AIDiscoverabilityResult(BaseModel, frozen=True):
+    """LLM-extracted summary and key claims."""
+
+    summary: str = Field(max_length=500)
+    key_claims: list[str] = Field(min_length=1, max_length=10)
+
+
+class SEOResult(BaseModel, frozen=True):
+    """Output of the seo_optimize pipeline node."""
+
+    seo: SEOMetadata
+    summary: str
+    key_claims: list[str]
+    provenance: Provenance
+    ai_disclosure: str
+
+
 class ArticleDraft(BaseModel):
     """Tracks article generation state."""
 
@@ -86,3 +103,4 @@ class ArticleDraft(BaseModel):
     section_drafts: list[SectionDraft] = Field(default_factory=list)
     citations: list[CitationRef] = Field(default_factory=list)
     total_word_count: int = 0
+    seo_result: SEOResult | None = None

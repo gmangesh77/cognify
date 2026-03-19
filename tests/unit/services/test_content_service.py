@@ -17,6 +17,7 @@ from src.services.content import (
     ContentService,
     InMemoryArticleDraftRepository,
 )
+from src.services.content_repositories import ContentDeps
 from src.services.research import InMemoryResearchSessionRepository
 
 
@@ -37,6 +38,25 @@ def _outline_json() -> str:
             ],
             "total_target_words": 300,
             "reasoning": "Simple",
+        }
+    )
+
+
+def _seo_json() -> str:
+    return json.dumps(
+        {
+            "title": "Test SEO Title for the Article",
+            "description": "A test description that is long enough to pass validation for the SEO metadata.",
+            "keywords": ["test", "seo", "ai"],
+        }
+    )
+
+
+def _discoverability_json() -> str:
+    return json.dumps(
+        {
+            "summary": "Test summary of the article content.",
+            "key_claims": ["Key claim one [1]", "Key claim two [1]"],
         }
     )
 
@@ -79,7 +99,8 @@ async def _make_service(
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
     )
-    return ContentService(repos, llm), session
+    deps = ContentDeps(llm=llm)
+    return ContentService(repos, deps), session
 
 
 class TestGenerateOutline:
@@ -135,6 +156,8 @@ async def _make_service_with_retriever(
             queries_json,  # query generation
             draft_text,  # section draft
             draft_text,  # re-draft (validation)
+            _seo_json(),  # SEO metadata
+            _discoverability_json(),  # AI discoverability
         ]
     )
     repos = ContentRepositories(
@@ -154,7 +177,8 @@ async def _make_service_with_retriever(
             for i in range(5)
         ]
     )
-    return ContentService(repos, llm, retriever=retriever), session
+    deps = ContentDeps(llm=llm, retriever=retriever)
+    return ContentService(repos, deps), session
 
 
 class TestDraftArticle:
@@ -189,3 +213,20 @@ class TestDraftArticle:
         outline_draft = await svc.generate_outline(session.id)
         with pytest.raises(ValueError, match="retriever required"):
             await svc.draft_article(outline_draft.id)
+
+
+class TestDraftArticleWithSEO:
+    async def test_draft_article_includes_seo_result(self) -> None:
+        svc, session = await _make_service_with_retriever()
+        outline_draft = await svc.generate_outline(session.id)
+        result = await svc.draft_article(outline_draft.id)
+        assert result.seo_result is not None
+        assert result.seo_result.summary != ""
+        assert len(result.seo_result.key_claims) >= 1
+
+
+class TestContentDeps:
+    async def test_service_uses_deps(self) -> None:
+        svc, session = await _make_service()
+        draft = await svc.generate_outline(session.id)
+        assert draft.outline is not None

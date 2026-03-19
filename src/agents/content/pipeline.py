@@ -21,10 +21,13 @@ from src.agents.content.nodes import (
     make_queries_node,
     make_validate_node,
 )
+from src.agents.content.seo_node import make_seo_node
+from src.config.settings import Settings
 from src.models.content_pipeline import (
     ArticleOutline,
     SectionDraft,
     SectionQueries,
+    SEOResult,
 )
 from src.models.research import FacetFindings, ResearchPlan, TopicInput
 from src.services.milvus_retriever import MilvusRetriever
@@ -45,11 +48,13 @@ class ContentState(TypedDict):
     total_word_count: NotRequired[int]
     global_citations: NotRequired[list[dict[str, object]]]
     references_markdown: NotRequired[str]
+    seo_result: NotRequired[SEOResult]
 
 
 def build_content_graph(
     llm: BaseChatModel,
     retriever: MilvusRetriever | None = None,
+    settings: Settings | None = None,
 ) -> CompiledStateGraph:  # type: ignore[type-arg]
     """Build and compile the content pipeline graph."""
     graph = StateGraph(ContentState)
@@ -64,6 +69,7 @@ def build_content_graph(
     graph.add_node("draft_sections", make_draft_node(llm, retriever))
     graph.add_node("validate_article", make_validate_node(llm, retriever))
     graph.add_node("manage_citations", make_citations_node())
+    graph.add_node("seo_optimize", make_seo_node(llm, settings))
 
     graph.add_conditional_edges(
         "generate_outline",
@@ -77,9 +83,8 @@ def build_content_graph(
     )
     graph.add_edge("draft_sections", "validate_article")
     graph.add_edge("validate_article", "manage_citations")
-    # Simple edge for now; replace with conditional edge when CONTENT-006
-    # adds the "humanize" node after manage_citations.
-    graph.add_edge("manage_citations", END)
+    graph.add_edge("manage_citations", "seo_optimize")
+    graph.add_edge("seo_optimize", END)
 
     return graph.compile()
 

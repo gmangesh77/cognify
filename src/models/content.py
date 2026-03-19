@@ -20,6 +20,30 @@ class ContentType(StrEnum):
     REPORT = "report"
 
 
+class SchemaOrgAuthor(BaseModel, frozen=True):
+    """Schema.org author for JSON-LD."""
+
+    type: str = Field(default="Organization", alias="@type")
+    name: str = "Cognify"
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class StructuredDataLD(BaseModel, frozen=True):
+    """Typed JSON-LD Schema.org Article structured data."""
+
+    context: str = Field(default="https://schema.org", alias="@context")
+    type: str = Field(default="Article", alias="@type")
+    headline: str
+    description: str
+    keywords: list[str] = Field(default_factory=list)
+    author: SchemaOrgAuthor = Field(default_factory=SchemaOrgAuthor)
+    date_published: str = Field(alias="datePublished")
+    date_modified: str = Field(alias="dateModified")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class SEOMetadata(BaseModel):
     """Platform-neutral SEO defaults."""
 
@@ -27,6 +51,7 @@ class SEOMetadata(BaseModel):
     description: str = Field(min_length=1, max_length=170)
     keywords: list[str] = Field(default_factory=list, max_length=20)
     canonical_url: str | None = None
+    structured_data: StructuredDataLD | None = None
 
 
 class Citation(BaseModel):

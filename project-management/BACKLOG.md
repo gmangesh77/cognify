@@ -324,8 +324,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Total article length ≥ 1500 words
 - **Story Points**: 8
 
-### CONTENT-003: SEO & AI Discoverability [Must]
+### CONTENT-003: SEO & AI Discoverability [Must] — DONE
 **As a** content marketer, **I want** articles optimized for both search engines and AI assistants, **so that** they rank well in Google and are cited by ChatGPT, Perplexity, and other AI agents.
+- **Status**: Done (branch `feature/CONTENT-003-seo-ai-discoverability`, PR #20)
+- **Plan**: [`docs/superpowers/plans/2026-03-19-content-003-seo-ai-discoverability.md`](../docs/superpowers/plans/2026-03-19-content-003-seo-ai-discoverability.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-19-content-003-seo-ai-discoverability-design.md`](../docs/superpowers/specs/2026-03-19-content-003-seo-ai-discoverability-design.md)
 
 #### Traditional SEO
 - **Acceptance Criteria**:

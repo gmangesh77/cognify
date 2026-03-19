@@ -77,3 +77,7 @@ class Settings(BaseSettings):
     chunk_overlap_tokens: int = 50
     # Retrieval
     top_k_retrieval: int = 5
+    # Content pipeline model names (for Provenance tracking)
+    primary_model_name: str = "claude-sonnet-4"
+    drafting_model_name: str = "claude-sonnet-4"
+    embedding_version: str = "v1"
