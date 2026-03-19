@@ -43,7 +43,7 @@ class SerpAPIClient:
         self, query: str, num_results: int | None = None
     ) -> list[SerpAPIResult]:
         """Execute a search query and return organic results."""
-        params = {
+        params: dict[str, str | int] = {
             "q": query,
             "num": num_results or self._results_per_query,
             "api_key": self._api_key,
@@ -85,7 +85,7 @@ class SerpAPIClient:
                     title=str(item["title"]),
                     link=str(item["link"]),
                     snippet=str(snippet),
-                    position=int(item.get("position", 0)),
+                    position=int(str(item.get("position", 0))),
                 )
             )
         return results

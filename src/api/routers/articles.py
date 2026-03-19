@@ -8,14 +8,17 @@ from starlette.status import HTTP_201_CREATED
 
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above, require_viewer_or_above
+from src.api.errors import BadRequestError
 from src.api.rate_limiter import limiter
 from src.api.schemas.articles import (
     ArticleDraftResponse,
     ArticleOutlineResponse,
+    CitationRefResponse,
     GenerateArticleRequest,
     OutlineSectionResponse,
+    SectionDraftResponse,
 )
-from src.models.content_pipeline import ArticleDraft
+from src.models.content_pipeline import ArticleDraft, CitationRef, SectionDraft
 from src.services.content import ContentService
 
 logger = structlog.get_logger()
@@ -55,14 +58,61 @@ async def get_draft(
 ) -> ArticleDraftResponse:
     svc = _get_content_service(request)
     draft = await svc.get_draft(UUID(draft_id))
-    outline_resp = _to_outline_response(draft) if draft.outline else None
+    return _to_draft_response(draft)
+
+
+@limiter.limit("3/minute")
+@articles_router.post(
+    "/articles/drafts/{draft_id}/sections",
+    response_model=ArticleDraftResponse,
+    status_code=HTTP_201_CREATED,
+)
+async def draft_sections(
+    request: Request,
+    draft_id: str,
+    user: TokenPayload = Depends(require_editor_or_above),
+) -> ArticleDraftResponse:
+    svc = _get_content_service(request)
+    try:
+        draft = await svc.draft_article(UUID(draft_id))
+    except ValueError as exc:
+        raise BadRequestError(str(exc)) from exc
+    return _to_draft_response(draft)
+
+
+def _to_draft_response(draft: ArticleDraft) -> ArticleDraftResponse:
+    """Convert ArticleDraft to full API response."""
+    outline = _to_outline_response(draft) if draft.outline else None
     return ArticleDraftResponse(
         draft_id=draft.id,
         session_id=draft.session_id,
         status=draft.status,
-        outline=outline_resp,
+        outline=outline,
         created_at=draft.created_at,
         completed_at=draft.completed_at,
+        section_drafts=[_to_section(s) for s in draft.section_drafts],
+        citations=[_to_citation(c) for c in draft.citations],
+        total_word_count=draft.total_word_count,
+    )
+
+
+def _to_section(s: SectionDraft) -> SectionDraftResponse:
+    """Convert a SectionDraft model to its response schema."""
+    return SectionDraftResponse(
+        section_index=s.section_index,
+        title=s.title,
+        body_markdown=s.body_markdown,
+        word_count=s.word_count,
+        citations_used=[_to_citation(c) for c in s.citations_used],
+    )
+
+
+def _to_citation(c: CitationRef) -> CitationRefResponse:
+    """Convert a CitationRef model to its response schema."""
+    return CitationRefResponse(
+        index=c.index,
+        source_url=c.source_url,
+        source_title=c.source_title,
     )
 
 

@@ -82,7 +82,7 @@ async def generate_outline(
     for attempt in range(_MAX_RETRIES):
         response = await llm.ainvoke(messages)
         try:
-            data = json.loads(response.content)
+            data = json.loads(str(response.content))
             return ArticleOutline.model_validate(data)
         except (json.JSONDecodeError, ValidationError) as exc:
             logger.warning(

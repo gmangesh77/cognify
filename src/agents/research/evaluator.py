@@ -95,7 +95,7 @@ async def evaluate_completeness(
     response = await llm.ainvoke(messages)
 
     try:
-        data = json.loads(response.content)
+        data = json.loads(str(response.content))
         result = EvaluationResult.model_validate(data)
     except (json.JSONDecodeError, ValidationError) as exc:
         logger.warning("evaluation_parse_failed", error=str(exc))

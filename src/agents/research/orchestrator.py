@@ -92,7 +92,7 @@ def build_graph(
     dispatcher: TaskDispatcher,
     agent_fn: AgentFunction,
     indexing_deps: IndexingDeps | None = None,
-) -> CompiledStateGraph:
+) -> CompiledStateGraph:  # type: ignore[type-arg]
     """Build and compile the research orchestrator graph."""
     graph = StateGraph(ResearchState)
 

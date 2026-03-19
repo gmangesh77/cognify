@@ -1,26 +1,32 @@
 """Content pipeline LangGraph StateGraph.
 
-Orchestrates article generation stages. CONTENT-001 adds the
-generate_outline node. Future tickets add draft, SEO, and compile nodes.
+Orchestrates article generation stages: outline, query generation,
+section drafting with RAG, and validation. Conditional edge gates
+drafting on retriever availability.
 """
 
-from typing import TypedDict
+from __future__ import annotations
+
+from typing import NotRequired, TypedDict
 from uuid import UUID
 
-import structlog
 from langchain_core.language_models import BaseChatModel
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from src.agents.content.outline_generator import generate_outline
-from src.models.content_pipeline import ArticleOutline
-from src.models.research import (
-    FacetFindings,
-    ResearchPlan,
-    TopicInput,
+from src.agents.content.nodes import (
+    make_draft_node,
+    make_outline_node,
+    make_queries_node,
+    make_validate_node,
 )
-
-logger = structlog.get_logger()
+from src.models.content_pipeline import (
+    ArticleOutline,
+    SectionDraft,
+    SectionQueries,
+)
+from src.models.research import FacetFindings, ResearchPlan, TopicInput
+from src.services.milvus_retriever import MilvusRetriever
 
 
 class ContentState(TypedDict):
@@ -33,34 +39,53 @@ class ContentState(TypedDict):
     outline: ArticleOutline | None
     status: str
     error: str | None
+    section_queries: NotRequired[list[SectionQueries]]
+    section_drafts: NotRequired[list[SectionDraft]]
+    total_word_count: NotRequired[int]
 
 
-def build_content_graph(llm: BaseChatModel) -> CompiledStateGraph:
+def build_content_graph(
+    llm: BaseChatModel,
+    retriever: MilvusRetriever | None = None,
+) -> CompiledStateGraph:  # type: ignore[type-arg]
     """Build and compile the content pipeline graph."""
     graph = StateGraph(ContentState)
-
-    async def outline_node(state: ContentState) -> dict:  # type: ignore[type-arg]
-        topic = state["topic"]
-        if not isinstance(topic, TopicInput):
-            topic = TopicInput.model_validate(topic)
-        findings = [
-            f if isinstance(f, FacetFindings) else FacetFindings.model_validate(f)
-            for f in state["findings"]
-        ]
-        try:
-            outline = await generate_outline(topic, findings, llm)
-            logger.info(
-                "outline_generation_complete",
-                section_count=len(outline.sections),
-                total_words=outline.total_target_words,
-            )
-            return {"outline": outline, "status": "outline_complete"}
-        except Exception as exc:
-            logger.error("outline_generation_failed", error=str(exc))
-            return {"status": "failed", "error": str(exc)}
-
-    graph.add_node("generate_outline", outline_node)
+    graph.add_node("generate_outline", make_outline_node(llm))
     graph.set_entry_point("generate_outline")
-    graph.add_edge("generate_outline", END)
+
+    if retriever is None:
+        graph.add_edge("generate_outline", END)
+        return graph.compile()
+
+    graph.add_node("generate_queries", make_queries_node(llm))
+    graph.add_node("draft_sections", make_draft_node(llm, retriever))
+    graph.add_node("validate_article", make_validate_node(llm, retriever))
+
+    graph.add_conditional_edges(
+        "generate_outline",
+        _should_draft,
+        {"generate_queries": "generate_queries", END: END},
+    )
+    graph.add_conditional_edges(
+        "generate_queries",
+        _check_not_failed,
+        {"draft_sections": "draft_sections", END: END},
+    )
+    graph.add_edge("draft_sections", "validate_article")
+    graph.add_edge("validate_article", END)
 
     return graph.compile()
+
+
+def _should_draft(state: ContentState) -> str:
+    """Route to drafting if outline succeeded, else stop."""
+    if state.get("outline") is not None and state.get("status") != "failed":
+        return "generate_queries"
+    return END
+
+
+def _check_not_failed(state: ContentState) -> str:
+    """Continue to drafting unless a prior node failed."""
+    if state.get("status") == "failed":
+        return END
+    return "draft_sections"

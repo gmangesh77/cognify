@@ -173,7 +173,7 @@ class ResearchService:
         session = await self._repos.sessions.get(session_id)
         if not session:
             return
-        findings_raw = result.get("findings", []) if isinstance(result, dict) else []  # type: ignore[union-attr]
+        findings_raw = result.get("findings", []) if isinstance(result, dict) else []
         findings_data = [
             f.model_dump() if hasattr(f, "model_dump") else f for f in findings_raw
         ]
