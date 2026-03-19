@@ -94,8 +94,9 @@
 | ----------- | --------------------------- | ------- | ------ | ---- | ---- |
 | CONTENT-001 | Article Outline Generation  | Done | `feature/CONTENT-001-article-outline` | [plan](../docs/superpowers/plans/2026-03-18-content-001-article-outline.md) | [spec](../docs/superpowers/specs/2026-03-18-content-001-article-outline-design.md) |
 | CONTENT-002 | Section-by-Section Drafting | Done | `feature/CONTENT-002-section-drafting` | [plan](../docs/superpowers/plans/2026-03-19-content-002-section-drafting.md) | [spec](../docs/superpowers/specs/2026-03-19-content-002-section-drafting-design.md) |
-| CONTENT-003 | SEO Optimization            | Backlog | —      | —    | —    |
+| CONTENT-003 | SEO & AI Discoverability    | Backlog | —      | —    | —    |
 | CONTENT-004 | Citation Management         | Backlog | —      | —    | —    |
+| CONTENT-005 | CanonicalArticle Assembly   | Backlog | —      | —    | —    |
 
 
 ## Epic 4: Visual Asset Generation
