@@ -9,8 +9,11 @@ from pydantic import ValidationError
 from src.models.content_pipeline import (
     ArticleDraft,
     ArticleOutline,
+    CitationRef,
     DraftStatus,
     OutlineSection,
+    SectionDraft,
+    SectionQueries,
 )
 
 
@@ -128,3 +131,69 @@ class TestArticleDraft:
         )
         assert draft.outline is not None
         assert draft.status == DraftStatus.OUTLINE_COMPLETE
+
+
+class TestCitationRef:
+    def test_construct(self) -> None:
+        ref = CitationRef(index=1, source_url="https://a.com", source_title="A")
+        assert ref.index == 1
+        assert ref.source_url == "https://a.com"
+
+    def test_frozen(self) -> None:
+        ref = CitationRef(index=1, source_url="https://a.com", source_title="A")
+        with pytest.raises(ValidationError):
+            ref.index = 2  # type: ignore[misc]
+
+
+class TestSectionQueries:
+    def test_construct(self) -> None:
+        sq = SectionQueries(section_index=0, queries=["q1", "q2"])
+        assert sq.section_index == 0
+        assert len(sq.queries) == 2
+
+    def test_frozen(self) -> None:
+        sq = SectionQueries(section_index=0, queries=["q1"])
+        with pytest.raises(ValidationError):
+            sq.section_index = 1  # type: ignore[misc]
+
+
+class TestSectionDraft:
+    def test_construct(self) -> None:
+        ref = CitationRef(index=1, source_url="https://a.com", source_title="A")
+        sd = SectionDraft(
+            section_index=0,
+            title="Intro",
+            body_markdown="Text with [1] citation.",
+            word_count=5,
+            citations_used=[ref],
+        )
+        assert sd.title == "Intro"
+        assert sd.word_count == 5
+        assert len(sd.citations_used) == 1
+
+    def test_frozen(self) -> None:
+        sd = SectionDraft(
+            section_index=0,
+            title="Intro",
+            body_markdown="Text",
+            word_count=1,
+            citations_used=[],
+        )
+        with pytest.raises(ValidationError):
+            sd.title = "Changed"  # type: ignore[misc]
+
+
+class TestDraftStatusExtended:
+    def test_draft_complete_value(self) -> None:
+        assert DraftStatus.DRAFT_COMPLETE == "draft_complete"
+
+    def test_all_values(self) -> None:
+        expected = {
+            "outline_generating",
+            "outline_complete",
+            "drafting",
+            "draft_complete",
+            "complete",
+            "failed",
+        }
+        assert {s.value for s in DraftStatus} == expected

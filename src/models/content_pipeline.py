@@ -19,6 +19,7 @@ class DraftStatus(StrEnum):
     OUTLINE_GENERATING = "outline_generating"
     OUTLINE_COMPLETE = "outline_complete"
     DRAFTING = "drafting"
+    DRAFT_COMPLETE = "draft_complete"
     COMPLETE = "complete"
     FAILED = "failed"
 
@@ -45,6 +46,31 @@ class ArticleOutline(BaseModel, frozen=True):
     reasoning: str
 
 
+class CitationRef(BaseModel, frozen=True):
+    """Lightweight citation reference collected during drafting."""
+
+    index: int
+    source_url: str
+    source_title: str
+
+
+class SectionQueries(BaseModel, frozen=True):
+    """Retrieval queries generated for one outline section."""
+
+    section_index: int
+    queries: list[str]
+
+
+class SectionDraft(BaseModel, frozen=True):
+    """Drafted content for one article section."""
+
+    section_index: int
+    title: str
+    body_markdown: str
+    word_count: int
+    citations_used: list[CitationRef]
+
+
 class ArticleDraft(BaseModel):
     """Tracks article generation state."""
 
@@ -55,3 +81,6 @@ class ArticleDraft(BaseModel):
     status: DraftStatus = DraftStatus.OUTLINE_GENERATING
     created_at: datetime
     completed_at: datetime | None = None
+    section_drafts: list[SectionDraft] = Field(default_factory=list)
+    citations: list[CitationRef] = Field(default_factory=list)
+    total_word_count: int = 0
