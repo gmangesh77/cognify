@@ -149,6 +149,8 @@ def extract_citations(
                 index=num,
                 source_url=chunk.source_url,
                 source_title=chunk.source_title,
+                published_at=chunk.published_at,
+                author=chunk.author,
             )
         )
     return refs
