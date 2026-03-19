@@ -223,6 +223,75 @@ class TestWebSearchAgentErrors:
         assert result.summary != ""
 
 
+class TestWebSearchAgentMetadata:
+    async def test_to_source_documents_passes_date_and_author(self) -> None:
+        """SerpAPIResult with date/author -> SourceDocument has published_at/author."""
+        mock_client = AsyncMock(spec=SerpAPIClient)
+        mock_client.search.return_value = [
+            SerpAPIResult(
+                title="Dated Article",
+                link="https://example.com/dated",
+                snippet="Has date info",
+                position=1,
+                date="Jan 15, 2026",
+                author="Alice Smith",
+            ),
+        ]
+        llm = FakeListChatModel(responses=[_claims_json()])
+
+        agent = WebSearchAgent(mock_client, llm)
+        result = await agent(_make_facet())
+
+        assert len(result.sources) == 1
+        src = result.sources[0]
+        assert src.published_at is not None
+        assert src.published_at.year == 2026
+        assert src.published_at.month == 1
+        assert src.published_at.day == 15
+        assert src.author == "Alice Smith"
+
+    async def test_to_source_documents_handles_missing_metadata(self) -> None:
+        """SerpAPIResult without date/author -> SourceDocument has None."""
+        mock_client = AsyncMock(spec=SerpAPIClient)
+        mock_client.search.return_value = [
+            SerpAPIResult(
+                title="No Meta",
+                link="https://example.com/nometa",
+                snippet="No metadata",
+                position=1,
+            ),
+        ]
+        llm = FakeListChatModel(responses=[_claims_json()])
+
+        agent = WebSearchAgent(mock_client, llm)
+        result = await agent(_make_facet())
+
+        assert len(result.sources) == 1
+        src = result.sources[0]
+        assert src.published_at is None
+        assert src.author is None
+
+    async def test_to_source_documents_handles_bad_date(self) -> None:
+        """SerpAPIResult with unparseable date -> published_at is None."""
+        mock_client = AsyncMock(spec=SerpAPIClient)
+        mock_client.search.return_value = [
+            SerpAPIResult(
+                title="Bad Date",
+                link="https://example.com/baddate",
+                snippet="Bad date string",
+                position=1,
+                date="not-a-real-date-!!",
+            ),
+        ]
+        llm = FakeListChatModel(responses=[_claims_json()])
+
+        agent = WebSearchAgent(mock_client, llm)
+        result = await agent(_make_facet())
+
+        assert len(result.sources) == 1
+        assert result.sources[0].published_at is None
+
+
 class TestWebSearchAgentCallable:
     async def test_works_with_dispatcher(self) -> None:
         """Verify __call__ satisfies AgentFunction for the dispatcher."""

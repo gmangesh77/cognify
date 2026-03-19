@@ -51,7 +51,11 @@ def _queries_json() -> str:
 
 
 def _draft_text() -> str:
-    return "This is a test section with proper structure [1]."
+    return (
+        "This is a test section with proper structure. "
+        "Fact one [1]. Fact two [2]. Fact three [3]. "
+        "Fact four [4]. Fact five [5]."
+    )
 
 
 def _seo_json() -> str:
@@ -78,12 +82,13 @@ def _make_fake_retriever() -> AsyncMock:
     retriever = AsyncMock()
     retriever.retrieve.return_value = [
         ChunkResult(
-            text="Research finding about the topic.",
-            source_url="https://a.com",
-            source_title="Source A",
-            score=0.9,
+            text=f"Research finding {i}.",
+            source_url=f"https://src{i}.com",
+            source_title=f"Source {i}",
+            score=0.9 - i * 0.01,
             chunk_index=0,
-        ),
+        )
+        for i in range(5)
     ]
     return retriever
 

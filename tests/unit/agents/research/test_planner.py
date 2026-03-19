@@ -1,13 +1,13 @@
 """Tests for the LLM-based research planner."""
 
 import json
+from uuid import uuid4
 
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
 from src.agents.research.planner import generate_research_plan
 from src.models.research import ResearchPlan, TopicInput
-from uuid import uuid4
 
 
 def _make_topic() -> TopicInput:

@@ -1,5 +1,6 @@
 """Tests for section drafter — RAG retrieval + LLM drafting + citation extraction."""
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
@@ -154,3 +155,40 @@ class TestDraftSection:
         result = await draft_section(_make_section(), _make_queries(), ctx)
         actual = len(result.body_markdown.split())
         assert result.word_count == actual
+
+
+class TestExtractCitationsMetadata:
+    def test_passes_through_published_at_and_author(self) -> None:
+        pub = datetime(2026, 3, 15, tzinfo=UTC)
+        chunks = [
+            ChunkResult(
+                text="Chunk with metadata",
+                source_url="https://source0.com",
+                source_title="Source 0",
+                score=0.95,
+                chunk_index=0,
+                published_at=pub,
+                author="Jane Doe",
+            ),
+        ]
+        text = "Some fact [1]."
+        refs = extract_citations(text, chunks)
+        assert len(refs) == 1
+        assert refs[0].published_at == pub
+        assert refs[0].author == "Jane Doe"
+
+    def test_handles_none_metadata(self) -> None:
+        chunks = [
+            ChunkResult(
+                text="Chunk without metadata",
+                source_url="https://source0.com",
+                source_title="Source 0",
+                score=0.95,
+                chunk_index=0,
+            ),
+        ]
+        text = "Some fact [1]."
+        refs = extract_citations(text, chunks)
+        assert len(refs) == 1
+        assert refs[0].published_at is None
+        assert refs[0].author is None

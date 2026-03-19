@@ -2,6 +2,7 @@
 
 import json
 from datetime import UTC, datetime
+from uuid import uuid4
 
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
@@ -12,7 +13,6 @@ from src.models.research import (
     SourceDocument,
     TopicInput,
 )
-from uuid import uuid4
 
 
 def _make_topic() -> TopicInput:

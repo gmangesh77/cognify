@@ -52,6 +52,8 @@ class CitationRef(BaseModel, frozen=True):
     index: int
     source_url: str
     source_title: str
+    published_at: datetime | None = None
+    author: str | None = None
 
 
 class SectionQueries(BaseModel, frozen=True):

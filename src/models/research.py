@@ -42,6 +42,8 @@ class SourceDocument(BaseModel, frozen=True):
     title: str
     snippet: str
     retrieved_at: datetime
+    published_at: datetime | None = None
+    author: str | None = None
 
 
 class FacetFindings(BaseModel, frozen=True):
@@ -77,6 +79,8 @@ class ChunkMetadata(BaseModel, frozen=True):
     source_title: str
     topic_id: str
     session_id: str
+    published_at: str | None = None
+    author: str | None = None
 
 
 class DocumentChunk(BaseModel, frozen=True):
@@ -88,6 +92,8 @@ class DocumentChunk(BaseModel, frozen=True):
     topic_id: str
     session_id: str
     chunk_index: int
+    published_at: str | None = None
+    author: str | None = None
 
 
 class ChunkResult(BaseModel, frozen=True):
@@ -98,6 +104,8 @@ class ChunkResult(BaseModel, frozen=True):
     source_title: str
     score: float
     chunk_index: int
+    published_at: datetime | None = None
+    author: str | None = None
 
 
 class KnowledgeBaseStats(BaseModel, frozen=True):

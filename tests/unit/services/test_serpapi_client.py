@@ -149,3 +149,59 @@ class TestSerpAPIClientSearch:
             assert params["num"] == 5
             assert params["api_key"] == "test-key"
             assert params["engine"] == "google"
+
+
+class TestSerpAPIClientDateAuthor:
+    async def test_parse_results_extracts_date_and_author(self) -> None:
+        resp_data = {
+            "organic_results": [
+                {
+                    "position": 1,
+                    "title": "Security Report 2026",
+                    "link": "https://example.com/report",
+                    "snippet": "A comprehensive security report.",
+                    "date": "Mar 10, 2026",
+                    "author": "Jane Smith",
+                },
+            ]
+        }
+        mock_resp = httpx.Response(200, json=resp_data)
+        with patch("src.services.serpapi_client.httpx.AsyncClient") as mock_cls:
+            mock_client = AsyncMock()
+            mock_client.get.return_value = mock_resp
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_cls.return_value = mock_client
+
+            client = _make_client()
+            results = await client.search("security report")
+
+        assert len(results) == 1
+        assert results[0].date == "Mar 10, 2026"
+        assert results[0].author == "Jane Smith"
+
+    async def test_parse_results_handles_missing_date_author(self) -> None:
+        resp_data = {
+            "organic_results": [
+                {
+                    "position": 1,
+                    "title": "No Metadata Article",
+                    "link": "https://example.com/plain",
+                    "snippet": "An article without date or author.",
+                },
+            ]
+        }
+        mock_resp = httpx.Response(200, json=resp_data)
+        with patch("src.services.serpapi_client.httpx.AsyncClient") as mock_cls:
+            mock_client = AsyncMock()
+            mock_client.get.return_value = mock_resp
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_cls.return_value = mock_client
+
+            client = _make_client()
+            results = await client.search("plain article")
+
+        assert len(results) == 1
+        assert results[0].date is None
+        assert results[0].author is None

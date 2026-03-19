@@ -3,9 +3,7 @@
 import asyncio
 import time
 
-import pytest
-
-from src.models.research import FacetFindings, ResearchFacet, SourceDocument
+from src.models.research import FacetFindings, ResearchFacet
 from src.services.task_dispatch import AsyncIODispatcher
 
 

@@ -15,6 +15,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from src.agents.content.nodes import (
+    make_citations_node,
     make_draft_node,
     make_outline_node,
     make_queries_node,
@@ -45,6 +46,8 @@ class ContentState(TypedDict):
     section_queries: NotRequired[list[SectionQueries]]
     section_drafts: NotRequired[list[SectionDraft]]
     total_word_count: NotRequired[int]
+    global_citations: NotRequired[list[dict[str, object]]]
+    references_markdown: NotRequired[str]
     seo_result: NotRequired[SEOResult]
 
 
@@ -65,6 +68,7 @@ def build_content_graph(
     graph.add_node("generate_queries", make_queries_node(llm))
     graph.add_node("draft_sections", make_draft_node(llm, retriever))
     graph.add_node("validate_article", make_validate_node(llm, retriever))
+    graph.add_node("manage_citations", make_citations_node())
     graph.add_node("seo_optimize", make_seo_node(llm, settings))
 
     graph.add_conditional_edges(
@@ -78,7 +82,8 @@ def build_content_graph(
         {"draft_sections": "draft_sections", END: END},
     )
     graph.add_edge("draft_sections", "validate_article")
-    graph.add_edge("validate_article", "seo_optimize")
+    graph.add_edge("validate_article", "manage_citations")
+    graph.add_edge("manage_citations", "seo_optimize")
     graph.add_edge("seo_optimize", END)
 
     return graph.compile()

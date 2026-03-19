@@ -55,6 +55,36 @@ class TestTokenChunkerLongText:
             assert len(chunks) >= 2
 
 
+class TestTokenChunkerMetadata:
+    def test_metadata_passes_through(self) -> None:
+        meta = ChunkMetadata(
+            source_url="https://example.com",
+            source_title="Test",
+            topic_id="t",
+            session_id="s",
+            published_at="2026-03-15T00:00:00+00:00",
+            author="Jane Doe",
+        )
+        chunker = TokenChunker(chunk_size=512, overlap=50)
+        chunks = chunker.chunk("Some short text.", meta)
+        assert len(chunks) == 1
+        assert chunks[0].published_at == "2026-03-15T00:00:00+00:00"
+        assert chunks[0].author == "Jane Doe"
+
+    def test_none_metadata_handled(self) -> None:
+        meta = ChunkMetadata(
+            source_url="https://example.com",
+            source_title="Test",
+            topic_id="t",
+            session_id="s",
+        )
+        chunker = TokenChunker(chunk_size=512, overlap=50)
+        chunks = chunker.chunk("Some short text.", meta)
+        assert len(chunks) == 1
+        assert chunks[0].published_at is None
+        assert chunks[0].author is None
+
+
 class TestTokenChunkerEdgeCases:
     def test_empty_text_returns_empty(self) -> None:
         chunker = TokenChunker(chunk_size=512, overlap=50)

@@ -282,6 +282,109 @@ class TestMilvusServiceStats:
         assert stats.total_chunks == 10
 
 
+class TestMilvusServiceMetadataFields:
+    def test_schema_includes_published_at_and_author(
+        self,
+        milvus_db: MilvusService,
+        mock_client: MagicMock,
+    ) -> None:
+        call_kwargs = mock_client.create_collection.call_args
+        schema = call_kwargs.kwargs["schema"]
+        field_names = [f.name for f in schema.fields]
+        assert "published_at" in field_names
+        assert "author" in field_names
+
+    async def test_prepare_insert_data_includes_metadata(
+        self,
+        milvus_db: MilvusService,
+        mock_client: MagicMock,
+    ) -> None:
+        chunks = [
+            DocumentChunk(
+                text="Chunk with metadata",
+                source_url="https://example.com/doc",
+                source_title="Doc",
+                topic_id="topic-1",
+                session_id="sess-1",
+                chunk_index=0,
+                published_at="2026-03-15T00:00:00+00:00",
+                author="Jane Doe",
+            ),
+        ]
+        embeddings = _make_embeddings(1)
+        await milvus_db.insert_chunks(chunks, embeddings)
+        call_args = mock_client.insert.call_args
+        data = call_args.kwargs["data"]
+        assert data[0]["published_at"] == "2026-03-15T00:00:00+00:00"
+        assert data[0]["author"] == "Jane Doe"
+
+    async def test_prepare_insert_data_handles_none_metadata(
+        self,
+        milvus_db: MilvusService,
+        mock_client: MagicMock,
+    ) -> None:
+        chunks = _make_chunks(1)
+        embeddings = _make_embeddings(1)
+        await milvus_db.insert_chunks(chunks, embeddings)
+        call_args = mock_client.insert.call_args
+        data = call_args.kwargs["data"]
+        assert data[0]["published_at"] == ""
+        assert data[0]["author"] == ""
+
+    async def test_search_returns_published_at_and_author(
+        self,
+        milvus_db: MilvusService,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_client.search.return_value = [
+            [
+                {
+                    "entity": {
+                        "text": "AI security findings",
+                        "source_url": "https://example.com/doc-0",
+                        "source_title": "Document 0",
+                        "chunk_index": 0,
+                        "published_at": "2026-03-15T00:00:00+00:00",
+                        "author": "Jane Doe",
+                    },
+                    "distance": 0.95,
+                },
+            ],
+        ]
+        emb = _make_embeddings(1)
+        results = await milvus_db.search(emb[0], "topic-1", top_k=3)
+        assert len(results) == 1
+        assert results[0].published_at is not None
+        assert results[0].published_at.year == 2026
+        assert results[0].author == "Jane Doe"
+
+    async def test_search_handles_empty_metadata(
+        self,
+        milvus_db: MilvusService,
+        mock_client: MagicMock,
+    ) -> None:
+        mock_client.search.return_value = [
+            [
+                {
+                    "entity": {
+                        "text": "No meta",
+                        "source_url": "https://example.com/doc-0",
+                        "source_title": "Document 0",
+                        "chunk_index": 0,
+                        "published_at": "",
+                        "author": "",
+                    },
+                    "distance": 0.9,
+                },
+            ],
+        ]
+        emb = _make_embeddings(1)
+        results = await milvus_db.search(emb[0], "topic-1", top_k=3)
+        assert len(results) == 1
+        assert results[0].published_at is None
+        assert results[0].author is None
+
+
 class TestMilvusServiceClose:
     def test_close_calls_client_close(
         self,

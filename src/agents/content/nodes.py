@@ -124,6 +124,13 @@ def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever) -> Any:  
     return validate_node
 
 
+def make_citations_node() -> Any:  # noqa: ANN401
+    """Factory for the citation management node."""
+    from src.agents.content.citation_manager import manage_citations
+
+    return manage_citations
+
+
 def _coerce_topic(state: ContentState) -> TopicInput:
     """Extract and coerce topic from state."""
     topic = state["topic"]

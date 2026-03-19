@@ -2,8 +2,6 @@
 
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from src.models.research import ChunkResult
 from src.services.milvus_retriever import MilvusRetriever
 

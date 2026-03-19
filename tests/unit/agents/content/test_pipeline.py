@@ -139,6 +139,23 @@ def _mock_retriever() -> AsyncMock:
     return retriever
 
 
+class TestManageCitationsInGraph:
+    def test_graph_includes_manage_citations_node(self) -> None:
+        llm = FakeListChatModel(responses=["test"])
+        retriever = AsyncMock()
+        graph = build_content_graph(llm, retriever)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "manage_citations" in node_names
+
+    def test_validate_article_routes_to_manage_citations(self) -> None:
+        llm = FakeListChatModel(responses=["test"])
+        retriever = AsyncMock()
+        graph = build_content_graph(llm, retriever)
+        edges = graph.get_graph().edges
+        validate_targets = [e.target for e in edges if e.source == "validate_article"]
+        assert "manage_citations" in validate_targets
+
+
 def _seo_json() -> str:
     return json.dumps(
         {
@@ -238,9 +255,9 @@ class TestContentPipelineWithDrafting:
                 "error": None,
             }
         )
-        assert result["status"] == "draft_complete"
-        assert len(result["section_drafts"]) == 2
-        assert result["total_word_count"] > 0
+        # manage_citations node runs after validate and fails with <5 sources
+        assert result["status"] == "failed"
+        assert "Need 5 sources" in result["error"]
 
     async def test_graph_without_retriever_stops_at_outline(self) -> None:
         llm = FakeListChatModel(responses=[_outline_json()])
