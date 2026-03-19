@@ -1,9 +1,4 @@
-"""Citation management — deduplication, renumbering, validation, URL checks.
-
-Converts per-section CitationRef records into global Citation models,
-renumbers inline references, validates source counts, and generates
-the references section for article assembly.
-"""
+"""Citation management — deduplication, renumbering, validation, URL checks."""
 
 from __future__ import annotations
 
@@ -34,7 +29,7 @@ class CitationValidationError(Exception):
 def build_global_citation_map(
     drafts: list[SectionDraft],
 ) -> tuple[list[Citation], dict[tuple[int, int], int]]:
-    """Deduplicate citations by URL, assign global indices."""
+    """Deduplicate by URL, assign global indices, build remap table."""
     url_to_index: dict[str, int] = {}
     citations: list[Citation] = []
     remap: dict[tuple[int, int], int] = {}
@@ -84,9 +79,7 @@ def renumber_section_markdown(
     )
 
 
-def _split_code_blocks(
-    text: str,
-) -> list[tuple[str, bool]]:
+def _split_code_blocks(text: str) -> list[tuple[str, bool]]:
     """Split text into (segment, is_code_block) pairs."""
     parts = text.split("```")
     return [(p, i % 2 == 1) for i, p in enumerate(parts)]
@@ -94,11 +87,8 @@ def _split_code_blocks(
 
 def _renumber_text(text: str, remap: dict[int, int]) -> str:
     """Replace citation markers in a non-code text segment."""
-
     def _replace(m: re.Match[str]) -> str:
-        local = int(m.group(1))
-        return f"[{remap.get(local, local)}]"
-
+        return f"[{remap.get(int(m.group(1)), int(m.group(1)))}]"
     return _CITATION_PATTERN.sub(_replace, text)
 
 
@@ -138,9 +128,7 @@ async def _check_one_url(
         logger.warning("citation_url_unreachable", url=citation.url)
 
 
-def generate_references_markdown(
-    citations: list[Citation],
-) -> str:
+def generate_references_markdown(citations: list[Citation]) -> str:
     """Build a Markdown references section from citations."""
     lines = ["## References", ""]
     for c in sorted(citations, key=lambda x: x.index):

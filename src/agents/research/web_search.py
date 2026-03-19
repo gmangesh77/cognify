@@ -46,7 +46,8 @@ def _parse_serpapi_date(date_str: str | None) -> datetime | None:
     if not date_str:
         return None
     try:
-        return parse_date(date_str)
+        parsed: datetime = parse_date(date_str)
+        return parsed
     except (ValueError, OverflowError):
         logger.warning("serpapi_date_parse_failed", date_string=date_str)
         return None

@@ -77,6 +77,8 @@ def build_content_graph(
     )
     graph.add_edge("draft_sections", "validate_article")
     graph.add_edge("validate_article", "manage_citations")
+    # Simple edge for now; replace with conditional edge when CONTENT-006
+    # adds the "humanize" node after manage_citations.
     graph.add_edge("manage_citations", END)
 
     return graph.compile()
