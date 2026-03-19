@@ -1,4 +1,5 @@
 from starlette.status import (
+    HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
@@ -35,6 +36,15 @@ class NotFoundError(CognifyError):
         super().__init__(
             status_code=HTTP_404_NOT_FOUND,
             code="not_found",
+            message=message,
+        )
+
+
+class BadRequestError(CognifyError):
+    def __init__(self, message: str = "Bad request") -> None:
+        super().__init__(
+            status_code=HTTP_400_BAD_REQUEST,
+            code="bad_request",
             message=message,
         )
 
