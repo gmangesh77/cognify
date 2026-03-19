@@ -17,6 +17,7 @@ from src.services.content import (
     ContentService,
     InMemoryArticleDraftRepository,
 )
+from src.services.content_repositories import ContentDeps
 from src.services.research import InMemoryResearchSessionRepository
 
 
@@ -79,7 +80,8 @@ async def _make_service(
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
     )
-    return ContentService(repos, llm), session
+    deps = ContentDeps(llm=llm)
+    return ContentService(repos, deps), session
 
 
 class TestGenerateOutline:
@@ -152,7 +154,8 @@ async def _make_service_with_retriever(
             ),
         ]
     )
-    return ContentService(repos, llm, retriever=retriever), session
+    deps = ContentDeps(llm=llm, retriever=retriever)
+    return ContentService(repos, deps), session
 
 
 class TestDraftArticle:
@@ -187,3 +190,10 @@ class TestDraftArticle:
         outline_draft = await svc.generate_outline(session.id)
         with pytest.raises(ValueError, match="retriever required"):
             await svc.draft_article(outline_draft.id)
+
+
+class TestContentDeps:
+    async def test_service_uses_deps(self) -> None:
+        svc, session = await _make_service()
+        draft = await svc.generate_outline(session.id)
+        assert draft.outline is not None

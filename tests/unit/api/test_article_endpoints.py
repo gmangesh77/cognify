@@ -20,6 +20,7 @@ from src.services.content import (
     ContentService,
     InMemoryArticleDraftRepository,
 )
+from src.services.content_repositories import ContentDeps
 from src.services.research import InMemoryResearchSessionRepository
 from tests.unit.api.conftest import make_auth_header
 
@@ -113,7 +114,8 @@ async def articles_app(auth_settings: Settings, test_session_id: str) -> FastAPI
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
     )
-    app.state.content_service = ContentService(repos, llm)
+    deps = ContentDeps(llm=llm)
+    app.state.content_service = ContentService(repos, deps)
     return app
 
 
@@ -158,7 +160,8 @@ async def drafting_app(
         research=session_repo,
     )
     retriever = _make_fake_retriever()
-    app.state.content_service = ContentService(repos, llm, retriever)
+    deps = ContentDeps(llm=llm, retriever=retriever)
+    app.state.content_service = ContentService(repos, deps)
     return app
 
 

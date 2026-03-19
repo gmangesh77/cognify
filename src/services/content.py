@@ -8,7 +8,6 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 import structlog
-from langchain_core.language_models import BaseChatModel
 
 from src.agents.content.pipeline import build_content_graph
 from src.api.errors import NotFoundError
@@ -21,17 +20,18 @@ from src.models.research import FacetFindings, TopicInput
 from src.models.research_db import ResearchSession
 from src.services.content_repositories import (
     ArticleDraftRepository,
+    ContentDeps,
     ContentRepositories,
     InMemoryArticleDraftRepository,
     ResearchSessionReader,
 )
-from src.services.milvus_retriever import MilvusRetriever
 
 logger = structlog.get_logger()
 
 # Re-export for backward compatibility
 __all__ = [
     "ArticleDraftRepository",
+    "ContentDeps",
     "ContentRepositories",
     "ContentService",
     "InMemoryArticleDraftRepository",
@@ -43,12 +43,10 @@ class ContentService:
     def __init__(
         self,
         repos: ContentRepositories,
-        llm: BaseChatModel,
-        retriever: MilvusRetriever | None = None,
+        deps: ContentDeps,
     ) -> None:
         self._repos = repos
-        self._llm = llm
-        self._retriever = retriever
+        self._deps = deps
 
     async def generate_outline(self, session_id: UUID) -> ArticleDraft:
         session = await self._load_session(session_id)
@@ -74,7 +72,7 @@ class ContentService:
         return draft
 
     def _validate_draft_ready(self, draft: ArticleDraft) -> None:
-        if self._retriever is None:
+        if self._deps.retriever is None:
             msg = "retriever required for drafting"
             raise ValueError(msg)
         if draft.status != DraftStatus.OUTLINE_COMPLETE:
@@ -104,7 +102,7 @@ class ContentService:
     async def _run_pipeline(
         self, topic: TopicInput, findings: list[FacetFindings]
     ) -> ArticleOutline:
-        graph = build_content_graph(self._llm)
+        graph = build_content_graph(self._deps.llm)
         result = await graph.ainvoke(
             {
                 "topic": topic,
@@ -130,7 +128,7 @@ class ContentService:
         draft: ArticleDraft,
     ) -> dict[str, object]:
         """Run the content pipeline with existing outline."""
-        graph = build_content_graph(self._llm, self._retriever)
+        graph = build_content_graph(self._deps.llm, self._deps.retriever)
         result: dict[str, object] = await graph.ainvoke(
             {
                 "topic": topic,
