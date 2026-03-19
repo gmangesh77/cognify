@@ -6,12 +6,15 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
+from src.models.content import Provenance, SEOMetadata, SchemaOrgAuthor, StructuredDataLD
 from src.models.content_pipeline import (
+    AIDiscoverabilityResult,
     ArticleDraft,
     ArticleOutline,
     CitationRef,
     DraftStatus,
     OutlineSection,
+    SEOResult,
     SectionDraft,
     SectionQueries,
 )
@@ -197,3 +200,115 @@ class TestDraftStatusExtended:
             "failed",
         }
         assert {s.value for s in DraftStatus} == expected
+
+
+class TestStructuredDataLD:
+    def test_construct(self) -> None:
+        ld = StructuredDataLD(
+            headline="Test Article",
+            description="A test.",
+            keywords=["ai", "test"],
+            date_published="2026-03-19T00:00:00Z",
+            date_modified="2026-03-19T00:00:00Z",
+        )
+        assert ld.headline == "Test Article"
+        assert ld.type == "Article"
+        assert ld.context == "https://schema.org"
+
+    def test_serializes_with_aliases(self) -> None:
+        ld = StructuredDataLD(
+            headline="Test",
+            description="D",
+            date_published="2026-03-19",
+            date_modified="2026-03-19",
+        )
+        data = ld.model_dump(by_alias=True)
+        assert data["@context"] == "https://schema.org"
+        assert data["@type"] == "Article"
+        assert data["datePublished"] == "2026-03-19"
+
+    def test_frozen(self) -> None:
+        ld = StructuredDataLD(
+            headline="Test",
+            description="D",
+            date_published="2026-03-19",
+            date_modified="2026-03-19",
+        )
+        with pytest.raises(ValidationError):
+            ld.headline = "Changed"  # type: ignore[misc]
+
+
+class TestSchemaOrgAuthor:
+    def test_defaults(self) -> None:
+        author = SchemaOrgAuthor()
+        assert author.type == "Organization"
+        assert author.name == "Cognify"
+
+    def test_serializes_with_aliases(self) -> None:
+        author = SchemaOrgAuthor()
+        data = author.model_dump(by_alias=True)
+        assert data["@type"] == "Organization"
+        assert data["name"] == "Cognify"
+
+
+class TestAIDiscoverabilityResult:
+    def test_construct(self) -> None:
+        result = AIDiscoverabilityResult(
+            summary="A concise summary of the article.",
+            key_claims=["Claim 1 [1]", "Claim 2 [2]"],
+        )
+        assert len(result.key_claims) == 2
+
+    def test_frozen(self) -> None:
+        result = AIDiscoverabilityResult(
+            summary="Summary",
+            key_claims=["Claim"],
+        )
+        with pytest.raises(ValidationError):
+            result.summary = "Changed"  # type: ignore[misc]
+
+
+class TestSEOResult:
+    def test_construct(self) -> None:
+        seo = SEOMetadata(
+            title="Test Title for SEO",
+            description="A test description for the article.",
+        )
+        prov = Provenance(
+            research_session_id=uuid4(),
+            primary_model="claude-sonnet-4",
+            drafting_model="claude-sonnet-4",
+            embedding_model="all-MiniLM-L6-v2",
+            embedding_version="v1",
+        )
+        result = SEOResult(
+            seo=seo,
+            summary="Summary",
+            key_claims=["Claim"],
+            provenance=prov,
+            ai_disclosure="Disclosure text",
+        )
+        assert result.summary == "Summary"
+        assert result.provenance.primary_model == "claude-sonnet-4"
+
+    def test_frozen(self) -> None:
+        seo = SEOMetadata(
+            title="Test Title for SEO",
+            description="A test description.",
+        )
+        prov = Provenance(
+            research_session_id=uuid4(),
+            primary_model="m",
+            drafting_model="m",
+            embedding_model="e",
+            embedding_version="v1",
+        )
+        result = SEOResult(
+            seo=seo,
+            summary="S",
+            key_claims=["C"],
+            provenance=prov,
+            ai_disclosure="D",
+        )
+        with pytest.raises(ValidationError):
+            result.summary = "Changed"  # type: ignore[misc]
