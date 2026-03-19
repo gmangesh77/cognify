@@ -66,4 +66,6 @@ class TokenChunker:
             topic_id=metadata.topic_id,
             session_id=metadata.session_id,
             chunk_index=index,
+            published_at=metadata.published_at,
+            author=metadata.author,
         )

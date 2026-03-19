@@ -11,6 +11,7 @@ import re
 from datetime import UTC, datetime
 
 import structlog
+from dateutil.parser import parse as parse_date
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
@@ -38,6 +39,17 @@ _CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 def _sanitize(text: str) -> str:
     """Strip control characters from text (RISK-005 mitigation)."""
     return _CONTROL_CHAR_RE.sub("", text)[:_MAX_SNIPPET_CHARS]
+
+
+def _parse_serpapi_date(date_str: str | None) -> datetime | None:
+    """Parse a date string from SerpAPI into a datetime, or None."""
+    if not date_str:
+        return None
+    try:
+        return parse_date(date_str)
+    except (ValueError, OverflowError):
+        logger.warning("serpapi_date_parse_failed", date_string=date_str)
+        return None
 
 
 class WebSearchAgent:
@@ -98,6 +110,8 @@ class WebSearchAgent:
                 title=_sanitize(r.title),
                 snippet=_sanitize(r.snippet),
                 retrieved_at=now,
+                published_at=_parse_serpapi_date(r.date),
+                author=r.author,
             )
             for r in results
         ]

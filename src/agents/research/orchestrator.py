@@ -215,6 +215,8 @@ def _chunk_findings(
                 source_title=source.title,
                 topic_id=str(topic.id),
                 session_id=session_id,
+                published_at=source.published_at.isoformat() if source.published_at else None,
+                author=source.author,
             )
             all_chunks.extend(chunker.chunk(source.snippet, metadata))
     return all_chunks
