@@ -30,6 +30,20 @@ class ArticleOutlineResponse(BaseModel):
     status: str
 
 
+class CitationRefResponse(BaseModel):
+    index: int
+    source_url: str
+    source_title: str
+
+
+class SectionDraftResponse(BaseModel):
+    section_index: int
+    title: str
+    body_markdown: str
+    word_count: int
+    citations_used: list[CitationRefResponse]
+
+
 class ArticleDraftResponse(BaseModel):
     draft_id: UUID
     session_id: UUID
@@ -37,3 +51,6 @@ class ArticleDraftResponse(BaseModel):
     outline: ArticleOutlineResponse | None
     created_at: datetime
     completed_at: datetime | None
+    section_drafts: list[SectionDraftResponse] = []
+    citations: list[CitationRefResponse] = []
+    total_word_count: int = 0
