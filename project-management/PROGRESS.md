@@ -97,6 +97,7 @@
 | CONTENT-003 | SEO & AI Discoverability    | Backlog | —      | —    | —    |
 | CONTENT-004 | Citation Management         | Backlog | —      | —    | —    |
 | CONTENT-005 | CanonicalArticle Assembly   | Backlog | —      | —    | —    |
+| CONTENT-006 | Content Humanization        | Backlog | —      | —    | —    |
 
 
 ## Epic 4: Visual Asset Generation

@@ -375,7 +375,34 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - **API endpoint**: `GET /api/v1/articles/{article_id}` returns the finalized `CanonicalArticle` (new `CanonicalArticleResponse` schema with summary, key_claims, provenance, ai_generated, seo, citations)
   - **Status transition**: `DRAFT_COMPLETE` → `COMPLETE` (final state in current pipeline; future tickets add publishing states)
 - **Story Points**: 5
-- **Depends on**: CONTENT-003 (SEO & AI Discoverability), CONTENT-004 (Citation Management)
+- **Depends on**: CONTENT-003 (SEO & AI Discoverability), CONTENT-004 (Citation Management), CONTENT-006 (Content Humanization)
+
+### CONTENT-006: Content Humanization [Must]
+**As a** reader, **I want** articles to read like they were written by a human, **so that** the content feels natural and trustworthy rather than obviously AI-generated.
+
+#### Layer 1: Prevention (prompt engineering)
+- **Acceptance Criteria**:
+  - System prompts in `outline_generator.py` and `section_drafter.py` updated with explicit style rules
+  - LLM instructed to avoid em-dashes (use periods or commas), formal transitions (moreover/furthermore/in conclusion/additionally), hedge words (essentially/basically/actually/certainly/generally), and buzzwords (delve/unpack/embark/innovative/vibrant/landscape/paradigm/leverage/synergy/holistic)
+  - LLM instructed to use natural conversational tone — short sentences, active voice, concrete specifics over abstract generalities
+  - LLM instructed to vary sentence length and structure (not every sentence follows the same pattern)
+
+#### Layer 2: Correction (humanize node)
+- **Acceptance Criteria**:
+  - **New pipeline node**: `humanize` runs after `validate_article` and before `seo_optimize` in the content graph
+  - **Mechanical fixes** (regex, no LLM): Replace em-dashes (—) with periods or commas, strip trailing hedge phrases, normalize whitespace
+  - **Violation scanner**: Detect remaining formal transitions, hedge words, buzzwords, and repetitive sentence openers in drafted text — return `list[Violation]` with location and category
+  - **LLM rewrite pass**: For sections with >3 violations, call LLM with the section text + specific violations to fix — "Rewrite this section to sound more natural: [violations list]". Single rewrite attempt per section (no retry loop)
+  - **Metrics logging**: Log `humanization_complete` with violation_count, sections_rewritten, mechanical_fixes_applied per article
+  - **Configurable**: Style rules defined as a data structure (not hardcoded in prompts), so new rules can be added without changing code. Default rules loaded from a `STYLE_RULES` constant.
+
+#### Implementation Notes
+- New file: `src/agents/content/humanizer.py` (~100 lines) — `scan_violations()`, `fix_mechanical()`, `humanize_section()`
+- Style rules as frozen Pydantic model or dict constant — categories: em_dash, formal_transition, hedge_word, buzzword, repetitive_opener
+- Tests: unit tests for each rule category, integration test for the pipeline node
+- Does NOT change article meaning or remove citations — only style adjustments
+- **Story Points**: 5
+- **Blocks**: CONTENT-005
 
 ---
 
@@ -563,9 +590,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 | Trend Discovery | 4 | 2 | 0 | 6 | 27 |
 | Architecture Foundation | 1 | 1 | 0 | 2 | 8 |
 | Research Pipeline | 4 | 1 | 0 | 5 | 39 |
-| Content Generation | 5 | 0 | 0 | 5 | 31 |
+| Content Generation | 6 | 0 | 0 | 6 | 36 |
 | Visual Assets | 1 | 1 | 1 | 3 | 13 |
 | Publishing | 2 | 1 | 2 | 5 | 23 |
 | Dashboard & Config | 4 | 1 | 0 | 5 | 31 |
 | API & Auth | 3 | 0 | 0 | 3 | 15 |
-| **Total** | **31** | **9** | **3** | **43** | **217** |
+| **Total** | **32** | **9** | **3** | **44** | **222** |
