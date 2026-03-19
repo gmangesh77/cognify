@@ -26,6 +26,8 @@ class SerpAPIResult(BaseModel, frozen=True):
     link: str
     snippet: str
     position: int
+    date: str | None = None
+    author: str | None = None
 
 
 class SerpAPIClient:
@@ -86,6 +88,8 @@ class SerpAPIClient:
                     link=str(item["link"]),
                     snippet=str(snippet),
                     position=int(str(item.get("position", 0))),
+                    date=str(item["date"]) if item.get("date") else None,
+                    author=str(item["author"]) if item.get("author") else None,
                 )
             )
         return results
