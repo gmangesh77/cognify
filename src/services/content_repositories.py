@@ -7,8 +7,12 @@ from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
 
+from langchain_core.language_models import BaseChatModel
+
+from src.config.settings import Settings
 from src.models.content_pipeline import ArticleDraft
 from src.models.research_db import ResearchSession
+from src.services.milvus_retriever import MilvusRetriever
 
 
 class ArticleDraftRepository(Protocol):
@@ -43,3 +47,12 @@ class InMemoryArticleDraftRepository:
 class ContentRepositories:
     drafts: ArticleDraftRepository
     research: ResearchSessionReader
+
+
+@dataclass(frozen=True)
+class ContentDeps:
+    """Bundled dependencies for ContentService."""
+
+    llm: BaseChatModel
+    retriever: MilvusRetriever | None = None
+    settings: Settings | None = None

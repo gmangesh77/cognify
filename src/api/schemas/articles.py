@@ -44,6 +44,24 @@ class SectionDraftResponse(BaseModel):
     citations_used: list[CitationRefResponse]
 
 
+class StructuredDataLDResponse(BaseModel):
+    headline: str
+    description: str
+    keywords: list[str]
+    date_published: str
+    date_modified: str
+
+
+class SEOResultResponse(BaseModel):
+    title: str
+    description: str
+    keywords: list[str]
+    summary: str
+    key_claims: list[str]
+    ai_disclosure: str
+    structured_data: StructuredDataLDResponse | None = None
+
+
 class ArticleDraftResponse(BaseModel):
     draft_id: UUID
     session_id: UUID
@@ -54,3 +72,4 @@ class ArticleDraftResponse(BaseModel):
     section_drafts: list[SectionDraftResponse] = []
     citations: list[CitationRefResponse] = []
     total_word_count: int = 0
+    seo_result: SEOResultResponse | None = None

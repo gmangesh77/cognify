@@ -17,8 +17,16 @@ from src.api.schemas.articles import (
     GenerateArticleRequest,
     OutlineSectionResponse,
     SectionDraftResponse,
+    SEOResultResponse,
+    StructuredDataLDResponse,
 )
-from src.models.content_pipeline import ArticleDraft, CitationRef, SectionDraft
+from src.models.content import StructuredDataLD
+from src.models.content_pipeline import (
+    ArticleDraft,
+    CitationRef,
+    SectionDraft,
+    SEOResult,
+)
 from src.services.content import ContentService
 
 logger = structlog.get_logger()
@@ -80,9 +88,39 @@ async def draft_sections(
     return _to_draft_response(draft)
 
 
+def _to_structured_data_response(sd: StructuredDataLD) -> StructuredDataLDResponse:
+    """Convert a StructuredDataLD model to its response schema."""
+    return StructuredDataLDResponse(
+        headline=sd.headline,
+        description=sd.description,
+        keywords=list(sd.keywords),
+        date_published=sd.date_published,
+        date_modified=sd.date_modified,
+    )
+
+
+def _to_seo_response(seo_result: SEOResult) -> SEOResultResponse:
+    """Convert a SEOResult model to its response schema."""
+    sd_resp = (
+        _to_structured_data_response(seo_result.seo.structured_data)
+        if seo_result.seo.structured_data
+        else None
+    )
+    return SEOResultResponse(
+        title=seo_result.seo.title,
+        description=seo_result.seo.description,
+        keywords=list(seo_result.seo.keywords),
+        summary=seo_result.summary,
+        key_claims=list(seo_result.key_claims),
+        ai_disclosure=seo_result.ai_disclosure,
+        structured_data=sd_resp,
+    )
+
+
 def _to_draft_response(draft: ArticleDraft) -> ArticleDraftResponse:
     """Convert ArticleDraft to full API response."""
     outline = _to_outline_response(draft) if draft.outline else None
+    seo_resp = _to_seo_response(draft.seo_result) if draft.seo_result else None
     return ArticleDraftResponse(
         draft_id=draft.id,
         session_id=draft.session_id,
@@ -93,6 +131,7 @@ def _to_draft_response(draft: ArticleDraft) -> ArticleDraftResponse:
         section_drafts=[_to_section(s) for s in draft.section_drafts],
         citations=[_to_citation(c) for c in draft.citations],
         total_word_count=draft.total_word_count,
+        seo_result=seo_resp,
     )
 
 

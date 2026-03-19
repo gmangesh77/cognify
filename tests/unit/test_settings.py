@@ -14,6 +14,13 @@ class TestSettings:
         assert settings.rate_limit_default == "100/minute"
         assert settings.api_v1_prefix == "/api/v1"
 
+    def test_model_name_defaults(self) -> None:
+        s = Settings(_env_file=None)  # type: ignore[call-arg]
+        assert s.primary_model_name == "claude-sonnet-4"
+        assert s.drafting_model_name == "claude-sonnet-4"
+        assert s.embedding_version == "v1"
+        assert s.embedding_model == "all-MiniLM-L6-v2"
+
     def test_env_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("COGNIFY_DEBUG", "true")
         monkeypatch.setenv("COGNIFY_LOG_LEVEL", "DEBUG")
