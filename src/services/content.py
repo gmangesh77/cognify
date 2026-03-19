@@ -15,6 +15,7 @@ from src.models.content_pipeline import (
     ArticleDraft,
     ArticleOutline,
     DraftStatus,
+    SEOResult,
 )
 from src.models.research import FacetFindings, TopicInput
 from src.models.research_db import ResearchSession
@@ -102,7 +103,7 @@ class ContentService:
     async def _run_pipeline(
         self, topic: TopicInput, findings: list[FacetFindings]
     ) -> ArticleOutline:
-        graph = build_content_graph(self._deps.llm)
+        graph = build_content_graph(self._deps.llm, settings=self._deps.settings)
         result = await graph.ainvoke(
             {
                 "topic": topic,
@@ -128,7 +129,7 @@ class ContentService:
         draft: ArticleDraft,
     ) -> dict[str, object]:
         """Run the content pipeline with existing outline."""
-        graph = build_content_graph(self._deps.llm, self._deps.retriever)
+        graph = build_content_graph(self._deps.llm, self._deps.retriever, self._deps.settings)
         result: dict[str, object] = await graph.ainvoke(
             {
                 "topic": topic,
@@ -171,11 +172,15 @@ class ContentService:
         raw_drafts = result.get("section_drafts", [])
         drafts: list[object] = list(raw_drafts) if isinstance(raw_drafts, list) else []
         citations = _aggregate_citations(drafts)
+        seo_result = result.get("seo_result")
+        if seo_result is not None and not isinstance(seo_result, SEOResult):
+            seo_result = SEOResult.model_validate(seo_result)
         updated = draft.model_copy(
             update={
                 "section_drafts": drafts,
                 "citations": citations,
                 "total_word_count": result.get("total_word_count", 0),
+                "seo_result": seo_result,
                 "status": DraftStatus.DRAFT_COMPLETE,
                 "completed_at": datetime.now(UTC),
             }

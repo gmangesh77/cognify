@@ -42,6 +42,21 @@ def _outline_json() -> str:
     )
 
 
+def _seo_json() -> str:
+    return json.dumps({
+        "title": "Test SEO Title for the Article",
+        "description": "A test description that is long enough to pass validation for the SEO metadata.",
+        "keywords": ["test", "seo", "ai"],
+    })
+
+
+def _discoverability_json() -> str:
+    return json.dumps({
+        "summary": "Test summary of the article content.",
+        "key_claims": ["Key claim one [1]", "Key claim two [1]"],
+    })
+
+
 def _make_complete_session() -> ResearchSession:
     findings = [
         FacetFindings(
@@ -136,6 +151,8 @@ async def _make_service_with_retriever(
             queries_json,  # query generation
             "Draft text with [1] citation about research.",  # section draft
             "Expanded draft text with [1] citation about research findings.",  # re-draft (validation)
+            _seo_json(),  # SEO metadata
+            _discoverability_json(),  # AI discoverability
         ]
     )
     repos = ContentRepositories(
@@ -190,6 +207,16 @@ class TestDraftArticle:
         outline_draft = await svc.generate_outline(session.id)
         with pytest.raises(ValueError, match="retriever required"):
             await svc.draft_article(outline_draft.id)
+
+
+class TestDraftArticleWithSEO:
+    async def test_draft_article_includes_seo_result(self) -> None:
+        svc, session = await _make_service_with_retriever()
+        outline_draft = await svc.generate_outline(session.id)
+        result = await svc.draft_article(outline_draft.id)
+        assert result.seo_result is not None
+        assert result.seo_result.summary != ""
+        assert len(result.seo_result.key_claims) >= 1
 
 
 class TestContentDeps:

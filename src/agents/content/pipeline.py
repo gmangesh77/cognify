@@ -20,8 +20,11 @@ from src.agents.content.nodes import (
     make_queries_node,
     make_validate_node,
 )
+from src.agents.content.seo_node import make_seo_node
+from src.config.settings import Settings
 from src.models.content_pipeline import (
     ArticleOutline,
+    SEOResult,
     SectionDraft,
     SectionQueries,
 )
@@ -42,11 +45,13 @@ class ContentState(TypedDict):
     section_queries: NotRequired[list[SectionQueries]]
     section_drafts: NotRequired[list[SectionDraft]]
     total_word_count: NotRequired[int]
+    seo_result: NotRequired[SEOResult]
 
 
 def build_content_graph(
     llm: BaseChatModel,
     retriever: MilvusRetriever | None = None,
+    settings: Settings | None = None,
 ) -> CompiledStateGraph:  # type: ignore[type-arg]
     """Build and compile the content pipeline graph."""
     graph = StateGraph(ContentState)
@@ -60,6 +65,7 @@ def build_content_graph(
     graph.add_node("generate_queries", make_queries_node(llm))
     graph.add_node("draft_sections", make_draft_node(llm, retriever))
     graph.add_node("validate_article", make_validate_node(llm, retriever))
+    graph.add_node("seo_optimize", make_seo_node(llm, settings))
 
     graph.add_conditional_edges(
         "generate_outline",
@@ -72,7 +78,8 @@ def build_content_graph(
         {"draft_sections": "draft_sections", END: END},
     )
     graph.add_edge("draft_sections", "validate_article")
-    graph.add_edge("validate_article", END)
+    graph.add_edge("validate_article", "seo_optimize")
+    graph.add_edge("seo_optimize", END)
 
     return graph.compile()
 

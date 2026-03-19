@@ -54,6 +54,21 @@ def _draft_text() -> str:
     return "This is a test section with proper structure [1]."
 
 
+def _seo_json() -> str:
+    return json.dumps({
+        "title": "Test SEO Title for the Article",
+        "description": "A test description that is long enough to pass validation for the SEO metadata.",
+        "keywords": ["test", "seo", "ai"],
+    })
+
+
+def _discoverability_json() -> str:
+    return json.dumps({
+        "summary": "Test summary of the article content.",
+        "key_claims": ["Key claim one [1]", "Key claim two [1]"],
+    })
+
+
 def _make_fake_retriever() -> AsyncMock:
     """Create a mock MilvusRetriever returning stub ChunkResults."""
     retriever = AsyncMock()
@@ -146,13 +161,15 @@ async def drafting_app(
     session_repo = InMemoryResearchSessionRepository()
     await session_repo.create(_make_session(drafting_session_id))
 
-    # Responses: outline, queries, draft, re-draft (validation)
+    # Responses: outline, queries, draft, re-draft (validation), SEO, discoverability
     llm = FakeListChatModel(
         responses=[
             _outline_json(),
             _queries_json(),
             _draft_text(),
             _draft_text(),
+            _seo_json(),
+            _discoverability_json(),
         ],
     )
     repos = ContentRepositories(
