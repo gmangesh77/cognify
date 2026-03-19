@@ -1,14 +1,18 @@
-"""Tests for citation manager — global map, renumbering, validation."""
+"""Tests for citation manager — global map, renumbering, validation, URL checks."""
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 
 from src.agents.content.citation_manager import (
     CitationValidationError,
     build_global_citation_map,
+    check_urls,
+    generate_references_markdown,
     renumber_section_markdown,
     validate_citation_count,
 )
@@ -190,3 +194,67 @@ class TestValidateCitationCount:
             for i in range(1, 9)
         ]
         validate_citation_count(citations)  # should not raise
+
+
+# -- check_urls ----------------------------------------------------------------
+
+
+class TestCheckUrls:
+    async def test_returns_citations_unchanged(self) -> None:
+        citations = [
+            Citation(index=1, title="A", url="https://a.com"),
+            Citation(index=2, title="B", url="https://b.com"),
+        ]
+        with patch("src.agents.content.citation_manager.httpx.AsyncClient") as mock_cls:
+            mock_client = AsyncMock()
+            mock_client.head.return_value = AsyncMock(status_code=200)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_cls.return_value = mock_client
+            result = await check_urls(citations)
+        assert result == citations
+
+    async def test_logs_warning_for_unreachable_url(self) -> None:
+        citations = [
+            Citation(index=1, title="Bad", url="https://dead.com"),
+        ]
+        with patch("src.agents.content.citation_manager.httpx.AsyncClient") as mock_cls:
+            mock_client = AsyncMock()
+            mock_client.head.side_effect = httpx.ConnectError("fail")
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_cls.return_value = mock_client
+            result = await check_urls(citations)
+        # Citations returned unchanged even on failure
+        assert result == citations
+
+
+# -- generate_references_markdown ----------------------------------------------
+
+
+class TestGenerateReferencesMarkdown:
+    def test_formats_with_all_fields(self) -> None:
+        dt = datetime(2026, 3, 15, tzinfo=UTC)
+        citations = [
+            Citation(
+                index=1,
+                title="Full Article",
+                url="https://example.com/article",
+                authors=["Jane Smith"],
+                published_at=dt,
+            ),
+        ]
+        md = generate_references_markdown(citations)
+        assert "## References" in md
+        assert "[1] Full Article" in md
+        assert "Jane Smith" in md
+        assert "2026-03-15" in md
+        assert "https://example.com/article" in md
+
+    def test_omits_author_and_date_when_none(self) -> None:
+        citations = [
+            Citation(index=1, title="Simple", url="https://example.com"),
+        ]
+        md = generate_references_markdown(citations)
+        assert "[1] Simple." in md
+        assert "https://example.com" in md
