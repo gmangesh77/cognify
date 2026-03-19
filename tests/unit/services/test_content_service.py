@@ -128,12 +128,13 @@ async def _make_service_with_retriever(
     await session_repo.create(session)
 
     queries_json = json.dumps([{"section_index": 0, "queries": ["q0"]}])
+    draft_text = "Draft text [1] citation [2] about [3] research [4] findings [5]."
     llm = FakeListChatModel(
         responses=[
             _outline_json(),  # outline generation
             queries_json,  # query generation
-            "Draft text with [1] citation about research.",  # section draft
-            "Expanded draft text with [1] citation about research findings.",  # re-draft (validation)
+            draft_text,  # section draft
+            draft_text,  # re-draft (validation)
         ]
     )
     repos = ContentRepositories(
@@ -144,12 +145,13 @@ async def _make_service_with_retriever(
     retriever.retrieve = AsyncMock(
         return_value=[
             ChunkResult(
-                text="Chunk",
-                source_url="https://a.com",
-                source_title="A",
-                score=0.9,
+                text=f"Chunk {i}",
+                source_url=f"https://src{i}.com",
+                source_title=f"Source {i}",
+                score=0.9 - i * 0.01,
                 chunk_index=0,
-            ),
+            )
+            for i in range(5)
         ]
     )
     return ContentService(repos, llm, retriever=retriever), session

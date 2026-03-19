@@ -9,12 +9,16 @@ from __future__ import annotations
 
 import asyncio
 import re
+from typing import TYPE_CHECKING
 
 import httpx
 import structlog
 
 from src.models.content import Citation
 from src.models.content_pipeline import CitationRef, SectionDraft
+
+if TYPE_CHECKING:
+    from src.agents.content.pipeline import ContentState
 
 logger = structlog.get_logger()
 
@@ -158,3 +162,50 @@ def _format_reference_line(c: Citation) -> str:
         parts.append(".")
     parts.append(f" {c.url}")
     return "".join(parts)
+
+
+async def manage_citations(state: ContentState) -> dict[str, object]:
+    """Pipeline node: normalize, renumber, validate, and check citations."""
+    drafts = list(state.get("section_drafts", []))
+    if not drafts:
+        return {"status": "failed", "error": "No section drafts to process"}
+
+    # Coerce dicts back to SectionDraft if needed (LangGraph serialization)
+    coerced = [
+        d if isinstance(d, SectionDraft) else SectionDraft.model_validate(d)
+        for d in drafts
+    ]
+
+    citations, remap = build_global_citation_map(coerced)
+
+    # Slice composite remap into per-section flat maps
+    updated_drafts: list[SectionDraft] = []
+    for draft in coerced:
+        section_remap = {
+            local: remap[(sec_idx, local)]
+            for (sec_idx, local) in remap
+            if sec_idx == draft.section_index
+        }
+        new_md = renumber_section_markdown(draft.body_markdown, section_remap)
+        updated_drafts.append(draft.model_copy(update={"body_markdown": new_md}))
+
+    try:
+        validate_citation_count(citations, _MIN_UNIQUE_SOURCES)
+    except CitationValidationError as exc:
+        logger.error("citation_validation_failed", error=str(exc))
+        return {"status": "failed", "error": str(exc)}
+
+    await check_urls(citations)
+    refs_md = generate_references_markdown(citations)
+
+    logger.info(
+        "citation_management_complete",
+        unique_sources=len(citations),
+        sections_renumbered=len(updated_drafts),
+    )
+
+    return {
+        "section_drafts": updated_drafts,
+        "global_citations": [c.model_dump() for c in citations],
+        "references_markdown": refs_md,
+    }
