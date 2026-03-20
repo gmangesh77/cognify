@@ -386,12 +386,25 @@ In each test file, update the import from `src.services.X_client` to `src.servic
 from src.services.trends.hackernews_client import ...
 ```
 
-- [ ] **Step 5: Run client tests to verify moves**
+- [ ] **Step 5: Update mock client imports in `tests/unit/services/conftest.py`**
+
+The mock clients in `tests/unit/services/conftest.py` import from the old paths (`from src.services.hackernews_client import ...`). These will break now that the client files have moved. Update all 5 client imports to the new paths:
+
+```python
+# Old: from src.services.hackernews_client import HackerNewsClient, HNStoryResponse
+# New:
+from src.services.trends.hackernews_client import HackerNewsClient, HNStoryResponse
+# ... same pattern for all 5 clients
+```
+
+This keeps the mock clients importable from the original conftest location, which is needed by service tests not yet moved (Reddit, NewsAPI in Tasks 5-6).
+
+- [ ] **Step 6: Run client tests to verify moves**
 
 Run: `cd D:/Workbench/github/cognify-arch-002 && uv run pytest tests/unit/services/trends/test_*_client.py -v`
 Expected: All client tests pass.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -476,9 +489,9 @@ In each test file:
 
 - [ ] **Step 7: Create `tests/unit/services/trends/conftest.py`**
 
-Move the 5 `Mock*Client` classes from `tests/unit/services/conftest.py` into `tests/unit/services/trends/conftest.py`. Update their imports from `src.services.X_client` → `src.services.trends.X_client`.
+**Copy** (not move) the 5 `Mock*Client` classes from `tests/unit/services/conftest.py` into `tests/unit/services/trends/conftest.py`. The imports in the new file should use the new paths (`from src.services.trends.X_client import ...`).
 
-Keep `MockEmbeddingService` in the original `tests/unit/services/conftest.py` (it's unrelated to trends).
+Keep the originals in `tests/unit/services/conftest.py` for now — Reddit and NewsAPI tests still import from there. They'll be cleaned up in Task 7 after all services are moved.
 
 - [ ] **Step 8: Run moved tests**
 
@@ -513,7 +526,7 @@ git mv tests/unit/services/test_reddit.py tests/unit/services/trends/test_reddit
 
 - [ ] **Step 2: Extract dedup helpers into `_dedup.py`**
 
-Create `src/services/trends/_dedup.py` containing the `deduplicate_crossposts` static method (currently `RedditService.deduplicate_crossposts` at lines 55-116 of `src/services/reddit.py`). Make it a module-level function. Keep the `SequenceMatcher` import there.
+Create `src/services/trends/_dedup.py` by extracting `RedditService.deduplicate_crossposts` (lines 55-116 of `src/services/trends/reddit.py`, which was just moved). Copy the method body into a module-level function — remove `@staticmethod` decorator but keep everything else identical (it already has no `self` references). Move the `SequenceMatcher` import there too.
 
 ```python
 # src/services/trends/_dedup.py
@@ -525,9 +538,13 @@ from src.services.trends.reddit_client import RedditPostResponse
 def deduplicate_crossposts(
     posts: list[RedditPostResponse],
 ) -> tuple[list[RedditPostResponse], int]:
-    """Two-pass dedup: crosspost_parent IDs then fuzzy title match."""
-    # ... exact same logic as RedditService.deduplicate_crossposts ...
+    """Two-pass dedup: crosspost_parent IDs then fuzzy title match.
+    Returns (deduped_posts, removed_count)."""
+    # Copy lines 60-116 from RedditService.deduplicate_crossposts
+    # (the full method body — no changes needed)
 ```
+
+After extraction, verify `wc -l src/services/trends/reddit.py` is under 200 lines.
 
 - [ ] **Step 3: Adapt RedditService**
 
@@ -776,6 +793,8 @@ class TestInitRegistry:
             assert source.source_name == name
 ```
 
+**Note:** These tests call `Settings()` with defaults and construct real HTTP client objects via `init_registry`. This is safe — all client constructors are inert at construction time (no network calls until `fetch_*` methods are invoked). Default Settings values (empty API keys, placeholder URLs) work fine for construction.
+
 - [ ] **Step 2: Run tests — expect FAIL**
 
 Run: `cd D:/Workbench/github/cognify-arch-002 && uv run pytest tests/unit/services/trends/test_init.py -v`
@@ -849,8 +868,12 @@ Read `tests/unit/api/conftest.py` to understand the existing test app fixture pa
 3. **Partial failure** — one source raises `TrendSourceError`, others succeed → 200, failed source has `error` in `SourceResult`
 4. **All fail** — all sources raise → 503
 5. **Unknown source** — `sources: ["nonexistent"]` → 422
+6. **No token** — request without auth header → 401
+7. **Viewer role forbidden** — viewer token → 403
+8. **Editor role allowed** — editor token → 200
+9. **Admin role allowed** — admin token → 200
 
-Use a mock registry with `_FakeSource` implementations (similar to Task 2 tests). Inject via `app.state.trend_registry`.
+Use a mock registry with `_FakeSource` implementations (similar to Task 2 tests). Inject via `app.state.trend_registry`. Use the existing auth test patterns from the current `test_trend_endpoints.py` for tests 6-9.
 
 - [ ] **Step 2: Update `tests/unit/api/conftest.py`**
 
