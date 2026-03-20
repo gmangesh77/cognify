@@ -73,7 +73,7 @@ Matches the Pencil design: 2-column card grid, filter bar with 3 controls, heade
 
 #### `TopicCard`
 - **File**: `frontend/src/components/topics/topic-card.tsx`
-- **Props**: `topic: RankedTopic`, `onGenerateArticle: (topic) => void`
+- **Props**: `topic: RankedTopic`, `onRequestGeneration: (topic: RankedTopic) => void`
 - **Renders**: Card with trend badge (top-left), composite score (top-right), title, description (2-line clamp), source tags, relative time, "Generate Article" link button (bottom-right)
 - **Styling**: White bg, border `border-neutral-200`, rounded-lg, shadow-sm, hover shadow-md transition
 
@@ -191,7 +191,9 @@ User clicks "New Scan"
 
 **Note on response shapes**: Each source endpoint returns a different response schema (e.g., `HNFetchResponse` has `total_fetched`, `RedditFetchResponse` has `subreddits_scanned`). The frontend destructures only `{ topics }` from each response, ignoring source-specific metadata fields.
 
-**"All Domains" and scan**: When "All Domains" is selected in the filter, the "New Scan" button is disabled with a tooltip: "Select a domain to scan." A scan requires a specific domain to provide `domain_keywords` to the backend. After scanning, the user can switch the filter to "All Domains" to see results from previous scans across domains.
+**"All Domains" and scan**: When "All Domains" is selected in the filter, the "New Scan" button is disabled with a tooltip: "Select a domain to scan." A scan requires a specific domain to provide `domain_keywords` to the backend.
+
+**Scan result replacement**: Each new scan **replaces** the previous scan's results entirely. There is no cross-domain accumulation. The TanStack Query cache key is simply `["topics"]` — a new scan invalidates and replaces the cached data. The "All Domains" filter option filters within the current scan's results only (useful when the scan returns topics tagged with different domains via source metadata). Multi-domain scanning is out of scope for DASH-002.
 
 ### 5.4 Domain-to-Keywords Mapping
 
@@ -213,12 +215,13 @@ This is hardcoded for the mock-first approach. Will eventually be fetched from a
 The backend `RankedTopic` does NOT include `domain` or `trend_status` fields. The frontend derives them:
 
 - **`domain`**: Set from the domain selected when the scan was triggered. Stored alongside the ranked results.
-- **`trend_status`**: Computed client-side from `velocity` and `composite_score`:
+- **`trend_status`**: Computed client-side from `velocity`, `composite_score`, and `discovered_at`:
   ```typescript
   function deriveTrendStatus(topic: RankedTopic): TrendStatus {
+    const hoursAgo = (Date.now() - new Date(topic.discovered_at).getTime()) / 3600000
     if (topic.velocity >= 50 && topic.composite_score >= 80) return "trending"
     if (topic.velocity >= 30) return "rising"
-    if (topic.composite_score >= 60) return "new"
+    if (hoursAgo <= 24) return "new"   // recently discovered
     return "steady"
   }
   ```
@@ -341,7 +344,8 @@ frontend/src/
 ```
 frontend/src/
   lib/mock/topics.ts                                — Extend with more mock topics (20+)
-  types/domain.ts                                   — Add DOMAIN_KEYWORDS, SOURCE_LABELS constants
+  types/domain.ts                                   — Add DOMAIN_KEYWORDS constant
+  types/sources.ts                                  — Add SOURCE_LABELS constant (new file)
   types/api.ts                                      — Add TopicFilters, TimeRange, ScanState types
 ```
 
