@@ -128,7 +128,7 @@
 | Ticket   | Title                    | Status  | Branch | Plan | Spec |
 | -------- | ------------------------ | ------- | ------ | ---- | ---- |
 | DASH-001 | Dashboard Overview       | Done | `feature/DASH-001-dashboard-overview` | [plan](../docs/superpowers/plans/2026-03-15-dash-001-dashboard-overview.md) | [spec](../docs/superpowers/specs/2026-03-15-dash-001-dashboard-overview-design.md) |
-| DASH-002 | Topic Discovery Screen   | Backlog | —      | —    | —    |
+| DASH-002 | Topic Discovery Screen   | Done | `feature/DASH-002-topic-discovery-screen` | [plan](../docs/superpowers/plans/2026-03-20-dash-002-topic-discovery-screen.md) | [spec](../docs/superpowers/specs/2026-03-20-dash-002-topic-discovery-screen-design.md) |
 | DASH-003 | Article View & Preview   | Backlog | —      | —    | —    |
 | DASH-004 | Research Sessions Screen | Backlog | —      | —    | —    |
 | DASH-005 | Settings & Configuration | Backlog | —      | —    | —    |

@@ -509,8 +509,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Responsive layout (desktop-first)
 - **Story Points**: 8
 
-### DASH-002: Topic Discovery Screen [Must]
+### DASH-002: Topic Discovery Screen [Must] — DONE
 **As a** user, **I want** to browse and filter discovered topics, **so that** I can review and approve topics for research.
+- **Status**: Done (branch `feature/DASH-002-topic-discovery-screen`, PR #23)
+- **Plan**: [`docs/superpowers/plans/2026-03-20-dash-002-topic-discovery-screen.md`](../docs/superpowers/plans/2026-03-20-dash-002-topic-discovery-screen.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-20-dash-002-topic-discovery-screen-design.md`](../docs/superpowers/specs/2026-03-20-dash-002-topic-discovery-screen-design.md)
 - **Acceptance Criteria**:
   - Grid of topic cards with trend badges (Trending, New, Rising, Steady)
   - Filter by source, time range, and domain
