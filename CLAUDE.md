@@ -101,13 +101,13 @@ Package manager: **uv** — all commands use `uv run` prefix (no activation need
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** CONTENT-006 (Content Humanization) — PR #22
-**Epic 3 (Content Gen):** CONTENT-001 through CONTENT-004, CONTENT-006 Done — content pipeline graph, outline, section drafting with RAG, SEO + AI discoverability, citation management, content humanization (slop detection, mechanical fixes, LLM rewrite). Only CONTENT-005 (CanonicalArticle Assembly) remains.
+**Last completed:** ARCH-002 (TrendSource Protocol & Registry) — PR #24
+**Epic 6 (Dashboard):** DASH-001, DASH-002 Done — Next.js 15 frontend with Tailwind v4, shadcn/ui, 91 frontend tests. Topic Discovery: filterable grid, progressive scan, pagination, generate article modal.
+**Epic 3 (Content Gen):** CONTENT-001 through CONTENT-004, CONTENT-006 Done — content pipeline graph, outline, section drafting with RAG, SEO + AI discoverability, citation management, content humanization. Only CONTENT-005 (CanonicalArticle Assembly) remains.
 **Epic 2 (Research):** RESEARCH-001, RESEARCH-002, RESEARCH-003 Done — orchestrator + web search + RAG pipeline
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
 **Epic 1 (Trend Discovery):** All 6 tickets Done (TREND-001 through TREND-006) — Epic complete
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
-**Epic 6 (Dashboard):** DASH-001 Done — Next.js 15 frontend with Tailwind v4, shadcn/ui, 43 tests
-**Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002). Architecture docs updated to reflect CanonicalArticle boundary (ADR-003) and Transformer/Adapter pattern (ADR-004). See @docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md for modularity analysis.
-**Test suite:** 715 tests, 97.84% coverage
+**Epic 8 (Architecture):** ARCH-001, ARCH-002 Done — CanonicalArticle contracts, TrendSource protocol & registry (unified endpoint, 277→98 lines router). Vector DB: Milvus (ADR-002). See ADR-003, ADR-004 for content/publishing patterns.
+**Test suite:** 675 backend tests + 91 frontend tests, 98.07% coverage
 **Next action:** CONTENT-005 (CanonicalArticle Assembly) — all dependencies met, completes Epic 3

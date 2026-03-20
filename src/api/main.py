@@ -27,6 +27,7 @@ from src.api.routers.research import research_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
 from src.config.settings import Settings
+from src.services.trends import init_registry
 from src.utils.logging import setup_logging
 
 logger = structlog.get_logger()
@@ -47,6 +48,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.limiter = limiter
     app.state.refresh_repo = InMemoryRefreshTokenRepository()
     app.state.user_repo = InMemoryUserRepository(_seed_dev_users(settings))
+    app.state.trend_registry = init_registry(settings)
 
     _register_exception_handlers(app)
     _register_middleware(app, settings)

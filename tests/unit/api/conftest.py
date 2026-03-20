@@ -4,7 +4,8 @@ Provides RSA key pair, auth-configured Settings, FastAPI app, and httpx client
 fixtures used by auth, RBAC, and admin endpoint tests.
 """
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
+from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
@@ -19,6 +20,16 @@ from src.api.auth.schemas import Role, UserData
 from src.api.auth.tokens import create_access_token
 from src.api.main import create_app
 from src.config.settings import Settings
+
+
+@pytest.fixture(autouse=True)
+def patch_google_trends_client() -> Generator[None, None, None]:
+    """Patch TrendReq so GoogleTrendsClient.__init__ never makes HTTP calls."""
+    with patch(
+        "src.services.trends.google_trends_client.TrendReq",
+        return_value=MagicMock(),
+    ):
+        yield
 
 
 def _generate_rsa_keys() -> tuple[str, str]:

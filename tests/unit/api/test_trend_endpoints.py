@@ -1,56 +1,93 @@
+"""Unit tests for the unified /trends/fetch endpoint."""
+
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
 from fastapi import FastAPI
 
 from src.api.main import create_app
+from src.api.schemas.topics import RawTopic
 from src.config.settings import Settings
-from src.services.hackernews_client import HNStoryResponse
-from src.services.reddit_client import RedditPostResponse
-from tests.unit.services.conftest import MockHackerNewsClient, MockRedditClient
+from src.services.trends.protocol import TrendFetchConfig, TrendSourceError
+from src.services.trends.registry import TrendSourceRegistry
 
 from .conftest import _PRIVATE_KEY, _PUBLIC_KEY, make_auth_header
 
-
-def _hn_request(**overrides: object) -> dict[str, object]:
-    base: dict[str, object] = {
-        "domain_keywords": ["cyber"],
-        "max_results": 30,
-        "min_points": 10,
-    }
-    base.update(overrides)
-    return base
+URL = "/api/v1/trends/fetch"
+KEYWORDS = ["ai", "cyber"]
 
 
-SAMPLE_STORIES: list[HNStoryResponse] = [
-    {
-        "objectID": "1",
-        "title": "Cybersecurity Trends 2026",
-        "url": "https://example.com/cyber",
-        "points": 150,
-        "num_comments": 42,
-        "story_text": "Analysis of trends.",
-        "created_at_i": 1710000000,
-    },
-]
+def _make_raw_topic(title: str = "Test Topic", source: str = "fake") -> RawTopic:
+    return RawTopic(
+        title=title,
+        description="A test topic",
+        source=source,
+        external_url="https://example.com",
+        trend_score=50.0,
+        discovered_at=datetime(2026, 3, 20, tzinfo=UTC),
+    )
+
+
+class _SuccessSource:
+    """Fake source that always returns one topic."""
+
+    def __init__(self, name: str) -> None:
+        self._name = name
+
+    @property
+    def source_name(self) -> str:
+        return self._name
+
+    async def fetch_and_normalize(self, config: TrendFetchConfig) -> list[RawTopic]:
+        return [_make_raw_topic(source=self._name)]
+
+
+class _FailSource:
+    """Fake source that always raises TrendSourceError."""
+
+    def __init__(self, name: str) -> None:
+        self._name = name
+
+    @property
+    def source_name(self) -> str:
+        return self._name
+
+    async def fetch_and_normalize(self, config: TrendFetchConfig) -> list[RawTopic]:
+        raise TrendSourceError(self._name, "simulated failure")
+
+
+def _make_registry(*sources: object) -> TrendSourceRegistry:
+    registry = TrendSourceRegistry()
+    for source in sources:
+        registry.register(source)  # type: ignore[arg-type]
+    return registry
+
+
+def _make_app(settings: Settings, registry: TrendSourceRegistry) -> FastAPI:
+    """Create app with TrendReq patched and registry overridden."""
+    with patch(
+        "src.services.trends.google_trends_client.TrendReq",
+        return_value=MagicMock(),
+    ):
+        app = create_app(settings)
+    app.state.trend_registry = registry
+    return app
 
 
 @pytest.fixture
 def trend_settings() -> Settings:
-    return Settings(
-        jwt_private_key=_PRIVATE_KEY,
-        jwt_public_key=_PUBLIC_KEY,
-    )
+    return Settings(jwt_private_key=_PRIVATE_KEY, jwt_public_key=_PUBLIC_KEY)
 
 
 @pytest.fixture
 def trend_app(trend_settings: Settings) -> FastAPI:
-    app = create_app(trend_settings)
-    app.state.hn_client = MockHackerNewsClient(
-        stories=SAMPLE_STORIES,
+    return _make_app(
+        trend_settings,
+        _make_registry(_SuccessSource("hackernews"), _SuccessSource("reddit")),
     )
-    return app
 
 
 @pytest.fixture
@@ -64,344 +101,160 @@ async def trend_client(
         yield ac
 
 
-class TestTrendEndpointAuth:
-    async def test_no_token_returns_401(
-        self,
-        trend_client: httpx.AsyncClient,
-    ) -> None:
-        resp = await trend_client.post(
-            "/api/v1/trends/hackernews/fetch",
-            json=_hn_request(),
-        )
-        assert resp.status_code == 401
-
-    async def test_viewer_returns_403(
+class TestFetchTrendsAllSourcesSuccess:
+    async def test_returns_200_with_full_response(
         self,
         trend_client: httpx.AsyncClient,
         trend_settings: Settings,
     ) -> None:
         resp = await trend_client.post(
-            "/api/v1/trends/hackernews/fetch",
-            json=_hn_request(),
-            headers=make_auth_header("viewer", trend_settings),
-        )
-        assert resp.status_code == 403
-
-    async def test_editor_allowed(
-        self,
-        trend_client: httpx.AsyncClient,
-        trend_settings: Settings,
-    ) -> None:
-        resp = await trend_client.post(
-            "/api/v1/trends/hackernews/fetch",
-            json=_hn_request(),
-            headers=make_auth_header("editor", trend_settings),
-        )
-        assert resp.status_code == 200
-
-    async def test_admin_allowed(
-        self,
-        trend_client: httpx.AsyncClient,
-        trend_settings: Settings,
-    ) -> None:
-        resp = await trend_client.post(
-            "/api/v1/trends/hackernews/fetch",
-            json=_hn_request(),
-            headers=make_auth_header("admin", trend_settings),
-        )
-        assert resp.status_code == 200
-
-
-class TestTrendEndpointValidation:
-    async def test_empty_keywords_returns_422(
-        self,
-        trend_client: httpx.AsyncClient,
-        trend_settings: Settings,
-    ) -> None:
-        resp = await trend_client.post(
-            "/api/v1/trends/hackernews/fetch",
-            json=_hn_request(domain_keywords=[]),
-            headers=make_auth_header("editor", trend_settings),
-        )
-        assert resp.status_code == 422
-
-
-class TestTrendEndpointSuccess:
-    async def test_response_shape(
-        self,
-        trend_client: httpx.AsyncClient,
-        trend_settings: Settings,
-    ) -> None:
-        resp = await trend_client.post(
-            "/api/v1/trends/hackernews/fetch",
-            json=_hn_request(),
+            URL,
+            json={"domain_keywords": KEYWORDS},
             headers=make_auth_header("editor", trend_settings),
         )
         assert resp.status_code == 200
         data = resp.json()
         assert "topics" in data
-        assert "total_fetched" in data
-        assert "total_after_filter" in data
-        assert data["total_fetched"] == 1
+        assert "sources_queried" in data
+        assert "source_results" in data
+        assert len(data["sources_queried"]) == 2
 
-    async def test_no_matches_returns_empty(
+    async def test_topics_combined_from_all_sources(
         self,
         trend_client: httpx.AsyncClient,
         trend_settings: Settings,
     ) -> None:
         resp = await trend_client.post(
-            "/api/v1/trends/hackernews/fetch",
-            json=_hn_request(domain_keywords=["cooking"]),
+            URL,
+            json={"domain_keywords": KEYWORDS},
+            headers=make_auth_header("editor", trend_settings),
+        )
+        data = resp.json()
+        # 2 sources x 1 topic each
+        assert len(data["topics"]) == 2
+
+
+class TestFetchTrendsSingleSource:
+    async def test_only_requested_source_queried(
+        self,
+        trend_client: httpx.AsyncClient,
+        trend_settings: Settings,
+    ) -> None:
+        resp = await trend_client.post(
+            URL,
+            json={"domain_keywords": KEYWORDS, "sources": ["hackernews"]},
             headers=make_auth_header("editor", trend_settings),
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total_after_filter"] == 0
+        assert data["sources_queried"] == ["hackernews"]
+        assert "hackernews" in data["source_results"]
+        assert "reddit" not in data["source_results"]
 
 
-class TestTrendEndpoint503:
-    async def test_api_error_returns_503(
+class TestFetchTrendsPartialFailure:
+    async def test_partial_failure_returns_200_with_error_field(
         self,
         trend_settings: Settings,
     ) -> None:
-        from src.services.hackernews_client import HackerNewsAPIError
-
-        class FailingClient(MockHackerNewsClient):
-            async def fetch_stories(
-                self,
-                query: str,
-                min_points: int,
-                num_results: int,
-            ) -> list[HNStoryResponse]:
-                raise HackerNewsAPIError("API down")
-
-        app = create_app(trend_settings)
-        app.state.hn_client = FailingClient()
+        app = _make_app(
+            trend_settings,
+            _make_registry(_SuccessSource("hackernews"), _FailSource("reddit")),
+        )
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app),
             base_url="http://test",
         ) as client:
             resp = await client.post(
-                "/api/v1/trends/hackernews/fetch",
-                json=_hn_request(),
-                headers=make_auth_header(
-                    "editor",
-                    trend_settings,
-                ),
+                URL,
+                json={"domain_keywords": KEYWORDS},
+                headers=make_auth_header("editor", trend_settings),
             )
-            assert resp.status_code == 503
-            data = resp.json()
-            assert data["error"]["code"] == "hackernews_unavailable"
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["source_results"]["reddit"]["error"] is not None
+        assert data["source_results"]["hackernews"]["error"] is None
 
 
-# --- Reddit endpoint tests ---
+class TestFetchTrendsAllFail:
+    async def test_all_sources_fail_returns_503(
+        self,
+        trend_settings: Settings,
+    ) -> None:
+        app = _make_app(
+            trend_settings,
+            _make_registry(_FailSource("hackernews"), _FailSource("reddit")),
+        )
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            resp = await client.post(
+                URL,
+                json={"domain_keywords": KEYWORDS},
+                headers=make_auth_header("editor", trend_settings),
+            )
+        assert resp.status_code == 503
+        assert resp.json()["error"]["code"] == "all_sources_unavailable"
 
 
-def _reddit_request(**overrides: object) -> dict[str, object]:
-    base: dict[str, object] = {
-        "domain_keywords": ["cyber"],
-        "subreddits": ["cybersecurity"],
-        "max_results": 20,
-        "sort": "hot",
-        "time_filter": "day",
-    }
-    base.update(overrides)
-    return base
+class TestFetchTrendsUnknownSource:
+    async def test_unknown_source_returns_422(
+        self,
+        trend_client: httpx.AsyncClient,
+        trend_settings: Settings,
+    ) -> None:
+        resp = await trend_client.post(
+            URL,
+            json={"domain_keywords": KEYWORDS, "sources": ["nonexistent"]},
+            headers=make_auth_header("editor", trend_settings),
+        )
+        assert resp.status_code == 422
 
 
-SAMPLE_REDDIT_POSTS: dict[str, list[RedditPostResponse]] = {
-    "cybersecurity": [
-        {
-            "id": "abc123",
-            "title": "Cybersecurity Trends 2026",
-            "selftext": "Analysis of trends.",
-            "score": 150,
-            "num_comments": 42,
-            "created_utc": 1710000000.0,
-            "url": "https://example.com/cyber",
-            "permalink": "/r/cybersecurity/comments/abc123/cyber_trends/",
-            "subreddit": "cybersecurity",
-            "upvote_ratio": 0.95,
-            "crosspost_parent": None,
-        },
-    ],
-}
-
-
-@pytest.fixture
-def reddit_app(trend_settings: Settings) -> FastAPI:
-    app = create_app(trend_settings)
-    app.state.reddit_client = MockRedditClient(
-        posts=SAMPLE_REDDIT_POSTS,
-    )
-    return app
-
-
-@pytest.fixture
-async def reddit_client(
-    reddit_app: FastAPI,
-) -> AsyncGenerator[httpx.AsyncClient, None]:
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=reddit_app),
-        base_url="http://test",
-    ) as ac:
-        yield ac
-
-
-class TestRedditEndpointAuth:
+class TestFetchTrendsAuth:
     async def test_no_token_returns_401(
         self,
-        reddit_client: httpx.AsyncClient,
+        trend_client: httpx.AsyncClient,
     ) -> None:
-        resp = await reddit_client.post(
-            "/api/v1/trends/reddit/fetch",
-            json=_reddit_request(),
+        resp = await trend_client.post(
+            URL,
+            json={"domain_keywords": KEYWORDS},
         )
         assert resp.status_code == 401
 
-    async def test_viewer_returns_403(
+    async def test_viewer_role_returns_403(
         self,
-        reddit_client: httpx.AsyncClient,
+        trend_client: httpx.AsyncClient,
         trend_settings: Settings,
     ) -> None:
-        resp = await reddit_client.post(
-            "/api/v1/trends/reddit/fetch",
-            json=_reddit_request(),
+        resp = await trend_client.post(
+            URL,
+            json={"domain_keywords": KEYWORDS},
             headers=make_auth_header("viewer", trend_settings),
         )
         assert resp.status_code == 403
 
-    async def test_editor_allowed(
+    async def test_editor_role_returns_200(
         self,
-        reddit_client: httpx.AsyncClient,
+        trend_client: httpx.AsyncClient,
         trend_settings: Settings,
     ) -> None:
-        resp = await reddit_client.post(
-            "/api/v1/trends/reddit/fetch",
-            json=_reddit_request(),
+        resp = await trend_client.post(
+            URL,
+            json={"domain_keywords": KEYWORDS},
             headers=make_auth_header("editor", trend_settings),
         )
         assert resp.status_code == 200
 
-    async def test_admin_allowed(
+    async def test_admin_role_returns_200(
         self,
-        reddit_client: httpx.AsyncClient,
+        trend_client: httpx.AsyncClient,
         trend_settings: Settings,
     ) -> None:
-        resp = await reddit_client.post(
-            "/api/v1/trends/reddit/fetch",
-            json=_reddit_request(),
+        resp = await trend_client.post(
+            URL,
+            json={"domain_keywords": KEYWORDS},
             headers=make_auth_header("admin", trend_settings),
         )
         assert resp.status_code == 200
-
-
-class TestRedditEndpointValidation:
-    async def test_empty_keywords_returns_422(
-        self,
-        reddit_client: httpx.AsyncClient,
-        trend_settings: Settings,
-    ) -> None:
-        resp = await reddit_client.post(
-            "/api/v1/trends/reddit/fetch",
-            json=_reddit_request(domain_keywords=[]),
-            headers=make_auth_header("editor", trend_settings),
-        )
-        assert resp.status_code == 422
-
-    async def test_invalid_sort_returns_422(
-        self,
-        reddit_client: httpx.AsyncClient,
-        trend_settings: Settings,
-    ) -> None:
-        resp = await reddit_client.post(
-            "/api/v1/trends/reddit/fetch",
-            json=_reddit_request(sort="banana"),
-            headers=make_auth_header("editor", trend_settings),
-        )
-        assert resp.status_code == 422
-
-
-class TestRedditEndpointSuccess:
-    async def test_response_shape(
-        self,
-        reddit_client: httpx.AsyncClient,
-        trend_settings: Settings,
-    ) -> None:
-        resp = await reddit_client.post(
-            "/api/v1/trends/reddit/fetch",
-            json=_reddit_request(),
-            headers=make_auth_header("editor", trend_settings),
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "topics" in data
-        assert "total_fetched" in data
-        assert "total_after_dedup" in data
-        assert "total_after_filter" in data
-        assert "subreddits_scanned" in data
-
-    async def test_no_matches_returns_empty(
-        self,
-        reddit_client: httpx.AsyncClient,
-        trend_settings: Settings,
-    ) -> None:
-        resp = await reddit_client.post(
-            "/api/v1/trends/reddit/fetch",
-            json=_reddit_request(domain_keywords=["cooking"]),
-            headers=make_auth_header("editor", trend_settings),
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["total_after_filter"] == 0
-
-    async def test_uses_default_subreddits_when_none(
-        self,
-        reddit_client: httpx.AsyncClient,
-        trend_settings: Settings,
-    ) -> None:
-        """When subreddits is null/omitted, uses settings defaults."""
-        body = _reddit_request()
-        del body["subreddits"]  # type: ignore[arg-type]
-        resp = await reddit_client.post(
-            "/api/v1/trends/reddit/fetch",
-            json=body,
-            headers=make_auth_header("editor", trend_settings),
-        )
-        assert resp.status_code == 200
-
-
-class TestRedditEndpoint503:
-    async def test_api_error_returns_503(
-        self,
-        trend_settings: Settings,
-    ) -> None:
-        from src.services.reddit_client import RedditAPIError
-
-        class AllFailClient(MockRedditClient):
-            async def fetch_subreddit_posts(
-                self,
-                subreddit: str,
-                sort: str,
-                time_filter: str,
-                limit: int,
-            ) -> list[RedditPostResponse]:
-                raise RedditAPIError("API down")
-
-        app = create_app(trend_settings)
-        app.state.reddit_client = AllFailClient()
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=app),
-            base_url="http://test",
-        ) as client:
-            resp = await client.post(
-                "/api/v1/trends/reddit/fetch",
-                json=_reddit_request(),
-                headers=make_auth_header(
-                    "editor",
-                    trend_settings,
-                ),
-            )
-            assert resp.status_code == 503
-            data = resp.json()
-            assert data["error"]["code"] == "reddit_unavailable"

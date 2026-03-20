@@ -221,8 +221,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 3
 - **Blocks**: RESEARCH-001, CONTENT-001, PUBLISH-001
 
-### ARCH-002: TrendSource Protocol & Registry [Should]
+### ARCH-002: TrendSource Protocol & Registry [Should] — DONE
 **As a** developer, **I want** a formal TrendSource protocol and source registry, **so that** trend sources are interchangeable and the router boilerplate is eliminated.
+- **Status**: Done (branch `feature/ARCH-002-trendsource-protocol-registry`, PR #24)
+- **Plan**: [`docs/superpowers/plans/2026-03-20-arch-002-trendsource-protocol-registry.md`](../docs/superpowers/plans/2026-03-20-arch-002-trendsource-protocol-registry.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-20-arch-002-trendsource-protocol-registry-design.md`](../docs/superpowers/specs/2026-03-20-arch-002-trendsource-protocol-registry-design.md)
 - **Acceptance Criteria**:
   - `TrendSource` protocol: `source_name: str`, `fetch_and_normalize(config) -> list[RawTopic]`
   - `TrendFetchConfig` Pydantic model for unified fetch parameters
@@ -509,8 +512,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Responsive layout (desktop-first)
 - **Story Points**: 8
 
-### DASH-002: Topic Discovery Screen [Must]
+### DASH-002: Topic Discovery Screen [Must] — DONE
 **As a** user, **I want** to browse and filter discovered topics, **so that** I can review and approve topics for research.
+- **Status**: Done (branch `feature/DASH-002-topic-discovery-screen`, PR #23)
+- **Plan**: [`docs/superpowers/plans/2026-03-20-dash-002-topic-discovery-screen.md`](../docs/superpowers/plans/2026-03-20-dash-002-topic-discovery-screen.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-20-dash-002-topic-discovery-screen-design.md`](../docs/superpowers/specs/2026-03-20-dash-002-topic-discovery-screen-design.md)
 - **Acceptance Criteria**:
   - Grid of topic cards with trend badges (Trending, New, Rising, Steady)
   - Filter by source, time range, and domain

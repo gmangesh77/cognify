@@ -66,7 +66,7 @@
 | Ticket   | Title                                  | Status  | Branch | Plan | Spec |
 | -------- | -------------------------------------- | ------- | ------ | ---- | ---- |
 | ARCH-001 | CanonicalArticle Model & Contracts     | Done | `feature/ARCH-001-canonical-article-contracts` | [plan](../docs/superpowers/plans/2026-03-17-arch-001-canonical-article-contracts.md) | [spec](../docs/superpowers/specs/2026-03-17-arch-001-canonical-article-contracts-design.md) |
-| ARCH-002 | TrendSource Protocol & Registry        | Backlog | —      | —    | —    |
+| ARCH-002 | TrendSource Protocol & Registry        | Done | `feature/ARCH-002-trendsource-protocol-registry` | [plan](../docs/superpowers/plans/2026-03-20-arch-002-trendsource-protocol-registry.md) | [spec](../docs/superpowers/specs/2026-03-20-arch-002-trendsource-protocol-registry-design.md) |
 
 
 ## Epic 2: Multi-Agent Research Pipeline
@@ -128,7 +128,7 @@
 | Ticket   | Title                    | Status  | Branch | Plan | Spec |
 | -------- | ------------------------ | ------- | ------ | ---- | ---- |
 | DASH-001 | Dashboard Overview       | Done | `feature/DASH-001-dashboard-overview` | [plan](../docs/superpowers/plans/2026-03-15-dash-001-dashboard-overview.md) | [spec](../docs/superpowers/specs/2026-03-15-dash-001-dashboard-overview-design.md) |
-| DASH-002 | Topic Discovery Screen   | Backlog | —      | —    | —    |
+| DASH-002 | Topic Discovery Screen   | Done | `feature/DASH-002-topic-discovery-screen` | [plan](../docs/superpowers/plans/2026-03-20-dash-002-topic-discovery-screen.md) | [spec](../docs/superpowers/specs/2026-03-20-dash-002-topic-discovery-screen-design.md) |
 | DASH-003 | Article View & Preview   | Backlog | —      | —    | —    |
 | DASH-004 | Research Sessions Screen | Backlog | —      | —    | —    |
 | DASH-005 | Settings & Configuration | Backlog | —      | —    | —    |
