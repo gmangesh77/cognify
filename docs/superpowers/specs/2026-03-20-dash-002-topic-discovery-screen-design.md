@@ -79,12 +79,13 @@ Matches the Pencil design: 2-column card grid, filter bar with 3 controls, heade
 
 #### `FilterBar`
 - **File**: `frontend/src/components/topics/filter-bar.tsx`
-- **Props**: `filters`, `onFilterChange`, `topicCount: number`
+- **Props**: `filters: TopicFilters`, `onFilterChange: (update: Partial<TopicFilters>) => void`, `topicCount: number`
 - **Contains**:
   - **Source multi-select**: Checkboxes for Google Trends, Reddit, Hacker News, NewsAPI, arXiv. Dropdown trigger shows "All Sources" or "N selected"
   - **Time range select**: Single-select dropdown — Last Hour, Last 24 Hours, Last 7 Days (default), Last 30 Days, All Time
-  - **Domain select**: Single-select dropdown — All Domains (default), Cybersecurity, AI & ML, Cloud, DevOps
+  - **Domain select**: Single-select dropdown — All Domains (default), Cybersecurity, AI & ML, Cloud, DevOps. Hardcoded for now; will eventually be populated from a settings/config API.
   - **Topic count**: Right-aligned text "X Topics Found"
+- **Source labels**: Use a `SOURCE_LABELS` constant mapping machine names to display names (e.g., `google_trends` → "Google Trends", `hackernews` → "Hacker News")
 
 #### `GenerateArticleModal`
 - **File**: `frontend/src/components/topics/generate-article-modal.tsx`
@@ -122,67 +123,109 @@ Matches the Pencil design: 2-column card grid, filter bar with 3 controls, heade
 
 ## 5. Data Flow
 
-### 5.1 Hook: `useTopicDiscovery`
-
-**File**: `frontend/src/hooks/use-topic-discovery.ts`
+### 5.1 Types
 
 ```typescript
-interface TopicDiscoveryState {
-  // Data
-  topics: RankedTopic[]
-  filteredTopics: RankedTopic[]     // after client-side filtering
-  paginatedTopics: RankedTopic[]    // current page slice
+type TimeRange = "1h" | "24h" | "7d" | "30d" | "all"
 
-  // Filters
-  filters: {
-    sources: string[]               // empty = all sources
-    timeRange: TimeRange            // "1h" | "24h" | "7d" | "30d" | "all"
-    domain: string                  // "" = all domains
-  }
+interface TopicFilters {
+  sources: string[]        // empty = all sources
+  timeRange: TimeRange     // default: "7d"
+  domain: string           // "" = all domains
+}
 
-  // Pagination
-  page: number
-  pageSize: 10
-  totalCount: number
-  totalPages: number
-
-  // Scan
-  scanState: {
-    isScanning: boolean
-    completedSources: number
-    totalSources: number
-    failedSources: string[]
-  }
-
-  // Actions
-  startScan: (domain: string) => Promise<void>
-  setFilter: (key: string, value: any) => void
-  setPage: (page: number) => void
-  openGenerateModal: (topic: RankedTopic) => void
+interface ScanState {
+  isScanning: boolean
+  completedSources: number
+  totalSources: number
+  failedSources: string[]
 }
 ```
 
-### 5.2 Scan Flow
+### 5.2 Composable Hooks
+
+The state is split into focused hooks to stay under file/function size limits:
+
+**`useScanTopics()`** — `frontend/src/hooks/use-scan-topics.ts` (~60 lines)
+- Owns scan lifecycle: fires 5 parallel API calls, tracks progress per source
+- Returns `{ topics: RankedTopic[], scanState: ScanState, startScan: (domain: string) => Promise<void> }`
+- Handles 60s timeout via `AbortController`
+- Calls `POST /topics/rank` once all sources settle
+
+**`useTopicFilters(topics)`** — `frontend/src/hooks/use-topic-filters.ts` (~40 lines)
+- Owns filter state, applies client-side filtering
+- Returns `{ filteredTopics: RankedTopic[], filters: TopicFilters, setFilters: (update: Partial<TopicFilters>) => void }`
+
+**`useTopicPagination(items)`** — `frontend/src/hooks/use-topic-pagination.ts` (~30 lines)
+- Owns pagination math
+- Returns `{ paginatedItems: RankedTopic[], page: number, totalPages: number, setPage: (n: number) => void }`
+- Config: pageSize = 10
+
+**`useTopicDiscovery()`** — `frontend/src/hooks/use-topic-discovery.ts` (~30 lines)
+- Thin orchestrator composing the above three hooks
+- Also manages modal state: `{ modalTopic: RankedTopic | null, openModal, closeModal }`
+
+### 5.3 Scan Flow
 
 ```
 User clicks "New Scan"
   → Button disables, ScanProgressBanner shows "0/5 sources"
+  → Grid area shows 4-6 skeleton cards in 2-column layout
   → 5 parallel API calls fire:
-      POST /trends/hackernews/fetch    (or unified endpoint per ARCH-002)
-      POST /trends/reddit/fetch
-      POST /trends/google-trends/fetch
-      POST /trends/newsapi/fetch
-      POST /trends/arxiv/fetch
+      POST /api/v1/trends/hackernews/fetch
+      POST /api/v1/trends/reddit/fetch
+      POST /api/v1/trends/google/fetch         ← note: "/google/", not "/google-trends/"
+      POST /api/v1/trends/newsapi/fetch
+      POST /api/v1/trends/arxiv/fetch
+  → Each request body: { domain_keywords: DOMAIN_KEYWORDS[selectedDomain], max_results: 30 }
   → As each resolves:
       completedSources++ (or failedSources.push on error)
       Banner updates: "3/5 sources complete"
+      Topics from successful source append to staging list
   → Once all settled (or 60s timeout):
-      POST /topics/rank with combined topics
+      POST /api/v1/topics/rank with { topics: combinedTopics, domain: selectedDomain, top_n: 100 }
+  → Frontend enriches ranked results with derived fields (see Section 5.5)
   → Ranked results stored, filters reset, page = 1
   → Button re-enables, banner hides (or shows partial failure warning)
 ```
 
-### 5.3 Client-Side Filtering
+**Note on response shapes**: Each source endpoint returns a different response schema (e.g., `HNFetchResponse` has `total_fetched`, `RedditFetchResponse` has `subreddits_scanned`). The frontend destructures only `{ topics }` from each response, ignoring source-specific metadata fields.
+
+**"All Domains" and scan**: When "All Domains" is selected in the filter, the "New Scan" button is disabled with a tooltip: "Select a domain to scan." A scan requires a specific domain to provide `domain_keywords` to the backend. After scanning, the user can switch the filter to "All Domains" to see results from previous scans across domains.
+
+### 5.4 Domain-to-Keywords Mapping
+
+Each domain maps to a list of keywords used in the `domain_keywords` field of fetch requests. Defined as a `DOMAIN_KEYWORDS` constant in `frontend/src/types/domain.ts`:
+
+```typescript
+const DOMAIN_KEYWORDS: Record<DomainName, string[]> = {
+  cybersecurity: ["cybersecurity", "security", "infosec", "threat", "vulnerability"],
+  "ai-ml": ["artificial intelligence", "machine learning", "deep learning", "AI", "ML"],
+  cloud: ["cloud computing", "AWS", "Azure", "GCP", "kubernetes"],
+  devops: ["devops", "CI/CD", "infrastructure", "deployment", "SRE"],
+}
+```
+
+This is hardcoded for the mock-first approach. Will eventually be fetched from a domain configuration API.
+
+### 5.5 Derived Fields: `domain` and `trend_status`
+
+The backend `RankedTopic` does NOT include `domain` or `trend_status` fields. The frontend derives them:
+
+- **`domain`**: Set from the domain selected when the scan was triggered. Stored alongside the ranked results.
+- **`trend_status`**: Computed client-side from `velocity` and `composite_score`:
+  ```typescript
+  function deriveTrendStatus(topic: RankedTopic): TrendStatus {
+    if (topic.velocity >= 50 && topic.composite_score >= 80) return "trending"
+    if (topic.velocity >= 30) return "rising"
+    if (topic.composite_score >= 60) return "new"
+    return "steady"
+  }
+  ```
+
+These derived fields are added when results are stored from a scan, not on every render.
+
+### 5.6 Client-Side Filtering
 
 All topics are in memory (max 100). Filtering is instant:
 - **Sources**: `topic.source` is in selected sources (or show all if empty)
@@ -191,7 +234,7 @@ All topics are in memory (max 100). Filtering is instant:
 
 Filter changes reset pagination to page 1.
 
-### 5.4 Caching
+### 5.7 Caching
 
 TanStack Query with 15-minute stale time (same as DASH-001). Navigating away and back shows cached results without refetching.
 
@@ -252,6 +295,7 @@ TanStack Query with 15-minute stale time (same as DASH-001). Navigating away and
 
 | Scenario | Behavior |
 |----------|----------|
+| Scan — loading state | Grid shows 4-6 skeleton cards in 2-column layout while awaiting first results |
 | Scan — all sources succeed | Normal flow, show all ranked results |
 | Scan — partial failure | Show results from successful sources + warning banner |
 | Scan — total failure | Error toast, button re-enables, no results change |
@@ -282,7 +326,13 @@ frontend/src/
     scan-progress-banner.tsx                         — Scan progress + partial failure
     scan-progress-banner.test.tsx
   hooks/
-    use-topic-discovery.ts                           — All page state management
+    use-scan-topics.ts                               — Scan lifecycle + API calls
+    use-scan-topics.test.ts
+    use-topic-filters.ts                             — Client-side filter state
+    use-topic-filters.test.ts
+    use-topic-pagination.ts                          — Pagination math
+    use-topic-pagination.test.ts
+    use-topic-discovery.ts                           — Thin orchestrator composing hooks above
     use-topic-discovery.test.ts
 ```
 
@@ -291,6 +341,8 @@ frontend/src/
 ```
 frontend/src/
   lib/mock/topics.ts                                — Extend with more mock topics (20+)
+  types/domain.ts                                   — Add DOMAIN_KEYWORDS, SOURCE_LABELS constants
+  types/api.ts                                      — Add TopicFilters, TimeRange, ScanState types
 ```
 
 ### Estimated Sizes
@@ -303,7 +355,10 @@ frontend/src/
 | `generate-article-modal.tsx` | ~70 |
 | `topic-pagination.tsx` | ~50 |
 | `scan-progress-banner.tsx` | ~40 |
-| `use-topic-discovery.ts` | ~120 |
+| `use-scan-topics.ts` | ~60 |
+| `use-topic-filters.ts` | ~40 |
+| `use-topic-pagination.ts` | ~30 |
+| `use-topic-discovery.ts` | ~30 |
 | Each test file | ~50-80 |
 
 All well under 200-line limit.
@@ -321,7 +376,10 @@ All well under 200-line limit.
 | `GenerateArticleModal` | Opens with topic data; calls onConfirm; shows loading state |
 | `TopicPagination` | Page navigation; disabled at boundaries; correct page range display |
 | `ScanProgressBanner` | Shows progress during scan; warning on partial failure; hidden when idle |
-| `useTopicDiscovery` | Scan flow with mock fetch; client-side filtering; pagination math |
+| `useScanTopics` | Fires 5 parallel fetches; tracks progress; handles timeout; calls rank endpoint |
+| `useTopicFilters` | Applies source/time/domain filters; resets on change |
+| `useTopicPagination` | Correct page slicing; boundary handling; page count math |
+| `useTopicDiscovery` | Composes hooks; manages modal state |
 
 ### Coverage Targets
 
@@ -336,25 +394,35 @@ All well under 200-line limit.
 ### Current Endpoints (pre-ARCH-002)
 
 ```
-POST /api/v1/trends/hackernews/fetch     → { topics: RawTopic[] }
-POST /api/v1/trends/reddit/fetch         → { topics: RawTopic[] }
-POST /api/v1/trends/google-trends/fetch  → { topics: RawTopic[] }
-POST /api/v1/trends/newsapi/fetch        → { topics: RawTopic[] }
-POST /api/v1/trends/arxiv/fetch          → { topics: RawTopic[] }
-POST /api/v1/topics/rank                 → { ranked_topics: RankedTopic[] }
+POST /api/v1/trends/hackernews/fetch     → HNFetchResponse { topics, total_fetched, total_after_filter }
+POST /api/v1/trends/reddit/fetch         → RedditFetchResponse { topics, total_fetched, total_after_dedup, ... }
+POST /api/v1/trends/google/fetch         → GTFetchResponse { topics, total_trending, total_related, ... }
+POST /api/v1/trends/newsapi/fetch        → NewsAPIFetchResponse { topics, total_fetched, total_after_filter }
+POST /api/v1/trends/arxiv/fetch          → ArxivFetchResponse { topics, total_fetched, total_after_filter }
+POST /api/v1/topics/rank                 → RankTopicsResponse { ranked_topics, duplicates_removed, ... }
 ```
+
+**Important**: Response shapes differ per source. Frontend destructures only `{ topics }` from each, ignoring source-specific metadata. The `ranked_topics` from the rank endpoint lack `domain` and `trend_status` — these are derived client-side (see Section 5.5).
+
+### Request Bodies
+
+Each source endpoint expects at minimum: `{ domain_keywords: string[], max_results?: number }`. Some sources accept additional optional fields (e.g., Reddit: `subreddits`, `sort`, `time_filter`). The frontend sends only the common fields; source-specific defaults are applied server-side.
+
+The rank endpoint requires: `{ topics: RawTopic[], domain: string, top_n?: number }`.
 
 ### Post-ARCH-002 Endpoint
 
 ```
-POST /api/v1/trends/fetch  → { topics: RawTopic[], source_results: {...} }
-POST /api/v1/topics/rank   → { ranked_topics: RankedTopic[] }
+POST /api/v1/trends/fetch  → TrendFetchResponse { topics, source_results: {...} }
+POST /api/v1/topics/rank   → RankTopicsResponse { ranked_topics, ... }
 ```
 
-The frontend calls are identical in pattern (5 parallel requests, each for one source). Only the URL and request shape change — a one-line adaptation in the API client layer. Mock data abstracts this difference during development.
+The frontend pattern is identical (5 parallel requests for progressive loading). Only the URL and request shape change — a one-line adaptation in the API client layer.
 
 ### Stub Endpoint
 
 ```
-POST /api/v1/articles/generate  → 202 Accepted (mock — not yet implemented)
+POST /api/v1/articles/generate  → 202 Accepted
+  Response: { task_id: string, status: "queued", estimated_time_seconds: number }
+  (Mock — not yet implemented. Frontend uses mock data.)
 ```
