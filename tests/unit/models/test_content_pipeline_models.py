@@ -291,16 +291,22 @@ class TestSlopScore:
     def test_construct(self) -> None:
         v = Violation(category="buzzwords", phrase="delve", sentence_index=0)
         score = SlopScore(
-            score=75, rating="MOSTLY_CLEAN",
-            violations=[v], phrase_deductions=2, pattern_deductions=0,
+            score=75,
+            rating="MOSTLY_CLEAN",
+            violations=[v],
+            phrase_deductions=2,
+            pattern_deductions=0,
         )
         assert score.score == 75
         assert len(score.violations) == 1
 
     def test_frozen(self) -> None:
         score = SlopScore(
-            score=100, rating="HUMAN",
-            violations=[], phrase_deductions=0, pattern_deductions=0,
+            score=100,
+            rating="HUMAN",
+            violations=[],
+            phrase_deductions=0,
+            pattern_deductions=0,
         )
         with pytest.raises(ValidationError):
             score.score = 50  # type: ignore[misc]

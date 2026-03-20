@@ -7,6 +7,7 @@ Non-fatal — never sets status to failed.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -24,7 +25,7 @@ logger = structlog.get_logger()
 _REWRITE_THRESHOLD = 70
 
 
-def _coerce_drafts(raw: list[object]) -> list[SectionDraft]:
+def _coerce_drafts(raw: Sequence[object]) -> list[SectionDraft]:
     """Coerce state dicts to SectionDraft models."""
     return [
         d if isinstance(d, SectionDraft) else SectionDraft.model_validate(d)
@@ -44,9 +45,7 @@ def _apply_mechanical(section: SectionDraft) -> SectionDraft:
     )
 
 
-async def _humanize_one(
-    section: SectionDraft, llm: BaseChatModel
-) -> SectionDraft:
+async def _humanize_one(section: SectionDraft, llm: BaseChatModel) -> SectionDraft:
     """Fix, score, and optionally rewrite one section."""
     fixed = _apply_mechanical(section)
     slop = score_section(fixed)
@@ -62,9 +61,7 @@ async def _humanize_one(
     return _apply_mechanical(rewritten)
 
 
-async def _run_humanize(
-    state: ContentState, llm: BaseChatModel
-) -> dict[str, object]:
+async def _run_humanize(state: ContentState, llm: BaseChatModel) -> dict[str, object]:
     """Core humanize logic — guard, iterate, summarise."""
     if state.get("status") == "failed":
         return {"section_drafts": state.get("section_drafts", [])}

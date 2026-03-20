@@ -65,9 +65,7 @@ class TestRewriteSection:
     @pytest.mark.asyncio
     async def test_returns_updated_section(self) -> None:
         section = _make_section("Let me delve into this transformative topic [1].")
-        llm = FakeListChatModel(responses=[
-            "This topic covers important ground [1]."
-        ])
+        llm = FakeListChatModel(responses=["This topic covers important ground [1]."])
         result = await rewrite_section(section, _make_score(), llm)
         assert isinstance(result, SectionDraft)
         assert result.word_count > 0
@@ -76,9 +74,9 @@ class TestRewriteSection:
     @pytest.mark.asyncio
     async def test_preserves_citations(self) -> None:
         section = _make_section("The data shows [1] that leverage is key [2].")
-        llm = FakeListChatModel(responses=[
-            "The data shows [1] that this approach works [2]."
-        ])
+        llm = FakeListChatModel(
+            responses=["The data shows [1] that this approach works [2]."]
+        )
         result = await rewrite_section(section, _make_score(), llm)
         assert "[1]" in result.body_markdown
         assert "[2]" in result.body_markdown
@@ -86,9 +84,7 @@ class TestRewriteSection:
     @pytest.mark.asyncio
     async def test_rejects_rewrite_if_citations_lost(self) -> None:
         section = _make_section("Important finding [1] and another [2].")
-        llm = FakeListChatModel(responses=[
-            "Important finding without any citations."
-        ])
+        llm = FakeListChatModel(responses=["Important finding without any citations."])
         result = await rewrite_section(section, _make_score(), llm)
         # Should keep original since citations were lost
         assert result.body_markdown == section.body_markdown
@@ -97,8 +93,8 @@ class TestRewriteSection:
     async def test_single_attempt_no_retry(self) -> None:
         """LLM is called exactly once, even if rewrite still has slop."""
         section = _make_section("Let me delve into this transformative topic [1].")
-        llm = FakeListChatModel(responses=[
-            "Let me explore this innovative concept [1]."
-        ])
+        llm = FakeListChatModel(
+            responses=["Let me explore this innovative concept [1]."]
+        )
         result = await rewrite_section(section, _make_score(), llm)
         assert result.body_markdown == "Let me explore this innovative concept [1]."

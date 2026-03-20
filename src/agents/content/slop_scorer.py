@@ -37,9 +37,7 @@ def _split_sentences(text: str) -> list[str]:
     return [s.strip() for s in parts if s.strip()]
 
 
-def _find_sentence_index(
-    match_start: int, boundaries: list[tuple[int, int]]
-) -> int:
+def _find_sentence_index(match_start: int, boundaries: list[tuple[int, int]]) -> int:
     """Return sentence index containing the match position."""
     for idx, (start, end) in enumerate(boundaries):
         if start <= match_start < end:
@@ -47,9 +45,7 @@ def _find_sentence_index(
     return 0
 
 
-def _sentence_boundaries(
-    text: str, sentences: list[str]
-) -> list[tuple[int, int]]:
+def _sentence_boundaries(text: str, sentences: list[str]) -> list[tuple[int, int]]:
     """Compute (start, end) char positions for each sentence."""
     bounds: list[tuple[int, int]] = []
     pos = 0
@@ -62,18 +58,14 @@ def _sentence_boundaries(
     return bounds
 
 
-def _scan_phrases(
-    text: str, sentences: list[str]
-) -> list[Violation]:
+def _scan_phrases(text: str, sentences: list[str]) -> list[Violation]:
     """Detect slop phrases with whole-word, case-insensitive matching."""
     bounds = _sentence_boundaries(text, sentences)
     violations: list[Violation] = []
     lower = text.lower()
     for category, phrases in SLOP_PHRASES.items():
         for phrase in phrases:
-            pattern = re.compile(
-                r"\b" + re.escape(phrase) + r"\b", re.IGNORECASE
-            )
+            pattern = re.compile(r"\b" + re.escape(phrase) + r"\b", re.IGNORECASE)
             for match in pattern.finditer(lower):
                 idx = _find_sentence_index(match.start(), bounds)
                 violations.append(
@@ -86,9 +78,7 @@ def _scan_phrases(
     return violations
 
 
-def _scan_patterns(
-    text: str, violations: list[Violation]
-) -> int:
+def _scan_patterns(text: str, violations: list[Violation]) -> int:
     """Scan structural patterns (except passive_voice). Returns deductions."""
     deductions = 0
     for rule in STRUCTURAL_PATTERNS:
@@ -108,9 +98,7 @@ def _scan_patterns(
     return deductions
 
 
-def _check_passive_density(
-    text: str, sentences: list[str]
-) -> int:
+def _check_passive_density(text: str, sentences: list[str]) -> int:
     """Penalise if passive voice exceeds threshold."""
     passive_rule = next(
         (r for r in STRUCTURAL_PATTERNS if r.name == "passive_voice"),
@@ -151,9 +139,7 @@ def _check_repetitive_openers(
     return violations
 
 
-def _calculate_bonuses(
-    text: str, sentences: list[str]
-) -> int:
+def _calculate_bonuses(text: str, sentences: list[str]) -> int:
     """Award bonuses for questions and sentence-length variance."""
     bonus = 0
     if "?" in text:

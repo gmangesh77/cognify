@@ -13,23 +13,29 @@ def _make_drafts() -> list[SectionDraft]:
             title="Clean Section",
             body_markdown="Security researchers found a 40% increase in breaches [1]. The team responded quickly.",
             word_count=12,
-            citations_used=[CitationRef(index=1, source_url="https://a.com", source_title="A")],
+            citations_used=[
+                CitationRef(index=1, source_url="https://a.com", source_title="A")
+            ],
         ),
         SectionDraft(
             section_index=1,
             title="Sloppy Section",
             body_markdown="Let me delve into this transformative journey. Moreover, leveraging cutting-edge solutions is crucial [1]. Furthermore, this holistic approach empowers stakeholders. Indeed, it is important to note that this unprecedented paradigm shift will revolutionize the dynamic landscape.",
             word_count=38,
-            citations_used=[CitationRef(index=1, source_url="https://a.com", source_title="A")],
+            citations_used=[
+                CitationRef(index=1, source_url="https://a.com", source_title="A")
+            ],
         ),
     ]
 
 
 class TestHumanizeNode:
     async def test_rewrites_low_scoring_sections(self) -> None:
-        llm = FakeListChatModel(responses=[
-            "This approach focuses on practical solutions [1]. The team found concrete improvements."
-        ])
+        llm = FakeListChatModel(
+            responses=[
+                "This approach focuses on practical solutions [1]. The team found concrete improvements."
+            ]
+        )
         node = make_humanize_node(llm)
         state = {"section_drafts": _make_drafts(), "status": "draft_complete"}
         result = await node(state)
@@ -44,7 +50,8 @@ class TestHumanizeNode:
         # Use clean sections that won't trigger rewrite (score > 70)
         clean_drafts = [
             SectionDraft(
-                section_index=0, title="Clean",
+                section_index=0,
+                title="Clean",
                 body_markdown="Security researchers found a 40% increase in breaches. The team tested three different approaches over six months.",
                 word_count=18,
                 citations_used=[],
@@ -58,7 +65,8 @@ class TestHumanizeNode:
     async def test_mechanical_fixes_applied_to_all(self) -> None:
         drafts = [
             SectionDraft(
-                section_index=0, title="Dash Section",
+                section_index=0,
+                title="Dash Section",
                 body_markdown="The results \u2014 which were good \u2014 improved.",
                 word_count=7,
                 citations_used=[],

@@ -66,9 +66,7 @@ def _build_rewrite_prompt(section: SectionDraft, score: SlopScore) -> str:
     """Format violations into LLM instructions."""
     lines = ["Rewrite the following section to fix these issues:\n"]
     for v in score.violations:
-        lines.append(
-            f"- Sentence {v.sentence_index}: {v.category} \"{v.phrase}\""
-        )
+        lines.append(f'- Sentence {v.sentence_index}: {v.category} "{v.phrase}"')
     lines.append(f"\nSection text:\n{section.body_markdown}")
     return "\n".join(lines)
 
