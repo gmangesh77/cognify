@@ -14,8 +14,14 @@ const DEFAULT_FILTERS: TopicFilters = {
   domain: "",
 };
 
-export function useTopicFilters(topics: RankedTopic[]) {
-  const [filters, setFiltersState] = useState<TopicFilters>(DEFAULT_FILTERS);
+export function useTopicFilters(
+  topics: RankedTopic[],
+  initialFilters: Partial<TopicFilters> = {},
+) {
+  const [filters, setFiltersState] = useState<TopicFilters>({
+    ...DEFAULT_FILTERS,
+    ...initialFilters,
+  });
 
   const setFilters = (update: Partial<TopicFilters>) => {
     setFiltersState((prev) => ({ ...prev, ...update }));
