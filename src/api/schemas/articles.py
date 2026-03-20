@@ -73,3 +73,52 @@ class ArticleDraftResponse(BaseModel):
     citations: list[CitationRefResponse] = []
     total_word_count: int = 0
     seo_result: SEOResultResponse | None = None
+
+
+class CitationResponse(BaseModel):
+    index: int
+    title: str
+    url: str
+    authors: list[str]
+    published_at: datetime | None
+
+
+class ProvenanceResponse(BaseModel):
+    research_session_id: UUID
+    primary_model: str
+    drafting_model: str
+    embedding_model: str
+    embedding_version: str
+
+
+class ImageAssetResponse(BaseModel):
+    id: UUID
+    url: str
+    caption: str | None
+    alt_text: str | None
+
+
+class SEOMetadataResponse(BaseModel):
+    title: str
+    description: str
+    keywords: list[str]
+    canonical_url: str | None
+    structured_data: StructuredDataLDResponse | None = None
+
+
+class CanonicalArticleResponse(BaseModel):
+    id: UUID
+    title: str
+    subtitle: str | None
+    body_markdown: str
+    summary: str
+    key_claims: list[str]
+    content_type: str
+    seo: SEOMetadataResponse
+    citations: list[CitationResponse]
+    visuals: list[ImageAssetResponse]
+    authors: list[str]
+    domain: str
+    generated_at: datetime
+    provenance: ProvenanceResponse
+    ai_generated: bool
