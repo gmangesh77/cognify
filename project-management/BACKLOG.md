@@ -383,8 +383,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 5
 - **Depends on**: CONTENT-003 (SEO & AI Discoverability), CONTENT-004 (Citation Management), CONTENT-006 (Content Humanization)
 
-### CONTENT-006: Content Humanization [Must]
+### CONTENT-006: Content Humanization [Must] — DONE
 **As a** reader, **I want** articles to read like they were written by a human, **so that** the content feels natural and trustworthy rather than obviously AI-generated.
+- **Status**: Done (branch `feature/CONTENT-006-content-humanization`, PR #22)
+- **Plan**: [`docs/superpowers/plans/2026-03-20-content-006-content-humanization.md`](../docs/superpowers/plans/2026-03-20-content-006-content-humanization.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-20-content-006-content-humanization-design.md`](../docs/superpowers/specs/2026-03-20-content-006-content-humanization-design.md)
 
 #### Layer 1: Prevention (prompt engineering)
 - **Acceptance Criteria**:
