@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 import structlog
 
 from src.api.schemas.topics import RawTopic
-from src.api.schemas.trends import ArxivFetchResponse
 from src.services.trends.arxiv_client import ArxivClient, ArxivPaper
+from src.services.trends.protocol import TrendFetchConfig
 
 logger = structlog.get_logger()
 
@@ -15,8 +15,13 @@ _RECENCY_LAMBDA = math.log(2) / 7
 
 
 class ArxivService:
-    def __init__(self, client: ArxivClient) -> None:
+    def __init__(self, client: ArxivClient, categories: list[str]) -> None:
         self._client = client
+        self._categories = categories
+
+    @property
+    def source_name(self) -> str:
+        return "arxiv"
 
     @staticmethod
     def calculate_score(
@@ -88,26 +93,24 @@ class ArxivService:
 
     async def fetch_and_normalize(
         self,
-        domain_keywords: list[str],
-        categories: list[str],
-        max_results: int,
-    ) -> ArxivFetchResponse:
+        config: TrendFetchConfig,
+    ) -> list[RawTopic]:
         start = time.monotonic()
         logger.info(
             "arxiv_fetch_started",
-            domain_keywords=domain_keywords,
-            categories=categories,
-            max_results=max_results,
+            domain_keywords=config.domain_keywords,
+            categories=self._categories,
+            max_results=config.max_results,
         )
         papers = await self._client.fetch_papers(
-            categories,
-            max_results,
+            self._categories,
+            config.max_results,
             sort_by="submittedDate",
         )
         total_fetched = len(papers)
         filtered = self.filter_by_domain(
             papers,
-            domain_keywords,
+            config.domain_keywords,
         )
         logger.debug(
             "arxiv_items_filtered",
@@ -148,8 +151,4 @@ class ArxivService:
             total_after_dedup=len(deduped),
             duration_ms=duration_ms,
         )
-        return ArxivFetchResponse(
-            topics=deduped,
-            total_fetched=total_fetched,
-            total_after_filter=len(topics),
-        )
+        return deduped

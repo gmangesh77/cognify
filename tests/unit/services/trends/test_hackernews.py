@@ -1,8 +1,9 @@
 from datetime import UTC, datetime
 
-from src.services.hackernews import HackerNewsService
+from src.services.trends.hackernews import HackerNewsService
 from src.services.trends.hackernews_client import HNStoryResponse
-from tests.unit.services.conftest import MockHackerNewsClient
+from src.services.trends.protocol import TrendFetchConfig
+from tests.unit.services.trends.conftest import MockHackerNewsClient
 
 
 def _story(**overrides: object) -> HNStoryResponse:
@@ -203,31 +204,23 @@ class TestFetchAndNormalize:
         service = HackerNewsService(
             client=mock_client,
             points_cap=300.0,
-        )
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            max_results=30,
             min_points=10,
         )
-        assert result.total_fetched == 2
-        assert result.total_after_filter == 1
-        assert len(result.topics) == 1
-        assert result.topics[0].title == "Cybersecurity breach"
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        assert len(result) == 1
+        assert result[0].title == "Cybersecurity breach"
 
     async def test_empty_stories(self) -> None:
         mock_client = MockHackerNewsClient(stories=[])
         service = HackerNewsService(
             client=mock_client,
             points_cap=300.0,
-        )
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            max_results=30,
             min_points=10,
         )
-        assert result.total_fetched == 0
-        assert result.total_after_filter == 0
-        assert result.topics == []
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        assert result == []
 
     async def test_no_matches_after_filter(self) -> None:
         stories = [_story(title="Cooking blog")]
@@ -235,11 +228,8 @@ class TestFetchAndNormalize:
         service = HackerNewsService(
             client=mock_client,
             points_cap=300.0,
-        )
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            max_results=30,
             min_points=10,
         )
-        assert result.total_fetched == 1
-        assert result.total_after_filter == 0
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        assert result == []

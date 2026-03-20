@@ -17,17 +17,17 @@ from src.api.schemas.trends import (
     RedditFetchRequest,
     RedditFetchResponse,
 )
-from src.services.arxiv import ArxivService
+from src.services.trends.arxiv import ArxivService
 from src.services.trends.arxiv_client import (
     ArxivAPIError,
     ArxivClient,
 )
-from src.services.google_trends import GoogleTrendsService
+from src.services.trends.google_trends import GoogleTrendsService
 from src.services.trends.google_trends_client import (
     GoogleTrendsAPIError,
     GoogleTrendsClient,
 )
-from src.services.hackernews import HackerNewsService
+from src.services.trends.hackernews import HackerNewsService
 from src.services.trends.hackernews_client import (
     HackerNewsAPIError,
     HackerNewsClient,

@@ -4,8 +4,8 @@ from datetime import UTC, datetime
 import structlog
 
 from src.api.schemas.topics import RawTopic
-from src.api.schemas.trends import HNFetchResponse
 from src.services.trends.hackernews_client import HackerNewsClient, HNStoryResponse
+from src.services.trends.protocol import TrendFetchConfig
 
 logger = structlog.get_logger()
 
@@ -15,39 +15,43 @@ class HackerNewsService:
         self,
         client: HackerNewsClient,
         points_cap: float,
+        min_points: int,
     ) -> None:
         self._client = client
         self._points_cap = points_cap
+        self._min_points = min_points
+
+    @property
+    def source_name(self) -> str:
+        return "hackernews"
 
     async def fetch_and_normalize(
         self,
-        domain_keywords: list[str],
-        max_results: int,
-        min_points: int,
-    ) -> HNFetchResponse:
+        config: TrendFetchConfig,
+    ) -> list[RawTopic]:
         start = time.monotonic()
         logger.info(
             "hackernews_fetch_started",
-            domain_keywords=domain_keywords,
-            max_results=max_results,
-            min_points=min_points,
+            domain_keywords=config.domain_keywords,
+            max_results=config.max_results,
+            min_points=self._min_points,
         )
-        query = " ".join(domain_keywords)
+        query = " ".join(config.domain_keywords)
         stories = await self._client.fetch_stories(
             query,
-            min_points,
-            max_results,
+            self._min_points,
+            config.max_results,
         )
         total_fetched = len(stories)
         filtered = self.filter_by_domain(
             stories,
-            domain_keywords,
+            config.domain_keywords,
         )
         logger.debug(
             "hackernews_stories_filtered",
             before_count=total_fetched,
             after_count=len(filtered),
-            domain_keywords=domain_keywords,
+            domain_keywords=config.domain_keywords,
         )
         topics = [
             self.map_to_raw_topic(
@@ -66,11 +70,7 @@ class HackerNewsService:
             total_after_filter=len(topics),
             duration_ms=duration_ms,
         )
-        return HNFetchResponse(
-            topics=topics,
-            total_fetched=total_fetched,
-            total_after_filter=len(topics),
-        )
+        return topics
 
     @staticmethod
     def calculate_score(
