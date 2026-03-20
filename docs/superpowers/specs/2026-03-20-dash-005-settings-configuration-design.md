@@ -220,7 +220,7 @@ interface UseSettingsReturn {
 
   // Config actions
   updateLlmConfig: (updates: Partial<LlmConfig>) => void;
-  addApiKey: (service: string, key: string) => void;
+  addApiKey: (service: ApiKeyService, key: string) => void;
   rotateApiKey: (id: string, newKey: string) => void;
   toggleSeoDefault: (key: keyof SeoDefaults) => void;
   updateGeneralConfig: (updates: Partial<GeneralConfig>) => void;
