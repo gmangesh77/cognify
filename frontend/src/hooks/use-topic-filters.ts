@@ -10,7 +10,7 @@ const TIME_RANGE_MS: Record<string, number> = {
 
 const DEFAULT_FILTERS: TopicFilters = {
   sources: [],
-  timeRange: "all",
+  timeRange: "7d",
   domain: "",
 };
 

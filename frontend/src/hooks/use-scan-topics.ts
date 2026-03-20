@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import type { RankedTopic, ScanState } from "@/types/api";
 import { mockTopics } from "@/lib/mock/topics";
 import { SOURCE_NAMES } from "@/types/sources";
@@ -21,11 +21,8 @@ function deriveTrendStatus(topic: RankedTopic): RankedTopic["trend_status"] {
 export function useScanTopics() {
   const [topics, setTopics] = useState<RankedTopic[]>([]);
   const [scanState, setScanState] = useState<ScanState>(INITIAL_SCAN);
-  const abortRef = useRef<AbortController | null>(null);
 
   const startScan = useCallback((domain: string) => {
-    abortRef.current?.abort();
-    abortRef.current = new AbortController();
     setScanState({ ...INITIAL_SCAN, isScanning: true });
     setTopics([]);
 

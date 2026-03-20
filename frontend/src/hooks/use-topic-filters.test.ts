@@ -15,25 +15,26 @@ const topics: RankedTopic[] = [
 
 describe("useTopicFilters", () => {
   it("returns all topics with default filters", () => {
+    // Default timeRange is "7d"; topic C (10 days old) is excluded
     const { result } = renderHook(() => useTopicFilters(topics));
-    expect(result.current.filteredTopics).toHaveLength(3);
+    expect(result.current.filteredTopics).toHaveLength(2);
   });
 
   it("filters by source", () => {
-    const { result } = renderHook(() => useTopicFilters(topics));
+    const { result } = renderHook(() => useTopicFilters(topics, { timeRange: "all" }));
     act(() => result.current.setFilters({ sources: ["reddit"] }));
     expect(result.current.filteredTopics).toHaveLength(2);
   });
 
   it("filters by domain", () => {
-    const { result } = renderHook(() => useTopicFilters(topics));
+    const { result } = renderHook(() => useTopicFilters(topics, { timeRange: "all" }));
     act(() => result.current.setFilters({ domain: "ai-ml" }));
     expect(result.current.filteredTopics).toHaveLength(1);
     expect(result.current.filteredTopics[0].title).toBe("B");
   });
 
   it("filters by time range", () => {
-    const { result } = renderHook(() => useTopicFilters(topics));
+    const { result } = renderHook(() => useTopicFilters(topics, { timeRange: "all" }));
     act(() => result.current.setFilters({ timeRange: "24h" }));
     expect(result.current.filteredTopics).toHaveLength(1);
     expect(result.current.filteredTopics[0].title).toBe("A");
@@ -46,7 +47,7 @@ describe("useTopicFilters", () => {
   });
 
   it("empty sources means all sources", () => {
-    const { result } = renderHook(() => useTopicFilters(topics));
+    const { result } = renderHook(() => useTopicFilters(topics, { timeRange: "all" }));
     act(() => result.current.setFilters({ sources: [] }));
     expect(result.current.filteredTopics).toHaveLength(3);
   });

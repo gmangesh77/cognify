@@ -80,8 +80,9 @@ export default function TopicsPage() {
   const showGrid = topics.length > 0;
 
   function handleConfirm() {
+    const title = modalTopic?.title ?? "";
     closeModal();
-    setToast("Article generation started. Check back in 2-5 minutes.");
+    setToast(`Article generation started for "${title}". Check back in 2-5 minutes.`);
     setTimeout(() => setToast(null), 4000);
   }
 

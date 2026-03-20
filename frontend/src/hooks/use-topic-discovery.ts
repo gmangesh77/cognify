@@ -6,9 +6,7 @@ import { useTopicPagination } from "./use-topic-pagination";
 
 export function useTopicDiscovery() {
   const { topics, scanState, startScan } = useScanTopics();
-  const { filteredTopics, filters, setFilters } = useTopicFilters(topics, {
-    timeRange: "7d",
-  });
+  const { filteredTopics, filters, setFilters } = useTopicFilters(topics);
   const { paginatedItems, page, totalPages, setPage } =
     useTopicPagination(filteredTopics);
 
