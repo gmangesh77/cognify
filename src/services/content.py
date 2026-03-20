@@ -187,6 +187,8 @@ class ContentService:
                 "citations": citations,
                 "total_word_count": result.get("total_word_count", 0),
                 "seo_result": seo_result,
+                "global_citations": list(result.get("global_citations", [])),
+                "references_markdown": str(result.get("references_markdown", "")),
                 "status": DraftStatus.DRAFT_COMPLETE,
                 "completed_at": datetime.now(UTC),
             }
