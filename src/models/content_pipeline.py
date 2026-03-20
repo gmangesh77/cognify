@@ -90,6 +90,24 @@ class SEOResult(BaseModel, frozen=True):
     ai_disclosure: str
 
 
+class Violation(BaseModel, frozen=True):
+    """A single slop violation with location context."""
+
+    category: str
+    phrase: str
+    sentence_index: int
+
+
+class SlopScore(BaseModel, frozen=True):
+    """Slop detection score for a text section."""
+
+    score: int
+    rating: str
+    violations: list[Violation]
+    phrase_deductions: int
+    pattern_deductions: int
+
+
 class ArticleDraft(BaseModel):
     """Tracks article generation state."""
 
