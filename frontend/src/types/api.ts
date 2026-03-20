@@ -51,3 +51,24 @@ export interface ApiError {
     details: string[];
   };
 }
+
+export type TimeRange = "1h" | "24h" | "7d" | "30d" | "all";
+
+export interface TopicFilters {
+  sources: string[];
+  timeRange: TimeRange;
+  domain: string;
+}
+
+export interface ScanState {
+  isScanning: boolean;
+  completedSources: number;
+  totalSources: number;
+  failedSources: string[];
+}
+
+export interface GenerateArticleResponse {
+  task_id: string;
+  status: "queued";
+  estimated_time_seconds: number;
+}

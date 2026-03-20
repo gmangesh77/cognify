@@ -21,3 +21,10 @@ export function getDomainColor(domain: string): string {
 export function getDomainLabel(domain: string): string {
   return DOMAIN_LABELS[domain] ?? domain;
 }
+
+export const DOMAIN_KEYWORDS: Record<DomainName, string[]> = {
+  cybersecurity: ["cybersecurity", "security", "infosec", "threat", "vulnerability"],
+  "ai-ml": ["artificial intelligence", "machine learning", "deep learning", "AI", "ML"],
+  cloud: ["cloud computing", "AWS", "Azure", "GCP", "kubernetes"],
+  devops: ["devops", "CI/CD", "infrastructure", "deployment", "SRE"],
+};
