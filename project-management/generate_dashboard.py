@@ -110,6 +110,22 @@ def compute_stats(
     }
 
 
+def _epic_sort_key(epic: dict[str, object]) -> tuple[int, int]:
+    """Sort: in-progress first, partial, not-started, complete last."""
+    tickets = epic["tickets"]
+    assert isinstance(tickets, list)
+    total = len(tickets)
+    done = sum(1 for t in tickets if str(t["status"]) == "Done")  # type: ignore[index]
+    has_wip = any(str(t["status"]) == "In Progress" for t in tickets)  # type: ignore[index]
+    if has_wip:
+        return (0, -done)
+    if 0 < done < total:
+        return (1, -done)
+    if done == 0:
+        return (2, 0)
+    return (3, 0)
+
+
 def build_html(
     epics: list[dict[str, object]],
     points: dict[str, int],
@@ -117,6 +133,8 @@ def build_html(
 ) -> str:
     """Generate the full HTML dashboard."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+    epics = sorted(epics, key=_epic_sort_key)
 
     epic_cards = []
     for epic in epics:
