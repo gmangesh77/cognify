@@ -1,296 +1,98 @@
+import asyncio
+import time
+
 import structlog
 from fastapi import APIRouter, Depends, Request
 
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_role
-from src.api.errors import ServiceUnavailableError
+from src.api.errors import CognifyValidationError, ServiceUnavailableError
 from src.api.rate_limiter import limiter
 from src.api.schemas.trends import (
-    ArxivFetchRequest,
-    ArxivFetchResponse,
-    GTFetchRequest,
-    GTFetchResponse,
-    HNFetchRequest,
-    HNFetchResponse,
-    NewsAPIFetchRequest,
-    NewsAPIFetchResponse,
-    RedditFetchRequest,
-    RedditFetchResponse,
+    SourceResult,
+    TrendFetchRequest,
+    TrendFetchResponse,
 )
-from src.services.trends.arxiv import ArxivService
-from src.services.trends.arxiv_client import (
-    ArxivAPIError,
-    ArxivClient,
-)
-from src.services.trends.google_trends import GoogleTrendsService
-from src.services.trends.google_trends_client import (
-    GoogleTrendsAPIError,
-    GoogleTrendsClient,
-)
-from src.services.trends.hackernews import HackerNewsService
-from src.services.trends.hackernews_client import (
-    HackerNewsAPIError,
-    HackerNewsClient,
-)
-from src.services.trends.newsapi import NewsAPIService
-from src.services.trends.newsapi_client import (
-    NewsAPIClient,
-    NewsAPIError,
-)
-from src.services.trends.reddit import RedditFetchDefaults, RedditService
-from src.services.trends.reddit_client import (
-    RedditAPIError,
-    RedditClient,
-)
+from src.services.trends.protocol import TrendFetchConfig, TrendSourceError
+from src.services.trends.registry import TrendSourceRegistry
 
 logger = structlog.get_logger()
 
 trends_router = APIRouter()
 
 
-def _get_hn_service(request: Request) -> HackerNewsService:
-    settings = request.app.state.settings
-    # Test injection: tests set app.state.hn_client to a mock.
-    # In production, a fresh short-lived client is created per request.
-    if hasattr(request.app.state, "hn_client"):
-        client = request.app.state.hn_client
-    else:
-        client = HackerNewsClient(
-            base_url=settings.hn_api_base_url,
-            timeout=settings.hn_request_timeout,
+def _resolve_sources(
+    registry: TrendSourceRegistry, requested: list[str] | None,
+) -> list[str]:
+    """Resolve and validate requested source names."""
+    sources = requested or registry.available_sources()
+    unknown = set(sources) - set(registry.available_sources())
+    if unknown:
+        raise CognifyValidationError(
+            message=f"Unknown sources: {sorted(unknown)}",
         )
-    return HackerNewsService(
-        client=client,
-        points_cap=settings.hn_points_cap,
+    return sources
+
+
+async def _run_source(
+    source_name: str, registry: TrendSourceRegistry, config: TrendFetchConfig,
+) -> SourceResult:
+    """Run a single source, capturing timing and errors."""
+    source = registry.get(source_name)
+    start = time.monotonic()
+    try:
+        topics = await source.fetch_and_normalize(config)
+        elapsed = int((time.monotonic() - start) * 1000)
+        return SourceResult(
+            source_name=source_name,
+            topics=topics,
+            topic_count=len(topics),
+            duration_ms=elapsed,
+        )
+    except TrendSourceError as exc:
+        elapsed = int((time.monotonic() - start) * 1000)
+        logger.error("trend_source_error", source=source_name, error=str(exc))
+        return SourceResult(
+            source_name=source_name,
+            topics=[],
+            topic_count=0,
+            duration_ms=elapsed,
+            error=str(exc),
+        )
+
+
+@limiter.limit("5/minute")
+@trends_router.post(
+    "/trends/fetch",
+    response_model=TrendFetchResponse,
+    summary="Fetch trending topics from one or more sources",
+)
+async def fetch_trends(
+    request: Request,
+    body: TrendFetchRequest,
+    user: TokenPayload = Depends(require_role("admin", "editor")),
+) -> TrendFetchResponse:
+    registry = request.app.state.trend_registry
+    source_names = _resolve_sources(registry, body.sources)
+    config = TrendFetchConfig(
+        domain_keywords=body.domain_keywords,
+        max_results=body.max_results,
     )
 
-
-def _get_gt_service(request: Request) -> GoogleTrendsService:
-    settings = request.app.state.settings
-    # Test injection: tests set app.state.gt_client to a mock.
-    # In production, a fresh short-lived client is created per request.
-    if hasattr(request.app.state, "gt_client"):
-        client = request.app.state.gt_client
-    else:
-        client = GoogleTrendsClient(
-            language=settings.gt_language,
-            timezone_offset=settings.gt_timezone_offset,
-            timeout=settings.gt_request_timeout,
-        )
-    return GoogleTrendsService(client=client)
-
-
-@limiter.limit("5/minute")
-@trends_router.post(
-    "/trends/hackernews/fetch",
-    response_model=HNFetchResponse,
-    summary="Fetch trending HN stories",
-)
-async def fetch_hackernews(
-    request: Request,
-    body: HNFetchRequest,
-    user: TokenPayload = Depends(require_role("admin", "editor")),
-) -> HNFetchResponse:
-    service = _get_hn_service(request)
-    try:
-        return await service.fetch_and_normalize(
-            domain_keywords=body.domain_keywords,
-            max_results=body.max_results,
-            min_points=body.min_points,
-        )
-    except HackerNewsAPIError as exc:
-        logger.error(
-            "hackernews_api_error",
-            error=str(exc),
-        )
-        raise ServiceUnavailableError(
-            code="hackernews_unavailable",
-            message="Hacker News API is not available",
-        ) from exc
-
-
-@limiter.limit("5/minute")
-@trends_router.post(
-    "/trends/google/fetch",
-    response_model=GTFetchResponse,
-    summary="Fetch Google Trends topics",
-)
-async def fetch_google_trends(
-    request: Request,
-    body: GTFetchRequest,
-    user: TokenPayload = Depends(require_role("admin", "editor")),
-) -> GTFetchResponse:
-    service = _get_gt_service(request)
-    try:
-        return await service.fetch_and_normalize(
-            domain_keywords=body.domain_keywords,
-            country=body.country,
-            max_results=body.max_results,
-        )
-    except GoogleTrendsAPIError as exc:
-        logger.error(
-            "google_trends_api_error",
-            error=str(exc),
-        )
-        raise ServiceUnavailableError(
-            code="google_trends_unavailable",
-            message="Google Trends API is not available",
-        ) from exc
-
-
-def _get_reddit_service(request: Request) -> RedditService:
-    settings = request.app.state.settings
-    # Test injection: tests set app.state.reddit_client to a mock.
-    # In production, a fresh short-lived client is created per request.
-    if hasattr(request.app.state, "reddit_client"):
-        client = request.app.state.reddit_client
-    else:
-        client = RedditClient(
-            client_id=settings.reddit_client_id,
-            client_secret=settings.reddit_client_secret,
-            user_agent=settings.reddit_user_agent,
-            timeout=settings.reddit_request_timeout,
-        )
-    subreddits = getattr(settings, "reddit_default_subreddits", [])
-    defaults = RedditFetchDefaults(subreddits=subreddits)
-    return RedditService(
-        client=client,
-        score_cap=settings.reddit_score_cap,
-        defaults=defaults,
+    results = await asyncio.gather(
+        *[_run_source(n, registry, config) for n in source_names],
     )
+    source_results = {r.source_name: r for r in results}
+    all_topics = [t for r in results for t in r.topics]
 
-
-@limiter.limit("5/minute")
-@trends_router.post(
-    "/trends/reddit/fetch",
-    response_model=RedditFetchResponse,
-    summary="Fetch trending Reddit posts",
-)
-async def fetch_reddit(
-    request: Request,
-    body: RedditFetchRequest,
-    user: TokenPayload = Depends(require_role("admin", "editor")),
-) -> RedditFetchResponse:
-    from src.services.trends.protocol import TrendFetchConfig
-
-    service = _get_reddit_service(request)
-    try:
-        topics = await service.fetch_and_normalize(
-            TrendFetchConfig(
-                domain_keywords=body.domain_keywords,
-                max_results=body.max_results,
-            ),
-        )
-        return RedditFetchResponse(
-            topics=topics,
-            total_fetched=len(topics),
-            total_after_dedup=len(topics),
-            total_after_filter=len(topics),
-            subreddits_scanned=len(service._defaults.subreddits),
-        )
-    except RedditAPIError as exc:
-        logger.error(
-            "reddit_api_error",
-            error=str(exc),
-        )
+    if all(r.error is not None for r in results):
         raise ServiceUnavailableError(
-            code="reddit_unavailable",
-            message="Reddit API is not available",
-        ) from exc
-
-
-def _get_newsapi_service(
-    request: Request,
-    category: str,
-    country: str,
-) -> NewsAPIService:
-    settings = request.app.state.settings
-    if hasattr(request.app.state, "newsapi_client"):
-        client = request.app.state.newsapi_client
-    else:
-        client = NewsAPIClient(
-            api_key=settings.newsapi_api_key,
-            base_url=settings.newsapi_base_url,
-            timeout=settings.newsapi_request_timeout,
+            code="all_sources_unavailable",
+            message="All trend sources are unavailable",
         )
-    return NewsAPIService(client=client, category=category, country=country)
 
-
-@limiter.limit("5/minute")
-@trends_router.post(
-    "/trends/newsapi/fetch",
-    response_model=NewsAPIFetchResponse,
-    summary="Fetch trending NewsAPI headlines",
-)
-async def fetch_newsapi(
-    request: Request,
-    body: NewsAPIFetchRequest,
-    user: TokenPayload = Depends(require_role("admin", "editor")),
-) -> NewsAPIFetchResponse:
-    from src.services.trends.protocol import TrendFetchConfig
-
-    service = _get_newsapi_service(request, body.category, body.country)
-    try:
-        topics = await service.fetch_and_normalize(
-            TrendFetchConfig(
-                domain_keywords=body.domain_keywords,
-                max_results=body.max_results,
-            ),
-        )
-        return NewsAPIFetchResponse(
-            topics=topics,
-            total_fetched=len(topics),
-            total_after_filter=len(topics),
-        )
-    except NewsAPIError as exc:
-        logger.error(
-            "newsapi_api_error",
-            error=str(exc),
-            category=body.category,
-            country=body.country,
-        )
-        raise ServiceUnavailableError(
-            code="newsapi_unavailable",
-            message="NewsAPI is not available",
-        ) from exc
-
-
-def _get_arxiv_service(request: Request) -> ArxivService:
-    settings = request.app.state.settings
-    if hasattr(request.app.state, "arxiv_client"):
-        client = request.app.state.arxiv_client
-    else:
-        client = ArxivClient(
-            base_url=settings.arxiv_api_base_url,
-            timeout=settings.arxiv_request_timeout,
-        )
-    return ArxivService(client=client)
-
-
-@limiter.limit("5/minute")
-@trends_router.post(
-    "/trends/arxiv/fetch",
-    response_model=ArxivFetchResponse,
-    summary="Fetch trending arXiv papers",
-)
-async def fetch_arxiv(
-    request: Request,
-    body: ArxivFetchRequest,
-    user: TokenPayload = Depends(require_role("admin", "editor")),
-) -> ArxivFetchResponse:
-    service = _get_arxiv_service(request)
-    try:
-        return await service.fetch_and_normalize(
-            domain_keywords=body.domain_keywords,
-            categories=body.categories,
-            max_results=body.max_results,
-        )
-    except ArxivAPIError as exc:
-        logger.error(
-            "arxiv_api_error",
-            error=str(exc),
-        )
-        raise ServiceUnavailableError(
-            code="arxiv_unavailable",
-            message="arXiv API is not available",
-        ) from exc
+    return TrendFetchResponse(
+        topics=all_topics,
+        sources_queried=list(source_names),
+        source_results=source_results,
+    )
