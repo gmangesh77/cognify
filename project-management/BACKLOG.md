@@ -355,8 +355,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 8
 - **Blocks**: CONTENT-005
 
-### CONTENT-004: Citation Management [Must]
+### CONTENT-004: Citation Management [Must] — DONE
 **As a** reader, **I want** all claims cited with source links, **so that** content is trustworthy.
+- **Status**: Done (branch `feature/CONTENT-004-citation-management`, PR #21)
+- **Plan**: [`docs/superpowers/plans/2026-03-19-content-004-citation-management.md`](../docs/superpowers/plans/2026-03-19-content-004-citation-management.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-19-content-004-citation-management-design.md`](../docs/superpowers/specs/2026-03-19-content-004-citation-management-design.md)
 - **Acceptance Criteria**:
   - Every factual claim has an inline citation [1], [2], etc.
   - References section generated at article end with full source details (title, URL, authors, date)

@@ -101,13 +101,13 @@ Package manager: **uv** — all commands use `uv run` prefix (no activation need
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** CONTENT-003 (SEO & AI Discoverability) — PR #20
-**Epic 3 (Content Gen):** CONTENT-001, CONTENT-002, CONTENT-003 Done — content pipeline graph, outline generator, section drafter with RAG, SEO + AI discoverability (JSON-LD, summary, key_claims, provenance), ContentDeps refactor
+**Last completed:** CONTENT-004 (Citation Management) — PR #21
+**Epic 3 (Content Gen):** CONTENT-001, CONTENT-002, CONTENT-003, CONTENT-004 Done — content pipeline graph, outline generator, section drafter with RAG, SEO + AI discoverability, citation management (global renumbering, validation, references), upstream metadata flow (SerpAPI date/author)
 **Epic 2 (Research):** RESEARCH-001, RESEARCH-002, RESEARCH-003 Done — orchestrator + web search + RAG pipeline
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
 **Epic 1 (Trend Discovery):** All 6 tickets Done (TREND-001 through TREND-006) — Epic complete
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
 **Epic 6 (Dashboard):** DASH-001 Done — Next.js 15 frontend with Tailwind v4, shadcn/ui, 43 tests
 **Architecture:** Vector DB switched from Weaviate to Milvus (see ADR-002). Architecture docs updated to reflect CanonicalArticle boundary (ADR-003) and Transformer/Adapter pattern (ADR-004). See @docs/architecture/ARCHITECTURE_MODULARITY_REVIEW.md for modularity analysis.
-**Test suite:** 640 tests, 97.91% coverage
-**Next action:** CONTENT-004 (Citation Management) or CONTENT-006 (Content Humanization) — both can run in parallel, both block CONTENT-005
+**Test suite:** 683 tests, 97.84% coverage
+**Next action:** CONTENT-006 (Content Humanization) — blocks CONTENT-005 (CanonicalArticle Assembly)
