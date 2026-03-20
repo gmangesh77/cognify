@@ -6,7 +6,7 @@ import structlog
 
 from src.api.schemas.topics import RawTopic
 from src.api.schemas.trends import ArxivFetchResponse
-from src.services.arxiv_client import ArxivClient, ArxivPaper
+from src.services.trends.arxiv_client import ArxivClient, ArxivPaper
 
 logger = structlog.get_logger()
 

@@ -7,7 +7,7 @@ import structlog
 
 from src.api.schemas.topics import RawTopic
 from src.api.schemas.trends import NewsAPIFetchResponse
-from src.services.newsapi_client import NewsAPIArticle, NewsAPIClient
+from src.services.trends.newsapi_client import NewsAPIArticle, NewsAPIClient
 
 logger = structlog.get_logger()
 

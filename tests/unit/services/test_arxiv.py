@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from src.api.schemas.topics import RawTopic
 from src.services.arxiv import ArxivService
-from src.services.arxiv_client import ArxivPaper
+from src.services.trends.arxiv_client import ArxivPaper
 from tests.unit.services.conftest import MockArxivClient
 
 

@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from src.api.main import create_app
 from src.config.settings import Settings
-from src.services.newsapi_client import NewsAPIArticle
+from src.services.trends.newsapi_client import NewsAPIArticle
 from tests.unit.services.conftest import MockNewsAPIClient
 
 from .conftest import _PRIVATE_KEY, _PUBLIC_KEY, make_auth_header
@@ -185,7 +185,7 @@ class TestNewsAPIEndpoint503:
         self,
         newsapi_settings: Settings,
     ) -> None:
-        from src.services.newsapi_client import NewsAPIError
+        from src.services.trends.newsapi_client import NewsAPIError
 
         class FailingClient(MockNewsAPIClient):
             async def fetch_top_headlines(

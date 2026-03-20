@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from src.api.main import create_app
 from src.config.settings import Settings
-from src.services.arxiv_client import ArxivPaper
+from src.services.trends.arxiv_client import ArxivPaper
 from tests.unit.services.conftest import MockArxivClient
 
 from .conftest import _PRIVATE_KEY, _PUBLIC_KEY, make_auth_header
@@ -186,7 +186,7 @@ class TestArxivEndpoint503:
         self,
         arxiv_settings: Settings,
     ) -> None:
-        from src.services.arxiv_client import ArxivAPIError
+        from src.services.trends.arxiv_client import ArxivAPIError
 
         class FailingClient(MockArxivClient):
             async def fetch_papers(

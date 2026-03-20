@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from src.api.main import create_app
 from src.config.settings import Settings
-from src.services.google_trends_client import (
+from src.services.trends.google_trends_client import (
     GTRelatedQuery,
     GTTrendingSearch,
 )
@@ -167,7 +167,7 @@ class TestGTEndpoint503:
         self,
         gt_settings: Settings,
     ) -> None:
-        from src.services.google_trends_client import (
+        from src.services.trends.google_trends_client import (
             GoogleTrendsAPIError,
         )
 

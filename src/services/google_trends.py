@@ -6,7 +6,7 @@ import structlog
 
 from src.api.schemas.topics import RawTopic
 from src.api.schemas.trends import GTFetchResponse
-from src.services.google_trends_client import (
+from src.services.trends.google_trends_client import (
     GoogleTrendsClient,
     GTRelatedQuery,
     GTTrendingSearch,

@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.services.reddit_client import (
+from src.services.trends.reddit_client import (
     RedditAPIError,
     RedditClient,
 )
@@ -50,7 +50,7 @@ class TestFetchSubredditPosts:
         mock_reddit.subreddit = AsyncMock(return_value=mock_subreddit)
 
         with patch(
-            "src.services.reddit_client.asyncpraw.Reddit",
+            "src.services.trends.reddit_client.asyncpraw.Reddit",
             return_value=mock_reddit,
         ):
             client = RedditClient(
@@ -81,7 +81,7 @@ class TestFetchSubredditPosts:
         mock_reddit.subreddit = AsyncMock(return_value=mock_subreddit)
 
         with patch(
-            "src.services.reddit_client.asyncpraw.Reddit",
+            "src.services.trends.reddit_client.asyncpraw.Reddit",
             return_value=mock_reddit,
         ):
             client = RedditClient(
@@ -106,7 +106,7 @@ class TestFetchSubredditPosts:
         )
 
         with patch(
-            "src.services.reddit_client.asyncpraw.Reddit",
+            "src.services.trends.reddit_client.asyncpraw.Reddit",
             return_value=mock_reddit,
         ):
             client = RedditClient(

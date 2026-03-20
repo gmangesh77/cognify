@@ -1,15 +1,15 @@
 import hashlib
 
-from src.services.arxiv_client import ArxivClient, ArxivPaper
 from src.services.embeddings import EmbeddingService
-from src.services.google_trends_client import (
+from src.services.trends.arxiv_client import ArxivClient, ArxivPaper
+from src.services.trends.google_trends_client import (
     GoogleTrendsClient,
     GTRelatedQuery,
     GTTrendingSearch,
 )
-from src.services.hackernews_client import HackerNewsClient, HNStoryResponse
-from src.services.newsapi_client import NewsAPIArticle, NewsAPIClient
-from src.services.reddit_client import RedditClient, RedditPostResponse
+from src.services.trends.hackernews_client import HackerNewsClient, HNStoryResponse
+from src.services.trends.newsapi_client import NewsAPIArticle, NewsAPIClient
+from src.services.trends.reddit_client import RedditClient, RedditPostResponse
 
 VECTOR_DIM = 384
 

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from src.services.hackernews import HackerNewsService
-from src.services.hackernews_client import HNStoryResponse
+from src.services.trends.hackernews_client import HNStoryResponse
 from tests.unit.services.conftest import MockHackerNewsClient
 
 

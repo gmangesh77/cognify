@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from src.api.schemas.topics import RawTopic
 from src.services.newsapi import NewsAPIService
-from src.services.newsapi_client import NewsAPIArticle
+from src.services.trends.newsapi_client import NewsAPIArticle
 from tests.unit.services.conftest import MockNewsAPIClient
 
 

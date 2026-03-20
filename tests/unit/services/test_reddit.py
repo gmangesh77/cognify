@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from src.services.reddit import RedditService
-from src.services.reddit_client import RedditAPIError, RedditPostResponse
+from src.services.trends.reddit_client import RedditAPIError, RedditPostResponse
 from tests.unit.services.conftest import MockRedditClient
 
 

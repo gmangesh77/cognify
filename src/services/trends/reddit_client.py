@@ -2,6 +2,8 @@ from typing import TypedDict
 
 import asyncpraw
 
+from src.services.trends.protocol import TrendSourceError
+
 
 class RedditPostResponse(TypedDict):
     id: str
@@ -17,11 +19,11 @@ class RedditPostResponse(TypedDict):
     crosspost_parent: str | None
 
 
-class RedditAPIError(Exception):
+class RedditAPIError(TrendSourceError):
     """Raised when the Reddit API is unreachable or returns an error."""
 
     def __init__(self, message: str) -> None:
-        super().__init__(message)
+        super().__init__("reddit", message)
 
 
 class RedditClient:

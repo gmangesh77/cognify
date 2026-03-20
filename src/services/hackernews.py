@@ -5,7 +5,7 @@ import structlog
 
 from src.api.schemas.topics import RawTopic
 from src.api.schemas.trends import HNFetchResponse
-from src.services.hackernews_client import HackerNewsClient, HNStoryResponse
+from src.services.trends.hackernews_client import HackerNewsClient, HNStoryResponse
 
 logger = structlog.get_logger()
 

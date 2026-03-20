@@ -3,6 +3,8 @@ from typing import TypedDict
 
 from pytrends.request import TrendReq
 
+from src.services.trends.protocol import TrendSourceError
+
 
 class GTTrendingSearch(TypedDict):
     title: str
@@ -15,11 +17,11 @@ class GTRelatedQuery(TypedDict):
     seed_keyword: str
 
 
-class GoogleTrendsAPIError(Exception):
+class GoogleTrendsAPIError(TrendSourceError):
     """Raised when Google Trends API is unreachable or returns an error."""
 
     def __init__(self, message: str) -> None:
-        super().__init__(message)
+        super().__init__("google_trends", message)
 
 
 class GoogleTrendsClient:

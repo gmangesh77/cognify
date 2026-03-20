@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from src.services.arxiv_client import (
+from src.services.trends.arxiv_client import (
     ArxivAPIError,
     ArxivClient,
 )
@@ -42,7 +42,7 @@ class TestFetchPapers:
             request=httpx.Request("GET", "http://test"),
         )
         with patch(
-            "src.services.arxiv_client.httpx.AsyncClient",
+            "src.services.trends.arxiv_client.httpx.AsyncClient",
         ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
@@ -78,7 +78,7 @@ class TestFetchPapers:
             request=httpx.Request("GET", "http://test"),
         )
         with patch(
-            "src.services.arxiv_client.httpx.AsyncClient",
+            "src.services.trends.arxiv_client.httpx.AsyncClient",
         ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
@@ -106,7 +106,7 @@ class TestFetchPapers:
             request=httpx.Request("GET", "http://test"),
         )
         with patch(
-            "src.services.arxiv_client.httpx.AsyncClient",
+            "src.services.trends.arxiv_client.httpx.AsyncClient",
         ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
@@ -129,7 +129,7 @@ class TestFetchPapers:
 
     async def test_timeout_raises(self) -> None:
         with patch(
-            "src.services.arxiv_client.httpx.AsyncClient",
+            "src.services.trends.arxiv_client.httpx.AsyncClient",
         ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.side_effect = httpx.TimeoutException(
@@ -154,7 +154,7 @@ class TestFetchPapers:
 
     async def test_connection_error_raises(self) -> None:
         with patch(
-            "src.services.arxiv_client.httpx.AsyncClient",
+            "src.services.trends.arxiv_client.httpx.AsyncClient",
         ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.side_effect = httpx.ConnectError(
@@ -184,7 +184,7 @@ class TestFetchPapers:
             request=httpx.Request("GET", "http://test"),
         )
         with patch(
-            "src.services.arxiv_client.httpx.AsyncClient",
+            "src.services.trends.arxiv_client.httpx.AsyncClient",
         ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
@@ -212,7 +212,7 @@ class TestFetchPapers:
             request=httpx.Request("GET", "http://test"),
         )
         with patch(
-            "src.services.arxiv_client.httpx.AsyncClient",
+            "src.services.trends.arxiv_client.httpx.AsyncClient",
         ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
@@ -240,7 +240,7 @@ class TestFetchPapers:
             request=httpx.Request("GET", "http://test"),
         )
         with patch(
-            "src.services.arxiv_client.httpx.AsyncClient",
+            "src.services.trends.arxiv_client.httpx.AsyncClient",
         ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response

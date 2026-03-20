@@ -6,8 +6,8 @@ from fastapi import FastAPI
 
 from src.api.main import create_app
 from src.config.settings import Settings
-from src.services.hackernews_client import HNStoryResponse
-from src.services.reddit_client import RedditPostResponse
+from src.services.trends.hackernews_client import HNStoryResponse
+from src.services.trends.reddit_client import RedditPostResponse
 from tests.unit.services.conftest import MockHackerNewsClient, MockRedditClient
 
 from .conftest import _PRIVATE_KEY, _PUBLIC_KEY, make_auth_header
@@ -164,7 +164,7 @@ class TestTrendEndpoint503:
         self,
         trend_settings: Settings,
     ) -> None:
-        from src.services.hackernews_client import HackerNewsAPIError
+        from src.services.trends.hackernews_client import HackerNewsAPIError
 
         class FailingClient(MockHackerNewsClient):
             async def fetch_stories(
@@ -376,7 +376,7 @@ class TestRedditEndpoint503:
         self,
         trend_settings: Settings,
     ) -> None:
-        from src.services.reddit_client import RedditAPIError
+        from src.services.trends.reddit_client import RedditAPIError
 
         class AllFailClient(MockRedditClient):
             async def fetch_subreddit_posts(

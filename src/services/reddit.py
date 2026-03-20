@@ -7,7 +7,7 @@ import structlog
 
 from src.api.schemas.topics import RawTopic
 from src.api.schemas.trends import RedditFetchResponse
-from src.services.reddit_client import (
+from src.services.trends.reddit_client import (
     RedditAPIError,
     RedditClient,
     RedditPostResponse,

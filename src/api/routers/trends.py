@@ -18,27 +18,27 @@ from src.api.schemas.trends import (
     RedditFetchResponse,
 )
 from src.services.arxiv import ArxivService
-from src.services.arxiv_client import (
+from src.services.trends.arxiv_client import (
     ArxivAPIError,
     ArxivClient,
 )
 from src.services.google_trends import GoogleTrendsService
-from src.services.google_trends_client import (
+from src.services.trends.google_trends_client import (
     GoogleTrendsAPIError,
     GoogleTrendsClient,
 )
 from src.services.hackernews import HackerNewsService
-from src.services.hackernews_client import (
+from src.services.trends.hackernews_client import (
     HackerNewsAPIError,
     HackerNewsClient,
 )
 from src.services.newsapi import NewsAPIService
-from src.services.newsapi_client import (
+from src.services.trends.newsapi_client import (
     NewsAPIClient,
     NewsAPIError,
 )
 from src.services.reddit import RedditService
-from src.services.reddit_client import (
+from src.services.trends.reddit_client import (
     RedditAPIError,
     RedditClient,
 )

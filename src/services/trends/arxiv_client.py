@@ -4,6 +4,8 @@ from typing import TypedDict
 
 import httpx
 
+from src.services.trends.protocol import TrendSourceError
+
 _ATOM_NS = "http://www.w3.org/2005/Atom"
 _ARXIV_NS = "http://arxiv.org/schemas/atom"
 
@@ -21,11 +23,11 @@ class ArxivPaper(TypedDict):
     categories: list[str]
 
 
-class ArxivAPIError(Exception):
+class ArxivAPIError(TrendSourceError):
     """Raised when arXiv API is unreachable or returns an error."""
 
     def __init__(self, message: str) -> None:
-        super().__init__(message)
+        super().__init__("arxiv", message)
 
 
 def _text(element: ET.Element | None) -> str:

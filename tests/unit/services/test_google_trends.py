@@ -1,5 +1,5 @@
 from src.services.google_trends import GoogleTrendsService
-from src.services.google_trends_client import (
+from src.services.trends.google_trends_client import (
     GTRelatedQuery,
     GTTrendingSearch,
 )
