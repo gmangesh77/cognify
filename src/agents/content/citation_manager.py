@@ -87,8 +87,10 @@ def _split_code_blocks(text: str) -> list[tuple[str, bool]]:
 
 def _renumber_text(text: str, remap: dict[int, int]) -> str:
     """Replace citation markers in a non-code text segment."""
+
     def _replace(m: re.Match[str]) -> str:
         return f"[{remap.get(int(m.group(1)), int(m.group(1)))}]"
+
     return _CITATION_PATTERN.sub(_replace, text)
 
 

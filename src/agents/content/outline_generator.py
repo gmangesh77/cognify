@@ -21,7 +21,12 @@ _SYSTEM_PROMPT = (
     "You are an expert content strategist. Generate a structured "
     "article outline from research findings. The outline should have "
     "4-8 sections with narrative flow: introduction, findings, "
-    "analysis, and conclusion. Respond with valid JSON only."
+    "analysis, and conclusion. "
+    "Do not use em-dashes. Use periods or commas instead. "
+    "Avoid formal transitions like moreover, furthermore, in conclusion. "
+    "Write in a natural conversational tone. Vary sentence length. "
+    "Be specific and concrete, not abstract. "
+    "Respond with valid JSON only."
 )
 
 _USER_TEMPLATE = (
