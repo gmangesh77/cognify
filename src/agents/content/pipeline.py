@@ -14,6 +14,7 @@ from langchain_core.language_models import BaseChatModel
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
+from src.agents.content.humanize_node import make_humanize_node
 from src.agents.content.nodes import (
     make_citations_node,
     make_draft_node,
@@ -69,6 +70,7 @@ def build_content_graph(
     graph.add_node("draft_sections", make_draft_node(llm, retriever))
     graph.add_node("validate_article", make_validate_node(llm, retriever))
     graph.add_node("manage_citations", make_citations_node())
+    graph.add_node("humanize", make_humanize_node(llm))
     graph.add_node("seo_optimize", make_seo_node(llm, settings))
 
     graph.add_conditional_edges(
@@ -83,7 +85,8 @@ def build_content_graph(
     )
     graph.add_edge("draft_sections", "validate_article")
     graph.add_edge("validate_article", "manage_citations")
-    graph.add_edge("manage_citations", "seo_optimize")
+    graph.add_edge("manage_citations", "humanize")
+    graph.add_edge("humanize", "seo_optimize")
     graph.add_edge("seo_optimize", END)
 
     return graph.compile()

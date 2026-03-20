@@ -293,3 +293,54 @@ class TestContentPipelineWithDrafting:
             }
         )
         assert result["status"] == "failed"
+
+
+def _long_clean_draft(section_num: int) -> str:
+    """Generate a clean ~800-word draft that scores above slop threshold."""
+    sentences = [
+        "Researchers found a significant increase in attacks [1].",
+        "The team tested three configurations during the trial [1].",
+        "Results showed a clear pattern across all test groups [1].",
+        "Performance metrics improved by roughly twelve percent [1].",
+        "Data collection took place over a period of six months [1].",
+        "The control group exhibited no notable changes [1].",
+        "Analysts confirmed findings through independent review [1].",
+        "Each participant completed the survey in ten minutes [1].",
+        "The framework reduced deployment times for scenarios [1].",
+        "Testing protocols followed standard industry guidelines [1].",
+    ]
+    # Repeat and vary to reach ~800 words
+    lines: list[str] = []
+    for i in range(80):
+        base = sentences[i % len(sentences)]
+        lines.append(f"In phase {i + 1} of section {section_num}, {base.lower()}")
+    return " ".join(lines)
+
+
+class TestContentPipelineWithHumanize:
+    async def test_humanize_node_in_full_graph(self) -> None:
+        """Full pipeline includes humanize node and produces section_drafts."""
+        responses = [
+            _outline_json(),
+            _queries_json(2),
+            _long_clean_draft(0),
+            _long_clean_draft(1),
+            _seo_json(),
+            _discoverability_json(),
+        ]
+        llm = FakeListChatModel(responses=responses)
+        retriever = _mock_retriever()
+        graph = build_content_graph(llm, retriever=retriever)
+        result = await graph.ainvoke(
+            {
+                "topic": _make_topic(),
+                "research_plan": _make_plan(),
+                "findings": _make_findings(),
+                "session_id": uuid4(),
+                "outline": None,
+                "status": "outline_generating",
+                "error": None,
+            }
+        )
+        assert result.get("section_drafts") is not None
+        assert len(result["section_drafts"]) == 2

@@ -27,7 +27,12 @@ _SYSTEM_PROMPT = (
     "using the provided research context. Every factual claim must include "
     "an inline citation like [1], [2] referencing the numbered sources. "
     "Write in a clear, authoritative tone. Target approximately "
-    "{target_word_count} words."
+    "{target_word_count} words. "
+    "Do not use em-dashes or en-dashes. Use periods or commas instead. "
+    "Avoid words like delve, leverage, innovative, transformative, unprecedented. "
+    "Skip transitions like moreover, furthermore, additionally. "
+    "Vary sentence length and structure. "
+    "Write in a natural voice as a knowledgeable human, not an AI assistant."
 )
 
 _CITATION_PATTERN = re.compile(r"\[(\d+)\]")
