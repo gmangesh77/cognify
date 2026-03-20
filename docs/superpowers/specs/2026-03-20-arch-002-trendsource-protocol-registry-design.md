@@ -2,7 +2,7 @@
 
 > **Date**: 2026-03-20
 > **Ticket**: ARCH-002
-> **Type**: Refactoring (no behavioral changes)
+> **Type**: Refactoring (internal logic preserved; API endpoint URLs change — see Section 4.8)
 > **Branch**: `feature/ARCH-002-trendsource-protocol-registry`
 
 ---
@@ -19,7 +19,7 @@ Additionally, there is no way to write generic code like "run all active sources
 2. Create a `TrendSourceRegistry` for runtime source management
 3. Replace 5 copy-paste router handlers with a single registry-driven endpoint
 4. Move all 10 trend source files into `src/services/trends/` package
-5. Preserve all existing behavior — same filtering, scoring, dedup logic
+5. Preserve all existing internal behavior — same filtering, scoring, dedup logic (API endpoint URLs change; no current consumers are affected)
 
 ## 3. Non-Goals
 
@@ -102,8 +102,7 @@ class SourceResult(BaseModel):
 
     source_name: str
     topics: list[RawTopic]
-    topics_fetched: int
-    topics_after_filter: int
+    topic_count: int
     duration_ms: int
     error: str | None = None
 
@@ -148,74 +147,86 @@ No auto-discovery — explicit registration only.
 
 ### 4.4 Registry Initialization
 
-**File: `src/services/trends/__init__.py`** (~60 lines)
+**File: `src/services/trends/__init__.py`** (~90 lines)
+
+Each source has a small factory function (< 20 lines each). The top-level `init_registry` calls them all:
 
 ```python
-def init_registry(settings: Settings) -> TrendSourceRegistry:
-    """Construct all trend sources from settings and register them."""
-    registry = TrendSourceRegistry()
-
-    # HackerNews
-    hn_client = HackerNewsClient(
+def _register_hackernews(registry: TrendSourceRegistry, settings: Settings) -> None:
+    client = HackerNewsClient(
         base_url=settings.hn_api_base_url,
         timeout=settings.hn_request_timeout,
     )
-    registry.register(
-        HackerNewsService(
-            client=hn_client,
-            points_cap=settings.hn_points_cap,
-            min_points=settings.hn_default_min_points,
-        )
-    )
+    registry.register(HackerNewsService(
+        client=client,
+        points_cap=settings.hn_points_cap,
+        min_points=settings.hn_default_min_points,
+    ))
 
-    # Google Trends
-    gt_client = GoogleTrendsClient(
+
+def _register_google_trends(registry: TrendSourceRegistry, settings: Settings) -> None:
+    client = GoogleTrendsClient(
         language=settings.gt_language,
         timezone_offset=settings.gt_timezone_offset,
         timeout=settings.gt_request_timeout,
     )
     registry.register(GoogleTrendsService(
-        client=gt_client,
+        client=client,
         country=settings.gt_default_country,
     ))
 
-    # Reddit
-    reddit_client = RedditClient(
+
+def _register_reddit(registry: TrendSourceRegistry, settings: Settings) -> None:
+    client = RedditClient(
         client_id=settings.reddit_client_id,
         client_secret=settings.reddit_client_secret,
         user_agent=settings.reddit_user_agent,
         timeout=settings.reddit_request_timeout,
     )
-    registry.register(RedditService(
-        client=reddit_client,
-        score_cap=settings.reddit_score_cap,
+    defaults = RedditFetchDefaults(
         subreddits=settings.reddit_default_subreddits,
         sort="hot",
         time_filter="day",
+    )
+    registry.register(RedditService(
+        client=client,
+        score_cap=settings.reddit_score_cap,
+        defaults=defaults,
     ))
 
-    # NewsAPI
-    newsapi_client = NewsAPIClient(
+
+def _register_newsapi(registry: TrendSourceRegistry, settings: Settings) -> None:
+    client = NewsAPIClient(
         api_key=settings.newsapi_api_key,
         base_url=settings.newsapi_base_url,
         timeout=settings.newsapi_request_timeout,
     )
     registry.register(NewsAPIService(
-        client=newsapi_client,
+        client=client,
         category=settings.newsapi_default_category,
         country=settings.newsapi_default_country,
     ))
 
-    # arXiv
-    arxiv_client = ArxivClient(
+
+def _register_arxiv(registry: TrendSourceRegistry, settings: Settings) -> None:
+    client = ArxivClient(
         base_url=settings.arxiv_api_base_url,
         timeout=settings.arxiv_request_timeout,
     )
     registry.register(ArxivService(
-        client=arxiv_client,
+        client=client,
         categories=settings.arxiv_default_categories,
     ))
 
+
+def init_registry(settings: Settings) -> TrendSourceRegistry:
+    """Construct all trend sources from settings."""
+    registry = TrendSourceRegistry()
+    _register_hackernews(registry, settings)
+    _register_google_trends(registry, settings)
+    _register_reddit(registry, settings)
+    _register_newsapi(registry, settings)
+    _register_arxiv(registry, settings)
     return registry
 ```
 
@@ -273,21 +284,37 @@ class HackerNewsService:
         return topics
 ```
 
+**Config model for Reddit** (in `src/services/trends/reddit.py`):
+
+Reddit's constructor would grow to 5 params (`client`, `score_cap`, `subreddits`, `sort`, `time_filter`), violating the max 3 params rule. Group the fetch defaults:
+
+```python
+class RedditFetchDefaults(BaseModel, frozen=True):
+    """Reddit-specific fetch defaults set at init time."""
+    subreddits: list[str]
+    sort: str = "hot"
+    time_filter: str = "day"
+```
+
+Constructor becomes: `RedditService(client, score_cap, defaults)` — 3 params.
+
 **Changes per service:**
 
-| Service | Params moving to constructor | Current return | New return |
-|---------|------------------------------|----------------|------------|
-| `HackerNewsService` | `min_points` | `HNFetchResponse` | `list[RawTopic]` |
-| `GoogleTrendsService` | `country` | `GTFetchResponse` | `list[RawTopic]` |
-| `RedditService` | `subreddits`, `sort`, `time_filter` | `RedditFetchResponse` | `list[RawTopic]` |
-| `NewsAPIService` | `category`, `country` | `NewsAPIFetchResponse` | `list[RawTopic]` |
-| `ArxivService` | `categories` | `ArxivFetchResponse` | `list[RawTopic]` |
+| Service | Params moving to constructor | Constructor params | Current return | New return |
+|---------|------------------------------|--------------------|----------------|------------|
+| `HackerNewsService` | `min_points` | `client`, `points_cap`, `min_points` (3) | `HNFetchResponse` | `list[RawTopic]` |
+| `GoogleTrendsService` | `country` | `client`, `country` (2) | `GTFetchResponse` | `list[RawTopic]` |
+| `RedditService` | `subreddits`, `sort`, `time_filter` | `client`, `score_cap`, `defaults` (3) | `RedditFetchResponse` | `list[RawTopic]` |
+| `NewsAPIService` | `category`, `country` | `client`, `category`, `country` (3) | `NewsAPIFetchResponse` | `list[RawTopic]` |
+| `ArxivService` | `categories` | `client`, `categories` (2) | `ArxivFetchResponse` | `list[RawTopic]` |
 
 **Error class changes:** Each source's error class (`HackerNewsAPIError`, `RedditAPIError`, etc.) changes its base class from `Exception` to `TrendSourceError`. Constructor remains the same; only inheritance changes.
 
 ### 4.6 Router Refactoring
 
-**File: `src/api/routers/trends.py`** (replaces current 277-line file, ~65 lines)
+**File: `src/api/routers/trends.py`** (replaces current 277-line file, ~80 lines)
+
+The handler is split into small functions to stay under the 20-line limit:
 
 ```python
 import asyncio
@@ -298,7 +325,7 @@ from fastapi import APIRouter, Depends, Request
 
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_role
-from src.api.errors import ServiceUnavailableError
+from src.api.errors import CognifyValidationError, ServiceUnavailableError
 from src.api.rate_limiter import limiter
 from src.api.schemas.trends import (
     SourceResult,
@@ -306,10 +333,51 @@ from src.api.schemas.trends import (
     TrendFetchResponse,
 )
 from src.services.trends.protocol import TrendFetchConfig, TrendSourceError
+from src.services.trends.registry import TrendSourceRegistry
 
 logger = structlog.get_logger()
 
 trends_router = APIRouter()
+
+
+def _resolve_sources(
+    registry: TrendSourceRegistry, requested: list[str] | None
+) -> list[str]:
+    """Resolve and validate requested source names."""
+    sources = requested or registry.available_sources()
+    unknown = set(sources) - set(registry.available_sources())
+    if unknown:
+        raise CognifyValidationError(
+            message=f"Unknown sources: {sorted(unknown)}",
+        )
+    return sources
+
+
+async def _run_source(
+    source_name: str, registry: TrendSourceRegistry, config: TrendFetchConfig
+) -> SourceResult:
+    """Run a single source, capturing timing and errors."""
+    source = registry.get(source_name)
+    start = time.monotonic()
+    try:
+        topics = await source.fetch_and_normalize(config)
+        elapsed = int((time.monotonic() - start) * 1000)
+        return SourceResult(
+            source_name=source_name,
+            topics=topics,
+            topic_count=len(topics),
+            duration_ms=elapsed,
+        )
+    except TrendSourceError as exc:
+        elapsed = int((time.monotonic() - start) * 1000)
+        logger.error("trend_source_error", source=source_name, error=str(exc))
+        return SourceResult(
+            source_name=source_name,
+            topics=[],
+            topic_count=0,
+            duration_ms=elapsed,
+            error=str(exc),
+        )
 
 
 @limiter.limit("5/minute")
@@ -324,57 +392,18 @@ async def fetch_trends(
     user: TokenPayload = Depends(require_role("admin", "editor")),
 ) -> TrendFetchResponse:
     registry = request.app.state.trend_registry
-    source_names = body.sources or registry.available_sources()
-
-    # Validate requested source names
-    available = set(registry.available_sources())
-    unknown = set(source_names) - available
-    if unknown:
-        from src.api.errors import ValidationError
-        raise ValidationError(
-            code="unknown_sources",
-            message=f"Unknown sources: {sorted(unknown)}",
-        )
-
+    source_names = _resolve_sources(registry, body.sources)
     config = TrendFetchConfig(
         domain_keywords=body.domain_keywords,
         max_results=body.max_results,
     )
 
-    # Run all sources concurrently
-    async def _run_source(name: str) -> SourceResult:
-        source = registry.get(name)
-        start = time.monotonic()
-        try:
-            topics = await source.fetch_and_normalize(config)
-            elapsed = int((time.monotonic() - start) * 1000)
-            return SourceResult(
-                source_name=name,
-                topics=topics,
-                topics_fetched=len(topics),
-                topics_after_filter=len(topics),
-                duration_ms=elapsed,
-            )
-        except TrendSourceError as exc:
-            elapsed = int((time.monotonic() - start) * 1000)
-            logger.error("trend_source_error", source=name, error=str(exc))
-            return SourceResult(
-                source_name=name,
-                topics=[],
-                topics_fetched=0,
-                topics_after_filter=0,
-                duration_ms=elapsed,
-                error=str(exc),
-            )
-
     results = await asyncio.gather(
-        *[_run_source(name) for name in source_names]
+        *[_run_source(n, registry, config) for n in source_names]
     )
-
     source_results = {r.source_name: r for r in results}
     all_topics = [t for r in results for t in r.topics]
 
-    # If every source failed, return 503
     if all(r.error is not None for r in results):
         raise ServiceUnavailableError(
             code="all_sources_unavailable",
@@ -396,11 +425,25 @@ async def fetch_trends(
 
 ### 4.7 `SourceResult` Metrics
 
-`topics_fetched` and `topics_after_filter` are both set to `len(topics)` at the router level. This is a simplification — the router only sees the final output. The per-source internal metrics (e.g., `total_trending`, `subreddits_scanned`) are no longer exposed in the API response. This information is still available via structured logs inside each service.
+`topic_count` is set to `len(topics)` at the router level — a single clear field rather than two identical ones. The per-source internal metrics (e.g., `total_trending`, `subreddits_scanned`) are no longer exposed in the API response. This information is still available via structured logs inside each service.
 
 If future needs require per-source internal metrics, the protocol can add an optional `metadata: dict[str, int]` return alongside the topic list. But for now, YAGNI.
 
-### 4.8 File Organization
+### 4.8 API Breaking Change
+
+This refactoring replaces 5 endpoints with 1:
+
+| Old Endpoint | Replacement |
+|-------------|-------------|
+| `POST /api/v1/trends/hackernews/fetch` | `POST /api/v1/trends/fetch` with `sources: ["hackernews"]` |
+| `POST /api/v1/trends/google/fetch` | `POST /api/v1/trends/fetch` with `sources: ["google_trends"]` |
+| `POST /api/v1/trends/reddit/fetch` | `POST /api/v1/trends/fetch` with `sources: ["reddit"]` |
+| `POST /api/v1/trends/newsapi/fetch` | `POST /api/v1/trends/fetch` with `sources: ["newsapi"]` |
+| `POST /api/v1/trends/arxiv/fetch` | `POST /api/v1/trends/fetch` with `sources: ["arxiv"]` |
+
+This is safe because no consumers (frontend or external) depend on these endpoints yet — DASH-002 (Topic Discovery Screen) is still in Backlog and will consume the new unified endpoint.
+
+### 4.9 File Organization
 
 ```
 src/services/trends/
@@ -411,8 +454,9 @@ src/services/trends/
   hackernews_client.py     # HackerNewsClient (moved as-is)
   google_trends.py         # GoogleTrendsService (moved)
   google_trends_client.py  # GoogleTrendsClient (moved as-is)
-  reddit.py                # RedditService (moved)
+  reddit.py                # RedditService (moved, dedup extracted)
   reddit_client.py         # RedditClient (moved as-is)
+  _dedup.py                # Reddit dedup helpers (extracted from reddit.py)
   newsapi.py               # NewsAPIService (moved)
   newsapi_client.py        # NewsAPIClient (moved as-is)
   arxiv.py                 # ArxivService (moved)
@@ -422,6 +466,8 @@ src/services/trends/
 **Stays in place:** `src/services/topic_ranking.py` — downstream consumer, not a source. Its imports of `RawTopic` from `src/api/schemas/topics` are unaffected.
 
 **Client files move as-is** — no interface changes to transport layer. Only the error base class changes from `Exception` to `TrendSourceError`.
+
+**Pre-existing file size violation:** `reddit.py` is 262 lines (limit: 200). During the move, extract the dedup helpers (`_is_crosspost_duplicate`, `_is_title_duplicate`, `_deduplicate_posts`) into a `_dedup.py` private module within `src/services/trends/`. This brings `reddit.py` well under 200 lines. The dedup logic is self-contained and used only by Reddit.
 
 ---
 
@@ -481,6 +527,8 @@ Existing client unit tests (`test_hackernews_client.py`, etc.) move to `tests/un
 
 Existing per-source endpoint tests (`test_arxiv_endpoints.py`, `test_google_trends_endpoints.py`, `test_newsapi_endpoints.py`) are deleted — their coverage is replaced by the unified endpoint tests.
 
+Existing per-source schema tests (`test_trend_schemas.py`, `test_google_trends_schemas.py`, `test_newsapi_schemas.py`) are deleted — they test the old `HNFetchRequest`, `GTFetchResponse`, etc. schemas that are being removed. Replacement coverage for the new `TrendFetchRequest`, `SourceResult`, and `TrendFetchResponse` schemas goes in `tests/unit/services/trends/test_protocol.py` (for `TrendFetchConfig`) and `tests/unit/api/test_trend_schemas.py` (rewritten for the new API schemas).
+
 ### 6.3 Unchanged Tests
 
 - `test_topic_ranking.py` — consumes `RawTopic`, no trend source imports
@@ -506,14 +554,16 @@ Test injection changes from setting `app.state.hn_client` etc. to setting `app.s
 | What | Action | Risk |
 |------|--------|------|
 | 10 source files (5 clients + 5 services) | Move to `src/services/trends/` | Low — file moves + import updates |
+| `reddit.py` (262 lines) | Extract dedup helpers into `_dedup.py` | Low — pure extraction |
 | 5 service signatures | Adapt `fetch_and_normalize` to `TrendFetchConfig` | Low — mechanical change |
 | 5 error classes | Change base from `Exception` to `TrendSourceError` | Low — additive |
 | 10 API schemas | Delete, replace with 3 unified schemas | Low — old schemas unused after router rewrite |
-| Router (277 lines) | Rewrite to single endpoint (~65 lines) | Medium — new endpoint, new test coverage |
+| Router (277 lines) | Rewrite to single endpoint (~80 lines) | Medium — new endpoint, new test coverage |
+| 5 API endpoints | Replace with 1 unified endpoint (breaking, no consumers) | Low — no current consumers |
 | ~15 test files | Move + adapt imports/assertions | Low — mechanical |
-| 3 per-source endpoint test files | Delete, replaced by unified endpoint tests | Low — coverage replaced |
+| 6 per-source test files | Delete (3 endpoint + 3 schema), replaced by unified tests | Low — coverage replaced |
 
-**Net effect**: ~210 lines of router boilerplate eliminated. ~30 lines of new protocol/registry code added. All 683 existing tests pass after migration (with adapted imports and signatures).
+**Net effect**: ~210 lines of router boilerplate eliminated. ~50 lines of new protocol/registry code added. All 683 existing tests pass after migration (with adapted imports and signatures).
 
 ---
 
