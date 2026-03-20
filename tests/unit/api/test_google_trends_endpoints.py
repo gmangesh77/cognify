@@ -10,7 +10,7 @@ from src.services.trends.google_trends_client import (
     GTRelatedQuery,
     GTTrendingSearch,
 )
-from tests.unit.services.conftest import MockGoogleTrendsClient
+from tests.unit.services.trends.conftest import MockGoogleTrendsClient
 
 from .conftest import _PRIVATE_KEY, _PUBLIC_KEY, make_auth_header
 

@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from src.api.main import create_app
 from src.config.settings import Settings
 from src.services.trends.arxiv_client import ArxivPaper
-from tests.unit.services.conftest import MockArxivClient
+from tests.unit.services.trends.conftest import MockArxivClient
 
 from .conftest import _PRIVATE_KEY, _PUBLIC_KEY, make_auth_header
 
