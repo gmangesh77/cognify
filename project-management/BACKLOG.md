@@ -379,7 +379,7 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - **Article body assembly**: Concatenate section drafts into `body_markdown` with proper heading hierarchy (H2 per section title, H3 for subsections) and a references section at the end
   - **Field population**: All `CanonicalArticle` fields populated — title, subtitle, body_markdown, summary (from CONTENT-003), key_claims (from CONTENT-003), content_type, seo (from CONTENT-003), citations (from CONTENT-004), visuals (empty list until VISUAL-001+), authors, domain, generated_at, provenance (from CONTENT-003), ai_generated
   - **Validation**: Pydantic validation of the assembled `CanonicalArticle` — all required fields present, summary ≤ 500 chars, key_claims ≤ 10 items, citations ≥ 5 unique sources, body_markdown ≥ 1500 words
-  - **New pipeline node**: `compile_article` node added after `seo_optimize` — assembles all intermediate state into a `CanonicalArticle` and returns it
+  - **ContentService method**: `finalize_article(draft_id)` assembles the CanonicalArticle (service-layer, not pipeline node — per design decision in spec)
   - **ContentService method**: `finalize_article(draft_id) -> CanonicalArticle` — runs the compile node, persists the CanonicalArticle, updates draft status to `COMPLETE`
   - **API endpoint**: `GET /api/v1/articles/{article_id}` returns the finalized `CanonicalArticle` (new `CanonicalArticleResponse` schema with summary, key_claims, provenance, ai_generated, seo, citations)
   - **Status transition**: `DRAFT_COMPLETE` → `COMPLETE` (final state in current pipeline; future tickets add publishing states)

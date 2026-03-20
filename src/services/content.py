@@ -11,6 +11,7 @@ import structlog
 
 from src.agents.content.pipeline import build_content_graph
 from src.api.errors import NotFoundError
+from src.models.content import CanonicalArticle
 from src.models.content_pipeline import (
     ArticleDraft,
     ArticleOutline,
@@ -19,12 +20,23 @@ from src.models.content_pipeline import (
 )
 from src.models.research import FacetFindings, TopicInput
 from src.models.research_db import ResearchSession
+from src.services.content_finalize import (
+    build_article,
+    store_article,
+    validate_finalize_ready,
+)
+from src.services.content_finalize import (
+    get_article as _get_article,
+)
 from src.services.content_repositories import (
     ArticleDraftRepository,
+    ArticleRepository,
     ContentDeps,
     ContentRepositories,
     InMemoryArticleDraftRepository,
+    InMemoryArticleRepository,
     ResearchSessionReader,
+    aggregate_citations,
 )
 
 logger = structlog.get_logger()
@@ -32,10 +44,12 @@ logger = structlog.get_logger()
 # Re-export for backward compatibility
 __all__ = [
     "ArticleDraftRepository",
+    "ArticleRepository",
     "ContentDeps",
     "ContentRepositories",
     "ContentService",
     "InMemoryArticleDraftRepository",
+    "InMemoryArticleRepository",
     "ResearchSessionReader",
 ]
 
@@ -65,6 +79,19 @@ class ContentService:
         topic = self._build_topic_input(session)
         result = await self._run_drafting(topic, findings, draft)
         return await self._store_drafted(draft, result)
+
+    async def finalize_article(self, draft_id: UUID) -> CanonicalArticle:
+        """Assemble CanonicalArticle from a completed draft."""
+        draft = await self.get_draft(draft_id)
+        validate_finalize_ready(draft)
+        session = await self._load_session(draft.session_id)
+        topic = self._build_topic_input(session)
+        article = build_article(draft, topic)
+        return await store_article(self._repos, draft, article)
+
+    async def get_article(self, article_id: UUID) -> CanonicalArticle:
+        """Retrieve a stored CanonicalArticle by ID."""
+        return await _get_article(self._repos, article_id)
 
     async def get_draft(self, draft_id: UUID) -> ArticleDraft:
         draft = await self._repos.drafts.get(draft_id)
@@ -173,7 +200,7 @@ class ContentService:
         """Persist completed section drafts to the draft record."""
         raw_drafts = result.get("section_drafts", [])
         drafts: list[object] = list(raw_drafts) if isinstance(raw_drafts, list) else []
-        citations = _aggregate_citations(drafts)
+        citations = aggregate_citations(drafts)
         seo_result = result.get("seo_result")
         if seo_result is not None and not isinstance(seo_result, SEOResult):
             seo_result = SEOResult.model_validate(seo_result)
@@ -183,6 +210,8 @@ class ContentService:
                 "citations": citations,
                 "total_word_count": result.get("total_word_count", 0),
                 "seo_result": seo_result,
+                "global_citations": list(result.get("global_citations") or []),  # type: ignore[call-overload]
+                "references_markdown": str(result.get("references_markdown", "")),
                 "status": DraftStatus.DRAFT_COMPLETE,
                 "completed_at": datetime.now(UTC),
             }
@@ -193,15 +222,3 @@ class ContentService:
             total_words=updated.total_word_count,
         )
         return await self._repos.drafts.update(updated)
-
-
-def _aggregate_citations(
-    drafts: list[object],
-) -> list[object]:
-    """Collect unique citations from all section drafts by URL."""
-    seen: dict[str, object] = {}
-    for d in drafts:
-        for c in getattr(d, "citations_used", []):
-            if c.source_url not in seen:
-                seen[c.source_url] = c
-    return list(seen.values())

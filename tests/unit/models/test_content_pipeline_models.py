@@ -312,6 +312,25 @@ class TestSlopScore:
             score.score = 50  # type: ignore[misc]
 
 
+class TestArticleDraftExtended:
+    def test_article_id_default_none(self) -> None:
+        draft = ArticleDraft(
+            session_id=uuid4(),
+            topic_id=uuid4(),
+            created_at=datetime.now(UTC),
+        )
+        assert draft.article_id is None
+
+    def test_global_citations_default_empty(self) -> None:
+        draft = ArticleDraft(
+            session_id=uuid4(),
+            topic_id=uuid4(),
+            created_at=datetime.now(UTC),
+        )
+        assert draft.global_citations == []
+        assert draft.references_markdown == ""
+
+
 class TestSEOResult:
     def test_construct(self) -> None:
         seo = SEOMetadata(

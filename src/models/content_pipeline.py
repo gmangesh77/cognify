@@ -122,3 +122,6 @@ class ArticleDraft(BaseModel):
     citations: list[CitationRef] = Field(default_factory=list)
     total_word_count: int = 0
     seo_result: SEOResult | None = None
+    article_id: UUID | None = None
+    global_citations: list[dict[str, object]] = Field(default_factory=list)
+    references_markdown: str = ""
