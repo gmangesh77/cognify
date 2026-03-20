@@ -131,9 +131,12 @@ class TestAssembleCanonicalArticle:
         article = assemble_canonical_article(_make_draft(), _make_topic())
 
         assert "## References" in article.body_markdown
-        assert article.body_markdown.rstrip().endswith(
-            _make_draft().references_markdown.rstrip()
-        ) or "## References" in article.body_markdown
+        assert (
+            article.body_markdown.rstrip().endswith(
+                _make_draft().references_markdown.rstrip()
+            )
+            or "## References" in article.body_markdown
+        )
 
     def test_citations_from_global_citations(self) -> None:
         draft = _make_draft()

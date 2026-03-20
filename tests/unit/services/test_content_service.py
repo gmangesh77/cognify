@@ -219,9 +219,7 @@ async def _make_service_with_retriever(
     await session_repo.create(session)
 
     queries_json = json.dumps([{"section_index": 0, "queries": ["q0"]}])
-    draft_text = (
-        "Draft text [1] citation [2] about [3] research [4] findings [5]."
-    )
+    draft_text = "Draft text [1] citation [2] about [3] research [4] findings [5]."
     llm = FakeListChatModel(
         responses=[
             _outline_json(),  # outline generation

@@ -315,13 +315,17 @@ class TestSlopScore:
 class TestArticleDraftExtended:
     def test_article_id_default_none(self) -> None:
         draft = ArticleDraft(
-            session_id=uuid4(), topic_id=uuid4(), created_at=datetime.now(UTC),
+            session_id=uuid4(),
+            topic_id=uuid4(),
+            created_at=datetime.now(UTC),
         )
         assert draft.article_id is None
 
     def test_global_citations_default_empty(self) -> None:
         draft = ArticleDraft(
-            session_id=uuid4(), topic_id=uuid4(), created_at=datetime.now(UTC),
+            session_id=uuid4(),
+            topic_id=uuid4(),
+            created_at=datetime.now(UTC),
         )
         assert draft.global_citations == []
         assert draft.references_markdown == ""

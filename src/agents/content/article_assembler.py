@@ -76,9 +76,7 @@ def _compile_body(
 ) -> str:
     """Concatenate section drafts with H2 headings and a references tail."""
     sorted_sections = sorted(sections, key=lambda s: s.section_index)
-    parts = [
-        f"## {s.title}\n\n{s.body_markdown}" for s in sorted_sections
-    ]
+    parts = [f"## {s.title}\n\n{s.body_markdown}" for s in sorted_sections]
     if references_md:
         parts.append(references_md)
     return "\n\n".join(parts)
@@ -94,8 +92,5 @@ def _validate_assembly(
         msg = f"Article has {word_count} words, minimum is {_MIN_WORD_COUNT}"
         raise ValueError(msg)
     if len(citations) < _MIN_CITATIONS:
-        msg = (
-            f"Article has {len(citations)} citations, minimum is "
-            f"{_MIN_CITATIONS}"
-        )
+        msg = f"Article has {len(citations)} citations, minimum is {_MIN_CITATIONS}"
         raise ValueError(msg)

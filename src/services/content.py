@@ -22,9 +22,11 @@ from src.models.research import FacetFindings, TopicInput
 from src.models.research_db import ResearchSession
 from src.services.content_finalize import (
     build_article,
-    get_article as _get_article,
     store_article,
     validate_finalize_ready,
+)
+from src.services.content_finalize import (
+    get_article as _get_article,
 )
 from src.services.content_repositories import (
     ArticleDraftRepository,
@@ -208,7 +210,7 @@ class ContentService:
                 "citations": citations,
                 "total_word_count": result.get("total_word_count", 0),
                 "seo_result": seo_result,
-                "global_citations": list(result.get("global_citations", [])),
+                "global_citations": list(result.get("global_citations") or []),  # type: ignore[call-overload]
                 "references_markdown": str(result.get("references_markdown", "")),
                 "status": DraftStatus.DRAFT_COMPLETE,
                 "completed_at": datetime.now(UTC),
