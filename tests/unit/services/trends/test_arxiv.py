@@ -1,9 +1,10 @@
 from datetime import UTC, datetime
 
 from src.api.schemas.topics import RawTopic
-from src.services.arxiv import ArxivService
-from src.services.arxiv_client import ArxivPaper
-from tests.unit.services.conftest import MockArxivClient
+from src.services.trends.arxiv import ArxivService
+from src.services.trends.arxiv_client import ArxivPaper
+from src.services.trends.protocol import TrendFetchConfig
+from tests.unit.services.trends.conftest import MockArxivClient
 
 
 def _paper(**overrides: object) -> ArxivPaper:
@@ -235,40 +236,26 @@ class TestFetchAndNormalize:
             ),
         ]
         mock_client = MockArxivClient(papers=papers)
-        service = ArxivService(client=mock_client)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            categories=["cs.CR"],
-            max_results=30,
-        )
-        assert result.total_fetched == 2
-        assert result.total_after_filter == 1
-        assert len(result.topics) == 1
-        assert result.topics[0].title == "Cybersecurity attack model"
+        service = ArxivService(client=mock_client, categories=["cs.CR"])
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        assert len(result) == 1
+        assert result[0].title == "Cybersecurity attack model"
 
     async def test_empty_papers(self) -> None:
         mock_client = MockArxivClient(papers=[])
-        service = ArxivService(client=mock_client)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            categories=["cs.CR"],
-            max_results=30,
-        )
-        assert result.total_fetched == 0
-        assert result.total_after_filter == 0
-        assert result.topics == []
+        service = ArxivService(client=mock_client, categories=["cs.CR"])
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        assert result == []
 
     async def test_no_matches(self) -> None:
         papers = [_paper(title="Cooking blog paper")]
         mock_client = MockArxivClient(papers=papers)
-        service = ArxivService(client=mock_client)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            categories=["cs.CR"],
-            max_results=30,
-        )
-        assert result.total_fetched == 1
-        assert result.total_after_filter == 0
+        service = ArxivService(client=mock_client, categories=["cs.CR"])
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        assert result == []
 
     async def test_max_results_caps_fetch(self) -> None:
         papers = [
@@ -280,10 +267,7 @@ class TestFetchAndNormalize:
             for i in range(10)
         ]
         mock_client = MockArxivClient(papers=papers)
-        service = ArxivService(client=mock_client)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            categories=["cs.CR"],
-            max_results=3,
-        )
-        assert result.total_fetched == 3
+        service = ArxivService(client=mock_client, categories=["cs.CR"])
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=3)
+        result = await service.fetch_and_normalize(config)
+        assert len(result) == 3

@@ -1,9 +1,10 @@
-from src.services.google_trends import GoogleTrendsService
-from src.services.google_trends_client import (
+from src.services.trends.google_trends import GoogleTrendsService
+from src.services.trends.google_trends_client import (
     GTRelatedQuery,
     GTTrendingSearch,
 )
-from tests.unit.services.conftest import MockGoogleTrendsClient
+from src.services.trends.protocol import TrendFetchConfig
+from tests.unit.services.trends.conftest import MockGoogleTrendsClient
 
 
 class TestScoreCalculation:
@@ -151,15 +152,12 @@ class TestDeduplication:
             trending=trending,
             related=related,
         )
-        service = GoogleTrendsService(client=mock)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["ai", "security"],
-            country="united_states",
-            max_results=30,
-        )
-        assert len(result.topics) == 1
+        service = GoogleTrendsService(client=mock, country="united_states")
+        config = TrendFetchConfig(domain_keywords=["ai", "security"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        assert len(result) == 1
         # Rising score (100) > trending score (70)
-        assert result.topics[0].trend_score == 100.0
+        assert result[0].trend_score == 100.0
 
     async def test_first_wins_on_equal_score(self) -> None:
         related: list[GTRelatedQuery] = [
@@ -177,13 +175,10 @@ class TestDeduplication:
             ),
         ]
         mock = MockGoogleTrendsClient(related=related)
-        service = GoogleTrendsService(client=mock)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["ai", "security"],
-            country="united_states",
-            max_results=30,
-        )
-        assert len(result.topics) == 1
+        service = GoogleTrendsService(client=mock, country="united_states")
+        config = TrendFetchConfig(domain_keywords=["ai", "security"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        assert len(result) == 1
 
 
 class TestFetchAndNormalize:
@@ -204,41 +199,25 @@ class TestFetchAndNormalize:
             trending=trending,
             related=related,
         )
-        service = GoogleTrendsService(client=mock)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            country="united_states",
-            max_results=30,
-        )
-        assert result.total_trending == 2
-        assert result.total_related == 1
-        # "cooking show" filtered out
-        assert result.total_after_filter == 2
-        assert len(result.topics) == 2
+        service = GoogleTrendsService(client=mock, country="united_states")
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        # "cooking show" filtered out; cybersecurity breach + cyber attack 2026 = 2
+        assert len(result) == 2
 
     async def test_empty_results(self) -> None:
         mock = MockGoogleTrendsClient()
-        service = GoogleTrendsService(client=mock)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            country="united_states",
-            max_results=30,
-        )
-        assert result.total_trending == 0
-        assert result.total_related == 0
-        assert result.total_after_filter == 0
-        assert result.topics == []
+        service = GoogleTrendsService(client=mock, country="united_states")
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=30)
+        result = await service.fetch_and_normalize(config)
+        assert result == []
 
     async def test_max_results_caps_output(self) -> None:
         trending: list[GTTrendingSearch] = [
             GTTrendingSearch(title=f"cyber topic {i}") for i in range(10)
         ]
         mock = MockGoogleTrendsClient(trending=trending)
-        service = GoogleTrendsService(client=mock)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            country="united_states",
-            max_results=3,
-        )
-        assert len(result.topics) == 3
-        assert result.total_after_filter == 10
+        service = GoogleTrendsService(client=mock, country="united_states")
+        config = TrendFetchConfig(domain_keywords=["cyber"], max_results=3)
+        result = await service.fetch_and_normalize(config)
+        assert len(result) == 3

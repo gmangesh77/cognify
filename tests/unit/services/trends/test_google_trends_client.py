@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from src.services.google_trends_client import (
+from src.services.trends.google_trends_client import (
     GoogleTrendsAPIError,
     GoogleTrendsClient,
 )
@@ -17,7 +17,7 @@ class TestFetchTrendingSearches:
         )
 
         with patch(
-            "src.services.google_trends_client.TrendReq",
+            "src.services.trends.google_trends_client.TrendReq",
             return_value=mock_pytrends,
         ):
             client = GoogleTrendsClient(
@@ -38,7 +38,7 @@ class TestFetchTrendingSearches:
         )
 
         with patch(
-            "src.services.google_trends_client.TrendReq",
+            "src.services.trends.google_trends_client.TrendReq",
             return_value=mock_pytrends,
         ):
             client = GoogleTrendsClient(
@@ -57,7 +57,7 @@ class TestFetchTrendingSearches:
         )
 
         with patch(
-            "src.services.google_trends_client.TrendReq",
+            "src.services.trends.google_trends_client.TrendReq",
             return_value=mock_pytrends,
         ):
             client = GoogleTrendsClient(
@@ -77,7 +77,7 @@ class TestFetchTrendingSearches:
         )
 
         with patch(
-            "src.services.google_trends_client.TrendReq",
+            "src.services.trends.google_trends_client.TrendReq",
             return_value=mock_pytrends,
         ):
             client = GoogleTrendsClient(
@@ -107,7 +107,7 @@ class TestFetchRelatedQueries:
         }
 
         with patch(
-            "src.services.google_trends_client.TrendReq",
+            "src.services.trends.google_trends_client.TrendReq",
             return_value=mock_pytrends,
         ):
             client = GoogleTrendsClient(
@@ -140,7 +140,7 @@ class TestFetchRelatedQueries:
         }
 
         with patch(
-            "src.services.google_trends_client.TrendReq",
+            "src.services.trends.google_trends_client.TrendReq",
             return_value=mock_pytrends,
         ):
             client = GoogleTrendsClient(

@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from src.services.newsapi_client import (
+from src.services.trends.newsapi_client import (
     NewsAPIClient,
     NewsAPIError,
 )
@@ -27,7 +27,7 @@ class TestFetchTopHeadlines:
             json={"status": "ok", "articles": [SAMPLE_ARTICLE]},
             request=httpx.Request("GET", "http://test"),
         )
-        with patch("src.services.newsapi_client.httpx.AsyncClient") as mock_cls:
+        with patch("src.services.trends.newsapi_client.httpx.AsyncClient") as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -53,7 +53,7 @@ class TestFetchTopHeadlines:
             json={"status": "ok", "articles": []},
             request=httpx.Request("GET", "http://test"),
         )
-        with patch("src.services.newsapi_client.httpx.AsyncClient") as mock_cls:
+        with patch("src.services.trends.newsapi_client.httpx.AsyncClient") as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -78,7 +78,7 @@ class TestFetchTopHeadlines:
             json={"status": "error", "code": "apiKeyInvalid"},
             request=httpx.Request("GET", "http://test"),
         )
-        with patch("src.services.newsapi_client.httpx.AsyncClient") as mock_cls:
+        with patch("src.services.trends.newsapi_client.httpx.AsyncClient") as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -103,7 +103,7 @@ class TestFetchTopHeadlines:
             json={"message": "server error"},
             request=httpx.Request("GET", "http://test"),
         )
-        with patch("src.services.newsapi_client.httpx.AsyncClient") as mock_cls:
+        with patch("src.services.trends.newsapi_client.httpx.AsyncClient") as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -123,7 +123,7 @@ class TestFetchTopHeadlines:
                 )
 
     async def test_timeout_raises(self) -> None:
-        with patch("src.services.newsapi_client.httpx.AsyncClient") as mock_cls:
+        with patch("src.services.trends.newsapi_client.httpx.AsyncClient") as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.side_effect = httpx.TimeoutException("timed out")
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -143,7 +143,7 @@ class TestFetchTopHeadlines:
                 )
 
     async def test_connection_error_raises(self) -> None:
-        with patch("src.services.newsapi_client.httpx.AsyncClient") as mock_cls:
+        with patch("src.services.trends.newsapi_client.httpx.AsyncClient") as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.side_effect = httpx.ConnectError("refused")
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -172,7 +172,7 @@ class TestFetchTopHeadlines:
             json={"status": "ok", "articles": articles},
             request=httpx.Request("GET", "http://test"),
         )
-        with patch("src.services.newsapi_client.httpx.AsyncClient") as mock_cls:
+        with patch("src.services.trends.newsapi_client.httpx.AsyncClient") as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)

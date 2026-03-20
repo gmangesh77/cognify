@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
 
-from src.services.hackernews_client import (
+from src.services.trends.hackernews_client import (
     HackerNewsAPIError,
     HackerNewsClient,
 )
@@ -26,7 +26,9 @@ class TestFetchStories:
             json={"hits": [SAMPLE_HIT]},
             request=httpx.Request("GET", "http://test"),
         )
-        with patch("src.services.hackernews_client.httpx.AsyncClient") as mock_cls:
+        with patch(
+            "src.services.trends.hackernews_client.httpx.AsyncClient"
+        ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -49,7 +51,9 @@ class TestFetchStories:
             json={"hits": []},
             request=httpx.Request("GET", "http://test"),
         )
-        with patch("src.services.hackernews_client.httpx.AsyncClient") as mock_cls:
+        with patch(
+            "src.services.trends.hackernews_client.httpx.AsyncClient"
+        ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -70,7 +74,9 @@ class TestFetchStories:
             json={"message": "server error"},
             request=httpx.Request("GET", "http://test"),
         )
-        with patch("src.services.hackernews_client.httpx.AsyncClient") as mock_cls:
+        with patch(
+            "src.services.trends.hackernews_client.httpx.AsyncClient"
+        ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.return_value = mock_response
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -85,7 +91,9 @@ class TestFetchStories:
                 await client.fetch_stories("cyber", 10, 30)
 
     async def test_timeout_raises(self) -> None:
-        with patch("src.services.hackernews_client.httpx.AsyncClient") as mock_cls:
+        with patch(
+            "src.services.trends.hackernews_client.httpx.AsyncClient"
+        ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.side_effect = httpx.TimeoutException("timed out")
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
@@ -100,7 +108,9 @@ class TestFetchStories:
                 await client.fetch_stories("cyber", 10, 30)
 
     async def test_connection_error_raises(self) -> None:
-        with patch("src.services.hackernews_client.httpx.AsyncClient") as mock_cls:
+        with patch(
+            "src.services.trends.hackernews_client.httpx.AsyncClient"
+        ) as mock_cls:
             mock_client = AsyncMock()
             mock_client.get.side_effect = httpx.ConnectError("refused")
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)

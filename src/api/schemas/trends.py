@@ -1,76 +1,32 @@
-from typing import Literal
-
 from pydantic import BaseModel, Field
 
 from src.api.schemas.topics import RawTopic
 
 
-class HNFetchRequest(BaseModel):
+class TrendFetchRequest(BaseModel):
+    """Request body for the unified trend fetch endpoint."""
+
     domain_keywords: list[str] = Field(min_length=1)
     max_results: int = Field(default=30, ge=1, le=100)
-    min_points: int = Field(default=10, ge=0)
-
-
-class HNFetchResponse(BaseModel):
-    topics: list[RawTopic]
-    total_fetched: int
-    total_after_filter: int
-
-
-class GTFetchRequest(BaseModel):
-    domain_keywords: list[str] = Field(min_length=1)
-    country: str = Field(default="united_states")
-    max_results: int = Field(default=30, ge=1, le=100)
-
-
-class GTFetchResponse(BaseModel):
-    topics: list[RawTopic]
-    total_trending: int
-    total_related: int
-    total_after_filter: int
-
-
-class RedditFetchRequest(BaseModel):
-    domain_keywords: list[str] = Field(min_length=1)
-    subreddits: list[str] | None = Field(
+    sources: list[str] | None = Field(
         default=None,
-        max_length=20,
+        description="Sources to query. None = all active sources.",
     )
-    max_results: int = Field(default=20, ge=1, le=100)
-    sort: Literal["hot", "top", "new", "rising"] = "hot"
-    time_filter: Literal["hour", "day", "week"] = "day"
 
 
-class RedditFetchResponse(BaseModel):
+class SourceResult(BaseModel):
+    """Per-source result metadata."""
+
+    source_name: str
     topics: list[RawTopic]
-    total_fetched: int
-    total_after_dedup: int
-    total_after_filter: int
-    subreddits_scanned: int
+    topic_count: int
+    duration_ms: int
+    error: str | None = None
 
 
-class NewsAPIFetchRequest(BaseModel):
-    domain_keywords: list[str] = Field(min_length=1)
-    max_results: int = Field(default=30, ge=1, le=100)
-    category: str = Field(default="technology")
-    country: str = Field(default="us")
+class TrendFetchResponse(BaseModel):
+    """Unified response combining results from multiple sources."""
 
-
-class NewsAPIFetchResponse(BaseModel):
     topics: list[RawTopic]
-    total_fetched: int
-    total_after_filter: int
-
-
-class ArxivFetchRequest(BaseModel):
-    domain_keywords: list[str] = Field(min_length=1)
-    categories: list[str] = Field(
-        default=["cs.CR", "cs.AI", "cs.LG"],
-    )
-    max_results: int = Field(default=30, ge=1, le=100)
-
-
-class ArxivFetchResponse(BaseModel):
-    topics: list[RawTopic]
-    total_fetched: int
-    total_after_filter: int
+    sources_queried: list[str]
+    source_results: dict[str, SourceResult]

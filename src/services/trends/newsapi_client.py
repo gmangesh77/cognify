@@ -2,6 +2,8 @@ from typing import TypedDict
 
 import httpx
 
+from src.services.trends.protocol import TrendSourceError
+
 
 class NewsAPISource(TypedDict):
     id: str | None
@@ -19,11 +21,11 @@ class NewsAPIArticle(TypedDict):
     content: str | None
 
 
-class NewsAPIError(Exception):
+class NewsAPIError(TrendSourceError):
     """Raised when the NewsAPI is unreachable or returns an error."""
 
     def __init__(self, message: str) -> None:
-        super().__init__(message)
+        super().__init__("newsapi", message)
 
 
 class NewsAPIClient:

@@ -2,9 +2,11 @@ from datetime import UTC, datetime
 
 import pytest
 
-from src.services.reddit import RedditService
-from src.services.reddit_client import RedditAPIError, RedditPostResponse
-from tests.unit.services.conftest import MockRedditClient
+from src.services.trends._dedup import deduplicate_crossposts
+from src.services.trends.protocol import TrendFetchConfig
+from src.services.trends.reddit import RedditFetchDefaults, RedditService
+from src.services.trends.reddit_client import RedditAPIError, RedditPostResponse
+from tests.unit.services.trends.conftest import MockRedditClient
 
 
 def _post(**overrides: object) -> RedditPostResponse:
@@ -128,7 +130,7 @@ class TestCrosspostDedup:
                 subreddit="sub1",
             ),
         ]
-        deduped, count = RedditService.deduplicate_crossposts(posts)
+        deduped, count = deduplicate_crossposts(posts)
         assert len(deduped) == 2
         # The parent_1 group kept highest score (200)
         parent_group = [p for p in deduped if p["crosspost_parent"] == "parent_1"]
@@ -154,7 +156,7 @@ class TestCrosspostDedup:
                 id="3", title="Completely different topic", score=50, subreddit="sub1"
             ),
         ]
-        deduped, count = RedditService.deduplicate_crossposts(posts)
+        deduped, count = deduplicate_crossposts(posts)
         assert len(deduped) == 2
         # Similar titles merged, highest score kept
         breach_post = [p for p in deduped if "breach" in p["title"]]
@@ -168,12 +170,12 @@ class TestCrosspostDedup:
             _post(id="2", title="New Python framework released today", score=200),
             _post(id="3", title="Machine learning advances in healthcare", score=300),
         ]
-        deduped, count = RedditService.deduplicate_crossposts(posts)
+        deduped, count = deduplicate_crossposts(posts)
         assert len(deduped) == 3
         assert count == 0
 
     def test_empty_input(self) -> None:
-        deduped, count = RedditService.deduplicate_crossposts([])
+        deduped, count = deduplicate_crossposts([])
         assert deduped == []
         assert count == 0
 
@@ -202,7 +204,7 @@ class TestCrosspostDedup:
                 subreddit="sub3",
             ),
         ]
-        deduped, count = RedditService.deduplicate_crossposts(posts)
+        deduped, count = deduplicate_crossposts(posts)
         assert len(deduped) == 1
         assert count == 2  # 3 posts -> 1 = 2 removed
 
@@ -365,37 +367,30 @@ class TestFetchAndNormalize:
             ],
         }
         mock_client = MockRedditClient(posts=posts)
+        defaults = RedditFetchDefaults(subreddits=["cybersecurity", "netsec"])
         service = RedditService(
             client=mock_client,
             score_cap=1000.0,
+            defaults=defaults,
         )
         result = await service.fetch_and_normalize(
-            domain_keywords=["cyber", "security"],
-            subreddits=["cybersecurity", "netsec"],
-            max_results=20,
-            sort="hot",
-            time_filter="day",
+            TrendFetchConfig(domain_keywords=["cyber", "security"], max_results=20),
         )
-        assert result.total_fetched == 3
-        assert result.subreddits_scanned == 2
-        assert result.total_after_filter >= 1  # at least cyber/security posts match
-        assert all(t.source == "reddit" for t in result.topics)
+        assert len(result) >= 1  # at least cyber/security posts match
+        assert all(t.source == "reddit" for t in result)
 
     async def test_empty_results(self) -> None:
         mock_client = MockRedditClient(posts={})
+        defaults = RedditFetchDefaults(subreddits=["empty"])
         service = RedditService(
             client=mock_client,
             score_cap=1000.0,
+            defaults=defaults,
         )
         result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            subreddits=["empty"],
-            max_results=20,
-            sort="hot",
-            time_filter="day",
+            TrendFetchConfig(domain_keywords=["cyber"], max_results=20),
         )
-        assert result.total_fetched == 0
-        assert result.topics == []
+        assert result == []
 
     async def test_no_matches_after_filter(self) -> None:
         posts: dict[str, list[RedditPostResponse]] = {
@@ -404,23 +399,19 @@ class TestFetchAndNormalize:
             ],
         }
         mock_client = MockRedditClient(posts=posts)
+        defaults = RedditFetchDefaults(subreddits=["cooking"])
         service = RedditService(
             client=mock_client,
             score_cap=1000.0,
+            defaults=defaults,
         )
         result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            subreddits=["cooking"],
-            max_results=20,
-            sort="hot",
-            time_filter="day",
+            TrendFetchConfig(domain_keywords=["cyber"], max_results=20),
         )
-        assert result.total_fetched == 1
-        assert result.total_after_filter == 0
-        assert result.topics == []
+        assert result == []
 
     async def test_crosspost_dedup_in_pipeline(self) -> None:
-        """Same crosspost_parent across subreddits -> deduped."""
+        """Same crosspost_parent across subreddits -> deduped to 1 topic."""
         posts: dict[str, list[RedditPostResponse]] = {
             "cybersecurity": [
                 _post(
@@ -442,19 +433,16 @@ class TestFetchAndNormalize:
             ],
         }
         mock_client = MockRedditClient(posts=posts)
+        defaults = RedditFetchDefaults(subreddits=["cybersecurity", "netsec"])
         service = RedditService(
             client=mock_client,
             score_cap=1000.0,
+            defaults=defaults,
         )
         result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            subreddits=["cybersecurity", "netsec"],
-            max_results=20,
-            sort="hot",
-            time_filter="day",
+            TrendFetchConfig(domain_keywords=["cyber"], max_results=20),
         )
-        assert result.total_fetched == 2
-        assert result.total_after_dedup == 1
+        assert len(result) == 1
 
     async def test_partial_subreddit_failure(self) -> None:
         """One subreddit fails, others still processed."""
@@ -482,16 +470,12 @@ class TestFetchAndNormalize:
             ],
         }
         client = PartialFailClient(posts=posts)
-        service = RedditService(client=client, score_cap=1000.0)
+        defaults = RedditFetchDefaults(subreddits=["cybersecurity", "private_sub"])
+        service = RedditService(client=client, score_cap=1000.0, defaults=defaults)
         result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
-            subreddits=["cybersecurity", "private_sub"],
-            max_results=20,
-            sort="hot",
-            time_filter="day",
+            TrendFetchConfig(domain_keywords=["cyber"], max_results=20),
         )
-        assert result.subreddits_scanned == 1
-        assert result.total_fetched == 1
+        assert len(result) >= 1
 
     async def test_all_subreddits_fail_raises(self) -> None:
         """All subreddits fail -> RedditAPIError raised."""
@@ -507,12 +491,9 @@ class TestFetchAndNormalize:
                 raise RedditAPIError("API down")
 
         client = AllFailClient(posts={})
-        service = RedditService(client=client, score_cap=1000.0)
+        defaults = RedditFetchDefaults(subreddits=["sub1", "sub2"])
+        service = RedditService(client=client, score_cap=1000.0, defaults=defaults)
         with pytest.raises(RedditAPIError, match="All subreddits failed"):
             await service.fetch_and_normalize(
-                domain_keywords=["cyber"],
-                subreddits=["sub1", "sub2"],
-                max_results=20,
-                sort="hot",
-                time_filter="day",
+                TrendFetchConfig(domain_keywords=["cyber"], max_results=20),
             )
