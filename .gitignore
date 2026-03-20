@@ -40,3 +40,6 @@ Thumbs.db
 .superpowers/
 private.pem
 public.pem
+
+# Generated
+project-management/dashboard.html
