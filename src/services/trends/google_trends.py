@@ -5,38 +5,41 @@ from urllib.parse import quote_plus
 import structlog
 
 from src.api.schemas.topics import RawTopic
-from src.api.schemas.trends import GTFetchResponse
-from src.services.google_trends_client import (
+from src.services.trends.google_trends_client import (
     GoogleTrendsClient,
     GTRelatedQuery,
     GTTrendingSearch,
 )
+from src.services.trends.protocol import TrendFetchConfig
 
 logger = structlog.get_logger()
 
 
 class GoogleTrendsService:
-    def __init__(self, client: GoogleTrendsClient) -> None:
+    def __init__(self, client: GoogleTrendsClient, country: str) -> None:
         self._client = client
+        self._country = country
+
+    @property
+    def source_name(self) -> str:
+        return "google_trends"
 
     async def fetch_and_normalize(
         self,
-        domain_keywords: list[str],
-        country: str,
-        max_results: int,
-    ) -> GTFetchResponse:
+        config: TrendFetchConfig,
+    ) -> list[RawTopic]:
         start = time.monotonic()
         logger.info(
             "google_trends_fetch_started",
-            domain_keywords=domain_keywords,
-            country=country,
-            max_results=max_results,
+            domain_keywords=config.domain_keywords,
+            country=self._country,
+            max_results=config.max_results,
         )
         trending = await self._client.fetch_trending_searches(
-            country,
+            self._country,
         )
         related = await self._client.fetch_related_queries(
-            domain_keywords,
+            config.domain_keywords,
         )
         total_trending = len(trending)
         total_related = len(related)
@@ -47,13 +50,13 @@ class GoogleTrendsService:
         ]
         filtered = self.filter_by_domain(
             all_items,
-            domain_keywords,
+            config.domain_keywords,
         )
         logger.debug(
             "google_trends_results_filtered",
             before_count=len(all_items),
             after_count=len(filtered),
-            domain_keywords=domain_keywords,
+            domain_keywords=config.domain_keywords,
         )
 
         topics: list[RawTopic] = []
@@ -69,7 +72,7 @@ class GoogleTrendsService:
 
         topics = self._deduplicate(topics)
         total_after_filter = len(topics)
-        topics = topics[:max_results]
+        topics = topics[: config.max_results]
 
         duration_ms = round(
             (time.monotonic() - start) * 1000,
@@ -81,12 +84,7 @@ class GoogleTrendsService:
             total_after_filter=total_after_filter,
             duration_ms=duration_ms,
         )
-        return GTFetchResponse(
-            topics=topics,
-            total_trending=total_trending,
-            total_related=total_related,
-            total_after_filter=total_after_filter,
-        )
+        return topics
 
     @staticmethod
     def _extract_type_value(

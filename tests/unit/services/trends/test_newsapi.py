@@ -1,9 +1,10 @@
 from datetime import UTC, datetime
 
 from src.api.schemas.topics import RawTopic
-from src.services.newsapi import NewsAPIService
-from src.services.newsapi_client import NewsAPIArticle
-from tests.unit.services.conftest import MockNewsAPIClient
+from src.services.trends.newsapi import NewsAPIService
+from src.services.trends.newsapi_client import NewsAPIArticle
+from src.services.trends.protocol import TrendFetchConfig
+from tests.unit.services.trends.conftest import MockNewsAPIClient
 
 
 def _article(**overrides: object) -> NewsAPIArticle:
@@ -224,58 +225,66 @@ class TestFetchAndNormalize:
             _article(title="Cooking recipes", url="https://b.com/2"),
         ]
         mock_client = MockNewsAPIClient(articles=articles)
-        service = NewsAPIService(client=mock_client)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
+        service = NewsAPIService(
+            client=mock_client,
             category="technology",
             country="us",
-            max_results=30,
         )
-        assert result.total_fetched == 2
-        assert result.total_after_filter == 1
-        assert len(result.topics) == 1
-        assert result.topics[0].title == "Cybersecurity breach"
+        result = await service.fetch_and_normalize(
+            TrendFetchConfig(domain_keywords=["cyber"], max_results=30),
+        )
+        assert len(result) == 1
+        assert result[0].title == "Cybersecurity breach"
 
     async def test_empty_articles(self) -> None:
         mock_client = MockNewsAPIClient(articles=[])
-        service = NewsAPIService(client=mock_client)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
+        service = NewsAPIService(
+            client=mock_client,
             category="technology",
             country="us",
-            max_results=30,
         )
-        assert result.total_fetched == 0
-        assert result.total_after_filter == 0
-        assert result.topics == []
+        result = await service.fetch_and_normalize(
+            TrendFetchConfig(domain_keywords=["cyber"], max_results=30),
+        )
+        assert result == []
 
     async def test_no_matches(self) -> None:
         articles = [_article(title="Cooking blog")]
         mock_client = MockNewsAPIClient(articles=articles)
-        service = NewsAPIService(client=mock_client)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
+        service = NewsAPIService(
+            client=mock_client,
             category="technology",
             country="us",
-            max_results=30,
         )
-        assert result.total_fetched == 1
-        assert result.total_after_filter == 0
+        result = await service.fetch_and_normalize(
+            TrendFetchConfig(domain_keywords=["cyber"], max_results=30),
+        )
+        assert result == []
 
     async def test_max_results_caps_fetch(self) -> None:
+        # Titles are deliberately distinct to survive fuzzy dedup
+        titles = [
+            "Cybersecurity breach hits major banks worldwide",
+            "Hacker group targets government cyber networks",
+            "New cyber malware discovered in firmware",
+            "Ransomware attack on healthcare cyber systems",
+            "Cybersecurity firm releases threat report",
+            "Zero-day exploit found in network software",
+            "AI-powered cyber defense tools launched",
+            "Phishing campaigns surge across industries",
+            "Critical infrastructure cyber vulnerability patched",
+            "Data breach exposes millions of records online",
+        ]
         articles = [
-            _article(
-                title=f"Cyber article {i}",
-                url=f"https://example.com/{i}",
-            )
-            for i in range(10)
+            _article(title=titles[i], url=f"https://example.com/{i}") for i in range(10)
         ]
         mock_client = MockNewsAPIClient(articles=articles)
-        service = NewsAPIService(client=mock_client)
-        result = await service.fetch_and_normalize(
-            domain_keywords=["cyber"],
+        service = NewsAPIService(
+            client=mock_client,
             category="technology",
             country="us",
-            max_results=3,
         )
-        assert result.total_fetched == 3
+        result = await service.fetch_and_normalize(
+            TrendFetchConfig(domain_keywords=["cyber"], max_results=3),
+        )
+        assert len(result) == 3
