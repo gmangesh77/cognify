@@ -1,6 +1,7 @@
 """Unit tests for the unified /trends/fetch endpoint."""
+
 from collections.abc import AsyncGenerator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -26,7 +27,7 @@ def _make_raw_topic(title: str = "Test Topic", source: str = "fake") -> RawTopic
         source=source,
         external_url="https://example.com",
         trend_score=50.0,
-        discovered_at=datetime(2026, 3, 20, tzinfo=timezone.utc),
+        discovered_at=datetime(2026, 3, 20, tzinfo=UTC),
     )
 
 

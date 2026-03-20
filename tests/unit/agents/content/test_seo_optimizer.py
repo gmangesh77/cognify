@@ -23,7 +23,10 @@ def _seo_json() -> str:
     return json.dumps(
         {
             "title": "Test Article About AI Security Trends",
-            "description": "A comprehensive analysis of emerging AI security threats and mitigation strategies for 2026.",
+            "description": (
+                "A comprehensive analysis of emerging AI security"
+                " threats and mitigation strategies for 2026."
+            ),
             "keywords": [
                 "AI security",
                 "cybersecurity",

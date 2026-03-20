@@ -8,8 +8,8 @@ from pydantic import ValidationError
 
 from src.models.content import (
     Provenance,
-    SEOMetadata,
     SchemaOrgAuthor,
+    SEOMetadata,
     StructuredDataLD,
 )
 from src.models.content_pipeline import (
@@ -19,9 +19,9 @@ from src.models.content_pipeline import (
     CitationRef,
     DraftStatus,
     OutlineSection,
-    SEOResult,
     SectionDraft,
     SectionQueries,
+    SEOResult,
     SlopScore,
     Violation,
 )

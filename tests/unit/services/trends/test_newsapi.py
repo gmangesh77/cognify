@@ -276,8 +276,7 @@ class TestFetchAndNormalize:
             "Data breach exposes millions of records online",
         ]
         articles = [
-            _article(title=titles[i], url=f"https://example.com/{i}")
-            for i in range(10)
+            _article(title=titles[i], url=f"https://example.com/{i}") for i in range(10)
         ]
         mock_client = MockNewsAPIClient(articles=articles)
         service = NewsAPIService(

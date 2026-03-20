@@ -62,7 +62,10 @@ def _seo_json() -> str:
     return json.dumps(
         {
             "title": "Test SEO Title for the Article",
-            "description": "A test description that is long enough to pass validation for the SEO metadata.",
+            "description": (
+                "A test description that is long enough"
+                " to pass validation for the SEO metadata."
+            ),
             "keywords": ["test", "seo", "ai"],
         }
     )

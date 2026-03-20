@@ -120,43 +120,42 @@ class RedditService:
             domain_keywords=matched_keywords,
         )
 
-    async def fetch_and_normalize(
+    async def _collect_posts(
         self,
         config: TrendFetchConfig,
-    ) -> list[RawTopic]:
-        start = time.monotonic()
-        subreddits = self._defaults.subreddits
-        sort = self._defaults.sort
-        time_filter = self._defaults.time_filter
-        logger.info("reddit_fetch_started", domain_keywords=config.domain_keywords,
-                    subreddits=subreddits, max_results=config.max_results, sort=sort)
-
+    ) -> tuple[list[RedditPostResponse], int]:
+        """Fetch posts from all subreddits; return (posts, scanned_count)."""
         all_posts: list[RedditPostResponse] = []
         scanned = 0
-        for subreddit in subreddits:
+        for subreddit in self._defaults.subreddits:
             try:
                 posts = await self._client.fetch_subreddit_posts(
                     subreddit,
-                    sort,
-                    time_filter,
+                    self._defaults.sort,
+                    self._defaults.time_filter,
                     config.max_results,
                 )
                 all_posts.extend(posts)
                 scanned += 1
             except RedditAPIError:
-                logger.warning(
-                    "reddit_subreddit_failed",
-                    subreddit=subreddit,
-                )
-                continue
+                logger.warning("reddit_subreddit_failed", subreddit=subreddit)
+        return all_posts, scanned
 
+    async def fetch_and_normalize(
+        self,
+        config: TrendFetchConfig,
+    ) -> list[RawTopic]:
+        start = time.monotonic()
+        logger.info(
+            "reddit_fetch_started",
+            domain_keywords=config.domain_keywords,
+            subreddits=self._defaults.subreddits,
+            max_results=config.max_results,
+        )
+        all_posts, scanned = await self._collect_posts(config)
         if scanned == 0:
-            raise RedditAPIError(
-                "All subreddits failed",
-            )
-
+            raise RedditAPIError("All subreddits failed")
         total_fetched = len(all_posts)
-
         deduped, removed = deduplicate_crossposts(all_posts)
         logger.debug(
             "reddit_crossposts_deduped",
@@ -164,7 +163,6 @@ class RedditService:
             after_count=len(deduped),
             groups_merged=removed,
         )
-
         filtered = self.filter_by_domain(deduped, config.domain_keywords)
         logger.debug(
             "reddit_posts_filtered",
@@ -172,23 +170,18 @@ class RedditService:
             after_count=len(filtered),
             domain_keywords=config.domain_keywords,
         )
-
         topics = sorted(
-            [
-                self.map_to_raw_topic(
-                    post,
-                    kws,
-                    self._score_cap,
-                )
-                for post, kws in filtered
-            ],
+            [self.map_to_raw_topic(p, kws, self._score_cap) for p, kws in filtered],
             key=lambda t: t.trend_score,
             reverse=True,
         )
-
         duration_ms = round((time.monotonic() - start) * 1000)
-        logger.info("reddit_fetch_completed", total_fetched=total_fetched,
-                    total_after_dedup=len(deduped), total_after_filter=len(topics),
-                    subreddits_scanned=scanned, duration_ms=duration_ms)
-
+        logger.info(
+            "reddit_fetch_completed",
+            total_fetched=total_fetched,
+            total_after_dedup=len(deduped),
+            total_after_filter=len(topics),
+            subreddits_scanned=scanned,
+            duration_ms=duration_ms,
+        )
         return topics

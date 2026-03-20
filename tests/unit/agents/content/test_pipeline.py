@@ -160,7 +160,10 @@ def _seo_json() -> str:
     return json.dumps(
         {
             "title": "Test SEO Title for the Article",
-            "description": "A test description that is long enough to pass validation for the SEO metadata.",
+            "description": (
+                "A test description that is long enough"
+                " to pass validation for the SEO metadata."
+            ),
             "keywords": ["test", "seo", "ai"],
         }
     )
@@ -182,7 +185,8 @@ class TestContentPipelineWithSEO:
             _queries_json(2),  # queries for 2 sections
             "Draft section 0 [1].",  # draft section 0
             "Draft section 1 [1].",  # draft section 1
-            "Redrafted section with more words about the topic [1].",  # validate re-draft
+            # re-draft (word count validation)
+            "Redrafted section with more words about the topic [1].",
             _seo_json(),  # SEO metadata
             _discoverability_json(),  # AI discoverability
         ]
@@ -209,7 +213,8 @@ class TestContentPipelineWithSEO:
             _queries_json(2),
             "Draft section 0 [1].",
             "Draft section 1 [1].",
-            "Redrafted section with more words about the topic [1].",  # validate re-draft
+            # re-draft (word count validation)
+            "Redrafted section with more words about the topic [1].",
             "bad seo json",
             "bad seo json",  # retry also fails
         ]
@@ -237,7 +242,8 @@ class TestContentPipelineWithDrafting:
             _queries_json(2),  # query generation for 2 sections
             "Draft section 0 text with [1] citation.",  # draft section 0
             "Draft section 1 text with [1] citation about more.",  # draft section 1
-            "Redrafted section with more words about the topic [1].",  # validate re-draft
+            # re-draft (word count validation)
+            "Redrafted section with more words about the topic [1].",
             _seo_json(),  # SEO metadata
             _discoverability_json(),  # AI discoverability
         ]

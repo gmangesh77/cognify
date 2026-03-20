@@ -26,11 +26,13 @@ def _register_hackernews(registry: TrendSourceRegistry, settings: Settings) -> N
         base_url=settings.hn_api_base_url,
         timeout=settings.hn_request_timeout,
     )
-    registry.register(HackerNewsService(
-        client=client,
-        points_cap=settings.hn_points_cap,
-        min_points=settings.hn_default_min_points,
-    ))
+    registry.register(
+        HackerNewsService(
+            client=client,
+            points_cap=settings.hn_points_cap,
+            min_points=settings.hn_default_min_points,
+        )
+    )
 
 
 def _register_google_trends(registry: TrendSourceRegistry, settings: Settings) -> None:
@@ -39,10 +41,12 @@ def _register_google_trends(registry: TrendSourceRegistry, settings: Settings) -
         timezone_offset=settings.gt_timezone_offset,
         timeout=settings.gt_request_timeout,
     )
-    registry.register(GoogleTrendsService(
-        client=client,
-        country=settings.gt_default_country,
-    ))
+    registry.register(
+        GoogleTrendsService(
+            client=client,
+            country=settings.gt_default_country,
+        )
+    )
 
 
 def _register_reddit(registry: TrendSourceRegistry, settings: Settings) -> None:
@@ -57,11 +61,13 @@ def _register_reddit(registry: TrendSourceRegistry, settings: Settings) -> None:
         sort="hot",
         time_filter="day",
     )
-    registry.register(RedditService(
-        client=client,
-        score_cap=settings.reddit_score_cap,
-        defaults=defaults,
-    ))
+    registry.register(
+        RedditService(
+            client=client,
+            score_cap=settings.reddit_score_cap,
+            defaults=defaults,
+        )
+    )
 
 
 def _register_newsapi(registry: TrendSourceRegistry, settings: Settings) -> None:
@@ -70,11 +76,13 @@ def _register_newsapi(registry: TrendSourceRegistry, settings: Settings) -> None
         base_url=settings.newsapi_base_url,
         timeout=settings.newsapi_request_timeout,
     )
-    registry.register(NewsAPIService(
-        client=client,
-        category=settings.newsapi_default_category,
-        country=settings.newsapi_default_country,
-    ))
+    registry.register(
+        NewsAPIService(
+            client=client,
+            category=settings.newsapi_default_category,
+            country=settings.newsapi_default_country,
+        )
+    )
 
 
 def _register_arxiv(registry: TrendSourceRegistry, settings: Settings) -> None:
@@ -82,10 +90,12 @@ def _register_arxiv(registry: TrendSourceRegistry, settings: Settings) -> None:
         base_url=settings.arxiv_api_base_url,
         timeout=settings.arxiv_request_timeout,
     )
-    registry.register(ArxivService(
-        client=client,
-        categories=settings.arxiv_default_categories,
-    ))
+    registry.register(
+        ArxivService(
+            client=client,
+            categories=settings.arxiv_default_categories,
+        )
+    )
 
 
 def init_registry(settings: Settings) -> TrendSourceRegistry:

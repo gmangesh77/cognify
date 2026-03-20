@@ -16,7 +16,8 @@ class _FakeSource:
         return self._name
 
     async def fetch_and_normalize(
-        self, config: TrendFetchConfig,
+        self,
+        config: TrendFetchConfig,
     ) -> list[RawTopic]:
         return []
 
@@ -39,7 +40,9 @@ class TestTrendSourceRegistry:
         registry.register(_FakeSource("arxiv"))
         registry.register(_FakeSource("hackernews"))
         assert registry.available_sources() == [
-            "arxiv", "hackernews", "reddit",
+            "arxiv",
+            "hackernews",
+            "reddit",
         ]
 
     def test_get_all_returns_copy(self) -> None:

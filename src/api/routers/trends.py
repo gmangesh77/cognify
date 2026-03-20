@@ -22,7 +22,8 @@ trends_router = APIRouter()
 
 
 def _resolve_sources(
-    registry: TrendSourceRegistry, requested: list[str] | None,
+    registry: TrendSourceRegistry,
+    requested: list[str] | None,
 ) -> list[str]:
     """Resolve and validate requested source names."""
     sources = requested or registry.available_sources()
@@ -35,7 +36,9 @@ def _resolve_sources(
 
 
 async def _run_source(
-    source_name: str, registry: TrendSourceRegistry, config: TrendFetchConfig,
+    source_name: str,
+    registry: TrendSourceRegistry,
+    config: TrendFetchConfig,
 ) -> SourceResult:
     """Run a single source, capturing timing and errors."""
     source = registry.get(source_name)
