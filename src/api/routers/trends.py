@@ -37,7 +37,7 @@ from src.services.trends.newsapi_client import (
     NewsAPIClient,
     NewsAPIError,
 )
-from src.services.reddit import RedditService
+from src.services.trends.reddit import RedditFetchDefaults, RedditService
 from src.services.trends.reddit_client import (
     RedditAPIError,
     RedditClient,
@@ -151,9 +151,12 @@ def _get_reddit_service(request: Request) -> RedditService:
             user_agent=settings.reddit_user_agent,
             timeout=settings.reddit_request_timeout,
         )
+    subreddits = getattr(settings, "reddit_default_subreddits", [])
+    defaults = RedditFetchDefaults(subreddits=subreddits)
     return RedditService(
         client=client,
         score_cap=settings.reddit_score_cap,
+        defaults=defaults,
     )
 
 
@@ -168,16 +171,22 @@ async def fetch_reddit(
     body: RedditFetchRequest,
     user: TokenPayload = Depends(require_role("admin", "editor")),
 ) -> RedditFetchResponse:
-    settings = request.app.state.settings
-    subreddits = body.subreddits or settings.reddit_default_subreddits
+    from src.services.trends.protocol import TrendFetchConfig
+
     service = _get_reddit_service(request)
     try:
-        return await service.fetch_and_normalize(
-            domain_keywords=body.domain_keywords,
-            subreddits=subreddits,
-            max_results=body.max_results,
-            sort=body.sort,
-            time_filter=body.time_filter,
+        topics = await service.fetch_and_normalize(
+            TrendFetchConfig(
+                domain_keywords=body.domain_keywords,
+                max_results=body.max_results,
+            ),
+        )
+        return RedditFetchResponse(
+            topics=topics,
+            total_fetched=len(topics),
+            total_after_dedup=len(topics),
+            total_after_filter=len(topics),
+            subreddits_scanned=len(service._defaults.subreddits),
         )
     except RedditAPIError as exc:
         logger.error(
