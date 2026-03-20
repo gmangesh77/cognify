@@ -20,6 +20,7 @@ from src.api.middleware.security_headers import SecurityHeadersMiddleware
 from src.api.rate_limiter import limiter
 from src.api.routers.admin import admin_router
 from src.api.routers.articles import articles_router
+from src.api.routers.canonical_articles import canonical_articles_router
 from src.api.routers.auth import auth_router
 from src.api.routers.health import health_router
 from src.api.routers.research import research_router
@@ -187,6 +188,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
     )
     app.include_router(
         articles_router,
+        prefix=settings.api_v1_prefix,
+        tags=["articles"],
+    )
+    app.include_router(
+        canonical_articles_router,
         prefix=settings.api_v1_prefix,
         tags=["articles"],
     )
