@@ -20,7 +20,7 @@ Two-layer humanization: prompt engineering at generation time (Layer 1 preventio
 - LLM instructed to use natural conversational tone, vary sentence length, be specific not abstract
 
 #### Layer 2: Correction (humanize node)
-- New `humanize` pipeline node after `validate_article`, before `manage_citations`
+- New `humanize` pipeline node after `manage_citations`, before `seo_optimize`
 - Mechanical fixes: replace all em-dashes/en-dashes with periods or commas, strip hedge phrases
 - Slop scoring: detect phrase hits and structural patterns, score 0-100
 - LLM rewrite for sections scoring < 70 (single attempt, no retry loop)
