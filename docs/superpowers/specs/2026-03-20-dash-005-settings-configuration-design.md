@@ -66,7 +66,8 @@ Section header: "Domains" title + "+ Add Domain" secondary button (top-right).
 - Details row: Trend Sources, Keywords, Articles (3-column with uppercase labels)
 
 **Domain modal (Add/Edit):**
-- Props: `domain: DomainConfig | null` (null = add mode), `onSave`, `onClose`, `onDelete`
+- Props: `domain: DomainConfig | null` (null = add mode), `onClose: () => void`, `onSubmit: (action: DomainModalAction) => void`
+- `DomainModalAction = { type: "save"; data: Omit<DomainConfig, "id" | "articleCount"> } | { type: "delete"; id: string }`
 - Fields: Domain Name (text input), Trend Sources (checkboxes for 5 sources), Keywords (comma-separated text input), Status (Active/Inactive dropdown)
 - Delete button: only in edit mode, bottom-left, with confirmation ("Are you sure? This cannot be undone.")
 - Cancel + Save Domain buttons bottom-right
@@ -126,30 +127,53 @@ Changes auto-save with toast notification.
 
 ## 5. Types
 
+All settings types live in `frontend/src/types/settings.ts` (not `api.ts` — these are domain models, not API contracts).
+
 ```typescript
+import type { SourceName } from "./sources";
+
 type SettingsTab = "domains" | "llm" | "api-keys" | "seo" | "general";
+
+// --- Domain ---
 
 interface DomainConfig {
   id: string;
-  name: string;
+  name: string;                              // user-facing display name (e.g., "AI & Machine Learning")
   status: "active" | "inactive";
-  trendSources: string[];
+  trendSources: SourceName[];                // reuses existing SourceName type
   keywords: string[];
   articleCount: number;
 }
 
+// Note: DomainConfig.name is a free-text display name, distinct from the DomainName
+// type in domain.ts (which is a fixed key for colors/labels). Reconciliation between
+// user-created domains and the DomainName key system will happen when the backend
+// settings API is built.
+
+// --- API Keys ---
+
+type ApiKeyService = "anthropic" | "serpapi" | "ghost" | "newsapi" | "arxiv";
+
 interface ApiKeyConfig {
   id: string;
-  service: string;
+  service: ApiKeyService;
   maskedKey: string;
   status: "active" | "inactive";
 }
 
+// --- LLM ---
+
+type PrimaryModel = "claude-opus-4" | "claude-sonnet-4" | "gpt-4o";
+type DraftingModel = "claude-sonnet-4" | "claude-opus-4" | "gpt-4o-mini";
+type ImageModel = "stable-diffusion-xl" | "dall-e-3" | "midjourney";
+
 interface LlmConfig {
-  primaryModel: string;
-  draftingModel: string;
-  imageGeneration: string;
+  primaryModel: PrimaryModel;
+  draftingModel: DraftingModel;
+  imageGeneration: ImageModel;
 }
+
+// --- SEO ---
 
 interface SeoDefaults {
   autoMetaTags: boolean;
@@ -159,9 +183,14 @@ interface SeoDefaults {
   humanReviewBeforePublish: boolean;
 }
 
+// --- General ---
+
+type ArticleLength = "1000-2000" | "3000-5000" | "5000-8000";
+type ContentTone = "professional" | "casual" | "technical" | "educational";
+
 interface GeneralConfig {
-  articleLengthTarget: string;
-  contentTone: string;
+  articleLengthTarget: ArticleLength;
+  contentTone: ContentTone;
 }
 ```
 
@@ -207,12 +236,16 @@ SettingsPage
   ├── Header (title + subtitle)
   ├── SettingsNav (activeTab, onTabChange)
   └── Conditional render by activeTab:
-       ├── "domains" → DomainsTab (domains, addDomain, updateDomain, deleteDomain)
-       ├── "llm" → LlmConfigTab (llmConfig, updateLlmConfig)
-       ├── "api-keys" → ApiKeysTab (apiKeys, addApiKey, rotateApiKey)
-       ├── "seo" → SeoDefaultsTab (seoDefaults, toggleSeoDefault)
-       └── "general" → GeneralTab (generalConfig, updateGeneralConfig)
+       ├── "domains" → DomainsTab (domains, domainActions)
+       ├── "llm" → LlmConfigTab (config, onUpdate)
+       ├── "api-keys" → ApiKeysTab (keys, keyActions)
+       ├── "seo" → SeoDefaultsTab (defaults, onToggle)
+       └── "general" → GeneralTab (config, onUpdate)
 ```
+
+Each tab receives max 2-3 props. Domain and API key actions are grouped into single action objects:
+- `domainActions: { add, update, delete }`
+- `keyActions: { add, rotate }`
 
 ### 6.3 Toast Notifications
 
@@ -253,7 +286,8 @@ frontend/src/
     domains-tab.tsx + test                            — Domain list + add button
     llm-config-tab.tsx + test                         — 3 model dropdowns
     api-key-row.tsx + test                            — Single API key row
-    api-keys-tab.tsx + test                           — Key list + add modal
+    api-key-modal.tsx + test                          — Add API key form modal
+    api-keys-tab.tsx + test                           — Key list + add button
     seo-defaults-tab.tsx + test                       — 5 toggle switches
     general-tab.tsx + test                            — 2 config dropdowns
   components/ui/
@@ -264,10 +298,10 @@ frontend/src/
     settings.ts                                       — Mock settings data
 ```
 
-### Modified Files
+### New Type File
 
 ```
-frontend/src/types/api.ts                            — Add settings types
+frontend/src/types/settings.ts                       — All settings types (DomainConfig, ApiKeyConfig, etc.)
 ```
 
 ### Estimated Sizes
@@ -281,7 +315,8 @@ frontend/src/types/api.ts                            — Add settings types
 | `domains-tab.tsx` | ~50 |
 | `llm-config-tab.tsx` | ~50 |
 | `api-key-row.tsx` | ~50 |
-| `api-keys-tab.tsx` | ~70 |
+| `api-key-modal.tsx` | ~60 |
+| `api-keys-tab.tsx` | ~50 |
 | `seo-defaults-tab.tsx` | ~60 |
 | `general-tab.tsx` | ~45 |
 | `switch.tsx` | ~25 |
