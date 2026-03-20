@@ -75,3 +75,15 @@ class ContentDeps:
     llm: BaseChatModel
     retriever: MilvusRetriever | None = None
     settings: Settings | None = None
+
+
+def aggregate_citations(
+    drafts: list[object],
+) -> list[object]:
+    """Collect unique citations from all section drafts by URL."""
+    seen: dict[str, object] = {}
+    for d in drafts:
+        for c in getattr(d, "citations_used", []):
+            if c.source_url not in seen:
+                seen[c.source_url] = c
+    return list(seen.values())
