@@ -10,6 +10,7 @@ from uuid import UUID
 from langchain_core.language_models import BaseChatModel
 
 from src.config.settings import Settings
+from src.models.content import CanonicalArticle
 from src.models.content_pipeline import ArticleDraft
 from src.models.research_db import ResearchSession
 from src.services.milvus_retriever import MilvusRetriever
@@ -43,10 +44,28 @@ class InMemoryArticleDraftRepository:
         return draft
 
 
+class ArticleRepository(Protocol):
+    async def create(self, article: CanonicalArticle) -> CanonicalArticle: ...
+    async def get(self, article_id: UUID) -> CanonicalArticle | None: ...
+
+
+class InMemoryArticleRepository:
+    def __init__(self) -> None:
+        self._store: dict[UUID, CanonicalArticle] = {}
+
+    async def create(self, article: CanonicalArticle) -> CanonicalArticle:
+        self._store[article.id] = article
+        return article
+
+    async def get(self, article_id: UUID) -> CanonicalArticle | None:
+        return self._store.get(article_id)
+
+
 @dataclass(frozen=True)
 class ContentRepositories:
     drafts: ArticleDraftRepository
     research: ResearchSessionReader
+    articles: ArticleRepository
 
 
 @dataclass(frozen=True)

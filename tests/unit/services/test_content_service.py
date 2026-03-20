@@ -16,6 +16,7 @@ from src.services.content import (
     ContentRepositories,
     ContentService,
     InMemoryArticleDraftRepository,
+    InMemoryArticleRepository,
 )
 from src.services.content_repositories import ContentDeps
 from src.services.research import InMemoryResearchSessionRepository
@@ -98,6 +99,7 @@ async def _make_service(
     repos = ContentRepositories(
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
+        articles=InMemoryArticleRepository(),
     )
     deps = ContentDeps(llm=llm)
     return ContentService(repos, deps), session
@@ -163,6 +165,7 @@ async def _make_service_with_retriever(
     repos = ContentRepositories(
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
+        articles=InMemoryArticleRepository(),
     )
     retriever = AsyncMock()
     retriever.retrieve = AsyncMock(

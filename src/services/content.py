@@ -21,9 +21,11 @@ from src.models.research import FacetFindings, TopicInput
 from src.models.research_db import ResearchSession
 from src.services.content_repositories import (
     ArticleDraftRepository,
+    ArticleRepository,
     ContentDeps,
     ContentRepositories,
     InMemoryArticleDraftRepository,
+    InMemoryArticleRepository,
     ResearchSessionReader,
 )
 
@@ -32,10 +34,12 @@ logger = structlog.get_logger()
 # Re-export for backward compatibility
 __all__ = [
     "ArticleDraftRepository",
+    "ArticleRepository",
     "ContentDeps",
     "ContentRepositories",
     "ContentService",
     "InMemoryArticleDraftRepository",
+    "InMemoryArticleRepository",
     "ResearchSessionReader",
 ]
 
