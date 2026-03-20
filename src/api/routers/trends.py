@@ -32,7 +32,7 @@ from src.services.trends.hackernews_client import (
     HackerNewsAPIError,
     HackerNewsClient,
 )
-from src.services.newsapi import NewsAPIService
+from src.services.trends.newsapi import NewsAPIService
 from src.services.trends.newsapi_client import (
     NewsAPIClient,
     NewsAPIError,
@@ -199,7 +199,11 @@ async def fetch_reddit(
         ) from exc
 
 
-def _get_newsapi_service(request: Request) -> NewsAPIService:
+def _get_newsapi_service(
+    request: Request,
+    category: str,
+    country: str,
+) -> NewsAPIService:
     settings = request.app.state.settings
     if hasattr(request.app.state, "newsapi_client"):
         client = request.app.state.newsapi_client
@@ -209,7 +213,7 @@ def _get_newsapi_service(request: Request) -> NewsAPIService:
             base_url=settings.newsapi_base_url,
             timeout=settings.newsapi_request_timeout,
         )
-    return NewsAPIService(client=client)
+    return NewsAPIService(client=client, category=category, country=country)
 
 
 @limiter.limit("5/minute")
@@ -223,13 +227,20 @@ async def fetch_newsapi(
     body: NewsAPIFetchRequest,
     user: TokenPayload = Depends(require_role("admin", "editor")),
 ) -> NewsAPIFetchResponse:
-    service = _get_newsapi_service(request)
+    from src.services.trends.protocol import TrendFetchConfig
+
+    service = _get_newsapi_service(request, body.category, body.country)
     try:
-        return await service.fetch_and_normalize(
-            domain_keywords=body.domain_keywords,
-            category=body.category,
-            country=body.country,
-            max_results=body.max_results,
+        topics = await service.fetch_and_normalize(
+            TrendFetchConfig(
+                domain_keywords=body.domain_keywords,
+                max_results=body.max_results,
+            ),
+        )
+        return NewsAPIFetchResponse(
+            topics=topics,
+            total_fetched=len(topics),
+            total_after_filter=len(topics),
         )
     except NewsAPIError as exc:
         logger.error(

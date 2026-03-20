@@ -6,8 +6,8 @@ from difflib import SequenceMatcher
 import structlog
 
 from src.api.schemas.topics import RawTopic
-from src.api.schemas.trends import NewsAPIFetchResponse
 from src.services.trends.newsapi_client import NewsAPIArticle, NewsAPIClient
+from src.services.trends.protocol import TrendFetchConfig
 
 logger = structlog.get_logger()
 
@@ -16,8 +16,19 @@ _RECENCY_LAMBDA = math.log(2) / 6
 
 
 class NewsAPIService:
-    def __init__(self, client: NewsAPIClient) -> None:
+    def __init__(
+        self,
+        client: NewsAPIClient,
+        category: str,
+        country: str,
+    ) -> None:
         self._client = client
+        self._category = category
+        self._country = country
+
+    @property
+    def source_name(self) -> str:
+        return "newsapi"
 
     @staticmethod
     def calculate_score(
@@ -115,34 +126,31 @@ class NewsAPIService:
 
     async def fetch_and_normalize(
         self,
-        domain_keywords: list[str],
-        category: str,
-        country: str,
-        max_results: int,
-    ) -> NewsAPIFetchResponse:
+        config: TrendFetchConfig,
+    ) -> list[RawTopic]:
         start = time.monotonic()
         logger.info(
             "newsapi_fetch_started",
-            domain_keywords=domain_keywords,
-            category=category,
-            country=country,
-            max_results=max_results,
+            domain_keywords=config.domain_keywords,
+            category=self._category,
+            country=self._country,
+            max_results=config.max_results,
         )
         articles = await self._client.fetch_top_headlines(
-            category,
-            country,
-            max_results,
+            self._category,
+            self._country,
+            config.max_results,
         )
         total_fetched = len(articles)
         filtered = self.filter_by_domain(
             articles,
-            domain_keywords,
+            config.domain_keywords,
         )
         logger.debug(
             "newsapi_items_filtered",
             before_count=total_fetched,
             after_count=len(filtered),
-            domain_keywords=domain_keywords,
+            domain_keywords=config.domain_keywords,
         )
         now = datetime.now(UTC)
         topics: list[RawTopic] = []
@@ -180,8 +188,4 @@ class NewsAPIService:
             total_after_dedup=len(deduped),
             duration_ms=duration_ms,
         )
-        return NewsAPIFetchResponse(
-            topics=deduped,
-            total_fetched=total_fetched,
-            total_after_filter=len(topics),
-        )
+        return deduped
