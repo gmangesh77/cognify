@@ -373,8 +373,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 5
 - **Blocks**: CONTENT-005
 
-### CONTENT-005: CanonicalArticle Assembly [Must]
+### CONTENT-005: CanonicalArticle Assembly [Must] — DONE
 **As a** system, **I want** drafted sections assembled into a complete `CanonicalArticle`, **so that** the publishing pipeline has a single, validated, platform-neutral contract to consume.
+- **Status**: Done (branch `feature/CONTENT-005-canonical-article-assembly`, PR #25)
+- **Plan**: [`docs/superpowers/plans/2026-03-20-content-005-canonical-article-assembly.md`](../docs/superpowers/plans/2026-03-20-content-005-canonical-article-assembly.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-20-content-005-canonical-article-assembly-design.md`](../docs/superpowers/specs/2026-03-20-content-005-canonical-article-assembly-design.md)
 - **Acceptance Criteria**:
   - **Article body assembly**: Concatenate section drafts into `body_markdown` with proper heading hierarchy (H2 per section title, H3 for subsections) and a references section at the end
   - **Field population**: All `CanonicalArticle` fields populated — title, subtitle, body_markdown, summary (from CONTENT-003), key_claims (from CONTENT-003), content_type, seo (from CONTENT-003), citations (from CONTENT-004), visuals (empty list until VISUAL-001+), authors, domain, generated_at, provenance (from CONTENT-003), ai_generated

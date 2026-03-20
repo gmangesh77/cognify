@@ -96,7 +96,7 @@
 | CONTENT-002 | Section-by-Section Drafting | Done | `feature/CONTENT-002-section-drafting` | [plan](../docs/superpowers/plans/2026-03-19-content-002-section-drafting.md) | [spec](../docs/superpowers/specs/2026-03-19-content-002-section-drafting-design.md) |
 | CONTENT-003 | SEO & AI Discoverability    | Done | `feature/CONTENT-003-seo-ai-discoverability` | [plan](../docs/superpowers/plans/2026-03-19-content-003-seo-ai-discoverability.md) | [spec](../docs/superpowers/specs/2026-03-19-content-003-seo-ai-discoverability-design.md) |
 | CONTENT-004 | Citation Management         | Done | `feature/CONTENT-004-citation-management` | [plan](../docs/superpowers/plans/2026-03-19-content-004-citation-management.md) | [spec](../docs/superpowers/specs/2026-03-19-content-004-citation-management-design.md) |
-| CONTENT-005 | CanonicalArticle Assembly   | In Progress | `feature/CONTENT-005-canonical-article-assembly` | [plan](../docs/superpowers/plans/2026-03-20-content-005-canonical-article-assembly.md) | [spec](../docs/superpowers/specs/2026-03-20-content-005-canonical-article-assembly-design.md) |
+| CONTENT-005 | CanonicalArticle Assembly   | Done | `feature/CONTENT-005-canonical-article-assembly` | [plan](../docs/superpowers/plans/2026-03-20-content-005-canonical-article-assembly.md) | [spec](../docs/superpowers/specs/2026-03-20-content-005-canonical-article-assembly-design.md) |
 | CONTENT-006 | Content Humanization        | Done | `feature/CONTENT-006-content-humanization` | [plan](../docs/superpowers/plans/2026-03-20-content-006-content-humanization.md) | [spec](../docs/superpowers/specs/2026-03-20-content-006-content-humanization-design.md) |
 
 
