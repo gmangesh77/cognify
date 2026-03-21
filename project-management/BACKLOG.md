@@ -530,8 +530,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 5
 - **Design update (2026-03-18)**: Domain selector added to filter bar in Pencil design. "New Scan" button removed from Dashboard (was ambiguous without domain context); scan is initiated only from Topic Discovery with a selected domain.
 
-### DASH-003: Article View & Preview [Must]
+### DASH-003: Article View & Preview [Must] — DONE
 **As a** user, **I want** to preview generated articles with agent workflow details, **so that** I can review before publishing.
+- **Status**: Done (branch `feature/DASH-003-article-view-preview`, PR #27)
+- **Plan**: [`docs/superpowers/plans/2026-03-21-dash-003-article-view-preview.md`](../docs/superpowers/plans/2026-03-21-dash-003-article-view-preview.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-21-dash-003-article-view-preview-design.md`](../docs/superpowers/specs/2026-03-21-dash-003-article-view-preview-design.md)
 - **Acceptance Criteria**:
   - Full article preview with Markdown rendering
   - Side panel showing agent workflow steps with durations
