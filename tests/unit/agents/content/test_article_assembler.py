@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 
 from src.agents.content.article_assembler import assemble_canonical_article
-from src.models.content import CanonicalArticle, ContentType, Provenance, SEOMetadata
+from src.models.content import CanonicalArticle, ContentType, ImageAsset, Provenance, SEOMetadata
 from src.models.content_pipeline import (
     ArticleDraft,
     ArticleOutline,
@@ -160,6 +160,22 @@ class TestAssembleCanonicalArticle:
 
         assert article.provenance.primary_model == "claude-opus-4"
         assert article.provenance.drafting_model == "claude-sonnet-4"
+
+    def test_visuals_populated_from_parameter(self) -> None:
+        topic = _make_topic()
+        draft = _make_draft()
+        visuals = [
+            ImageAsset(url="/charts/test.png", caption="Test chart", alt_text="Chart"),
+        ]
+        article = assemble_canonical_article(draft, topic, visuals=visuals)
+        assert len(article.visuals) == 1
+        assert article.visuals[0].caption == "Test chart"
+
+    def test_visuals_default_to_empty(self) -> None:
+        topic = _make_topic()
+        draft = _make_draft()
+        article = assemble_canonical_article(draft, topic)
+        assert article.visuals == []
 
     def test_visuals_empty(self) -> None:
         article = assemble_canonical_article(_make_draft(), _make_topic())

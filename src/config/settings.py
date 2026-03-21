@@ -69,6 +69,11 @@ class Settings(BaseSettings):
     serpapi_base_url: str = "https://serpapi.com/search"
     serpapi_timeout: float = 10.0
     serpapi_results_per_query: int = 10
+    # Semantic Scholar integration
+    semantic_scholar_base_url: str = "https://api.semanticscholar.org"
+    semantic_scholar_api_key: str = ""
+    semantic_scholar_timeout: float = 10.0
+    semantic_scholar_results_per_query: int = 5
     # Milvus
     milvus_uri: str = "./milvus_data.db"
     milvus_collection_name: str = "research_chunks"
@@ -81,3 +86,5 @@ class Settings(BaseSettings):
     primary_model_name: str = "claude-sonnet-4"
     drafting_model_name: str = "claude-sonnet-4"
     embedding_version: str = "v1"
+    # Visual asset generation
+    chart_output_dir: str = "generated_assets/charts"

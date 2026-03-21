@@ -281,10 +281,13 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Knowledge base stats tracked (doc count, embedding count, storage size)
 - **Story Points**: 8
 
-### RESEARCH-004: Literature Review Agent [Should]
+### RESEARCH-004: Literature Review Agent [Should] — DONE
 **As a** research agent, **I want** to search arXiv and academic sources, **so that** articles include scholarly context.
+- **Status**: Done (branch `feature/RESEARCH-004-literature-review-agent`, PR #29)
+- **Plan**: [`docs/superpowers/plans/2026-03-21-research-004-literature-review-agent.md`](../docs/superpowers/plans/2026-03-21-research-004-literature-review-agent.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-21-research-004-literature-review-agent-design.md`](../docs/superpowers/specs/2026-03-21-research-004-literature-review-agent-design.md)
 - **Acceptance Criteria**:
-  - Searches arXiv API by topic keywords
+  - Searches arXiv API by topic keywords (via Semantic Scholar, which indexes all arXiv papers)
   - Extracts abstracts and key findings
   - Summarizes relevant papers with citations
 - **Story Points**: 5

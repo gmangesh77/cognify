@@ -26,6 +26,7 @@ from src.models.research import (
     EvaluationResult,
     FacetFindings,
     FacetTask,
+    ResearchFacet,
     ResearchPlan,
     TopicInput,
 )
@@ -154,10 +155,31 @@ def _validate_findings(state: ResearchState) -> list[FacetFindings]:
     ]
 
 
+async def _route_and_dispatch(
+    facets: list[ResearchFacet],
+    dispatcher: TaskDispatcher,
+    agent_fn: AgentFunction,
+    literature_agent_fn: AgentFunction | None,
+) -> list[FacetFindings]:
+    """Split facets by source_type, dispatch to correct agents."""
+    web_facets = [f for f in facets if f.source_type in ("web", "both")]
+    academic_facets = [f for f in facets if f.source_type in ("academic", "both")]
+
+    results: list[FacetFindings] = []
+    if web_facets:
+        results.extend(await dispatcher.dispatch(web_facets, agent_fn))
+    if academic_facets and literature_agent_fn is not None:
+        results.extend(await dispatcher.dispatch(academic_facets, literature_agent_fn))
+    elif academic_facets:
+        results.extend(await dispatcher.dispatch(academic_facets, agent_fn))
+    return results
+
+
 def build_graph(
     llm: BaseChatModel,
     dispatcher: TaskDispatcher,
     agent_fn: AgentFunction,
+    literature_agent_fn: AgentFunction | None = None,
     deps: GraphDeps | None = None,
 ) -> CompiledStateGraph:  # type: ignore[type-arg]
     """Build and compile the research orchestrator graph."""
@@ -202,14 +224,23 @@ def build_graph(
             step = await _record_step(step_repo, state["session_id"], step_name)
             facet_steps.append(step)
 
-        # Preserve parallel batch dispatch
-        results = await dispatcher.dispatch(facets, agent_fn)
+        # Use route_and_dispatch for web/academic facet routing
+        results = await _route_and_dispatch(
+            facets, dispatcher, agent_fn, literature_agent_fn
+        )
 
-        # Complete each facet step after batch finishes
-        for step, result, facet in zip(facet_steps, results, facets, strict=True):
+        # Complete each facet step — match results by facet_index
+        # (results may differ in count from facets due to routing)
+        results_by_index: dict[int, list[FacetFindings]] = {}
+        for r in results:
+            results_by_index.setdefault(r.facet_index, []).append(r)
+        for step, facet in zip(facet_steps, facets, strict=True):
+            facet_results = results_by_index.get(facet.index, [])
+            total_sources = sum(len(r.sources) for r in facet_results)
+            total_claims = sum(len(r.claims) for r in facet_results)
             await _complete_step(step_repo, step, {
-                "sources_found": len(result.sources),
-                "claims_extracted": len(result.claims),
+                "sources_found": total_sources,
+                "claims_extracted": total_claims,
                 "facet_title": facet.title,
             })
 

@@ -16,6 +16,7 @@ from langgraph.graph.state import CompiledStateGraph
 
 from src.agents.content.humanize_node import make_humanize_node
 from src.agents.content.nodes import (
+    make_chart_node,
     make_citations_node,
     make_draft_node,
     make_outline_node,
@@ -24,6 +25,7 @@ from src.agents.content.nodes import (
 )
 from src.agents.content.seo_node import make_seo_node
 from src.config.settings import Settings
+from src.models.content import ImageAsset
 from src.models.content_pipeline import (
     ArticleOutline,
     SectionDraft,
@@ -50,6 +52,7 @@ class ContentState(TypedDict):
     global_citations: NotRequired[list[dict[str, object]]]
     references_markdown: NotRequired[str]
     seo_result: NotRequired[SEOResult]
+    visuals: NotRequired[list[ImageAsset]]
 
 
 def build_content_graph(
@@ -72,6 +75,8 @@ def build_content_graph(
     graph.add_node("manage_citations", make_citations_node())
     graph.add_node("humanize", make_humanize_node(llm))
     graph.add_node("seo_optimize", make_seo_node(llm, settings))
+    chart_dir = settings.chart_output_dir if settings else "generated_assets/charts"
+    graph.add_node("generate_charts", make_chart_node(llm, chart_dir))
 
     graph.add_conditional_edges(
         "generate_outline",
@@ -87,7 +92,8 @@ def build_content_graph(
     graph.add_edge("validate_article", "manage_citations")
     graph.add_edge("manage_citations", "humanize")
     graph.add_edge("humanize", "seo_optimize")
-    graph.add_edge("seo_optimize", END)
+    graph.add_edge("seo_optimize", "generate_charts")
+    graph.add_edge("generate_charts", END)
 
     return graph.compile()
 

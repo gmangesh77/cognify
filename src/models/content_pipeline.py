@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from src.models.content import ContentType, Provenance, SEOMetadata
+from src.models.content import ContentType, ImageAsset, Provenance, SEOMetadata
 
 
 class DraftStatus(StrEnum):
@@ -125,3 +125,4 @@ class ArticleDraft(BaseModel):
     article_id: UUID | None = None
     global_citations: list[dict[str, object]] = Field(default_factory=list)
     references_markdown: str = ""
+    visuals: list[ImageAsset] = Field(default_factory=list)
