@@ -96,6 +96,28 @@ class TestGetTopic:
             await svc.get_topic(uuid4())
 
 
+class TestAgentStepRepository:
+    async def test_update_step(self) -> None:
+        from datetime import UTC, datetime
+        from src.models.research_db import AgentStep
+        repo = InMemoryAgentStepRepository()
+        session_id = uuid4()
+        step = AgentStep(
+            session_id=session_id,
+            step_name="plan_research",
+            status="running",
+            started_at=datetime.now(UTC),
+        )
+        created = await repo.create(step)
+        updated = created.model_copy(update={"status": "complete", "duration_ms": 1200})
+        result = await repo.update(updated)
+        assert result.status == "complete"
+        assert result.duration_ms == 1200
+        steps = await repo.list_by_session(session_id)
+        assert len(steps) == 1
+        assert steps[0].status == "complete"
+
+
 class TestListSessions:
     async def test_returns_paginated(self) -> None:
         topic_id = uuid4()

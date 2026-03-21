@@ -34,6 +34,7 @@ class ResearchSessionRepository(Protocol):
 
 class AgentStepRepository(Protocol):
     async def create(self, step: AgentStep) -> AgentStep: ...
+    async def update(self, step: AgentStep) -> AgentStep: ...
     async def list_by_session(self, session_id: UUID) -> list[AgentStep]: ...
 
 
@@ -77,6 +78,12 @@ class InMemoryAgentStepRepository:
 
     async def create(self, step: AgentStep) -> AgentStep:
         self._store.append(step)
+        return step
+
+    async def update(self, step: AgentStep) -> AgentStep:
+        self._store = [
+            step if s.id == step.id else s for s in self._store
+        ]
         return step
 
     async def list_by_session(self, session_id: UUID) -> list[AgentStep]:
