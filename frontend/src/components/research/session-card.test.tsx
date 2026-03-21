@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SessionCard } from "./session-card";
 import type { ResearchSessionSummary } from "@/types/research";
@@ -52,12 +53,12 @@ describe("SessionCard", () => {
     const { container: c1 } = render(
       <SessionCard session={completeSession} isExpanded={false} onToggle={() => {}} />,
     );
-    expect(c1.firstChild?.className).toContain("border-l-green-500");
+    expect((c1.firstChild as HTMLElement)?.className).toContain("border-l-green-500");
 
     const { container: c2 } = render(
       <SessionCard session={inProgressSession} isExpanded={false} onToggle={() => {}} />,
     );
-    expect(c2.firstChild?.className).toContain("border-l-amber-500");
+    expect((c2.firstChild as HTMLElement)?.className).toContain("border-l-amber-500");
   });
 
   it("renders children when expanded", () => {
