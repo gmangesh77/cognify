@@ -22,6 +22,7 @@ from src.models.research import (
     EvaluationResult,
     FacetFindings,
     FacetTask,
+    ResearchFacet,
     ResearchPlan,
     TopicInput,
 )
@@ -87,10 +88,31 @@ def _validate_findings(state: ResearchState) -> list[FacetFindings]:
     ]
 
 
+async def _route_and_dispatch(
+    facets: list[ResearchFacet],
+    dispatcher: TaskDispatcher,
+    agent_fn: AgentFunction,
+    literature_agent_fn: AgentFunction | None,
+) -> list[FacetFindings]:
+    """Split facets by source_type, dispatch to correct agents."""
+    web_facets = [f for f in facets if f.source_type in ("web", "both")]
+    academic_facets = [f for f in facets if f.source_type in ("academic", "both")]
+
+    results: list[FacetFindings] = []
+    if web_facets:
+        results.extend(await dispatcher.dispatch(web_facets, agent_fn))
+    if academic_facets and literature_agent_fn is not None:
+        results.extend(await dispatcher.dispatch(academic_facets, literature_agent_fn))
+    elif academic_facets:
+        results.extend(await dispatcher.dispatch(academic_facets, agent_fn))
+    return results
+
+
 def build_graph(
     llm: BaseChatModel,
     dispatcher: TaskDispatcher,
     agent_fn: AgentFunction,
+    literature_agent_fn: AgentFunction | None = None,
     indexing_deps: IndexingDeps | None = None,
 ) -> CompiledStateGraph:  # type: ignore[type-arg]
     """Build and compile the research orchestrator graph."""
@@ -110,7 +132,9 @@ def build_graph(
         else:
             facets = list(plan.facets)
 
-        results = await dispatcher.dispatch(facets, agent_fn)
+        results = await _route_and_dispatch(
+            facets, dispatcher, agent_fn, literature_agent_fn
+        )
 
         now = datetime.now(UTC)
         tasks = [
