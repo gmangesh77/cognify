@@ -102,7 +102,7 @@ export interface ResearchSessionSummary {
   started_at: string;
   // Frontend-only fields populated in mock data:
   topic_title?: string;       // TODO: backend doesn't return this — extend API or join client-side
-  duration_seconds?: number;  // TODO: backend only returns this in detail response
+  duration_seconds?: number | null;  // TODO: backend only returns this in detail response
 }
 
 export interface ResearchSessionDetail extends ResearchSessionSummary {

@@ -76,7 +76,7 @@ export interface ResearchSessionSummary {
   started_at: string;
   // Frontend-only fields populated in mock data:
   topic_title?: string; // TODO: backend doesn't return this — extend API or join client-side
-  duration_seconds?: number; // TODO: backend only returns this in detail response
+  duration_seconds?: number | null; // TODO: backend only returns this in detail response
 }
 
 export interface ResearchSessionDetail extends ResearchSessionSummary {
@@ -811,8 +811,8 @@ function getProgressPercent(session: ResearchSessionSummary): number {
   }
 }
 
-function formatDuration(seconds: number | undefined): string {
-  if (seconds === undefined) return "";
+function formatDuration(seconds: number | null | undefined): string {
+  if (seconds == null) return "";
   const mins = Math.floor(seconds / 60);
   const secs = Math.round(seconds % 60);
   if (mins === 0) return `${secs}s`;
