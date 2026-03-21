@@ -101,13 +101,13 @@ Package manager: **uv** — all commands use `uv run` prefix (no activation need
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** DASH-003 (Article View & Preview) — PR #27
-**Epic 6 (Dashboard):** DASH-001, DASH-002, DASH-003, DASH-005 Done — Next.js 15 frontend with Tailwind v4, 191 frontend tests. Topic Discovery + Article View (markdown + workflow + publish) + Settings.
+**Last completed:** DASH-004 (Research Sessions Screen) — PR #28
+**Epic 6 (Dashboard):** ALL 5 TICKETS DONE — **Epic complete.** Next.js 15 frontend with Tailwind v4, 220 frontend tests. Dashboard + Topic Discovery + Article View + Research Sessions + Settings.
 **Epic 3 (Content Gen):** ALL 6 TICKETS DONE — **Epic complete.** Full pipeline: outline → section drafting with RAG → validation → citation management → humanization → SEO + AI discoverability → CanonicalArticle assembly. Output: frozen CanonicalArticle ready for publishing.
 **Epic 8 (Architecture):** ARCH-001, ARCH-002 Done — CanonicalArticle contracts, TrendSource protocol & registry. Epic complete.
 **Epic 2 (Research):** RESEARCH-001, RESEARCH-002, RESEARCH-003 Done — orchestrator + web search + RAG pipeline
 **Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
 **Epic 1 (Trend Discovery):** All 6 tickets Done (TREND-001 through TREND-006) — Epic complete
 **Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
-**Test suite:** 737 backend tests + 191 frontend tests, ~98% coverage
-**Next action:** Epic 6 remaining: DASH-004 (Research Sessions). Or Epic 5 (Publishing) or Epic 2 (RESEARCH-004/005).
+**Test suite:** 737 backend tests + 220 frontend tests, ~98% coverage
+**Next action:** Epic 5 (Publishing) or Epic 2 (RESEARCH-004/005) or Epic 4 (Visual Assets).

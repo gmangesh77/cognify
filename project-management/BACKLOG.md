@@ -542,8 +542,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Publish action with platform selection
 - **Story Points**: 5
 
-### DASH-004: Research Sessions Screen [Should]
+### DASH-004: Research Sessions Screen [Should] — DONE
 **As a** user, **I want** to monitor active and past research sessions, **so that** I can track agent work.
+- **Status**: Done (branch `feature/DASH-004-research-sessions-screen`, PR #28)
+- **Plan**: [`docs/superpowers/plans/2026-03-21-dash-004-research-sessions-screen.md`](../docs/superpowers/plans/2026-03-21-dash-004-research-sessions-screen.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-21-dash-004-research-sessions-screen-design.md`](../docs/superpowers/specs/2026-03-21-dash-004-research-sessions-screen-design.md)
 - **Acceptance Criteria**:
   - List of sessions with status (queued, in progress, complete)
   - Progress bars for active sessions
