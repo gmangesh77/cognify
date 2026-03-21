@@ -6,6 +6,7 @@ export interface AgentStep {
   duration_ms: number | null;
   started_at: string;
   completed_at: string | null;
+  output_summary: string | null;
 }
 
 export interface ResearchSessionSummary {
@@ -14,14 +15,14 @@ export interface ResearchSessionSummary {
   status: SessionStatus;
   round_count: number;
   findings_count: number;
+  sources_count: number;
+  embeddings_count: number;
+  topic_title: string;
+  duration_seconds: number | null;
   started_at: string;
-  // Frontend-only fields populated in mock data:
-  topic_title?: string; // TODO: backend doesn't return this — extend API or join client-side
-  duration_seconds?: number | null; // TODO: backend only returns this in detail response
 }
 
 export interface ResearchSessionDetail extends ResearchSessionSummary {
-  duration_seconds: number | null;
   completed_at: string | null;
   steps: AgentStep[];
 }

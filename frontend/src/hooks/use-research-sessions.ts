@@ -1,26 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import type {
-  PaginatedResearchSessions,
   ResearchSessionDetail,
   SessionStatus,
 } from "@/types/research";
-import { getMockSessions, mockSessionDetails } from "@/lib/mock/research-sessions";
-
-async function fetchSessions(
-  status?: SessionStatus,
-  page = 1,
-  size = 10,
-): Promise<PaginatedResearchSessions> {
-  // TODO: Replace with GET /api/v1/research/sessions?status=...&page=...&size=...
-  return getMockSessions(status, page, size);
-}
-
-async function fetchSessionDetail(
-  sessionId: string,
-): Promise<ResearchSessionDetail | undefined> {
-  // TODO: Replace with GET /api/v1/research/sessions/{sessionId}
-  return mockSessionDetails[sessionId];
-}
+import { fetchSessions, fetchSessionDetail } from "@/lib/api/research";
 
 export function useResearchSessions(
   status?: SessionStatus,
@@ -40,7 +23,8 @@ export function useResearchSession(sessionId: string | null) {
     queryFn: () => fetchSessionDetail(sessionId!),
     enabled: sessionId !== null,
     refetchInterval: (query) => {
-      const status = query.state.data?.status;
+      const status = (query.state.data as ResearchSessionDetail | undefined)
+        ?.status;
       if (status === "planning" || status === "in_progress") return 10_000;
       return false;
     },

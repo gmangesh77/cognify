@@ -9,6 +9,8 @@ const completeSession: ResearchSessionSummary = {
   status: "complete",
   round_count: 3,
   findings_count: 12,
+  sources_count: 8,
+  embeddings_count: 24,
   started_at: "2026-03-20T10:00:00Z",
   topic_title: "AI Security Trends 2026",
   duration_seconds: 272,
