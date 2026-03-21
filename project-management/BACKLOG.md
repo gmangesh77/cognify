@@ -548,8 +548,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Data source connectors with connection status
 - **Story Points**: 5
 
-### DASH-005: Settings & Configuration [Must]
+### DASH-005: Settings & Configuration [Must] — DONE
 **As an** admin, **I want** to configure domain focus, LLM models, API keys, and SEO defaults, **so that** the system is customizable.
+- **Status**: Done (branch `feature/DASH-005-settings-configuration`, PR #26)
+- **Plan**: [`docs/superpowers/plans/2026-03-21-dash-005-settings-configuration.md`](../docs/superpowers/plans/2026-03-21-dash-005-settings-configuration.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-20-dash-005-settings-configuration-design.md`](../docs/superpowers/specs/2026-03-20-dash-005-settings-configuration-design.md)
 - **Acceptance Criteria**:
   - General settings: domain focus, article length target, content tone
   - LLM configuration: primary model, drafting model, image model
