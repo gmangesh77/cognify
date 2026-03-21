@@ -615,6 +615,41 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 
 ---
 
+## Epic 9: Infrastructure & Integration
+**Goal**: Replace in-memory stubs with real PostgreSQL persistence and wire frontend to backend APIs.
+
+### INFRA-001: PostgreSQL Persistence Layer [Must]
+**As a** developer, **I want** all in-memory repositories replaced with PostgreSQL-backed implementations, **so that** data survives server restarts and the system is production-ready.
+- **Acceptance Criteria**:
+  - SQLAlchemy models for: Topic, ResearchSession, AgentStep, ArticleDraft, CanonicalArticle
+  - PostgreSQL-backed repository implementations replacing all `InMemory*Repository` classes
+  - Alembic migrations for all tables
+  - `TopicRepository` persists scanned topics from `/trends/fetch` + `/topics/rank` flow
+  - `ResearchSessionRepository` persists sessions and agent steps
+  - `ArticleDraftRepository` persists drafts through pipeline stages
+  - `ArticleRepository` persists finalized CanonicalArticles
+  - Replace `MemorySaver` with `PostgresSaver` in LangGraph orchestrator
+  - All existing tests continue to pass (in-memory repos used in test fixtures)
+  - Docker Compose includes PostgreSQL 16 service for local dev
+- **Story Points**: 13
+- **Blocks**: INFRA-002
+
+### INFRA-002: Frontend-Backend API Integration [Must]
+**As a** user, **I want** all dashboard pages showing real data from the backend, **so that** the UI reflects actual system state.
+- **Acceptance Criteria**:
+  - Dashboard metrics (`/`) — aggregate real topic/article/session counts from backend
+  - Article list (`/articles`) — calls backend `GET /articles` endpoint (new endpoint needed)
+  - Article detail (`/articles/[id]`) — calls existing `GET /articles/{id}` instead of mock
+  - Settings (`/settings`) — calls backend settings CRUD endpoints (new endpoints needed)
+  - "Generate Article" button triggers real `POST /articles/generate` backend call
+  - All frontend hooks updated: no mock data imports remain in production code
+  - Mock data files retained for tests only
+  - Auth enforced: unauthenticated users redirected to `/login`
+- **Story Points**: 8
+- **Depends on**: INFRA-001
+
+---
+
 ## Backlog Summary
 
 | Epic | Must | Should | Could | Total Stories | Total Points |
@@ -628,4 +663,5 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 | Publishing | 2 | 1 | 2 | 5 | 23 |
 | Dashboard & Config | 4 | 1 | 0 | 5 | 31 |
 | API & Auth | 3 | 0 | 0 | 3 | 15 |
-| **Total** | **32** | **9** | **3** | **44** | **222** |
+| Infrastructure & Integration | 2 | 0 | 0 | 2 | 21 |
+| **Total** | **34** | **9** | **3** | **46** | **243** |

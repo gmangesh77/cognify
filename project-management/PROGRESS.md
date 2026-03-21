@@ -135,6 +135,17 @@
 | DASH-006 | Frontend-Backend API Integration | In Progress | `feature/DASH-006-frontend-api-integration` | — | — |
 
 
+## Epic 9: Infrastructure & Integration
+
+
+| Ticket    | Title                              | Status  | Branch | Plan | Spec |
+| --------- | ---------------------------------- | ------- | ------ | ---- | ---- |
+| INFRA-001 | PostgreSQL Persistence Layer       | Backlog | —      | —    | —    |
+| INFRA-002 | Frontend-Backend API Integration   | Backlog | —      | —    | —    |
+
+**Note:** DASH-006 (in progress) covers partial frontend wiring (topic scan). INFRA-002 covers the full scope after INFRA-001 provides real persistence.
+
+
 ---
 
 ## How to Update This File
