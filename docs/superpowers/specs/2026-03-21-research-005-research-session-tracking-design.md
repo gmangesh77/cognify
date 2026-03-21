@@ -30,10 +30,11 @@ Wire the existing research infrastructure end-to-end so sessions are trackable w
 2. Create `LangGraphResearchOrchestrator` with the configured LLM (or skip if no API key)
 3. Wire into `ResearchService`, attach to `app.state.research_service`
 
-**Config guard:** If `ANTHROPIC_API_KEY` is not configured, skip orchestrator init. Research endpoints return 503 Service Unavailable with a message indicating the research service is not configured.
+**Config guard:** If `ANTHROPIC_API_KEY` is not configured, skip orchestrator init. The `_get_research_service` dependency in `src/api/routers/research.py` must guard against missing `research_service` on `app.state` — use `hasattr(request.app.state, "research_service")` check and raise 503 `CognifyError` if absent (currently it would raise `AttributeError` → 500).
 
 **Files modified:**
 - `src/api/main.py` — add `_init_research_service()` helper
+- `src/api/routers/research.py` — add 503 guard in `_get_research_service`
 
 ## Section 2: Agent Step Tracking in Orchestrator
 
@@ -41,14 +42,27 @@ Wire the existing research infrastructure end-to-end so sessions are trackable w
 
 **Solution:** Instrument each graph node to create and update `AgentStep` records.
 
+### Repository Protocol Change
+
+The existing `AgentStepRepository` protocol (in `src/services/research.py`) only has `create` and `list_by_session`. An `update` method is required for the create-then-update step lifecycle:
+
+```python
+class AgentStepRepository(Protocol):
+    async def create(self, step: AgentStep) -> AgentStep: ...
+    async def update(self, step: AgentStep) -> AgentStep: ...  # NEW
+    async def list_by_session(self, session_id: UUID) -> list[AgentStep]: ...
+```
+
+`InMemoryAgentStepRepository` must implement `update` by finding the step by ID in its store and replacing it.
+
 ### Orchestrator Changes
 
 - Add `step_repo: AgentStepRepository | None` as an optional field on `LangGraphResearchOrchestrator`. When `None`, step tracking is silently skipped (preserves backward compatibility with existing tests).
 - Each graph node wraps its work with step lifecycle:
-  1. Create `AgentStep(status="in_progress", started_at=now())`
+  1. Create `AgentStep(status="in_progress", started_at=now())` via `step_repo.create()`
   2. Execute node logic
-  3. Update `AgentStep(status="complete", duration_ms=elapsed, output_data=summary_dict)`
-  4. On exception: `AgentStep(status="failed", output_data={"error": str(e)})`
+  3. Update `AgentStep(status="complete", duration_ms=elapsed, output_data=summary_dict)` via `step_repo.update()`
+  4. On exception: `step_repo.update()` with `status="failed"`, `output_data={"error": str(e)}`
 
 ### Steps Recorded Per Session
 
@@ -81,10 +95,25 @@ If `evaluate_completeness` triggers a retry (round 2), additional `research_face
 
 **Files modified:**
 - `src/agents/research/orchestrator.py` — add step_repo, instrument nodes
+- `src/services/research.py` — add `update` to `AgentStepRepository` protocol and in-memory impl
 
-## Section 3: API Response Enrichment
+## Section 3: Session Data Persistence & API Response Enrichment
 
-**Problem:** API responses don't carry source/embedding counts or step output summaries.
+### Problem 1: `_persist_success` gaps
+
+`ResearchService._persist_success()` does not populate `findings_count`, `round_count`, or `duration_seconds` on the `ResearchSession` model, even though these fields exist. Additionally, `indexed_count` is only in the LangGraph state — not on the session model.
+
+**Fix:**
+- Add `indexed_count: int = 0` field to `ResearchSession` in `src/models/research_db.py`
+- Modify `_persist_success` to extract from orchestrator result:
+  - `findings_count = len(result.get("findings", []))`
+  - `indexed_count = result.get("indexed_count", 0)`
+  - `round_count = result.get("round_number", 1)`
+  - `duration_seconds = (completed_at - session.started_at).total_seconds()`
+
+### Problem 2: API responses missing fields
+
+API responses don't carry source/embedding counts, step output summaries, or `topic_title`/`duration_seconds` in list responses.
 
 **Solution:** Additive changes to existing schemas.
 
@@ -92,24 +121,31 @@ If `evaluate_completeness` triggers a retry (round 2), additional `research_face
 
 **`ResearchSessionResponse`** (detail endpoint):
 - Already includes `steps: list[AgentStepResponse]` — works once real steps exist
-- Add `sources_count: int` — total sources found across all facets
-- Add `embeddings_count: int` — total embeddings created during indexing
+- Add `sources_count: int` — read from `session.findings_count`
+- Add `embeddings_count: int` — read from `session.indexed_count`
 
 **`ResearchSessionSummary`** (list endpoint items):
 - Add `sources_count: int`
 - Add `embeddings_count: int`
+- Add `topic_title: str` — already stored on `ResearchSession` model but not in list schema. Without this, session cards display UUIDs instead of topic names.
+- Add `duration_seconds: int | None` — already on the model but missing from list schema
 
 **`AgentStepResponse`**:
 - Already has `step_name`, `status`, `duration_ms`, `started_at`, `completed_at`
 - Add `output_summary: str | None` — human-readable one-liner derived from `output_data`
 
-### Count Computation
+### Count Source
 
-`sources_count` and `embeddings_count` are computed in `ResearchService.get_session()` and `list_sessions()` by reading from the session's `findings_count` and `indexed_count` fields (already populated by `run_and_finalize`).
+`sources_count` and `embeddings_count` are read directly from `ResearchSession.findings_count` and `ResearchSession.indexed_count` (stored on the model, populated by `_persist_success`). No per-request computation needed — avoids N+1 on the list endpoint.
+
+### Status Mapping Note
+
+The acceptance criteria list "queued" as a status, but the `ResearchSession` model uses `"planning"` as the initial status. `"planning"` serves the same purpose — the frontend `SessionStatusBadge` maps `"planning"` to a visual indicator. No new status value needed.
 
 **Files modified:**
-- `src/api/schemas/research.py` — add fields
-- `src/services/research.py` — compute counts in service methods
+- `src/models/research_db.py` — add `indexed_count` field
+- `src/services/research.py` — fix `_persist_success` to populate counts/duration
+- `src/api/schemas/research.py` — add fields to response schemas
 
 ## Section 4: Frontend Connection
 
@@ -127,11 +163,10 @@ If `evaluate_completeness` triggers a retry (round 2), additional `research_face
 
 ### API Client
 
-Add `researchApi` module following existing patterns in the frontend:
+Add `researchApi` module using the existing `apiClient` instance from `frontend/src/lib/api/client.ts` (not raw `fetch`) for consistency with auth token handling, interceptors, and base URL:
 - `fetchSessions(params)` — GET list with query params
 - `fetchSession(id)` — GET detail
 - `createSession(topicId)` — POST new session
-- Auth token handling (read from auth context/cookie)
 
 ### Type Updates
 
@@ -146,20 +181,42 @@ Transform from placeholder to computed stats display:
 - Total embeddings: sum of `embeddings_count` across all sessions
 - Data derived from the sessions list response (no new API call)
 
+### Frontend Step Label Updates
+
+The existing `STEP_LABELS` map in `session-steps.tsx` uses placeholder names (`web_search`, `evaluate`, `compile_results`) that don't match real orchestrator step names. Update to:
+- `plan_research` → "Plan Research"
+- `research_facet_*` → dynamic pattern: "Research: {facet_title}" (use regex match on step name)
+- `index_findings` → "Index Findings"
+- `evaluate_completeness` → "Evaluate Completeness"
+- `finalize` → "Finalize"
+
+### Output Summary Display
+
+The `SessionSteps` component currently only shows duration. Add `output_summary` rendering as a secondary line beneath each step (muted text, only when non-null). This gives users meaningful context like "Found 12 sources" or "3 facets planned".
+
+### Mock Data Cleanup
+
+Remove `frontend/src/lib/mock/research-sessions.ts` after hooks are connected to real API. Remove all mock data imports from hooks.
+
 **Files modified:**
-- `frontend/src/hooks/use-research-sessions.ts` — swap mock → fetch
+- `frontend/src/hooks/use-research-sessions.ts` — swap mock → real API
 - `frontend/src/types/research.ts` — add fields
 - `frontend/src/lib/api/research.ts` (new) — API client module
 - `frontend/src/components/research/knowledge-base-stub.tsx` — real stats
+- `frontend/src/components/research/session-steps.tsx` — update step labels + output_summary display
+- `frontend/src/lib/mock/research-sessions.ts` — delete
 
 ## Section 5: Testing Strategy
 
 ### Backend Unit Tests
 
 - **Step recording:** Verify each graph node creates an `AgentStep` with correct status, duration, and output summary. Test with mock `AgentStepRepository` to inspect created steps.
-- **Service enrichment:** `ResearchService.get_session()` returns `sources_count` and `embeddings_count` computed from step data.
+- **Step failure:** Verify that when a node raises an exception, the step is updated to `status="failed"` with error message before the exception propagates.
+- **Step repo failure:** If `step_repo.create()` or `step_repo.update()` itself fails, the error is logged but swallowed — step tracking failure must not break the research pipeline.
+- **`_persist_success`:** Verify `findings_count`, `indexed_count`, `round_count`, `duration_seconds` are populated from orchestrator result.
+- **Service enrichment:** `ResearchService.get_session()` returns `sources_count` and `embeddings_count` from session model fields.
 - **Schema serialization:** New fields serialize correctly in `ResearchSessionResponse` and `ResearchSessionSummary`.
-- **Config guard:** When no API key configured, research endpoints return 503.
+- **Config guard:** When no API key configured, research endpoints return 503 (not 500).
 
 ### Backend Integration Tests
 
@@ -183,13 +240,17 @@ Transform from placeholder to computed stats display:
 | File | Change Type | Description |
 |------|------------|-------------|
 | `src/api/main.py` | Modified | Add `_init_research_service()` in `create_app()` |
+| `src/api/routers/research.py` | Modified | Add 503 guard in `_get_research_service` |
+| `src/models/research_db.py` | Modified | Add `indexed_count` field |
+| `src/services/research.py` | Modified | Add `update` to step repo protocol; fix `_persist_success`; add count fields |
 | `src/agents/research/orchestrator.py` | Modified | Add `step_repo`, instrument all nodes |
-| `src/api/schemas/research.py` | Modified | Add count fields and `output_summary` |
-| `src/services/research.py` | Modified | Compute counts in service methods |
+| `src/api/schemas/research.py` | Modified | Add count fields, `output_summary`, `topic_title`, `duration_seconds` |
 | `frontend/src/hooks/use-research-sessions.ts` | Modified | Swap mock data → real API fetch |
 | `frontend/src/types/research.ts` | Modified | Add new fields |
 | `frontend/src/lib/api/research.ts` | New | Research API client module |
 | `frontend/src/components/research/knowledge-base-stub.tsx` | Modified | Real stats from session data |
+| `frontend/src/components/research/session-steps.tsx` | Modified | Update step labels + output_summary |
+| `frontend/src/lib/mock/research-sessions.ts` | Deleted | Remove mock data |
 | `tests/unit/agents/research/test_step_tracking.py` | New | Step recording unit tests |
 | `tests/unit/api/test_research_schemas.py` | New or modified | Schema serialization tests |
 | `tests/integration/test_research_session_tracking.py` | New | Full flow integration test |
