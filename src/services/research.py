@@ -180,18 +180,29 @@ class ResearchService:
         session = await self._repos.sessions.get(session_id)
         if not session:
             return
-        findings_raw = result.get("findings", []) if isinstance(result, dict) else []
+        result_dict = result if isinstance(result, dict) else {}
+        findings_raw = result_dict.get("findings", [])
         findings_data = [
             f.model_dump() if hasattr(f, "model_dump") else f for f in findings_raw
         ]
+        completed_at = datetime.now(UTC)
+        duration_seconds = (
+            (completed_at - session.started_at).total_seconds()
+            if session.started_at
+            else None
+        )
         updated = session.model_copy(
             update={
                 "status": "complete",
                 "findings_data": findings_data,
+                "findings_count": len(findings_raw),
+                "indexed_count": result_dict.get("indexed_count", 0),
+                "round_count": result_dict.get("round_number", 1),
+                "duration_seconds": duration_seconds,
                 "topic_title": topic.title,
                 "topic_description": topic.description,
                 "topic_domain": topic.domain,
-                "completed_at": datetime.now(UTC),
+                "completed_at": completed_at,
             }
         )
         await self._repos.sessions.update(updated)

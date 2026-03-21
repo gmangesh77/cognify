@@ -21,12 +21,13 @@ class FakeOrchestrator:
     def __init__(self, should_fail: bool = False) -> None:
         self.calls: list[tuple] = []
         self._should_fail = should_fail
+        self._result: dict = {"status": "complete"}
 
     async def run(self, session_id, topic):  # type: ignore[no-untyped-def]
         self.calls.append((session_id, topic))
         if self._should_fail:
             raise RuntimeError("Orchestrator failed")
-        return {"status": "complete"}
+        return self._result
 
 
 def _make_repos(
@@ -136,3 +137,37 @@ class TestListSessions:
         await svc.start_session(topic_id)
         result = await svc.list_sessions("complete", page=1, size=10)
         assert result.total == 0
+
+
+class TestRunAndFinalize:
+    async def test_persist_success_populates_counts(self) -> None:
+        topic_id = uuid4()
+        repos = _make_repos([topic_id])
+        orchestrator = FakeOrchestrator()
+        orchestrator._result = {
+            "status": "complete",
+            "findings": [{"facet_index": 0}, {"facet_index": 1}, {"facet_index": 2}],
+            "round_number": 2,
+            "indexed_count": 15,
+        }
+        svc = ResearchService(repos, orchestrator)
+        session = await svc.start_session(topic_id)
+        topic = await svc.get_topic(topic_id)
+        await svc.run_and_finalize(session.id, topic)
+        detail = await svc.get_session(session.id)
+        assert detail.session.status == "complete"
+        assert detail.session.findings_count == 3
+        assert detail.session.indexed_count == 15
+        assert detail.session.round_count == 2
+        assert detail.session.duration_seconds is not None
+        assert detail.session.duration_seconds >= 0
+
+    async def test_persist_failure_marks_failed(self) -> None:
+        topic_id = uuid4()
+        repos = _make_repos([topic_id])
+        svc = ResearchService(repos, FakeOrchestrator(should_fail=True))
+        session = await svc.start_session(topic_id)
+        topic = await svc.get_topic(topic_id)
+        await svc.run_and_finalize(session.id, topic)
+        detail = await svc.get_session(session.id)
+        assert detail.session.status == "failed"
