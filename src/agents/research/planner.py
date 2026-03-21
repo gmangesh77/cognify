@@ -18,7 +18,12 @@ logger = structlog.get_logger()
 _SYSTEM_PROMPT = (
     "You are a research planning assistant. Given a topic, generate a "
     "research plan with 3-5 facets. Each facet should cover a distinct "
-    "angle of the topic. Respond with valid JSON only."
+    "angle of the topic.\n\n"
+    "For each facet, set source_type to one of:\n"
+    '- "web": current events, industry news, practical guides\n'
+    '- "academic": research papers, methodologies, empirical studies\n'
+    '- "both": topics needing both web and scholarly sources\n\n'
+    "Respond with valid JSON only."
 )
 
 _USER_TEMPLATE = (
@@ -27,7 +32,8 @@ _USER_TEMPLATE = (
     "Description: {description}\n"
     "Domain: {domain}\n\n"
     'Return JSON: {{"facets": [{{"index": 0, "title": "...", '
-    '"description": "...", "search_queries": ["..."]}}], '
+    '"description": "...", "search_queries": ["..."], '
+    '"source_type": "web|academic|both"}}], '
     '"reasoning": "..."}}'
 )
 
