@@ -8,6 +8,7 @@ from starlette.status import HTTP_201_CREATED
 
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above, require_viewer_or_above
+from src.api.errors import ServiceUnavailableError
 from src.api.rate_limiter import limiter
 from src.api.schemas.research import (
     AgentStepResponse,
@@ -17,7 +18,6 @@ from src.api.schemas.research import (
     ResearchSessionResponse,
     ResearchSessionSummary,
 )
-from src.api.errors import ServiceUnavailableError
 from src.services.research import ResearchService
 
 logger = structlog.get_logger()
@@ -47,7 +47,7 @@ def _make_output_summary(output_data: dict[str, object]) -> str | None:
 def _get_research_service(request: Request) -> ResearchService:
     if not hasattr(request.app.state, "research_service"):
         raise ServiceUnavailableError(
-            message="Research service is not configured. Set ANTHROPIC_API_KEY to enable."
+            message="Research service not configured. Set ANTHROPIC_API_KEY."
         )
     return request.app.state.research_service  # type: ignore[no-any-return]
 

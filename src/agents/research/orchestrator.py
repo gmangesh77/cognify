@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Protocol as TypingProtocol
+from typing import TYPE_CHECKING
+from typing import Protocol as TypingProtocol
 from uuid import UUID
 
 import structlog
@@ -205,7 +206,7 @@ def build_graph(
         results = await dispatcher.dispatch(facets, agent_fn)
 
         # Complete each facet step after batch finishes
-        for step, result, facet in zip(facet_steps, results, facets):
+        for step, result, facet in zip(facet_steps, results, facets, strict=True):
             await _complete_step(step_repo, step, {
                 "sources_found": len(result.sources),
                 "claims_extracted": len(result.claims),
