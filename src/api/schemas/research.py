@@ -22,13 +22,18 @@ class AgentStepResponse(BaseModel):
     duration_ms: int | None
     started_at: datetime
     completed_at: datetime | None
+    output_summary: str | None = None
 
 
 class ResearchSessionResponse(BaseModel):
     session_id: UUID
+    topic_id: UUID
+    topic_title: str = ""
     status: str
     round_count: int
     findings_count: int
+    sources_count: int = 0
+    embeddings_count: int = 0
     duration_seconds: float | None
     started_at: datetime
     completed_at: datetime | None
@@ -41,6 +46,10 @@ class ResearchSessionSummary(BaseModel):
     status: str
     round_count: int
     findings_count: int
+    sources_count: int = 0
+    embeddings_count: int = 0
+    topic_title: str = ""
+    duration_seconds: float | None = None
     started_at: datetime
 
 
