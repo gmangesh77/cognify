@@ -629,6 +629,7 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - `ArticleDraftRepository` persists drafts through pipeline stages
   - `ArticleRepository` persists finalized CanonicalArticles
   - Replace `MemorySaver` with `PostgresSaver` in LangGraph orchestrator
+  - **Cross-scan dedup**: Before persisting scanned topics, check existing topics in DB by semantic similarity (cosine threshold 0.85, reusing TREND-006 embedding logic). If match found, upsert — update `trend_score`, `velocity`, `discovered_at`. If no match, insert as new topic. Prevents duplicate topics across repeated scans of the same domain.
   - All existing tests continue to pass (in-memory repos used in test fixtures)
   - Docker Compose includes PostgreSQL 16 service for local dev
 - **Story Points**: 13
