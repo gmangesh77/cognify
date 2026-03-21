@@ -32,6 +32,17 @@ def _plan_json(num_facets: int = 3) -> str:
     return json.dumps({"facets": facets, "reasoning": "Test reasoning"})
 
 
+def _plan_json_with_source_types() -> str:
+    return json.dumps({
+        "facets": [
+            {"index": 0, "title": "Recent incidents", "description": "Current events", "search_queries": ["recent incidents 2026"], "source_type": "web"},
+            {"index": 1, "title": "Detection methods", "description": "ML approaches", "search_queries": ["detection ML"], "source_type": "academic"},
+            {"index": 2, "title": "Mitigation strategies", "description": "Both practical and research", "search_queries": ["mitigation strategies"], "source_type": "both"},
+        ],
+        "reasoning": "Mixed plan",
+    })
+
+
 class TestGenerateResearchPlan:
     async def test_returns_plan_with_facets(self) -> None:
         llm = FakeListChatModel(responses=[_plan_json(3)])
@@ -58,3 +69,18 @@ class TestGenerateResearchPlan:
         llm = FakeListChatModel(responses=["bad1", "bad2"])
         with pytest.raises(ValueError, match="Failed to generate"):
             await generate_research_plan(_make_topic(), llm)
+
+
+class TestPlannerSourceType:
+    async def test_plan_includes_source_type(self) -> None:
+        llm = FakeListChatModel(responses=[_plan_json_with_source_types()])
+        plan = await generate_research_plan(_make_topic(), llm)
+        assert plan.facets[0].source_type == "web"
+        assert plan.facets[1].source_type == "academic"
+        assert plan.facets[2].source_type == "both"
+
+    async def test_default_source_type_is_web(self) -> None:
+        llm = FakeListChatModel(responses=[_plan_json(3)])
+        plan = await generate_research_plan(_make_topic(), llm)
+        for facet in plan.facets:
+            assert facet.source_type == "web"

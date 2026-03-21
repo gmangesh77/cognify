@@ -5,6 +5,7 @@ orchestrator. See the RESEARCH-001 spec for full design context.
 """
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -26,6 +27,7 @@ class ResearchFacet(BaseModel, frozen=True):
     title: str
     description: str
     search_queries: list[str]
+    source_type: Literal["web", "academic", "both"] = "web"
 
 
 class ResearchPlan(BaseModel, frozen=True):
