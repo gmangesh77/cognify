@@ -22,7 +22,9 @@ Chart generation is best-effort — if no chartable data is found or rendering f
 |----------|--------|-----------|
 | Chart data source | LLM reads drafted sections, proposes structured JSON chart specs | Section drafts are richer context than raw claims; LLM has creative freedom to pick best charts |
 | Charts per article | 0-3, best-effort | Not every article has chartable data; graceful degradation to zero |
-| Charting library | Matplotlib only | Static PNG output for articles; lightweight, no extra export deps. Plotly deferred to future ticket |
+| Charting library | Matplotlib only | Static PNG output for articles; lightweight, no extra export deps. Plotly deferred to VISUAL-003 |
+| Chart background | Transparent PNG | Matches backlog AC "Output as PNG with transparent background" |
+| Markdown embedding | Deferred — charts referenced via `visuals` list only | Embedding chart images inline in `body_markdown` requires section drafter template changes; deferred to future enhancement. Backlog AC "Embedded in Markdown with caption" partially met via `ImageAsset.caption`. |
 | Storage | Local filesystem (`generated_assets/charts/`) | Simple for dev; publishing pipeline (Epic 5) handles S3 upload later |
 | Pipeline position | After `seo_optimize`, before `END` | Needs full article context (drafts, SEO metadata) but doesn't modify text |
 
@@ -86,7 +88,17 @@ Add to `ContentState` TypedDict in `src/agents/content/pipeline.py`:
 visuals: NotRequired[list[ImageAsset]]
 ```
 
-### 4.3 Settings Update
+### 4.3 ArticleDraft Update
+
+Add to `ArticleDraft` in `src/models/content_pipeline.py`:
+
+```python
+visuals: list[ImageAsset] = Field(default_factory=list)
+```
+
+This field stores chart assets produced by the pipeline so they survive through `_store_drafted()` → `finalize_article()` → `assemble_canonical_article()`.
+
+### 4.4 Settings Update
 
 Add to `src/config/settings.py`:
 
@@ -107,6 +119,7 @@ Two focused functions:
 - Builds a prompt with all section draft text (titles + body_markdown)
 - Asks LLM to return a JSON array of 0-3 chart specs
 - Parses response, validates each spec via Pydantic
+- **Post-Pydantic validation**: checks `len(x_labels) == len(y_values)` and `source_section_index < len(section_drafts)`. Specs failing these checks are discarded.
 - Discards invalid specs with a warning log (structlog)
 - Returns valid specs (may be empty list)
 
@@ -138,7 +151,7 @@ Return ONLY a JSON array. No explanation.
   - **bar**: `plt.bar(x_labels, y_values)` with title, y_label, grid
   - **line**: `plt.plot(x_labels, y_values, marker='o')` with title, y_label, grid
   - **pie**: `plt.pie(y_values, labels=x_labels, autopct='%1.1f%%')` with title
-- Styling: clean white background, readable font sizes, tight layout
+- Styling: transparent background (`savefig(transparent=True)`), readable font sizes, tight layout
 - Saves as PNG (150 DPI) to `{output_dir}/{session_id}/{chart_id}.png`
 - Returns `ImageAsset(url=file_path, caption=spec.caption, alt_text=spec.title)`
 - On any rendering error: logs warning, returns `None`
@@ -157,12 +170,14 @@ def make_chart_node(llm: BaseChatModel, output_dir: str) -> Any:
         specs = await propose_charts(section_drafts, llm)
         visuals = []
         for spec in specs:
-            asset = render_chart(spec, output_dir, session_id)
+            asset = await asyncio.to_thread(render_chart, spec, output_dir, session_id)
             if asset is not None:
                 visuals.append(asset)
         return {"visuals": visuals}
     return chart_node
 ```
+
+Note: `render_chart` is synchronous (Matplotlib is not async-safe). Wrapped in `asyncio.to_thread()` to avoid blocking the event loop.
 
 ### 5.3 Modified File: `src/agents/content/pipeline.py`
 
@@ -198,20 +213,31 @@ def assemble_canonical_article(
 
 Default `None` → `[]` inside the function to maintain backward compatibility.
 
-### 5.5 Modified File: `src/services/content_finalize.py`
+### 5.5 Modified File: `src/services/content.py`
 
-Update `build_article` to pass visuals from the draft pipeline state:
+Update `_store_drafted()` to extract `visuals` from pipeline result and persist on the draft:
 
 ```python
-def build_article(
-    draft: ArticleDraft,
-    topic: TopicInput,
-    visuals: list[ImageAsset] | None = None,
-) -> CanonicalArticle:
-    return assemble_canonical_article(draft, topic, visuals)
+# In _store_drafted(), after existing field assignments:
+draft.visuals = result.get("visuals", [])
 ```
 
-### 5.6 Modified File: `pyproject.toml`
+This ensures visuals flow from `ContentState` → `ArticleDraft` → `assemble_canonical_article`.
+
+### 5.6 Modified File: `src/services/content_finalize.py`
+
+Update `build_article` to pass visuals from the draft:
+
+```python
+def build_article(draft: ArticleDraft, topic: TopicInput) -> CanonicalArticle:
+    return assemble_canonical_article(draft, topic, visuals=draft.visuals)
+```
+
+### 5.7 Modified File: `src/models/content_pipeline.py`
+
+Add `visuals` field to `ArticleDraft` (see §4.3).
+
+### 5.8 Modified File: `pyproject.toml`
 
 Add dependency:
 ```
@@ -273,7 +299,9 @@ Add dependency:
 | `src/agents/content/nodes.py` | Modified — add chart node | +15 |
 | `src/agents/content/pipeline.py` | Modified — wire chart node | +5 |
 | `src/agents/content/article_assembler.py` | Modified — accept visuals param | +5 |
-| `src/services/content_finalize.py` | Modified — pass visuals through | +3 |
+| `src/models/content_pipeline.py` | Modified — add visuals to ArticleDraft | +1 |
+| `src/services/content.py` | Modified — persist visuals in _store_drafted | +1 |
+| `src/services/content_finalize.py` | Modified — pass draft.visuals through | +3 |
 | `src/config/settings.py` | Modified — add chart_output_dir | +1 |
 | `pyproject.toml` | Modified — add matplotlib | +1 |
 | `tests/unit/models/test_visual_models.py` | New — tests | ~40 |
