@@ -13,7 +13,7 @@ from langchain_core.language_models.fake_chat_models import FakeListChatModel
 from src.agents.research.orchestrator import IndexingDeps, build_graph
 from src.agents.research.runner import LangGraphResearchOrchestrator
 from src.agents.research.stub import stub_research_agent
-from src.models.research import DocumentChunk, TopicInput
+from src.models.research import DocumentChunk, FacetFindings, ResearchFacet, TopicInput
 from src.services.task_dispatch import AsyncIODispatcher
 
 
@@ -168,6 +168,58 @@ class TestIndexFindingsNode:
         graph = build_graph(llm, dispatcher, stub_research_agent, indexing_deps=deps)
         result = await graph.ainvoke(_initial_state())
         assert result["status"] == "complete"
+
+
+def _plan_json_with_source_types() -> str:
+    return json.dumps({
+        "facets": [
+            {"index": 0, "title": "Web Facet", "description": "Web only", "search_queries": ["q0"], "source_type": "web"},
+            {"index": 1, "title": "Academic Facet", "description": "Academic only", "search_queries": ["q1"], "source_type": "academic"},
+            {"index": 2, "title": "Both Facet", "description": "Both sources", "search_queries": ["q2"], "source_type": "both"},
+        ],
+        "reasoning": "Mixed plan",
+    })
+
+
+class TestDualAgentRouting:
+    async def test_literature_agent_receives_academic_facets(self) -> None:
+        web_calls: list[int] = []
+        lit_calls: list[int] = []
+
+        async def web_agent(facet: ResearchFacet) -> FacetFindings:
+            web_calls.append(facet.index)
+            return await stub_research_agent(facet)
+
+        async def lit_agent(facet: ResearchFacet) -> FacetFindings:
+            lit_calls.append(facet.index)
+            return await stub_research_agent(facet)
+
+        llm = FakeListChatModel(responses=[_plan_json_with_source_types(), _eval_json(True)])
+        dispatcher = AsyncIODispatcher(timeout_seconds=10)
+        graph = build_graph(llm, dispatcher, web_agent, literature_agent_fn=lit_agent)
+        result = await graph.ainvoke(_initial_state())
+        assert result["status"] == "complete"
+        assert 0 in web_calls
+        assert 2 in web_calls
+        assert 1 in lit_calls
+        assert 2 in lit_calls
+        assert 0 not in lit_calls
+
+    async def test_backward_compat_without_literature_agent(self) -> None:
+        llm = FakeListChatModel(responses=[_plan_json_with_source_types(), _eval_json(True)])
+        dispatcher = AsyncIODispatcher(timeout_seconds=10)
+        graph = build_graph(llm, dispatcher, stub_research_agent)
+        result = await graph.ainvoke(_initial_state())
+        assert result["status"] == "complete"
+        assert len(result["findings"]) >= 3
+
+    async def test_both_facet_produces_two_findings(self) -> None:
+        llm = FakeListChatModel(responses=[_plan_json_with_source_types(), _eval_json(True)])
+        dispatcher = AsyncIODispatcher(timeout_seconds=10)
+        graph = build_graph(llm, dispatcher, stub_research_agent, literature_agent_fn=stub_research_agent)
+        result = await graph.ainvoke(_initial_state())
+        assert result["status"] == "complete"
+        assert len(result["findings"]) == 4  # web(0) + academic(1) + both(2)*2
 
 
 class TestRunner:
