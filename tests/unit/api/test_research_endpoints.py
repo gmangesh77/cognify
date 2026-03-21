@@ -212,3 +212,18 @@ class TestGetSessionEnriched:
         assert "embeddings_count" in data
         assert "topic_id" in data
         assert "topic_title" in data
+
+
+class TestServiceUnavailable:
+    async def test_returns_503_when_research_not_configured(
+        self, auth_settings: Settings
+    ) -> None:
+        app = create_app(auth_settings)
+        # Do NOT attach research_service to app.state
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            headers = make_auth_header("viewer", auth_settings)
+            resp = await client.get("/api/v1/research/sessions", headers=headers)
+            assert resp.status_code == 503

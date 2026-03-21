@@ -17,6 +17,7 @@ from src.api.schemas.research import (
     ResearchSessionResponse,
     ResearchSessionSummary,
 )
+from src.api.errors import ServiceUnavailableError
 from src.services.research import ResearchService
 
 logger = structlog.get_logger()
@@ -44,6 +45,10 @@ def _make_output_summary(output_data: dict[str, object]) -> str | None:
 
 
 def _get_research_service(request: Request) -> ResearchService:
+    if not hasattr(request.app.state, "research_service"):
+        raise ServiceUnavailableError(
+            message="Research service is not configured. Set ANTHROPIC_API_KEY to enable."
+        )
     return request.app.state.research_service  # type: ignore[no-any-return]
 
 
