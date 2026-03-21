@@ -21,7 +21,7 @@ The Research Sessions screen lets users monitor active and past research session
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Page layout | Full-width expandable list | Consistent with DASH-002 topic card pattern; simpler state management; mobile-friendly |
-| Status values | `planning`, `in_progress`, `complete`, `failed` | Match backend API exactly — no frontend mapping layer |
+| Status values | `planning`, `in_progress`, `complete`, `failed` | Match backend API exactly — no frontend mapping layer. Note: BACKLOG says "queued" but backend uses "planning"; we follow the backend. |
 | "New Research" flow | Not on this page — initiated from Topic Discovery | Avoids duplicate entry points; Topics page already has the action |
 | Knowledge base stats | Deferred stub panel with placeholder text | No backend endpoint exists yet; avoids investing in mock-only features |
 | Data source connectors | Deferred (same as above) | No backend endpoint; defer to future ticket |
@@ -100,6 +100,9 @@ export interface ResearchSessionSummary {
   round_count: number;
   findings_count: number;
   started_at: string;
+  // Frontend-only fields populated in mock data:
+  topic_title?: string;       // TODO: backend doesn't return this — extend API or join client-side
+  duration_seconds?: number;  // TODO: backend only returns this in detail response
 }
 
 export interface ResearchSessionDetail extends ResearchSessionSummary {
@@ -127,8 +130,10 @@ These types mirror the backend schemas in `src/api/schemas/research.py` exactly.
 #### `SessionCard`
 - **File**: `frontend/src/components/research/session-card.tsx`
 - **Props**: `session: ResearchSessionSummary`, `isExpanded: boolean`, `onToggle: () => void`
-- **Renders**: Card with left border colored by status, topic title (from session — note: backend `ResearchSessionSummary` doesn't include topic title, so we display session_id prefix or fetch separately; see §5.3), status badge, round count, findings count, duration (relative time for active, absolute for complete), progress bar, chevron toggle
+- **Renders**: Card with left border colored by status, topic title (from `session.topic_title` — populated in mock data, see §5.3), status badge, round count, findings count, duration, progress bar, chevron toggle
 - **Left border colors**: planning=blue-500, in_progress=amber-500, complete=green-500, failed=red-500
+- **Progress bar (collapsed)**: Uses status-based estimate: `planning=15%`, `in_progress=50%`, `complete=100%`, `failed` = proportional to round_count (e.g., 1 round out of typical 3 = ~33%). When **expanded** and steps are loaded, progress bar updates to exact `completedSteps / totalSteps` ratio.
+- **Duration display**: Uses `session.duration_seconds` from mock data (see §4.1 type note). For active sessions, shows elapsed time from `started_at`.
 - **Styling**: bg-white, border border-neutral-200, rounded-lg, shadow-sm, hover:shadow-md transition. Matches DASH-002 card style.
 
 #### `SessionSteps`
@@ -162,14 +167,9 @@ These types mirror the backend schemas in `src/api/schemas/research.py` exactly.
 - `Card` from `components/ui/card.tsx`
 - Pagination pattern from DASH-002 (`TopicPagination`)
 
-### 5.3 Topic Title Resolution
+### 5.3 Frontend-Only Fields
 
-The backend `ResearchSessionSummary` includes `topic_id` but not `topic_title`. Two options:
-
-- **Option A (mock phase)**: Include `topic_title` in mock data directly. Add a `// TODO: backend doesn't return topic_title — either extend the API or join client-side` comment.
-- **Option B (future)**: Backend adds `topic_title` to `ResearchSessionSummary`.
-
-We go with **Option A** for now — extend the frontend type with an optional `topic_title?: string` field populated in mock data. This avoids a backend change in this ticket.
+The backend `ResearchSessionSummary` doesn't include `topic_title` or `duration_seconds`. Both are added as optional fields on the frontend type (§4.1) and populated in mock data with TODO comments. This avoids backend changes in this ticket — a future backend enhancement can add these fields to the API response.
 
 ---
 
