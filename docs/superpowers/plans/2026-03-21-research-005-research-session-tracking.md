@@ -341,6 +341,8 @@ class AgentStepResponse(BaseModel):
 
 class ResearchSessionResponse(BaseModel):
     session_id: UUID
+    topic_id: UUID
+    topic_title: str = ""
     status: str
     round_count: int
     findings_count: int
@@ -372,6 +374,8 @@ In `src/api/routers/research.py`, update the detail endpoint response constructi
 ```python
     return ResearchSessionResponse(
         session_id=s.id,
+        topic_id=s.topic_id,
+        topic_title=s.topic_title,
         status=s.status,
         round_count=s.round_count,
         findings_count=s.findings_count,
@@ -745,15 +749,38 @@ class LangGraphResearchOrchestrator:
 
 In `src/agents/research/orchestrator.py`, update `build_graph` signature and instrument nodes.
 
-Add step_repo parameter:
+**Coding standard compliance:** `build_graph` already has 4 params (at the limit with `indexing_deps`). Bundle `step_repo` by renaming `IndexingDeps` to `GraphDeps` and adding the field there:
+
+In `src/agents/research/orchestrator.py`, rename the dataclass:
+```python
+@dataclass(frozen=True)
+class GraphDeps:
+    """Bundles optional graph dependencies to respect 3-param limit."""
+
+    vector_store: VectorStore | None = None
+    embedder: Embedder | None = None
+    chunker: ChunkService | None = None
+    step_repo: "AgentStepRepository | None" = None
+
+    @property
+    def has_indexing(self) -> bool:
+        return all([self.vector_store, self.embedder, self.chunker])
+```
+
+Update `build_graph` signature (stays at 4 params, replacing `indexing_deps` with `deps`):
 ```python
 def build_graph(
     llm: BaseChatModel,
     dispatcher: TaskDispatcher,
     agent_fn: AgentFunction,
-    indexing_deps: IndexingDeps | None = None,
-    step_repo: "AgentStepRepository | None" = None,
+    deps: GraphDeps | None = None,
 ) -> CompiledStateGraph:
+```
+
+Inside `build_graph`, extract step_repo and indexing deps:
+```python
+    step_repo = deps.step_repo if deps else None
+    has_indexing = deps.has_indexing if deps else False
 ```
 
 Add import and helper at the top of the file:
@@ -880,11 +907,11 @@ Instrument each node inside `build_graph`:
     async def index_findings(state: ResearchState) -> dict:
         step = await _record_step(step_repo, state["session_id"], "index_findings")
         try:
-            if indexing_deps is None:
+            if not has_indexing:
                 logger.info("index_findings_skipped", reason="services not configured")
                 await _complete_step(step_repo, step, {"embeddings_created": 0})
                 return {}
-            new_count = await _index_new_findings(state, indexing_deps)
+            new_count = await _index_new_findings(state, deps)
             indexed = state.get("indexed_count", 0)
             await _complete_step(step_repo, step, {"embeddings_created": new_count})
             return {"indexed_count": indexed + new_count}
@@ -922,7 +949,31 @@ Instrument each node inside `build_graph`:
         return {"status": "complete"}
 ```
 
-**Note:** The `dispatch_agents` node now dispatches facets one-by-one (instead of batch) so each facet gets its own step. This is a behavioral change from the original batch dispatch, but is necessary for per-facet tracking. The sequential dispatch within a single node still maintains correctness.
+**IMPORTANT — Parallel dispatch preserved:** Facet steps are recorded as "running" before the batch `dispatcher.dispatch(facets, agent_fn)` call and completed after it returns. The `dispatch_agents` node code above must be updated to use this pattern instead of sequential single-facet dispatch:
+
+```python
+        # Record all facet steps as "running" BEFORE batch dispatch
+        facet_steps = []
+        for facet in facets:
+            step_name = f"research_facet_{facet.index}"
+            if round_num > 1:
+                step_name = f"research_facet_{facet.index}_round_{round_num}"
+            step = await _record_step(step_repo, state["session_id"], step_name)
+            facet_steps.append(step)
+
+        # Preserve parallel batch dispatch — do NOT break into sequential calls
+        results = await dispatcher.dispatch(facets, agent_fn)
+
+        # Complete each facet step after batch finishes
+        for step, result, facet in zip(facet_steps, results, facets):
+            await _complete_step(step_repo, step, {
+                "sources_found": len(result.sources),
+                "claims_extracted": len(result.claims),
+                "facet_title": facet.title,
+            })
+```
+
+This preserves the `AsyncIODispatcher`'s concurrent execution while still creating per-facet step records. Per-facet timing won't be exact (all share batch duration), but step count and output data are accurate.
 
 - [ ] **Step 5: Write comprehensive step tracking test**
 
@@ -949,11 +1000,12 @@ class TestStepTrackingIntegration:
                 summary="summary",
             )
 
+        from src.agents.research.orchestrator import GraphDeps
         graph = build_graph(
             llm=llm,
             dispatcher=dispatcher,
             agent_fn=fake_agent,
-            step_repo=step_repo,
+            deps=GraphDeps(step_repo=step_repo),
         )
         orchestrator = LangGraphResearchOrchestrator(graph, step_repo=step_repo)
 
@@ -1020,7 +1072,9 @@ git commit -m "feat(research): instrument orchestrator with per-node and per-fac
 
 ---
 
-## Task 8: Update frontend types and create API client
+## Task 8: Update frontend types, API client, hooks, and components (atomic)
+
+> **IMPORTANT:** Tasks 8-12 from the original plan are combined into a single task because type changes, mock removal, hook updates, and component changes are interdependent — committing any subset would leave the test suite broken. All frontend changes are made together and committed atomically.
 
 **Files:**
 - Modify: `frontend/src/types/research.ts`
@@ -1070,63 +1124,41 @@ export interface PaginatedResearchSessions {
 
 - [ ] **Step 2: Create API client**
 
-Create `frontend/src/lib/api/research.ts`:
+Create `frontend/src/lib/api/research.ts` using the existing `apiClient` (axios instance with auth token injection, auto-refresh, and correlation headers — see `frontend/src/lib/api/client.ts`):
 
 ```typescript
+import { apiClient } from "@/lib/api/client";
 import type {
   PaginatedResearchSessions,
   ResearchSessionDetail,
   SessionStatus,
 } from "@/types/research";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
-async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-  });
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${res.statusText}`);
-  }
-  return res.json() as Promise<T>;
-}
-
 export async function fetchSessions(
   status?: SessionStatus,
   page = 1,
   size = 10,
 ): Promise<PaginatedResearchSessions> {
-  const params = new URLSearchParams();
-  if (status) params.set("status", status);
-  params.set("page", String(page));
-  params.set("size", String(size));
-  return apiFetch(`/api/v1/research/sessions?${params}`);
+  const params: Record<string, string> = { page: String(page), size: String(size) };
+  if (status) params.status = status;
+  const { data } = await apiClient.get<PaginatedResearchSessions>(
+    "/research/sessions",
+    { params },
+  );
+  return data;
 }
 
 export async function fetchSessionDetail(
   sessionId: string,
 ): Promise<ResearchSessionDetail> {
-  return apiFetch(`/api/v1/research/sessions/${sessionId}`);
+  const { data } = await apiClient.get<ResearchSessionDetail>(
+    `/research/sessions/${sessionId}`,
+  );
+  return data;
 }
 ```
 
-- [ ] **Step 3: Commit**
-
-```bash
-cd D:/Workbench/github/cognify-research-005
-git add frontend/src/types/research.ts frontend/src/lib/api/research.ts
-git commit -m "feat(frontend): update research types and create API client"
-```
-
----
-
-## Task 9: Connect frontend hooks to real API
-
-**Files:**
-- Modify: `frontend/src/hooks/use-research-sessions.ts`
-- Delete: `frontend/src/lib/mock/research-sessions.ts`
-
-- [ ] **Step 1: Update hooks**
+- [ ] **Step 3: Update hooks**
 
 Replace `frontend/src/hooks/use-research-sessions.ts`:
 
@@ -1164,39 +1196,18 @@ export function useResearchSession(sessionId: string | null) {
 }
 ```
 
-- [ ] **Step 2: Delete mock data**
+- [ ] **Step 4: Delete mock data**
 
 ```bash
 cd D:/Workbench/github/cognify-research-005
 rm frontend/src/lib/mock/research-sessions.ts
 ```
 
-- [ ] **Step 3: Check for other mock imports**
+- [ ] **Step 5: Check for other mock imports**
 
 Run: `cd D:/Workbench/github/cognify-research-005 && grep -r "mock/research-sessions" frontend/src/ --include="*.ts" --include="*.tsx"` to verify no remaining imports.
 
-- [ ] **Step 4: Commit**
-
-```bash
-cd D:/Workbench/github/cognify-research-005
-git add frontend/src/hooks/use-research-sessions.ts
-git rm frontend/src/lib/mock/research-sessions.ts
-git commit -m "feat(frontend): connect research hooks to real API, remove mock data"
-```
-
----
-
-## Task 10: Update frontend step labels and output summary display
-
-**Files:**
-- Modify: `frontend/src/components/research/session-steps.tsx`
-- Test: `frontend/src/components/research/session-steps.test.tsx`
-
-- [ ] **Step 1: Read existing test file**
-
-Read `frontend/src/components/research/session-steps.test.tsx` to understand existing test patterns.
-
-- [ ] **Step 2: Update STEP_LABELS and add output_summary rendering**
+- [ ] **Step 6: Update STEP_LABELS and add output_summary rendering**
 
 In `frontend/src/components/research/session-steps.tsx`, update:
 
@@ -1241,36 +1252,11 @@ Update the step rendering to use `getStepLabel` and show `output_summary`:
       ))}
 ```
 
-- [ ] **Step 3: Update tests for new step names and output_summary**
+- [ ] **Step 7: Update tests for new step names and output_summary**
 
 Update `frontend/src/components/research/session-steps.test.tsx` to use the real step names (`evaluate_completeness` instead of `evaluate`, `research_facet_0` instead of `web_search`, `finalize` instead of `compile_results`) and verify output_summary renders when present.
 
-- [ ] **Step 4: Run frontend tests**
-
-Run: `cd D:/Workbench/github/cognify-research-005/frontend && npx vitest run src/components/research/session-steps.test.tsx`
-Expected: All PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-cd D:/Workbench/github/cognify-research-005
-git add frontend/src/components/research/session-steps.tsx frontend/src/components/research/session-steps.test.tsx
-git commit -m "feat(frontend): update step labels to match orchestrator and add output_summary display"
-```
-
----
-
-## Task 11: Update KnowledgeBaseStub with real stats
-
-**Files:**
-- Modify: `frontend/src/components/research/knowledge-base-stub.tsx`
-- Test: `frontend/src/components/research/knowledge-base-stub.test.tsx`
-
-- [ ] **Step 1: Read existing test file**
-
-Read `frontend/src/components/research/knowledge-base-stub.test.tsx`.
-
-- [ ] **Step 2: Update component**
+- [ ] **Step 8: Update KnowledgeBaseStub component**
 
 Replace `frontend/src/components/research/knowledge-base-stub.tsx`:
 
@@ -1315,66 +1301,38 @@ export function KnowledgeBaseStub({ sessions }: KnowledgeBaseStatsProps) {
 }
 ```
 
-- [ ] **Step 3: Update tests**
+- [ ] **Step 9: Update KnowledgeBaseStub tests**
 
 Update `frontend/src/components/research/knowledge-base-stub.test.tsx` to pass `sessions` prop with mock session data and verify counts render correctly.
 
-- [ ] **Step 4: Update research page to pass sessions to KnowledgeBaseStub**
+- [ ] **Step 10: Update research page to pass sessions to KnowledgeBaseStub**
 
 Check `frontend/src/app/(dashboard)/research/page.tsx` — the page uses `useResearchSessions()` and renders `<KnowledgeBaseStub />`. Update the page to pass the sessions data: `<KnowledgeBaseStub sessions={data?.items ?? []} />`.
 
-- [ ] **Step 5: Update research page test**
+- [ ] **Step 11: Fix all remaining frontend test breakages**
 
-Update `frontend/src/app/(dashboard)/research/page.test.tsx` to account for new `KnowledgeBaseStub` props.
+Common fixes needed:
+- `session-card.test.tsx` → update mock data to include `sources_count`, `embeddings_count`, non-optional `topic_title`
+- `page.test.tsx` → remove mock data imports, use inline test data matching new types
+- Any other tests importing from `@/lib/mock/research-sessions` → replace with inline data
 
-- [ ] **Step 6: Run frontend tests**
-
-Run: `cd D:/Workbench/github/cognify-research-005/frontend && npx vitest run`
-Expected: All PASS.
-
-- [ ] **Step 7: Commit**
-
-```bash
-cd D:/Workbench/github/cognify-research-005
-git add frontend/src/components/research/knowledge-base-stub.tsx frontend/src/components/research/knowledge-base-stub.test.tsx frontend/src/app/\(dashboard\)/research/page.tsx frontend/src/app/\(dashboard\)/research/page.test.tsx
-git commit -m "feat(frontend): replace KnowledgeBaseStub placeholder with real session stats"
-```
-
----
-
-## Task 12: Fix remaining frontend test breakages
-
-**Files:**
-- Modify: Various frontend test files that reference mock data or old step names
-
-- [ ] **Step 1: Run full frontend test suite**
-
-Run: `cd D:/Workbench/github/cognify-research-005/frontend && npx vitest run 2>&1`
-Identify any remaining test failures from type changes, removed mock imports, or updated component APIs.
-
-- [ ] **Step 2: Fix all failing tests**
-
-Common fixes:
-- Tests importing from `@/lib/mock/research-sessions` → remove imports, create inline test data matching new types
-- Tests referencing `topic_title?` (optional) → now required `topic_title: string`
-- `SessionCard` tests that check for topic_title rendering → update mock data to include `sources_count`, `embeddings_count`
-
-- [ ] **Step 3: Run full frontend suite again**
+- [ ] **Step 12: Run full frontend test suite**
 
 Run: `cd D:/Workbench/github/cognify-research-005/frontend && npx vitest run`
 Expected: All 226+ tests PASS.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 13: Commit all frontend changes atomically**
 
 ```bash
 cd D:/Workbench/github/cognify-research-005
 git add frontend/
-git commit -m "fix(frontend): update test data to match new research API schema"
+git rm frontend/src/lib/mock/research-sessions.ts
+git commit -m "feat(frontend): connect to real research API, update types/hooks/components"
 ```
 
 ---
 
-## Task 13: Full integration verification
+## Task 9: Full integration verification
 
 - [ ] **Step 1: Run full backend test suite**
 
