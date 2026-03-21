@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
-from src.agents.research.orchestrator import IndexingDeps, build_graph
+from src.agents.research.orchestrator import GraphDeps, build_graph
 from src.agents.research.runner import LangGraphResearchOrchestrator
 from src.agents.research.stub import stub_research_agent
 from src.models.research import DocumentChunk, TopicInput
@@ -66,7 +66,7 @@ def _initial_state() -> dict:  # type: ignore[type-arg]
 
 def _make_indexing_deps(
     insert_side_effect: Exception | None = None,
-) -> IndexingDeps:
+) -> GraphDeps:
     mock_store = AsyncMock()
     if insert_side_effect:
         mock_store.insert_chunks = AsyncMock(side_effect=insert_side_effect)
@@ -89,7 +89,7 @@ def _make_indexing_deps(
             )
         ]
     )
-    return IndexingDeps(
+    return GraphDeps(
         vector_store=mock_store,
         embedder=mock_embedder,
         chunker=mock_chunker,
@@ -146,7 +146,7 @@ class TestIndexFindingsNode:
         deps = _make_indexing_deps()
         llm = FakeListChatModel(responses=[_plan_json(3), _eval_json(True)])
         dispatcher = AsyncIODispatcher(timeout_seconds=10)
-        graph = build_graph(llm, dispatcher, stub_research_agent, indexing_deps=deps)
+        graph = build_graph(llm, dispatcher, stub_research_agent, deps=deps)
         result = await graph.ainvoke(_initial_state())
         assert result["status"] == "complete"
         assert deps.vector_store.insert_chunks.called
@@ -165,7 +165,7 @@ class TestIndexFindingsNode:
         deps = _make_indexing_deps(insert_side_effect=Exception("Milvus down"))
         llm = FakeListChatModel(responses=[_plan_json(3), _eval_json(True)])
         dispatcher = AsyncIODispatcher(timeout_seconds=10)
-        graph = build_graph(llm, dispatcher, stub_research_agent, indexing_deps=deps)
+        graph = build_graph(llm, dispatcher, stub_research_agent, deps=deps)
         result = await graph.ainvoke(_initial_state())
         assert result["status"] == "complete"
 
