@@ -19,6 +19,7 @@ class ResearchSession(BaseModel):
     agent_plan: dict[str, object] = Field(default_factory=dict)
     round_count: int = 0
     findings_count: int = 0
+    indexed_count: int = 0
     findings_data: list[dict[str, object]] = Field(default_factory=list)
     topic_title: str = ""
     topic_description: str = ""

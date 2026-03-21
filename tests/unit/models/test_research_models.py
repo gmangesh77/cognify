@@ -192,6 +192,16 @@ class TestResearchSession:
         assert updated.status == "complete"
         assert session.status == "planning"  # original unchanged
 
+    def test_indexed_count_defaults_to_zero(self) -> None:
+        from datetime import UTC, datetime
+        from uuid import uuid4
+        from src.models.research_db import ResearchSession
+        session = ResearchSession(
+            topic_id=uuid4(),
+            started_at=datetime.now(UTC),
+        )
+        assert session.indexed_count == 0
+
 
 class TestAgentStep:
     def test_construct_with_defaults(self) -> None:
