@@ -427,8 +427,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 ## Epic 4: Visual Asset Generation
 **Goal**: Automatically create charts, diagrams, and illustrations for articles.
 
-### VISUAL-001: Data Chart Generation [Must]
+### VISUAL-001: Data Chart Generation [Must] — DONE
 **As a** writer agent, **I want** charts generated from data in research findings, **so that** articles include data visualizations.
+- **Status**: Done (branch `feature/VISUAL-001-data-chart-generation`, PR #30)
+- **Plan**: [`docs/superpowers/plans/2026-03-21-visual-001-data-chart-generation.md`](../docs/superpowers/plans/2026-03-21-visual-001-data-chart-generation.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-21-visual-001-data-chart-generation-design.md`](../docs/superpowers/specs/2026-03-21-visual-001-data-chart-generation-design.md)
 - **Acceptance Criteria**:
   - Generates bar, line, and pie charts via Matplotlib/Plotly
   - Chart title, axis labels, and legend auto-populated
