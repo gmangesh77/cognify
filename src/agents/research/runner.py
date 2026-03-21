@@ -4,13 +4,18 @@ The runner wraps the compiled graph and manages session lifecycle.
 The service layer depends on the protocol, not the concrete class.
 """
 
-from typing import Protocol
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
 from langgraph.graph.state import CompiledStateGraph
 
 from src.agents.research.state import ResearchState
 from src.models.research import TopicInput
+
+if TYPE_CHECKING:
+    from src.services.research import AgentStepRepository
 
 
 class ResearchOrchestrator(Protocol):
@@ -22,8 +27,13 @@ class ResearchOrchestrator(Protocol):
 class LangGraphResearchOrchestrator:
     """Runs the compiled LangGraph research graph."""
 
-    def __init__(self, compiled_graph: CompiledStateGraph) -> None:  # type: ignore[type-arg]
+    def __init__(
+        self,
+        compiled_graph: CompiledStateGraph,  # type: ignore[type-arg]
+        step_repo: AgentStepRepository | None = None,
+    ) -> None:
         self._graph = compiled_graph
+        self.step_repo = step_repo
 
     async def run(self, session_id: UUID, topic: TopicInput) -> ResearchState:
         initial_state: ResearchState = {

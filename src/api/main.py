@@ -27,6 +27,13 @@ from src.api.routers.research import research_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
 from src.config.settings import Settings
+from src.services.research import (
+    InMemoryAgentStepRepository,
+    InMemoryResearchSessionRepository,
+    InMemoryTopicRepository,
+    ResearchRepositories,
+    ResearchService,
+)
 from src.services.trends import init_registry
 from src.utils.logging import setup_logging
 
@@ -49,6 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.refresh_repo = InMemoryRefreshTokenRepository()
     app.state.user_repo = InMemoryUserRepository(_seed_dev_users(settings))
     app.state.trend_registry = init_registry(settings)
+    _init_research_service(app)
 
     _register_exception_handlers(app)
     _register_middleware(app, settings)
@@ -82,6 +90,27 @@ def _seed_dev_users(settings: Settings) -> list[UserData]:
             role="viewer",
         ),
     ]
+
+
+def _init_research_service(app: FastAPI) -> None:
+    """Initialize research service with in-memory repositories."""
+
+    class NoOpOrchestrator:
+        async def run(self, session_id, topic):  # type: ignore[no-untyped-def]
+            return {
+                "status": "complete",
+                "findings": [],
+                "round_number": 1,
+                "indexed_count": 0,
+            }
+
+    repos = ResearchRepositories(
+        sessions=InMemoryResearchSessionRepository(),
+        steps=InMemoryAgentStepRepository(),
+        topics=InMemoryTopicRepository(),
+    )
+    app.state.research_service = ResearchService(repos, NoOpOrchestrator())  # type: ignore[arg-type]
+    logger.info("research_service_initialized")
 
 
 def _register_exception_handlers(app: FastAPI) -> None:

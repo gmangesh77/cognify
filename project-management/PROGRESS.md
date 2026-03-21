@@ -78,7 +78,7 @@
 | RESEARCH-002 | Web Search Agent               | Done | `feature/RESEARCH-002-web-search-agent` | [plan](../docs/superpowers/plans/2026-03-17-research-002-web-search-agent.md) | [spec](../docs/superpowers/specs/2026-03-17-research-002-web-search-agent-design.md) |
 | RESEARCH-003 | RAG Pipeline (Milvus)          | Done | `feature/RESEARCH-003-rag-pipeline` | [plan](../docs/superpowers/plans/2026-03-17-research-003-rag-pipeline.md) | [spec](../docs/superpowers/specs/2026-03-17-research-003-rag-pipeline-design.md) |
 | RESEARCH-004 | Literature Review Agent        | Done | `feature/RESEARCH-004-literature-review-agent` | [plan](../docs/superpowers/plans/2026-03-21-research-004-literature-review-agent.md) | [spec](../docs/superpowers/specs/2026-03-21-research-004-literature-review-agent-design.md) |
-| RESEARCH-005 | Research Session Tracking      | In Progress | `feature/RESEARCH-005-research-session-tracking`      | —    | —    |
+| RESEARCH-005 | Research Session Tracking      | In Progress | `feature/RESEARCH-005-research-session-tracking` | [plan](../docs/superpowers/plans/2026-03-21-research-005-research-session-tracking.md) | [spec](../docs/superpowers/specs/2026-03-21-research-005-research-session-tracking-design.md) |
 
 **Stubs from RESEARCH-001 to replace:**
 - ~~RESEARCH-002: Replace `stub_research_agent` with real web search agent~~ — Done (`WebSearchAgent` in `src/agents/research/web_search.py`)

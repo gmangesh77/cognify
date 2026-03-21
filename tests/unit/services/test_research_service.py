@@ -21,12 +21,13 @@ class FakeOrchestrator:
     def __init__(self, should_fail: bool = False) -> None:
         self.calls: list[tuple] = []
         self._should_fail = should_fail
+        self._result: dict = {"status": "complete"}
 
     async def run(self, session_id, topic):  # type: ignore[no-untyped-def]
         self.calls.append((session_id, topic))
         if self._should_fail:
             raise RuntimeError("Orchestrator failed")
-        return {"status": "complete"}
+        return self._result
 
 
 def _make_repos(
@@ -96,6 +97,28 @@ class TestGetTopic:
             await svc.get_topic(uuid4())
 
 
+class TestAgentStepRepository:
+    async def test_update_step(self) -> None:
+        from datetime import UTC, datetime
+        from src.models.research_db import AgentStep
+        repo = InMemoryAgentStepRepository()
+        session_id = uuid4()
+        step = AgentStep(
+            session_id=session_id,
+            step_name="plan_research",
+            status="running",
+            started_at=datetime.now(UTC),
+        )
+        created = await repo.create(step)
+        updated = created.model_copy(update={"status": "complete", "duration_ms": 1200})
+        result = await repo.update(updated)
+        assert result.status == "complete"
+        assert result.duration_ms == 1200
+        steps = await repo.list_by_session(session_id)
+        assert len(steps) == 1
+        assert steps[0].status == "complete"
+
+
 class TestListSessions:
     async def test_returns_paginated(self) -> None:
         topic_id = uuid4()
@@ -114,3 +137,37 @@ class TestListSessions:
         await svc.start_session(topic_id)
         result = await svc.list_sessions("complete", page=1, size=10)
         assert result.total == 0
+
+
+class TestRunAndFinalize:
+    async def test_persist_success_populates_counts(self) -> None:
+        topic_id = uuid4()
+        repos = _make_repos([topic_id])
+        orchestrator = FakeOrchestrator()
+        orchestrator._result = {
+            "status": "complete",
+            "findings": [{"facet_index": 0}, {"facet_index": 1}, {"facet_index": 2}],
+            "round_number": 2,
+            "indexed_count": 15,
+        }
+        svc = ResearchService(repos, orchestrator)
+        session = await svc.start_session(topic_id)
+        topic = await svc.get_topic(topic_id)
+        await svc.run_and_finalize(session.id, topic)
+        detail = await svc.get_session(session.id)
+        assert detail.session.status == "complete"
+        assert detail.session.findings_count == 3
+        assert detail.session.indexed_count == 15
+        assert detail.session.round_count == 2
+        assert detail.session.duration_seconds is not None
+        assert detail.session.duration_seconds >= 0
+
+    async def test_persist_failure_marks_failed(self) -> None:
+        topic_id = uuid4()
+        repos = _make_repos([topic_id])
+        svc = ResearchService(repos, FakeOrchestrator(should_fail=True))
+        session = await svc.start_session(topic_id)
+        topic = await svc.get_topic(topic_id)
+        await svc.run_and_finalize(session.id, topic)
+        detail = await svc.get_session(session.id)
+        assert detail.session.status == "failed"

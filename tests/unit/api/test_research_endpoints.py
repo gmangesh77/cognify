@@ -161,3 +161,78 @@ class TestListSessions:
         data = resp.json()
         assert "items" in data
         assert "total" in data
+
+
+class TestListSessionsEnriched:
+    async def test_list_includes_topic_title_and_counts(
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        await research_client.post(
+            "/api/v1/research/sessions",
+            json={"topic_id": test_topic_id},
+            headers=headers,
+        )
+        resp = await research_client.get(
+            "/api/v1/research/sessions",
+            headers=make_auth_header("viewer", auth_settings),
+        )
+        assert resp.status_code == 200
+        item = resp.json()["items"][0]
+        assert "topic_title" in item
+        assert "duration_seconds" in item
+        assert "sources_count" in item
+        assert "embeddings_count" in item
+
+
+class TestGetSessionEnriched:
+    async def test_detail_includes_counts_and_topic(
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        create_resp = await research_client.post(
+            "/api/v1/research/sessions",
+            json={"topic_id": test_topic_id},
+            headers=headers,
+        )
+        session_id = create_resp.json()["session_id"]
+        resp = await research_client.get(
+            f"/api/v1/research/sessions/{session_id}",
+            headers=make_auth_header("viewer", auth_settings),
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "sources_count" in data
+        assert "embeddings_count" in data
+        assert "topic_id" in data
+        assert "topic_title" in data
+
+
+class TestAppInitialization:
+    def test_research_service_attached_to_app_state(
+        self, auth_settings: Settings
+    ) -> None:
+        app = create_app(auth_settings)
+        assert hasattr(app.state, "research_service")
+
+
+class TestServiceUnavailable:
+    async def test_returns_503_when_research_not_configured(
+        self, auth_settings: Settings
+    ) -> None:
+        app = create_app(auth_settings)
+        # Explicitly remove research_service to simulate unconfigured state
+        del app.state.research_service
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            headers = make_auth_header("viewer", auth_settings)
+            resp = await client.get("/api/v1/research/sessions", headers=headers)
+            assert resp.status_code == 503

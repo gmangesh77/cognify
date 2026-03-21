@@ -82,7 +82,7 @@ export default function ResearchPage() {
         </div>
       )}
 
-      <KnowledgeBaseStub />
+      <KnowledgeBaseStub sessions={sessions} />
 
       {totalPages > 1 && (
         <TopicPagination
