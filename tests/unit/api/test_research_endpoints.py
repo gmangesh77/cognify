@@ -214,12 +214,21 @@ class TestGetSessionEnriched:
         assert "topic_title" in data
 
 
+class TestAppInitialization:
+    def test_research_service_attached_to_app_state(
+        self, auth_settings: Settings
+    ) -> None:
+        app = create_app(auth_settings)
+        assert hasattr(app.state, "research_service")
+
+
 class TestServiceUnavailable:
     async def test_returns_503_when_research_not_configured(
         self, auth_settings: Settings
     ) -> None:
         app = create_app(auth_settings)
-        # Do NOT attach research_service to app.state
+        # Explicitly remove research_service to simulate unconfigured state
+        del app.state.research_service
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app),
             base_url="http://test",
