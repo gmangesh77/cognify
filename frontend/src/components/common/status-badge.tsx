@@ -5,6 +5,8 @@ const STATUS_STYLES = {
   draft: "bg-steady-light text-steady",
   scheduled: "bg-accent-light text-accent",
   failed: "bg-primary-light text-primary",
+  complete: "bg-success-light text-success",
+  published: "bg-success-light text-success",
 } as const;
 
 const STATUS_LABELS = {
@@ -12,6 +14,8 @@ const STATUS_LABELS = {
   draft: "Draft",
   scheduled: "Scheduled",
   failed: "Failed",
+  complete: "Complete",
+  published: "Published",
 } as const;
 
 interface StatusBadgeProps {

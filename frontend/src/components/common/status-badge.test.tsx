@@ -19,4 +19,14 @@ describe("StatusBadge", () => {
     render(<StatusBadge status="failed" />);
     expect(screen.getByText("Failed")).toBeInTheDocument();
   });
+
+  it("renders complete status", () => {
+    render(<StatusBadge status="complete" />);
+    expect(screen.getByText("Complete")).toBeInTheDocument();
+  });
+
+  it("renders published status", () => {
+    render(<StatusBadge status="published" />);
+    expect(screen.getByText("Published")).toBeInTheDocument();
+  });
 });
