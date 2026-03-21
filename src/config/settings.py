@@ -86,3 +86,5 @@ class Settings(BaseSettings):
     primary_model_name: str = "claude-sonnet-4"
     drafting_model_name: str = "claude-sonnet-4"
     embedding_version: str = "v1"
+    # Visual asset generation
+    chart_output_dir: str = "generated_assets/charts"

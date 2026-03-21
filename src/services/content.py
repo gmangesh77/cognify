@@ -212,6 +212,7 @@ class ContentService:
                 "seo_result": seo_result,
                 "global_citations": list(result.get("global_citations") or []),  # type: ignore[call-overload]
                 "references_markdown": str(result.get("references_markdown", "")),
+                "visuals": list(result.get("visuals") or []),
                 "status": DraftStatus.DRAFT_COMPLETE,
                 "completed_at": datetime.now(UTC),
             }

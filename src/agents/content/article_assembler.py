@@ -8,7 +8,7 @@ the publishing pipeline consumes.
 import structlog
 from pydantic import ValidationError
 
-from src.models.content import CanonicalArticle, Citation, ContentType
+from src.models.content import CanonicalArticle, Citation, ContentType, ImageAsset
 from src.models.content_pipeline import ArticleDraft, SectionDraft
 from src.models.research import TopicInput
 
@@ -21,6 +21,7 @@ _MIN_CITATIONS = 5
 def assemble_canonical_article(
     draft: ArticleDraft,
     topic: TopicInput,
+    visuals: list[ImageAsset] | None = None,
 ) -> CanonicalArticle:
     """Build a CanonicalArticle from a completed ArticleDraft."""
     seo_result = draft.seo_result
@@ -42,7 +43,7 @@ def assemble_canonical_article(
             ),
             seo=seo_result.seo,
             citations=citations,
-            visuals=[],
+            visuals=visuals if visuals is not None else [],
             authors=["Cognify"],
             domain=topic.domain,
             provenance=seo_result.provenance,

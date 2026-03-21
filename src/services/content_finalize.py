@@ -67,4 +67,4 @@ def build_article(
     topic: TopicInput,
 ) -> CanonicalArticle:
     """Assemble a CanonicalArticle from a finalized draft."""
-    return assemble_canonical_article(draft, topic)
+    return assemble_canonical_article(draft, topic, visuals=draft.visuals)

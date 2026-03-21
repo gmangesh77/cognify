@@ -6,11 +6,14 @@ returns an async node function compatible with LangGraph StateGraph.
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 import structlog
 from langchain_core.language_models import BaseChatModel
 
+from src.agents.content.chart_generator import propose_charts, render_chart
 from src.agents.content.outline_generator import generate_outline
 from src.agents.content.query_generator import generate_section_queries
 from src.agents.content.section_drafter import DraftingContext, draft_section
@@ -129,6 +132,26 @@ def make_citations_node() -> Any:  # noqa: ANN401
     from src.agents.content.citation_manager import manage_citations
 
     return manage_citations
+
+
+def make_chart_node(llm: BaseChatModel, output_dir: str) -> Any:  # noqa: ANN401
+    """Factory for the chart generation node."""
+
+    async def chart_node(state: ContentState) -> dict[str, object]:
+        section_drafts = state.get("section_drafts", [])
+        session_id: UUID = state["session_id"]
+        if not section_drafts:
+            return {"visuals": []}
+        specs = await propose_charts(section_drafts, llm)
+        visuals = []
+        for spec in specs:
+            asset = await asyncio.to_thread(render_chart, spec, output_dir, session_id)
+            if asset is not None:
+                visuals.append(asset)
+        logger.info("chart_generation_complete", chart_count=len(visuals))
+        return {"visuals": visuals}
+
+    return chart_node
 
 
 def _coerce_topic(state: ContentState) -> TopicInput:
