@@ -472,6 +472,9 @@ async def propose_charts(
             if len(spec.x_labels) != len(spec.y_values):
                 logger.warning("chart_spec_length_mismatch", title=spec.title)
                 continue
+            if spec.source_section_index >= len(section_drafts):
+                logger.warning("chart_spec_section_out_of_range", title=spec.title)
+                continue
             specs.append(spec)
         except (ValidationError, TypeError) as exc:
             logger.warning("chart_spec_invalid", error=str(exc))
@@ -513,7 +516,7 @@ def render_chart(
             url=str(file_path),
             caption=spec.caption,
             alt_text=spec.title,
-            metadata={"chart_type": spec.chart_type, "source_section": spec.source_section_index},
+            metadata={"chart_type": str(spec.chart_type), "source_section": spec.source_section_index},
         )
     except Exception as exc:
         logger.warning("chart_render_failed", error=str(exc), title=spec.title)
@@ -635,10 +638,16 @@ class TestChartNode:
 
 - [ ] **Step 2: Add visuals field to ArticleDraft**
 
-In `src/models/content_pipeline.py`, after line 127 (`references_markdown: str = ""`), add:
+In `src/models/content_pipeline.py`, add `ImageAsset` to the existing import from `src.models.content` (line 13):
 
 ```python
-    visuals: list = Field(default_factory=list)  # list[ImageAsset], avoids circular import
+from src.models.content import ContentType, ImageAsset, Provenance, SEOMetadata
+```
+
+Then after line 127 (`references_markdown: str = ""`), add:
+
+```python
+    visuals: list[ImageAsset] = Field(default_factory=list)
 ```
 
 - [ ] **Step 3: Add visuals to ContentState**
@@ -646,7 +655,7 @@ In `src/models/content_pipeline.py`, after line 127 (`references_markdown: str =
 In `src/agents/content/pipeline.py`, after line 52 (`seo_result: NotRequired[SEOResult]`), add:
 
 ```python
-    visuals: NotRequired[list]
+    visuals: NotRequired[list[ImageAsset]]
 ```
 
 - [ ] **Step 4: Add make_chart_node to nodes.py**
@@ -687,12 +696,22 @@ def make_chart_node(llm: BaseChatModel, output_dir: str) -> Any:  # noqa: ANN401
 
 In `src/agents/content/pipeline.py`:
 
-Add import at top (after existing node imports):
+Add `make_chart_node` to the existing import from `nodes.py` (line 18-24):
 ```python
-from src.agents.content.nodes import make_chart_node
+from src.agents.content.nodes import (
+    make_chart_node,  # add this line
+    make_citations_node,
+    make_draft_node,
+    make_outline_node,
+    make_queries_node,
+    make_validate_node,
+)
 ```
 
-(Note: `make_chart_node` is already accessible since `nodes.py` is imported.)
+Also add `ImageAsset` import for the ContentState type:
+```python
+from src.models.content import ImageAsset
+```
 
 After line 74 (`graph.add_node("seo_optimize", ...)`), add:
 ```python
@@ -737,25 +756,29 @@ git commit -m "feat(visual-001): add chart node to content pipeline"
 
 In `tests/unit/agents/content/test_article_assembler.py`, add this test to the existing test class:
 
+Add `ImageAsset` to the imports at the top of the file:
 ```python
-def test_visuals_populated_from_parameter(self) -> None:
-    from src.models.content import ImageAsset
+from src.models.content import CanonicalArticle, ContentType, ImageAsset, Provenance, SEOMetadata
+```
 
-    topic = _make_topic()
-    draft = _make_draft()
-    visuals = [
-        ImageAsset(url="/charts/test.png", caption="Test chart", alt_text="Chart"),
-    ]
-    article = assemble_canonical_article(draft, topic, visuals=visuals)
-    assert len(article.visuals) == 1
-    assert article.visuals[0].caption == "Test chart"
+Then add these methods inside the `TestAssembleCanonicalArticle` class:
 
+```python
+    def test_visuals_populated_from_parameter(self) -> None:
+        topic = _make_topic()
+        draft = _make_draft()
+        visuals = [
+            ImageAsset(url="/charts/test.png", caption="Test chart", alt_text="Chart"),
+        ]
+        article = assemble_canonical_article(draft, topic, visuals=visuals)
+        assert len(article.visuals) == 1
+        assert article.visuals[0].caption == "Test chart"
 
-def test_visuals_default_to_empty(self) -> None:
-    topic = _make_topic()
-    draft = _make_draft()
-    article = assemble_canonical_article(draft, topic)
-    assert article.visuals == []
+    def test_visuals_default_to_empty(self) -> None:
+        topic = _make_topic()
+        draft = _make_draft()
+        article = assemble_canonical_article(draft, topic)
+        assert article.visuals == []
 ```
 
 - [ ] **Step 2: Run to verify failure**
