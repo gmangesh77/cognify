@@ -27,23 +27,22 @@ if TYPE_CHECKING:
 matplotlib.use("Agg")  # Non-interactive backend
 logger = structlog.get_logger()
 
-_PROMPT_TEMPLATE = """You are a data visualization expert. Read the article sections below and propose 0-3 data charts.
-
-For each chart, provide:
-- chart_type: "bar", "line", or "pie"
-- title: chart title (max 120 chars)
-- x_labels: category labels or x-axis points
-- y_values: numeric values corresponding to each label
-- y_label: y-axis label
-- caption: one-sentence description for the article
-- source_section_index: which section (0-indexed) the data comes from
-
-Only propose charts where concrete numerical data exists in the text. Return an empty array [] if no chartable data is found.
-
-Return ONLY a JSON array. No explanation.
-
-## Article Sections
-{sections_text}"""
+_PROMPT_TEMPLATE = (  # noqa: E501
+    "You are a data visualization expert. "
+    "Read the article sections below and propose 0-3 data charts.\n\n"
+    "For each chart, provide:\n"
+    "- chart_type: \"bar\", \"line\", or \"pie\"\n"
+    "- title: chart title (max 120 chars)\n"
+    "- x_labels: category labels or x-axis points\n"
+    "- y_values: numeric values corresponding to each label\n"
+    "- y_label: y-axis label\n"
+    "- caption: one-sentence description for the article\n"
+    "- source_section_index: which section (0-indexed) the data comes from\n\n"
+    "Only propose charts where concrete numerical data exists. "
+    "Return an empty array [] if no chartable data is found.\n\n"
+    "Return ONLY a JSON array. No explanation.\n\n"
+    "## Article Sections\n{sections_text}"
+)
 
 
 async def propose_charts(
@@ -117,7 +116,10 @@ def render_chart(
             url=str(file_path),
             caption=spec.caption,
             alt_text=spec.title,
-            metadata={"chart_type": str(spec.chart_type), "source_section": spec.source_section_index},
+            metadata={
+                "chart_type": str(spec.chart_type),
+                "source_section": spec.source_section_index,
+            },
         )
     except Exception as exc:
         logger.warning("chart_render_failed", error=str(exc), title=spec.title)

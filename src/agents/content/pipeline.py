@@ -75,7 +75,8 @@ def build_content_graph(
     graph.add_node("manage_citations", make_citations_node())
     graph.add_node("humanize", make_humanize_node(llm))
     graph.add_node("seo_optimize", make_seo_node(llm, settings))
-    graph.add_node("generate_charts", make_chart_node(llm, settings.chart_output_dir if settings else "generated_assets/charts"))
+    chart_dir = settings.chart_output_dir if settings else "generated_assets/charts"
+    graph.add_node("generate_charts", make_chart_node(llm, chart_dir))
 
     graph.add_conditional_edges(
         "generate_outline",
