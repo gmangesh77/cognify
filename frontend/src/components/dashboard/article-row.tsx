@@ -22,7 +22,7 @@ export function ArticleRow({ article }: ArticleRowProps) {
   return (
     <div className="flex items-center justify-between border-b border-border px-5 py-4 last:border-b-0">
       <div className="min-w-0 flex-1">
-        <p className="font-heading text-sm font-medium text-secondary">
+        <p className="font-heading text-sm font-medium text-neutral-900">
           {article.title}
         </p>
         <div className="mt-1.5 flex items-center gap-2">
