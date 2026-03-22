@@ -48,7 +48,7 @@
 - Create: `src/api/routers/metrics.py` — dashboard metrics
 - Modify: `src/api/main.py` — register metrics router
 
-- [ ] **Step 1: Add list method to PgArticleRepository**
+- [x] **Step 1: Add list method to PgArticleRepository**
 
 In `src/db/repositories.py`, add to `PgArticleRepository`:
 
@@ -72,7 +72,7 @@ async def list(
         return [self._to_model(r) for r in rows], total
 ```
 
-- [ ] **Step 2: Add GET /articles endpoint**
+- [x] **Step 2: Add GET /articles endpoint**
 
 In `src/api/routers/canonical_articles.py`, add:
 
@@ -112,7 +112,7 @@ class PaginatedArticlesResponse(BaseModel):
 
 Wire `article_repo` on app.state in lifespan (if not already there).
 
-- [ ] **Step 3: Create metrics endpoint**
+- [x] **Step 3: Create metrics endpoint**
 
 Create `src/api/routers/metrics.py`:
 
@@ -173,7 +173,7 @@ async def get_metrics(
 
 Note: `list_by_domain("")` with empty domain needs to handle "all domains" — may need to adjust the query. If it doesn't work, create a simple `count_all()` method instead.
 
-- [ ] **Step 4: Register metrics router in main.py**
+- [x] **Step 4: Register metrics router in main.py**
 
 In `src/api/main.py`, add:
 ```python
@@ -184,11 +184,11 @@ app.include_router(metrics_router, prefix=settings.api_v1_prefix)
 
 Also ensure `article_repo` is on `app.state` in the lifespan.
 
-- [ ] **Step 5: Run backend tests**
+- [x] **Step 5: Run backend tests**
 
 Run: `cd D:/Workbench/github/cognify-infra-002 && uv run pytest tests/unit/ -q --tb=short 2>&1 | tail -5`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd D:/Workbench/github/cognify-infra-002
@@ -205,7 +205,7 @@ git commit -m "feat(infra-002): add GET /articles and GET /metrics backend endpo
 - Modify: `frontend/src/hooks/use-article-list.ts`
 - Modify: `frontend/src/hooks/use-article.ts`
 
-- [ ] **Step 1: Create articles API client**
+- [x] **Step 1: Create articles API client**
 
 Create `frontend/src/lib/api/articles.ts`:
 
@@ -248,7 +248,7 @@ export async function fetchArticle(id: string): Promise<ArticleResponse> {
 }
 ```
 
-- [ ] **Step 2: Wire useArticleList to real API**
+- [x] **Step 2: Wire useArticleList to real API**
 
 Replace `frontend/src/hooks/use-article-list.ts`:
 
@@ -288,7 +288,7 @@ export function useArticleList() {
 }
 ```
 
-- [ ] **Step 3: Wire useArticle to real API**
+- [x] **Step 3: Wire useArticle to real API**
 
 Replace `frontend/src/hooks/use-article.ts`:
 
@@ -340,7 +340,7 @@ export function useArticle(id: string) {
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd D:/Workbench/github/cognify-infra-002
@@ -359,7 +359,7 @@ git commit -m "feat(infra-002): wire article list and detail hooks to real API"
 - Modify: `frontend/src/app/(dashboard)/topics/page.tsx`
 - Modify: `frontend/src/lib/api/trends.ts`
 
-- [ ] **Step 1: Create metrics API client**
+- [x] **Step 1: Create metrics API client**
 
 Create `frontend/src/lib/api/metrics.ts`:
 
@@ -373,7 +373,7 @@ export async function fetchMetrics(): Promise<DashboardMetrics> {
 }
 ```
 
-- [ ] **Step 2: Wire useMetrics**
+- [x] **Step 2: Wire useMetrics**
 
 Replace `frontend/src/hooks/use-metrics.ts`:
 
@@ -400,7 +400,7 @@ export function useMetrics() {
 }
 ```
 
-- [ ] **Step 3: Wire useTopics to persisted topics**
+- [x] **Step 3: Wire useTopics to persisted topics**
 
 Replace `frontend/src/hooks/use-topics.ts`:
 
@@ -453,7 +453,7 @@ export function useTopics() {
 
 Note: empty domain `""` fetches across all domains for the dashboard. The `list_by_domain` backend method may need to handle empty domain as "all". Adjust the query if needed.
 
-- [ ] **Step 4: Add createResearchSession to trends API**
+- [x] **Step 4: Add createResearchSession to trends API**
 
 In `frontend/src/lib/api/trends.ts`, add:
 
@@ -472,7 +472,7 @@ export async function createResearchSession(topicId: string): Promise<CreateSess
 }
 ```
 
-- [ ] **Step 5: Wire Generate Article button**
+- [x] **Step 5: Wire Generate Article button**
 
 In `frontend/src/app/(dashboard)/topics/page.tsx`, replace the `handleConfirm` function:
 
@@ -496,13 +496,13 @@ Add import: `import { createResearchSession } from "@/lib/api/trends";`
 
 Note: The current `POST /research/sessions` expects `topic_id` (UUID), but scanned topics from the frontend don't have UUIDs (they come from the rank response). The persist endpoint saves them with UUIDs, but those aren't returned to the frontend. This may need the persist response to return topic IDs, or the research endpoint to accept topic title instead. Handle gracefully — if it fails, show error toast.
 
-- [ ] **Step 6: Run frontend tests**
+- [x] **Step 6: Run frontend tests**
 
 Run: `cd D:/Workbench/github/cognify-infra-002/frontend && npm install && npx vitest run 2>&1 | tail -10`
 
 Fix any test failures (hooks changed signatures, may need test updates).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 cd D:/Workbench/github/cognify-infra-002
@@ -514,23 +514,23 @@ git commit -m "feat(infra-002): wire metrics, topics, and generate article to re
 
 ## Task 4: Test Updates and Final Verification
 
-- [ ] **Step 1: Update frontend tests for changed hooks**
+- [x] **Step 1: Update frontend tests for changed hooks**
 
 The `use-article-list.test.ts`, `use-article.test.ts`, and `use-metrics.test.ts` tests may need updating since the hooks now call real APIs. Add mocks for the API modules similar to how `use-scan-topics.test.ts` mocks `@/lib/api/trends`.
 
-- [ ] **Step 2: Run full frontend test suite**
+- [x] **Step 2: Run full frontend test suite**
 
 Run: `cd D:/Workbench/github/cognify-infra-002/frontend && npx vitest run 2>&1 | tail -10`
 
-- [ ] **Step 3: Run full backend test suite**
+- [x] **Step 3: Run full backend test suite**
 
 Run: `cd D:/Workbench/github/cognify-infra-002 && uv run pytest tests/unit/ -q --tb=short 2>&1 | tail -5`
 
-- [ ] **Step 4: Run lint**
+- [x] **Step 4: Run lint**
 
 Run: `cd D:/Workbench/github/cognify-infra-002 && uv tool run ruff check src/api/routers/metrics.py src/api/routers/canonical_articles.py 2>&1`
 
-- [ ] **Step 5: Fix issues and commit**
+- [x] **Step 5: Fix issues and commit**
 
 ```bash
 cd D:/Workbench/github/cognify-infra-002
