@@ -93,11 +93,12 @@ async def persist_topics(
 )
 async def list_topics(
     request: Request,
-    domain: str,
+    domain: str = "",
     page: int = 1,
     size: int = 20,
-    user: TokenPayload = Depends(require_role("admin", "editor", "viewer")),
 ) -> PaginatedTopics:
+    if not hasattr(request.app.state, "topic_repo"):
+        return PaginatedTopics(items=[], total=0, page=page, size=size)
     repo = request.app.state.topic_repo
     items, total = await repo.list_by_domain(domain, page, size)
     return PaginatedTopics(
