@@ -4,10 +4,16 @@ Implements the repository protocols from services/research.py and
 services/content_repositories.py using SQLAlchemy async sessions.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+if TYPE_CHECKING:
+    from src.api.schemas.topics import PersistedTopic, RankedTopic
 
 from src.db.tables import (
     AgentStepRow,
@@ -232,11 +238,10 @@ class PgTopicRepository:
 
     async def create_from_ranked(
         self,
-        topic: "RankedTopic",
+        topic: RankedTopic,
         domain: str,
     ) -> UUID:
         """Insert a new topic from a ranked scan result."""
-        from src.api.schemas.topics import RankedTopic  # noqa: F401
         topic_id = uuid4()
         async with self._sf() as session:
             row = TopicRow(
@@ -261,7 +266,7 @@ class PgTopicRepository:
     async def update_from_scan(
         self,
         topic_id: UUID,
-        topic: "RankedTopic",
+        topic: RankedTopic,
     ) -> None:
         """Update an existing topic with fresh scan data."""
         async with self._sf() as session:
@@ -281,7 +286,7 @@ class PgTopicRepository:
         domain: str,
         page: int = 1,
         size: int = 20,
-    ) -> "tuple[list[PersistedTopic], int]":
+    ) -> tuple[list[PersistedTopic], int]:
         """List topics by domain, ordered by composite_score."""
         from src.api.schemas.topics import PersistedTopic
         async with self._sf() as session:
