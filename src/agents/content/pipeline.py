@@ -15,10 +15,12 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from src.agents.content.humanize_node import make_humanize_node
+from src.agents.content.illustration_generator import OpenAIDalleGenerator
 from src.agents.content.nodes import (
     make_chart_node,
     make_citations_node,
     make_draft_node,
+    make_illustration_node,
     make_outline_node,
     make_queries_node,
     make_validate_node,
@@ -93,7 +95,21 @@ def build_content_graph(
     graph.add_edge("manage_citations", "humanize")
     graph.add_edge("humanize", "seo_optimize")
     graph.add_edge("seo_optimize", "generate_charts")
-    graph.add_edge("generate_charts", END)
+    # Illustration node — only if OpenAI key is configured
+    if settings and settings.openai_api_key:
+        generator = OpenAIDalleGenerator(
+            api_key=settings.openai_api_key,
+            model=settings.dalle_model,
+            timeout=settings.illustration_timeout,
+        )
+        graph.add_node(
+            "generate_illustrations",
+            make_illustration_node(llm, generator, settings.illustration_output_dir),
+        )
+        graph.add_edge("generate_charts", "generate_illustrations")
+        graph.add_edge("generate_illustrations", END)
+    else:
+        graph.add_edge("generate_charts", END)
 
     return graph.compile()
 

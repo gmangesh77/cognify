@@ -323,6 +323,32 @@ def _long_clean_draft(section_num: int) -> str:
     return " ".join(lines)
 
 
+class TestIllustrationNodeInGraph:
+    def test_graph_includes_illustration_node_with_key(self) -> None:
+        from unittest.mock import AsyncMock
+
+        from src.agents.content.pipeline import build_content_graph
+        from src.config.settings import Settings
+
+        llm = AsyncMock()
+        retriever = AsyncMock()
+        settings = Settings(openai_api_key="test-key")
+        graph = build_content_graph(llm, retriever, settings)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "generate_illustrations" in node_names
+
+    def test_graph_excludes_illustration_node_without_key(self) -> None:
+        from unittest.mock import AsyncMock
+
+        from src.agents.content.pipeline import build_content_graph
+
+        llm = AsyncMock()
+        retriever = AsyncMock()
+        graph = build_content_graph(llm, retriever)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "generate_illustrations" not in node_names
+
+
 class TestContentPipelineWithHumanize:
     async def test_humanize_node_in_full_graph(self) -> None:
         """Full pipeline includes humanize node and produces section_drafts."""

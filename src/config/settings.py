@@ -90,3 +90,8 @@ class Settings(BaseSettings):
     database_url: str = ""
     # Visual asset generation
     chart_output_dir: str = "generated_assets/charts"
+    # AI illustration generation (OpenAI DALL-E)
+    openai_api_key: str = ""
+    illustration_output_dir: str = "generated_assets/illustrations"
+    dalle_model: str = "dall-e-3"
+    illustration_timeout: float = 30.0
