@@ -65,6 +65,7 @@ export interface PersistTopicsResponse {
   new_count: number;
   updated_count: number;
   total_persisted: number;
+  topic_ids: string[];
 }
 
 export interface PersistedTopic {

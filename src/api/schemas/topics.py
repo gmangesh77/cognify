@@ -71,6 +71,7 @@ class PersistTopicsResponse(BaseModel):
     new_count: int
     updated_count: int
     total_persisted: int
+    topic_ids: list[str] = Field(default_factory=list)
 
 
 class PaginatedTopics(BaseModel):

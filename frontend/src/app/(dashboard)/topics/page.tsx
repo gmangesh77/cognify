@@ -84,9 +84,14 @@ export default function TopicsPage() {
     const topic = modalTopic;
     closeModal();
     if (!topic) return;
+    if (!topic.id) {
+      setToast(`Cannot start research — topic has no ID. Try scanning again.`);
+      setTimeout(() => setToast(null), 5000);
+      return;
+    }
     setToast(`Starting research for "${topic.title}"...`);
     try {
-      await createResearchSession(topic.title);
+      await createResearchSession(topic.id);
       setToast(
         `Research started for "${topic.title}". Check Research page for progress.`,
       );

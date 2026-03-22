@@ -68,14 +68,18 @@ export function useScanTopics() {
       domain_keywords: keywords,
     });
 
-    const ranked = rankResult.ranked_topics.map((t) => toRankedTopic(t, domain));
+    let ranked = rankResult.ranked_topics.map((t) => toRankedTopic(t, domain));
 
-    // Step 3: Persist to database (best-effort, don't block UI)
+    // Step 3: Persist to database and get topic IDs
     try {
-      await persistTopics({
+      const persistResult = await persistTopics({
         ranked_topics: rankResult.ranked_topics,
         domain,
       });
+      // Attach DB IDs to frontend topics for Generate Article
+      if (persistResult.topic_ids.length === ranked.length) {
+        ranked = ranked.map((t, i) => ({ ...t, id: persistResult.topic_ids[i] }));
+      }
     } catch {
       console.warn("Topic persistence failed — results shown but not saved");
     }
