@@ -258,16 +258,16 @@ class PgArticleDraftRepository:
                 created_at=draft.created_at,
                 completed_at=draft.completed_at,
                 article_id=draft.article_id,
-                outline=draft.outline.model_dump() if draft.outline else None,
+                outline=draft.outline.model_dump(mode="json") if draft.outline else None,
                 section_drafts=[
-                    s.model_dump() for s in draft.section_drafts
+                    s.model_dump(mode="json") for s in draft.section_drafts
                 ],
-                citations=[c.model_dump() for c in draft.citations],
+                citations=[c.model_dump(mode="json") for c in draft.citations],
                 seo_result=(
-                    draft.seo_result.model_dump() if draft.seo_result else None
+                    draft.seo_result.model_dump(mode="json") if draft.seo_result else None
                 ),
                 global_citations=draft.global_citations,
-                visuals=[v.model_dump() for v in draft.visuals],
+                visuals=[v.model_dump(mode="json") for v in draft.visuals],
             )
             db.add(row)
             await db.commit()
@@ -292,15 +292,15 @@ class PgArticleDraftRepository:
             row.completed_at = draft.completed_at
             row.article_id = draft.article_id
             row.outline = (
-                draft.outline.model_dump() if draft.outline else None
+                draft.outline.model_dump(mode="json") if draft.outline else None
             )
-            row.section_drafts = [s.model_dump() for s in draft.section_drafts]
-            row.citations = [c.model_dump() for c in draft.citations]
+            row.section_drafts = [s.model_dump(mode="json") for s in draft.section_drafts]
+            row.citations = [c.model_dump(mode="json") for c in draft.citations]
             row.seo_result = (
-                draft.seo_result.model_dump() if draft.seo_result else None
+                draft.seo_result.model_dump(mode="json") if draft.seo_result else None
             )
             row.global_citations = draft.global_citations
-            row.visuals = [v.model_dump() for v in draft.visuals]
+            row.visuals = [v.model_dump(mode="json") for v in draft.visuals]
             await db.commit()
             await db.refresh(row)
             return self._to_model(row)
@@ -364,10 +364,10 @@ class PgArticleRepository:
                 ai_generated=article.ai_generated,
                 generated_at=article.generated_at,
                 key_claims=list(article.key_claims),
-                seo=article.seo.model_dump(),
-                citations=[c.model_dump() for c in article.citations],
-                visuals=[v.model_dump() for v in article.visuals],
-                provenance=article.provenance.model_dump(),
+                seo=article.seo.model_dump(mode="json"),
+                citations=[c.model_dump(mode="json") for c in article.citations],
+                visuals=[v.model_dump(mode="json") for v in article.visuals],
+                provenance=article.provenance.model_dump(mode="json"),
                 authors=list(article.authors),
             )
             db.add(row)
