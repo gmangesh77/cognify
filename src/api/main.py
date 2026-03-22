@@ -44,10 +44,20 @@ from src.services.research import (
     ResearchRepositories,
     ResearchService,
 )
+from src.services.topic_persistence import TopicPersistenceService
 from src.services.trends import init_registry
 from src.utils.logging import setup_logging
 
 logger = structlog.get_logger()
+
+
+def _get_or_create_embedding_service(app: FastAPI) -> "EmbeddingService":
+    if not hasattr(app.state, "embedding_service"):
+        from src.services.embeddings import EmbeddingService
+        app.state.embedding_service = EmbeddingService(
+            model_name=app.state.settings.embedding_model,
+        )
+    return app.state.embedding_service  # type: ignore[no-any-return]
 
 
 @asynccontextmanager
@@ -70,6 +80,14 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             drafts=PgArticleDraftRepository(sf),
             research=PgResearchSessionRepository(sf),
             articles=PgArticleRepository(sf),
+        )
+        # Topic persistence service
+        topic_repo = PgTopicRepository(sf)
+        app.state.topic_repo = topic_repo
+        app.state.topic_persistence_service = TopicPersistenceService(
+            repo=topic_repo,
+            embedding_service=_get_or_create_embedding_service(app),
+            threshold=app.state.settings.dedup_similarity_threshold,
         )
         logger.info("database_connected", url=db_url.split("@")[-1])
     yield
