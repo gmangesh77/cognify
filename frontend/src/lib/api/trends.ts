@@ -114,3 +114,16 @@ export async function fetchPersistedTopics(domain: string, page = 1, size = 20):
   const { data } = await apiClient.get<PaginatedTopics>("/topics", { params: { domain, page, size } });
   return data;
 }
+
+export interface CreateSessionResponse {
+  session_id: string;
+  status: string;
+  started_at: string;
+}
+
+export async function createResearchSession(topicId: string): Promise<CreateSessionResponse> {
+  const { data } = await apiClient.post<CreateSessionResponse>("/research/sessions", {
+    topic_id: topicId,
+  });
+  return data;
+}
