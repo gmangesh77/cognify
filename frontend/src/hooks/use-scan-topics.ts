@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import type { RankedTopic, ScanState } from "@/types/api";
-import { mockTopics } from "@/lib/mock/topics";
-import { SOURCE_NAMES } from "@/types/sources";
+import { fetchTrends, rankTopics, persistTopics } from "@/lib/api/trends";
+import type { BackendRankedTopic } from "@/lib/api/trends";
 
 const INITIAL_SCAN: ScanState = {
   isScanning: false,
@@ -18,31 +18,67 @@ function deriveTrendStatus(topic: RankedTopic): RankedTopic["trend_status"] {
   return "steady";
 }
 
+function toRankedTopic(backend: BackendRankedTopic, domain: string): RankedTopic {
+  const partial: RankedTopic = {
+    title: backend.title,
+    description: backend.description,
+    source: backend.source,
+    external_url: backend.external_url,
+    trend_score: backend.trend_score,
+    discovered_at: backend.discovered_at,
+    velocity: backend.velocity,
+    domain_keywords: backend.domain_keywords,
+    composite_score: backend.composite_score,
+    rank: backend.rank,
+    source_count: backend.source_count,
+    domain,
+    trend_status: "steady",
+  };
+  return { ...partial, trend_status: deriveTrendStatus(partial) };
+}
+
 export function useScanTopics() {
   const [topics, setTopics] = useState<RankedTopic[]>([]);
   const [scanState, setScanState] = useState<ScanState>(INITIAL_SCAN);
 
-  const startScan = useCallback((domain: string) => {
+  const startScan = useCallback(async (domain: string) => {
     setScanState({ ...INITIAL_SCAN, isScanning: true });
     setTopics([]);
 
-    let completed = 0;
-    const total = SOURCE_NAMES.length;
-
-    SOURCE_NAMES.forEach((_, i) => {
-      setTimeout(() => {
-        completed += 1;
-        setScanState((s) => ({ ...s, completedSources: s.completedSources + 1 }));
-
-        if (completed === total) {
-          const filtered = mockTopics
-            .filter((t) => t.domain === domain || domain === "")
-            .map((t) => ({ ...t, trend_status: deriveTrendStatus(t) }));
-          setTopics(filtered);
-          setScanState((s) => ({ ...s, isScanning: false }));
-        }
-      }, (i + 1) * 400);
+    // Step 1: Fetch raw trends from all sources
+    const fetchResult = await fetchTrends({
+      domain_keywords: [domain],
+      max_results: 50,
     });
+
+    const sourcesQueried = fetchResult.sources_queried.length;
+    setScanState((s) => ({
+      ...s,
+      totalSources: sourcesQueried || INITIAL_SCAN.totalSources,
+      completedSources: sourcesQueried || INITIAL_SCAN.totalSources,
+    }));
+
+    // Step 2: Rank and deduplicate
+    const rankResult = await rankTopics({
+      topics: fetchResult.topics,
+      domain,
+      domain_keywords: [domain],
+    });
+
+    const ranked = rankResult.ranked_topics.map((t) => toRankedTopic(t, domain));
+
+    // Step 3: Persist to database (best-effort, don't block UI)
+    try {
+      await persistTopics({
+        ranked_topics: rankResult.ranked_topics,
+        domain,
+      });
+    } catch {
+      console.warn("Topic persistence failed — results shown but not saved");
+    }
+
+    setTopics(ranked);
+    setScanState((s) => ({ ...s, isScanning: false }));
   }, []);
 
   return { topics, scanState, startScan };

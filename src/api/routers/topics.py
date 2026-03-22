@@ -5,7 +5,13 @@ from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_role
 from src.api.errors import ServiceUnavailableError
 from src.api.rate_limiter import limiter
-from src.api.schemas.topics import RankTopicsRequest, RankTopicsResponse
+from src.api.schemas.topics import (
+    PaginatedTopics,
+    PersistTopicsRequest,
+    PersistTopicsResponse,
+    RankTopicsRequest,
+    RankTopicsResponse,
+)
 from src.services.embeddings import EmbeddingService
 from src.services.topic_ranking import TopicRankingService
 
@@ -54,3 +60,45 @@ async def rank_topics(
             code="embedding_service_unavailable",
             message="Embedding service is not available",
         ) from exc
+
+
+@limiter.limit("5/minute")
+@topics_router.post(
+    "/topics/persist",
+    response_model=PersistTopicsResponse,
+    summary="Persist ranked topics with cross-scan dedup",
+)
+async def persist_topics(
+    request: Request,
+    body: PersistTopicsRequest,
+    user: TokenPayload = Depends(require_role("admin", "editor")),
+) -> PersistTopicsResponse:
+    svc = request.app.state.topic_persistence_service
+    result = await svc.persist_ranked_topics(
+        body.ranked_topics, body.domain,
+    )
+    return PersistTopicsResponse(
+        new_count=result.new_count,
+        updated_count=result.updated_count,
+        total_persisted=result.total_persisted,
+    )
+
+
+@limiter.limit("30/minute")
+@topics_router.get(
+    "/topics",
+    response_model=PaginatedTopics,
+    summary="List persisted topics by domain",
+)
+async def list_topics(
+    request: Request,
+    domain: str,
+    page: int = 1,
+    size: int = 20,
+    user: TokenPayload = Depends(require_role("admin", "editor", "viewer")),
+) -> PaginatedTopics:
+    repo = request.app.state.topic_repo
+    items, total = await repo.list_by_domain(domain, page, size)
+    return PaginatedTopics(
+        items=items, total=total, page=page, size=size,
+    )
