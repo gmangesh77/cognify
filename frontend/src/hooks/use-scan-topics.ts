@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { RankedTopic, ScanState } from "@/types/api";
-import { fetchTrends, rankTopics, persistTopics } from "@/lib/api/trends";
-import type { BackendRankedTopic } from "@/lib/api/trends";
+import { fetchTrends, rankTopics, persistTopics, fetchPersistedTopics } from "@/lib/api/trends";
+import type { BackendRankedTopic, PersistedTopic } from "@/lib/api/trends";
 import { DOMAIN_KEYWORDS } from "@/types/domain";
 import type { DomainName } from "@/types/domain";
 
@@ -39,9 +39,44 @@ function toRankedTopic(backend: BackendRankedTopic, domain: string): RankedTopic
   return { ...partial, trend_status: deriveTrendStatus(partial) };
 }
 
+function fromPersisted(t: PersistedTopic): RankedTopic {
+  const partial: RankedTopic = {
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    source: t.source,
+    external_url: t.external_url,
+    trend_score: t.trend_score,
+    discovered_at: t.discovered_at,
+    velocity: t.velocity,
+    domain_keywords: [],
+    composite_score: t.composite_score ?? t.trend_score,
+    rank: t.rank ?? 0,
+    source_count: t.source_count,
+    domain: t.domain,
+    trend_status: "steady",
+  };
+  return { ...partial, trend_status: deriveTrendStatus(partial) };
+}
+
 export function useScanTopics() {
   const [topics, setTopics] = useState<RankedTopic[]>([]);
   const [scanState, setScanState] = useState<ScanState>(INITIAL_SCAN);
+
+  // Load persisted topics on mount
+  useEffect(() => {
+    async function loadPersisted() {
+      try {
+        const result = await fetchPersistedTopics("", 1, 50);
+        if (result.items.length > 0) {
+          setTopics(result.items.map(fromPersisted));
+        }
+      } catch {
+        // API unavailable — stay empty
+      }
+    }
+    loadPersisted();
+  }, []);
 
   const startScan = useCallback(async (domain: string) => {
     setScanState({ ...INITIAL_SCAN, isScanning: true });
