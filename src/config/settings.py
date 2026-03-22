@@ -86,5 +86,7 @@ class Settings(BaseSettings):
     primary_model_name: str = "claude-sonnet-4"
     drafting_model_name: str = "claude-sonnet-4"
     embedding_version: str = "v1"
+    # Database (empty = in-memory repos; set via COGNIFY_DATABASE_URL)
+    database_url: str = ""
     # Visual asset generation
     chart_output_dir: str = "generated_assets/charts"
