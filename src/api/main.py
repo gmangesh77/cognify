@@ -1,5 +1,6 @@
-import structlog
 from contextlib import asynccontextmanager
+
+import structlog
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,11 +25,13 @@ from src.api.routers.articles import articles_router
 from src.api.routers.auth import auth_router
 from src.api.routers.canonical_articles import canonical_articles_router
 from src.api.routers.health import health_router
+from src.api.routers.metrics import metrics_router
 from src.api.routers.research import research_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
 from src.config.settings import Settings
-from src.db.engine import create_async_engine as create_db_engine, get_session_factory
+from src.db.engine import create_async_engine as create_db_engine
+from src.db.engine import get_session_factory
 from src.db.repositories import (
     PgAgentStepRepository,
     PgArticleDraftRepository,
@@ -76,10 +79,12 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         app.state.research_service = ResearchService(
             repos, app.state.research_service._orchestrator
         )
+        article_repo = PgArticleRepository(sf)
+        app.state.article_repo = article_repo
         app.state.content_repos = ContentRepositories(
             drafts=PgArticleDraftRepository(sf),
             research=PgResearchSessionRepository(sf),
-            articles=PgArticleRepository(sf),
+            articles=article_repo,
         )
         # Topic persistence service
         topic_repo = PgTopicRepository(sf)
@@ -283,4 +288,9 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         canonical_articles_router,
         prefix=settings.api_v1_prefix,
         tags=["articles"],
+    )
+    app.include_router(
+        metrics_router,
+        prefix=settings.api_v1_prefix,
+        tags=["metrics"],
     )
