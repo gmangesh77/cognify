@@ -1,8 +1,9 @@
 """Tests for visual asset models."""
 
 import pytest
+from pydantic import ValidationError
 
-from src.models.visual import ChartSpec, ChartType
+from src.models.visual import ChartSpec, ChartType, DiagramSpec, DiagramType
 
 
 class TestChartType:
@@ -87,4 +88,69 @@ class TestChartSpec:
                 y_label="Y",
                 caption="Test.",
                 source_section_index=-1,
+            )
+
+
+class TestDiagramType:
+    def test_flowchart_value(self) -> None:
+        assert DiagramType.FLOWCHART == "flowchart"
+
+    def test_sequence_value(self) -> None:
+        assert DiagramType.SEQUENCE == "sequence"
+
+    def test_invalid_type_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            DiagramType("invalid")
+
+
+class TestDiagramSpec:
+    def test_valid_flowchart_spec(self) -> None:
+        spec = DiagramSpec(
+            diagram_type=DiagramType.FLOWCHART,
+            title="Auth Flow",
+            mermaid_syntax="graph TD\n    A[Start] --> B[End]",
+            caption="Authentication flow diagram",
+            source_section_index=0,
+        )
+        assert spec.diagram_type == "flowchart"
+        assert spec.title == "Auth Flow"
+
+    def test_valid_sequence_spec(self) -> None:
+        spec = DiagramSpec(
+            diagram_type=DiagramType.SEQUENCE,
+            title="API Call Sequence",
+            mermaid_syntax="sequenceDiagram\n    A->>B: Request",
+            caption="API interaction sequence",
+            source_section_index=1,
+        )
+        assert spec.diagram_type == "sequence"
+
+    def test_empty_title_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            DiagramSpec(
+                diagram_type=DiagramType.FLOWCHART,
+                title="",
+                mermaid_syntax="graph TD\n    A --> B",
+                caption="Caption",
+                source_section_index=0,
+            )
+
+    def test_short_mermaid_syntax_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            DiagramSpec(
+                diagram_type=DiagramType.FLOWCHART,
+                title="Title",
+                mermaid_syntax="short",
+                caption="Caption",
+                source_section_index=0,
+            )
+
+    def test_empty_caption_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            DiagramSpec(
+                diagram_type=DiagramType.FLOWCHART,
+                title="Title",
+                mermaid_syntax="graph TD\n    A --> B",
+                caption="",
+                source_section_index=0,
             )

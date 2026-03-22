@@ -23,3 +23,20 @@ class ChartSpec(BaseModel, frozen=True):
     y_label: str = Field(min_length=1, max_length=60)
     caption: str = Field(min_length=1, max_length=200)
     source_section_index: int = Field(ge=0)
+
+
+class DiagramType(StrEnum):
+    """Supported diagram types."""
+
+    FLOWCHART = "flowchart"
+    SEQUENCE = "sequence"
+
+
+class DiagramSpec(BaseModel, frozen=True):
+    """LLM-proposed diagram specification with Mermaid syntax."""
+
+    diagram_type: DiagramType
+    title: str = Field(min_length=1, max_length=120)
+    mermaid_syntax: str = Field(min_length=10)
+    caption: str = Field(min_length=1, max_length=200)
+    source_section_index: int = Field(ge=0)
