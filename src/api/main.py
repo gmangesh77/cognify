@@ -1,4 +1,5 @@
 import structlog
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +28,15 @@ from src.api.routers.research import research_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
 from src.config.settings import Settings
+from src.db.engine import create_async_engine as create_db_engine, get_session_factory
+from src.db.repositories import (
+    PgAgentStepRepository,
+    PgArticleDraftRepository,
+    PgArticleRepository,
+    PgResearchSessionRepository,
+    PgTopicRepository,
+)
+from src.services.content_repositories import ContentRepositories
 from src.services.research import (
     InMemoryAgentStepRepository,
     InMemoryResearchSessionRepository,
@@ -40,6 +50,34 @@ from src.utils.logging import setup_logging
 logger = structlog.get_logger()
 
 
+@asynccontextmanager
+async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
+    """Lifespan handler: wires PG repos when database_url is configured."""
+    db_url = app.state.settings.database_url
+    if db_url:
+        engine = create_db_engine(db_url)
+        app.state.db_engine = engine
+        sf = get_session_factory(engine)
+        repos = ResearchRepositories(
+            sessions=PgResearchSessionRepository(sf),
+            steps=PgAgentStepRepository(sf),
+            topics=PgTopicRepository(sf),
+        )
+        app.state.research_service = ResearchService(
+            repos, app.state.research_service._orchestrator
+        )
+        app.state.content_repos = ContentRepositories(
+            drafts=PgArticleDraftRepository(sf),
+            research=PgResearchSessionRepository(sf),
+            articles=PgArticleRepository(sf),
+        )
+        logger.info("database_connected", url=db_url.split("@")[-1])
+    yield
+    if hasattr(app.state, "db_engine"):
+        await app.state.db_engine.dispose()
+        logger.info("database_disconnected")
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     if settings is None:
         settings = Settings()
@@ -50,6 +88,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="Cognify API",
         version=settings.app_version,
         debug=False,
+        lifespan=_lifespan,
     )
     app.state.settings = settings
     app.state.limiter = limiter
