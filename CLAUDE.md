@@ -110,14 +110,15 @@ Package manager: **uv** — all commands use `uv run` prefix (no activation need
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** VISUAL-001 (Data Chart Generation) — PR #30
-**Epic 4 (Visual Assets):** VISUAL-001 Done — LLM-driven chart generation (bar/line/pie via Matplotlib), integrated into content pipeline. VISUAL-002, VISUAL-003 remaining.
-**Epic 6 (Dashboard):** ALL 5 TICKETS DONE — **Epic complete.** Next.js 15 frontend with Tailwind v4, 220 frontend tests. Dashboard + Topic Discovery + Article View + Research Sessions + Settings.
-**Epic 3 (Content Gen):** ALL 6 TICKETS DONE — **Epic complete.** Full pipeline: outline → section drafting with RAG → validation → citation management → humanization → SEO + AI discoverability → chart generation → CanonicalArticle assembly.
-**Epic 8 (Architecture):** ARCH-001, ARCH-002 Done — CanonicalArticle contracts, TrendSource protocol & registry. Epic complete.
-**Epic 2 (Research):** RESEARCH-001 through RESEARCH-004 Done — orchestrator + web search + RAG pipeline + literature review. RESEARCH-005 in progress.
-**Epic 7 (API & Auth):** All 3 tickets Done (API-001, API-002, API-003)
-**Epic 1 (Trend Discovery):** All 6 tickets Done (TREND-001 through TREND-006) — Epic complete
-**Epic 0 (Design):** All 9 tickets Done (DESIGN-001 through DESIGN-009) — design system, components, all screens
-**Test suite:** ~790 backend tests + 220 frontend tests, ~98% coverage
-**Next action:** Epic 4 (VISUAL-002/003) or Epic 5 (Publishing) or Epic 2 (RESEARCH-005).
+**Last completed:** INFRA-001b (Topic Persistence & Cross-Scan Dedup) — PR #33
+**Epic 9 (Infrastructure):** INFRA-001a Done (PR #32) — PostgreSQL persistence layer (SQLAlchemy, Alembic, Docker Compose, 5 table models, 5 PG repositories). INFRA-001b Done (PR #33) — topic persistence from scan flow with cross-scan dedup. INFRA-002 remaining (full frontend-backend wiring).
+**Epic 4 (Visual Assets):** VISUAL-001 Done — LLM-driven chart generation (bar/line/pie via Matplotlib). VISUAL-002, VISUAL-003 remaining.
+**Epic 6 (Dashboard):** ALL 5 TICKETS DONE — **Epic complete.** Next.js 15 frontend with Tailwind v4, 236 frontend tests.
+**Epic 3 (Content Gen):** ALL 6 TICKETS DONE — **Epic complete.** Full pipeline with chart generation → CanonicalArticle assembly.
+**Epic 8 (Architecture):** Epic complete. CanonicalArticle contracts, TrendSource protocol & registry.
+**Epic 2 (Research):** RESEARCH-001 through RESEARCH-005 Done — **Epic complete.**
+**Epic 7 (API & Auth):** All 3 tickets Done. Epic complete.
+**Epic 1 (Trend Discovery):** All 6 tickets Done — Epic complete.
+**Epic 0 (Design):** All 9 tickets Done — Epic complete.
+**Test suite:** ~764 backend tests + 236 frontend tests, ~98% coverage
+**Next action:** INFRA-002 (frontend-backend API integration) or Epic 5 (Publishing) or Epic 4 (VISUAL-002/003).
