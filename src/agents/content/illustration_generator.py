@@ -7,10 +7,15 @@ Best-effort: failures are logged and skipped, never crash the pipeline.
 from __future__ import annotations
 
 import base64
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import structlog
 from openai import AsyncOpenAI
+
+if TYPE_CHECKING:
+    from langchain_core.language_models import BaseChatModel
+
+    from src.models.research import TopicInput
 
 logger = structlog.get_logger()
 
@@ -54,3 +59,43 @@ class OpenAIDalleGenerator:
         except Exception as exc:
             logger.warning("dalle_generation_failed", error=str(exc))
             return None
+
+
+_PROMPT_TEMPLATE = (
+    "You are an expert art director. Write a detailed image generation prompt "
+    "for a professional article hero image.\n\n"
+    "Article title: {title}\n"
+    "Domain: {domain}\n"
+    "Summary: {summary}\n\n"
+    "Requirements:\n"
+    "- Professional, editorial-style illustration\n"
+    "- NO text, words, or letters in the image\n"
+    "- NO photorealistic human faces\n"
+    "- Clean composition, modern aesthetic\n"
+    "- Relevant to the article's domain and topic\n"
+    "- Suitable as an article header/cover image\n\n"
+    "Write ONLY the image prompt (100-200 words). No explanation."
+)
+
+
+async def generate_illustration_prompt(
+    topic: "TopicInput",
+    summary: str,
+    llm: "BaseChatModel",
+) -> str | None:
+    """Generate a DALL-E prompt from article metadata. Returns None on failure."""
+    prompt = _PROMPT_TEMPLATE.format(
+        title=topic.title,
+        domain=topic.domain,
+        summary=summary or topic.description,
+    )
+    try:
+        response = await llm.ainvoke(prompt)
+        content = response.content.strip() if hasattr(response, "content") else ""
+        if not content:
+            logger.warning("illustration_prompt_empty")
+            return None
+        return content
+    except Exception as exc:
+        logger.warning("illustration_prompt_failed", error=str(exc))
+        return None
