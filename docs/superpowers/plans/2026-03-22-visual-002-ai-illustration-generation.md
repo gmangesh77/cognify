@@ -363,17 +363,24 @@ def _make_state(
     summary: str = "Summary of trends",
     existing_visuals: list | None = None,
 ) -> dict:
+    from src.models.content import Provenance, SEOMetadata
     return {
         "topic": TopicInput(
             id=uuid4(), title=topic_title, description="Desc", domain="cybersecurity"
         ),
         "session_id": uuid4(),
         "seo_result": SEOResult(
+            seo=SEOMetadata(title="Meta Title for Test", description="A test meta description for the article."),
             summary=summary,
             key_claims=["claim"],
-            meta_title="Meta",
-            meta_description="Desc",
-            primary_keyword="security",
+            provenance=Provenance(
+                research_session_id=uuid4(),
+                primary_model="claude-sonnet-4",
+                drafting_model="claude-sonnet-4",
+                embedding_model="all-MiniLM-L6-v2",
+                embedding_version="v1",
+            ),
+            ai_disclosure="AI generated",
         ),
         "visuals": existing_visuals or [],
     }
@@ -393,6 +400,8 @@ class TestIllustrationNode:
         assert isinstance(asset, ImageAsset)
         assert asset.metadata["type"] == "hero"
         assert asset.metadata["generator"] == "dall-e-3"
+        # Verify file actually written to disk
+        assert (tmp_path / str(state["session_id"]) / "hero.png").exists()
 
     @pytest.mark.asyncio
     async def test_preserves_existing_chart_visuals(self, tmp_path) -> None:
@@ -509,8 +518,6 @@ def _save_illustration(
     image_bytes: bytes, output_dir: str, session_id: UUID
 ) -> Path:
     """Save illustration bytes to disk. Runs in thread."""
-    from pathlib import Path
-
     out_path = Path(output_dir) / str(session_id)
     out_path.mkdir(parents=True, exist_ok=True)
     file_path = out_path / "hero.png"
@@ -518,7 +525,7 @@ def _save_illustration(
     return file_path
 ```
 
-Add `Path` import at top of file if not present. Also add `ImageGenerator` to the TYPE_CHECKING block if needed.
+**IMPORTANT:** Add `from pathlib import Path` to the top-level imports in `nodes.py` (required for the return type annotation). Also add `ImageGenerator` to the TYPE_CHECKING block.
 
 - [ ] **Step 4: Run tests**
 
@@ -545,14 +552,39 @@ git commit -m "feat(visual): add illustration pipeline node with visual accumula
 **Files:**
 - Modify: `src/agents/content/pipeline.py:58-98`
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the failing tests for pipeline wiring**
 
-Add to an existing pipeline test file or create inline test:
+Find the existing pipeline test file (likely `tests/unit/agents/content/test_pipeline.py` or similar). Add:
 
-Run: `cd D:/Workbench/github/cognify-visual-002 && uv run pytest tests/unit/agents/content/ -k "pipeline" -v --tb=short`
-to identify existing pipeline tests. Then verify that a test for the new node wiring can be added.
+```python
+class TestIllustrationNodeInGraph:
+    def test_graph_includes_illustration_node_with_key(self) -> None:
+        from unittest.mock import AsyncMock
+        from src.agents.content.pipeline import build_content_graph
+        from src.config.settings import Settings
+        llm = AsyncMock()
+        retriever = AsyncMock()
+        settings = Settings(openai_api_key="test-key")
+        graph = build_content_graph(llm, retriever, settings)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "generate_illustrations" in node_names
 
-- [ ] **Step 2: Wire the illustration node in `build_content_graph`**
+    def test_graph_excludes_illustration_node_without_key(self) -> None:
+        from unittest.mock import AsyncMock
+        from src.agents.content.pipeline import build_content_graph
+        llm = AsyncMock()
+        retriever = AsyncMock()
+        graph = build_content_graph(llm, retriever)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "generate_illustrations" not in node_names
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `cd D:/Workbench/github/cognify-visual-002 && uv run pytest tests/unit/agents/content/ -k "IllustrationNodeInGraph" -v`
+Expected: FAIL — `generate_illustrations` not in graph.
+
+- [ ] **Step 3: Wire the illustration node in `build_content_graph`**
 
 In `src/agents/content/pipeline.py`:
 
@@ -564,21 +596,19 @@ from src.agents.content.nodes import make_illustration_node
 
 (Note: `make_illustration_node` import is already covered if you add it to the existing `from src.agents.content.nodes import ...` block.)
 
-In `build_content_graph()`, after the chart node setup (line 79), add:
+In `build_content_graph()`, replace the existing `graph.add_edge("generate_charts", END)` line (line 96) with:
 
 ```python
     # Illustration node — only if OpenAI key is configured
-    _settings = settings or Settings()
-    if _settings.openai_api_key:
+    if settings and settings.openai_api_key:
         generator = OpenAIDalleGenerator(
-            api_key=_settings.openai_api_key,
-            model=_settings.dalle_model,
-            timeout=_settings.illustration_timeout,
+            api_key=settings.openai_api_key,
+            model=settings.dalle_model,
+            timeout=settings.illustration_timeout,
         )
-        illust_dir = _settings.illustration_output_dir
         graph.add_node(
             "generate_illustrations",
-            make_illustration_node(llm, generator, illust_dir),
+            make_illustration_node(llm, generator, settings.illustration_output_dir),
         )
         graph.add_edge("generate_charts", "generate_illustrations")
         graph.add_edge("generate_illustrations", END)
@@ -586,23 +616,23 @@ In `build_content_graph()`, after the chart node setup (line 79), add:
         graph.add_edge("generate_charts", END)
 ```
 
-Remove the existing `graph.add_edge("generate_charts", END)` line (line 96) — it's replaced by the conditional above.
+Uses `settings and settings.openai_api_key` — consistent with the existing pattern `settings.chart_output_dir if settings else "..."`. No `Settings()` instantiation.
 
-- [ ] **Step 3: Run all content tests**
+- [ ] **Step 4: Run wiring tests**
 
-Run: `cd D:/Workbench/github/cognify-visual-002 && uv run pytest tests/unit/agents/content/ -v --tb=short`
-Expected: All PASS. Existing tests run without `openai_api_key` set, so the illustration node is skipped — no regressions.
+Run: `cd D:/Workbench/github/cognify-visual-002 && uv run pytest tests/unit/agents/content/ -k "IllustrationNodeInGraph" -v`
+Expected: All PASS.
 
-- [ ] **Step 4: Run full backend test suite**
+- [ ] **Step 5: Run full backend test suite**
 
 Run: `cd D:/Workbench/github/cognify-visual-002 && uv run pytest tests/ -q --tb=no`
 Expected: 794+ passed, 1 pre-existing error.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 cd D:/Workbench/github/cognify-visual-002
-git add src/agents/content/pipeline.py
+git add src/agents/content/pipeline.py tests/unit/agents/content/
 git commit -m "feat(visual): wire illustration node into content pipeline graph"
 ```
 
