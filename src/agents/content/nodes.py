@@ -7,6 +7,7 @@ returns an async node function compatible with LangGraph StateGraph.
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -14,10 +15,15 @@ import structlog
 from langchain_core.language_models import BaseChatModel
 
 from src.agents.content.chart_generator import propose_charts, render_chart
+from src.agents.content.illustration_generator import (
+    ImageGenerator,
+    generate_illustration_prompt,
+)
 from src.agents.content.outline_generator import generate_outline
 from src.agents.content.query_generator import generate_section_queries
 from src.agents.content.section_drafter import DraftingContext, draft_section
 from src.agents.content.validate import replace_section, validate_drafts
+from src.models.content import ImageAsset
 from src.models.content_pipeline import (
     ArticleOutline,
     SectionDraft,
@@ -152,6 +158,59 @@ def make_chart_node(llm: BaseChatModel, output_dir: str) -> Any:  # noqa: ANN401
         return {"visuals": visuals}
 
     return chart_node
+
+
+def make_illustration_node(
+    llm: BaseChatModel,
+    generator: ImageGenerator,
+    output_dir: str,
+) -> Any:  # noqa: ANN401
+    """Factory for the AI illustration generation node."""
+
+    async def illustration_node(state: ContentState) -> dict[str, object]:
+        existing = list(state.get("visuals", []))
+        topic = _coerce_topic(state)
+        seo = state.get("seo_result")
+        summary = seo.summary if seo and hasattr(seo, "summary") else ""
+        session_id: UUID = state["session_id"]
+
+        prompt = await generate_illustration_prompt(topic, summary, llm)
+        if not prompt:
+            return {"visuals": existing}
+
+        try:
+            image_bytes = await generator.generate(prompt, (1024, 1024))
+        except Exception as exc:
+            logger.warning("illustration_generator_error", error=str(exc))
+            return {"visuals": existing}
+
+        if not image_bytes:
+            return {"visuals": existing}
+
+        path = await asyncio.to_thread(
+            _save_illustration, image_bytes, output_dir, session_id
+        )
+        asset = ImageAsset(
+            url=str(path),
+            caption=topic.title,
+            alt_text=prompt[:200],
+            metadata={"generator": "dall-e-3", "type": "hero"},
+        )
+        logger.info("illustration_generation_complete", path=str(path))
+        return {"visuals": existing + [asset]}
+
+    return illustration_node
+
+
+def _save_illustration(
+    image_bytes: bytes, output_dir: str, session_id: UUID
+) -> Path:
+    """Save illustration bytes to disk. Runs in thread."""
+    out_path = Path(output_dir) / str(session_id)
+    out_path.mkdir(parents=True, exist_ok=True)
+    file_path = out_path / "hero.png"
+    file_path.write_bytes(image_bytes)
+    return file_path
 
 
 def _coerce_topic(state: ContentState) -> TopicInput:
