@@ -201,7 +201,7 @@ class Base(DeclarativeBase):
 class UUIDMixin:
     """Mixin adding a UUID primary key."""
 
-    id: Mapped[str] = mapped_column(
+    id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
@@ -295,6 +295,7 @@ class ResearchSessionRow(Base, UUIDMixin, TimestampMixin):
         PG_UUID(as_uuid=True),
         ForeignKey("topics.id"),
         nullable=True,
+        index=True,
     )
     status: Mapped[str] = mapped_column(
         String(20), default="planning", index=True,
@@ -355,10 +356,12 @@ class ArticleDraftRow(Base, UUIDMixin, TimestampMixin):
     session_id: Mapped[str] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("research_sessions.id"),
+        index=True,
     )
     topic_id: Mapped[str] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("topics.id"),
+        index=True,
     )
     status: Mapped[str] = mapped_column(String(30))
     total_word_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -596,11 +599,13 @@ class PgTopicRepository:
             )
 
     def seed(self, topic: TopicInput) -> None:
-        """Sync seed for backward compat with tests."""
-        import asyncio
-        asyncio.get_event_loop().run_until_complete(self._seed_async(topic))
+        """Sync seed for backward compat with tests. No-op for PG (use _seed_async)."""
+        # PG seed requires async context; tests should use _seed_async directly
+        pass
 
     async def _seed_async(self, topic: TopicInput) -> None:
+        """Async seed for integration tests."""
+        from datetime import UTC, datetime as dt
         async with self._session_factory() as session:
             row = TopicRow(
                 id=topic.id,
@@ -609,7 +614,7 @@ class PgTopicRepository:
                 source="seed",
                 domain=topic.domain,
                 trend_score=0.0,
-                discovered_at=topic.id.time if hasattr(topic.id, "time") else __import__("datetime").datetime.now(__import__("datetime").UTC),
+                discovered_at=dt.now(UTC),
             )
             session.add(row)
             await session.commit()
@@ -653,6 +658,7 @@ class PgResearchSessionRepository:
                 "status", "round_count", "findings_count",
                 "indexed_count", "duration_seconds", "completed_at",
                 "agent_plan", "findings_data",
+                "topic_title", "topic_description", "topic_domain",
             ):
                 setattr(row, field, getattr(s, field))
             await session.commit()
@@ -925,7 +931,7 @@ In `src/api/main.py`, add imports:
 
 ```python
 from contextlib import asynccontextmanager
-from src.db.engine import create_async_engine, get_session_factory
+from src.db.engine import create_async_engine as create_db_engine, get_session_factory
 from src.db.repositories import (
     PgArticleDraftRepository,
     PgArticleRepository,
@@ -935,18 +941,32 @@ from src.db.repositories import (
 )
 ```
 
-Add lifespan handler before `create_app`:
+Add lifespan handler before `create_app`. **Critical:** Repository initialization must happen inside the lifespan, not in `create_app`, because the async engine can only be created in an async context.
 
 ```python
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage async engine lifecycle."""
+    """Manage async engine lifecycle and initialize repos."""
     db_url = app.state.settings.database_url
     if db_url:
-        from src.db.engine import create_async_engine, get_session_factory
-        engine = create_async_engine(db_url)
+        engine = create_db_engine(db_url)
         app.state.db_engine = engine
-        app.state.async_session = get_session_factory(engine)
+        sf = get_session_factory(engine)
+        # Swap research repos to PG
+        repos = ResearchRepositories(
+            sessions=PgResearchSessionRepository(sf),
+            steps=PgAgentStepRepository(sf),
+            topics=PgTopicRepository(sf),
+        )
+        app.state.research_service = ResearchService(repos, NoOpOrchestrator())
+        # Swap content repos to PG
+        pg_session_repo = PgResearchSessionRepository(sf)
+        content_repos = ContentRepositories(
+            drafts=PgArticleDraftRepository(sf),
+            research=pg_session_repo,
+            articles=PgArticleRepository(sf),
+        )
+        app.state.content_repos = content_repos
         logger.info("database_connected", url=db_url.split("@")[-1])
     yield
     if hasattr(app.state, "db_engine"):
@@ -954,29 +974,19 @@ async def lifespan(app: FastAPI):
         logger.info("database_disconnected")
 ```
 
-Modify `create_app` to use lifespan and conditionally create PG repos:
-
-In `_init_research_service`, after creating repos, add conditional:
+Modify `create_app` to pass `lifespan=lifespan` to `FastAPI(...)`:
 
 ```python
-def _init_research_service(app: FastAPI) -> None:
-    if hasattr(app.state, "async_session"):
-        sf = app.state.async_session
-        repos = ResearchRepositories(
-            sessions=PgResearchSessionRepository(sf),
-            steps=PgAgentStepRepository(sf),
-            topics=PgTopicRepository(sf),
-        )
-    else:
-        repos = ResearchRepositories(
-            sessions=InMemoryResearchSessionRepository(),
-            steps=InMemoryAgentStepRepository(),
-            topics=InMemoryTopicRepository(),
-        )
-    # ... rest unchanged
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    lifespan=lifespan,
+)
 ```
 
-Same pattern for content repos initialization.
+Keep `_init_research_service` as-is (creates in-memory repos). The lifespan **overwrites** `app.state.research_service` with PG-backed repos when `database_url` is set. When it's empty, the in-memory repos from `_init_research_service` remain active.
+
+**Note on ContentService:** `ContentService` is not currently initialized in `main.py`. The `content_repos` are stored on `app.state.content_repos` for use by the content API router (which creates `ContentService` per-request using `Depends`). If the content router doesn't exist yet, this line can be deferred — the important thing is that the pattern is in place.
 
 - [ ] **Step 2: Run existing tests to verify no regression**
 
@@ -1066,6 +1076,27 @@ async def session_factory():
         await engine.dispose()
 
 
+async def _seed_topic(sf: async_sessionmaker[AsyncSession]) -> TopicInput:
+    """Helper: create a topic row for FK references."""
+    repo = PgTopicRepository(sf)
+    topic = TopicInput(id=uuid4(), title="FK Topic", description="", domain="tech")
+    await repo._seed_async(topic)
+    return topic
+
+
+async def _seed_session(
+    sf: async_sessionmaker[AsyncSession], topic_id: UUID,
+) -> ResearchSession:
+    """Helper: create a session row for FK references."""
+    repo = PgResearchSessionRepository(sf)
+    s = ResearchSession(
+        id=uuid4(), topic_id=topic_id, status="planning",
+        topic_title="FK Session", started_at=datetime.now(UTC),
+    )
+    await repo.create(s)
+    return s
+
+
 class TestPgTopicRepository:
     @pytest.mark.asyncio
     async def test_create_and_get(
@@ -1101,9 +1132,10 @@ class TestPgResearchSessionRepository:
     async def test_create_and_get(
         self, session_factory: async_sessionmaker[AsyncSession],
     ) -> None:
+        topic = await _seed_topic(session_factory)
         repo = PgResearchSessionRepository(session_factory)
         session = ResearchSession(
-            id=uuid4(), topic_id=uuid4(),
+            id=uuid4(), topic_id=topic.id,
             status="planning", topic_title="Test",
             started_at=datetime.now(UTC),
         )
@@ -1116,9 +1148,10 @@ class TestPgResearchSessionRepository:
     async def test_update(
         self, session_factory: async_sessionmaker[AsyncSession],
     ) -> None:
+        topic = await _seed_topic(session_factory)
         repo = PgResearchSessionRepository(session_factory)
         session = ResearchSession(
-            id=uuid4(), topic_id=uuid4(),
+            id=uuid4(), topic_id=topic.id,
             status="planning", topic_title="Update Test",
             started_at=datetime.now(UTC),
         )
@@ -1136,18 +1169,22 @@ class TestPgResearchSessionRepository:
     async def test_list_with_status_filter(
         self, session_factory: async_sessionmaker[AsyncSession],
     ) -> None:
+        topic = await _seed_topic(session_factory)
         repo = PgResearchSessionRepository(session_factory)
+        created_ids = []
         for status in ("complete", "complete", "failed"):
-            await repo.create(
-                ResearchSession(
-                    id=uuid4(), topic_id=uuid4(),
-                    status=status, topic_title=f"List {status}",
-                    started_at=datetime.now(UTC),
-                ),
+            s = ResearchSession(
+                id=uuid4(), topic_id=topic.id,
+                status=status, topic_title=f"List {status}",
+                started_at=datetime.now(UTC),
             )
-        items, total = await repo.list("complete", 1, 10)
-        assert total >= 2
-        assert all(s.status == "complete" for s in items)
+            await repo.create(s)
+            created_ids.append(s.id)
+        items, total = await repo.list("complete", 1, 100)
+        # Filter to our test items only
+        our_items = [i for i in items if i.id in created_ids]
+        assert len(our_items) == 2
+        assert all(s.status == "complete" for s in our_items)
 
 
 class TestPgAgentStepRepository:
@@ -1155,20 +1192,55 @@ class TestPgAgentStepRepository:
     async def test_create_and_list_by_session(
         self, session_factory: async_sessionmaker[AsyncSession],
     ) -> None:
+        topic = await _seed_topic(session_factory)
+        session = await _seed_session(session_factory, topic.id)
         repo = PgAgentStepRepository(session_factory)
-        sid = uuid4()
         for name in ("plan", "search", "evaluate"):
             await repo.create(
                 AgentStep(
-                    session_id=sid, step_name=name,
+                    session_id=session.id, step_name=name,
                     started_at=datetime.now(UTC),
                 ),
             )
-        steps = await repo.list_by_session(sid)
+        steps = await repo.list_by_session(session.id)
         assert len(steps) == 3
         assert {s.step_name for s in steps} == {
             "plan", "search", "evaluate",
         }
+
+
+class TestPgArticleDraftRepository:
+    @pytest.mark.asyncio
+    async def test_create_get_update_roundtrip(
+        self, session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
+        topic = await _seed_topic(session_factory)
+        session = await _seed_session(session_factory, topic.id)
+        repo = PgArticleDraftRepository(session_factory)
+        draft = ArticleDraft(
+            session_id=session.id,
+            topic_id=topic.id,
+            status=DraftStatus.OUTLINE_GENERATING,
+            created_at=datetime.now(UTC),
+        )
+        await repo.create(draft)
+        result = await repo.get(draft.id)
+        assert result is not None
+        assert result.status == DraftStatus.OUTLINE_GENERATING
+        # Update with JSONB fields
+        updated = result.model_copy(
+            update={
+                "status": DraftStatus.DRAFT_COMPLETE,
+                "total_word_count": 1500,
+                "global_citations": [{"url": "https://example.com", "title": "Test"}],
+            },
+        )
+        await repo.update(updated)
+        final = await repo.get(draft.id)
+        assert final is not None
+        assert final.status == DraftStatus.DRAFT_COMPLETE
+        assert final.total_word_count == 1500
+        assert len(final.global_citations) == 1
 
 
 class TestPgArticleRepository:
