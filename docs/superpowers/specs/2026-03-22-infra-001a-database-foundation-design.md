@@ -81,8 +81,13 @@ Minimal — just PostgreSQL. Milvus and Redis can be added later.
 Add to `src/config/settings.py`:
 
 ```python
-# Database
-database_url: str = "postgresql+asyncpg://cognify:cognify@localhost:5432/cognify"
+# Database (empty = in-memory repos for dev/test; set via COGNIFY_DATABASE_URL in .env)
+database_url: str = ""
+```
+
+For local dev with Docker Compose, add to `.env`:
+```
+COGNIFY_DATABASE_URL=postgresql+asyncpg://cognify:cognify@localhost:5432/cognify
 ```
 
 ---
@@ -214,9 +219,11 @@ Each class implements the corresponding protocol from `src/services/research.py`
 
 #### `PgTopicRepository` (implements `TopicRepository`)
 - `exists(topic_id)` — `SELECT 1 FROM topics WHERE id = ?`
-- `get(topic_id)` — `SELECT * FROM topics WHERE id = ?`
-- `seed(topic)` — alias for create (backward compat with in-memory interface)
-- `create(topic)` — INSERT with conflict handling
+- `get(topic_id)` — `SELECT * FROM topics WHERE id = ?`, returns `TopicInput` (matching current protocol)
+- `seed(topic)` — alias for create (backward compat with in-memory `seed()` method, not part of protocol)
+- `create(topic)` — INSERT (not part of current protocol — extra method, protocols allow this)
+
+**Note on TopicRepository protocol:** The current protocol only defines `exists()` and `get()`, returning `TopicInput` (4 fields: id, title, description, domain). The `PgTopicRepository` stores more columns (trend_score, velocity, source, etc.) from the full `TopicRow`, but `get()` returns the subset as `TopicInput` to satisfy the protocol. The `create()` method accepts a dict or extended model — the exact input type will be defined when INFRA-001b wires the scan-to-persist flow. For now, `seed()` takes `TopicInput` for backward compat with tests.
 
 #### `PgResearchSessionRepository` (implements `ResearchSessionRepository`)
 - `create(session)` — INSERT
@@ -275,7 +282,9 @@ content_repos = ContentRepositories(
 )
 ```
 
-**Fallback:** If `database_url` is empty or starts with `sqlite`, fall back to in-memory repos. This keeps `uv run pytest` working without Docker.
+**Fallback:** If `database_url` is empty string, fall back to in-memory repos. The default `database_url` in Settings is `""` (empty) — only set to a real PostgreSQL URL via `.env` or environment variable. This keeps `uv run pytest` working without Docker, since `Settings()` with no env vars produces empty `database_url` → in-memory repos.
+
+**Note:** `PgResearchSessionRepository` also satisfies `ResearchSessionReader` (from content_repositories.py) since `ResearchSessionReader` only requires `get()`, which is a subset.
 
 ---
 
@@ -331,7 +340,26 @@ All existing unit tests continue to use in-memory repos. The fallback logic in `
 
 ---
 
-## 13. What This Does NOT Cover
+## 13. Backlog AC Split
+
+INFRA-001 was split into 001a (this spec) and 001b. The backlog acceptance criteria are distributed:
+
+| Backlog AC | Covered In |
+|-----------|-----------|
+| SQLAlchemy models for all entities | **001a** (this spec) |
+| PostgreSQL-backed repository implementations | **001a** (this spec) |
+| Alembic migrations | **001a** (this spec) |
+| Docker Compose with PostgreSQL 16 | **001a** (this spec) |
+| All existing tests continue to pass | **001a** (this spec) |
+| TopicRepository persists from scan flow | 001b |
+| Cross-scan dedup (upsert-by-similarity) | 001b |
+| Replace MemorySaver with PostgresSaver | N/A — exploration found MemorySaver is not used; steps tracked via AgentStepRepository |
+
+Both 001a and 001b must be complete to fully satisfy the INFRA-001 backlog entry.
+
+---
+
+## 14. What This Does NOT Cover
 
 | Item | Covered In |
 |------|-----------|
