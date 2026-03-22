@@ -31,7 +31,9 @@ class ImageGenerator(Protocol):
 class OpenAIDalleGenerator:
     """OpenAI DALL-E 3 image generator."""
 
-    def __init__(self, api_key: str, model: str = "dall-e-3", timeout: float = 30.0) -> None:
+    def __init__(
+        self, api_key: str, model: str = "dall-e-3", timeout: float = 30.0
+    ) -> None:
         self._client = AsyncOpenAI(api_key=api_key, timeout=timeout)
         self._model = model
 
@@ -79,9 +81,9 @@ _PROMPT_TEMPLATE = (
 
 
 async def generate_illustration_prompt(
-    topic: "TopicInput",
+    topic: TopicInput,
     summary: str,
-    llm: "BaseChatModel",
+    llm: BaseChatModel,
 ) -> str | None:
     """Generate a DALL-E prompt from article metadata. Returns None on failure."""
     prompt = _PROMPT_TEMPLATE.format(
