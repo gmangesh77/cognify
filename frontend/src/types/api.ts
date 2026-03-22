@@ -10,6 +10,7 @@ export interface RawTopic {
 }
 
 export interface RankedTopic extends RawTopic {
+  id?: string;
   composite_score: number;
   rank: number;
   source_count: number;

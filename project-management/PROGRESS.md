@@ -142,7 +142,7 @@
 | --------- | ---------------------------------- | ------- | ------ | ---- | ---- |
 | INFRA-001a | PostgreSQL Persistence (Foundation) | Done | `feature/INFRA-001-postgresql-persistence` | [plan](../docs/superpowers/plans/2026-03-22-infra-001a-database-foundation.md) | [spec](../docs/superpowers/specs/2026-03-22-infra-001a-database-foundation-design.md) |
 | INFRA-001b | Topic Persistence & Cross-Scan Dedup | Done | `feature/INFRA-001b-topic-persistence` | [plan](../docs/superpowers/plans/2026-03-22-infra-001b-topic-persistence.md) | [spec](../docs/superpowers/specs/2026-03-22-infra-001b-topic-persistence-design.md) |
-| INFRA-002 | Frontend-Backend API Integration   | In Progress | `feature/INFRA-002-frontend-api-integration` | —    | —    |
+| INFRA-002 | Frontend-Backend API Integration   | Done | `feature/INFRA-002-frontend-api-integration` | [plan](../docs/superpowers/plans/2026-03-22-infra-002-frontend-api-integration.md) | [spec](../docs/superpowers/specs/2026-03-22-infra-002-frontend-api-integration-design.md) |
 
 **Note:** DASH-006 (in progress) covers partial frontend wiring (topic scan). INFRA-002 covers the full scope after INFRA-001 provides real persistence.
 

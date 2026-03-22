@@ -65,6 +65,7 @@ export interface PersistTopicsResponse {
   new_count: number;
   updated_count: number;
   total_persisted: number;
+  topic_ids: string[];
 }
 
 export interface PersistedTopic {
@@ -112,5 +113,18 @@ export async function persistTopics(req: PersistTopicsRequest): Promise<PersistT
 
 export async function fetchPersistedTopics(domain: string, page = 1, size = 20): Promise<PaginatedTopics> {
   const { data } = await apiClient.get<PaginatedTopics>("/topics", { params: { domain, page, size } });
+  return data;
+}
+
+export interface CreateSessionResponse {
+  session_id: string;
+  status: string;
+  started_at: string;
+}
+
+export async function createResearchSession(topicId: string): Promise<CreateSessionResponse> {
+  const { data } = await apiClient.post<CreateSessionResponse>("/research/sessions", {
+    topic_id: topicId,
+  });
   return data;
 }

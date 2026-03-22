@@ -11,7 +11,7 @@ export function TopicRow({ topic }: TopicRowProps) {
     <div className="flex items-start justify-between border-b border-border px-5 py-3.5 last:border-b-0">
       <div className="min-w-0 flex-1">
         <DomainBadge domain={topic.domain} />
-        <p className="mt-1 font-heading text-sm font-medium text-secondary">
+        <p className="mt-1 font-heading text-sm font-medium text-neutral-900">
           {topic.title}
         </p>
         <div className="mt-2 flex items-center gap-1.5">

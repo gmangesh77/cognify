@@ -11,6 +11,7 @@ import { ScanProgressBanner } from "@/components/topics/scan-progress-banner";
 import { TopicPagination } from "@/components/topics/topic-pagination";
 import { GenerateArticleModal } from "@/components/topics/generate-article-modal";
 import { useTopicDiscovery } from "@/hooks/use-topic-discovery";
+import { createResearchSession } from "@/lib/api/trends";
 
 function SkeletonGrid() {
   return (
@@ -79,11 +80,25 @@ export default function TopicsPage() {
   const showEmptyNoMatch = !isScanning && scanHasEverRun && totalTopics === 0;
   const showGrid = topics.length > 0;
 
-  function handleConfirm() {
-    const title = modalTopic?.title ?? "";
+  async function handleConfirm() {
+    const topic = modalTopic;
     closeModal();
-    setToast(`Article generation started for "${title}". Check back in 2-5 minutes.`);
-    setTimeout(() => setToast(null), 4000);
+    if (!topic) return;
+    if (!topic.id) {
+      setToast(`Cannot start research — topic has no ID. Try scanning again.`);
+      setTimeout(() => setToast(null), 5000);
+      return;
+    }
+    setToast(`Starting research for "${topic.title}"...`);
+    try {
+      await createResearchSession(topic.id);
+      setToast(
+        `Research started for "${topic.title}". Check Research page for progress.`,
+      );
+    } catch {
+      setToast(`Failed to start research for "${topic.title}".`);
+    }
+    setTimeout(() => setToast(null), 5000);
   }
 
   return (

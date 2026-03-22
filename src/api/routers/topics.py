@@ -81,6 +81,7 @@ async def persist_topics(
         new_count=result.new_count,
         updated_count=result.updated_count,
         total_persisted=result.total_persisted,
+        topic_ids=result.topic_ids,
     )
 
 

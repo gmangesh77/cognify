@@ -122,3 +122,10 @@ class CanonicalArticleResponse(BaseModel):
     generated_at: datetime
     provenance: ProvenanceResponse
     ai_generated: bool
+
+
+class PaginatedArticlesResponse(BaseModel):
+    items: list[CanonicalArticleResponse]
+    total: int
+    page: int
+    size: int

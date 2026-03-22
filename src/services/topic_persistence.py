@@ -6,7 +6,7 @@ existing topics using embedding cosine similarity.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import structlog
@@ -26,6 +26,7 @@ class PersistResult:
     new_count: int
     updated_count: int
     total_persisted: int
+    topic_ids: list[str] = field(default_factory=list)
 
 
 class TopicPersistenceService:
@@ -57,14 +58,17 @@ class TopicPersistenceService:
 
         new_count = 0
         updated_count = 0
+        topic_ids: list[str] = []
         for i, topic in enumerate(topics):
             match_id = matches.get(i)
             if match_id is not None:
                 await self._repo.update_from_scan(match_id, topic)
                 updated_count += 1
+                topic_ids.append(str(match_id))
             else:
-                await self._repo.create_from_ranked(topic, domain)
+                new_id = await self._repo.create_from_ranked(topic, domain)
                 new_count += 1
+                topic_ids.append(str(new_id))
 
         logger.info(
             "topics_persisted",
@@ -76,6 +80,7 @@ class TopicPersistenceService:
             new_count=new_count,
             updated_count=updated_count,
             total_persisted=new_count + updated_count,
+            topic_ids=topic_ids,
         )
 
     def _find_matches(

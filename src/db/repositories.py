@@ -287,22 +287,21 @@ class PgTopicRepository:
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[PersistedTopic], int]:
-        """List topics by domain, ordered by composite_score."""
+        """List topics by domain, ordered by composite_score.
+
+        Pass an empty string for *domain* to return topics across all domains.
+        """
         from src.api.schemas.topics import PersistedTopic
         async with self._sf() as session:
-            count_q = (
-                select(func.count())
-                .select_from(TopicRow)
-                .where(TopicRow.domain == domain)
+            count_q = select(func.count()).select_from(TopicRow)
+            q = select(TopicRow).order_by(
+                TopicRow.composite_score.desc().nulls_last(),
             )
+            if domain:
+                count_q = count_q.where(TopicRow.domain == domain)
+                q = q.where(TopicRow.domain == domain)
             total = (await session.execute(count_q)).scalar_one()
-            q = (
-                select(TopicRow)
-                .where(TopicRow.domain == domain)
-                .order_by(TopicRow.composite_score.desc().nulls_last())
-                .offset((page - 1) * size)
-                .limit(size)
-            )
+            q = q.offset((page - 1) * size).limit(size)
             rows = (await session.execute(q)).scalars().all()
             items = [
                 PersistedTopic(
@@ -486,6 +485,24 @@ class PgArticleRepository:
             if row is None:
                 return None
             return self._to_model(row)
+
+    async def list(
+        self, page: int = 1, size: int = 20,
+    ) -> tuple[list[CanonicalArticle], int]:
+        """List all articles, newest first."""
+        async with self._sf() as session:
+            count_q = select(func.count()).select_from(
+                CanonicalArticleRow,
+            )
+            total = (await session.execute(count_q)).scalar_one()
+            q = (
+                select(CanonicalArticleRow)
+                .order_by(CanonicalArticleRow.generated_at.desc())
+                .offset((page - 1) * size)
+                .limit(size)
+            )
+            rows = (await session.execute(q)).scalars().all()
+            return [self._to_model(r) for r in rows], total
 
     @staticmethod
     def _to_model(row: CanonicalArticleRow) -> CanonicalArticle:

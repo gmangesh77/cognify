@@ -2,6 +2,8 @@ import { useState, useCallback } from "react";
 import type { RankedTopic, ScanState } from "@/types/api";
 import { fetchTrends, rankTopics, persistTopics } from "@/lib/api/trends";
 import type { BackendRankedTopic } from "@/lib/api/trends";
+import { DOMAIN_KEYWORDS } from "@/types/domain";
+import type { DomainName } from "@/types/domain";
 
 const INITIAL_SCAN: ScanState = {
   isScanning: false,
@@ -46,8 +48,9 @@ export function useScanTopics() {
     setTopics([]);
 
     // Step 1: Fetch raw trends from all sources
+    const keywords = DOMAIN_KEYWORDS[domain as DomainName] ?? [domain];
     const fetchResult = await fetchTrends({
-      domain_keywords: [domain],
+      domain_keywords: keywords,
       max_results: 50,
     });
 
@@ -62,17 +65,21 @@ export function useScanTopics() {
     const rankResult = await rankTopics({
       topics: fetchResult.topics,
       domain,
-      domain_keywords: [domain],
+      domain_keywords: keywords,
     });
 
-    const ranked = rankResult.ranked_topics.map((t) => toRankedTopic(t, domain));
+    let ranked = rankResult.ranked_topics.map((t) => toRankedTopic(t, domain));
 
-    // Step 3: Persist to database (best-effort, don't block UI)
+    // Step 3: Persist to database and get topic IDs
     try {
-      await persistTopics({
+      const persistResult = await persistTopics({
         ranked_topics: rankResult.ranked_topics,
         domain,
       });
+      // Attach DB IDs to frontend topics for Generate Article
+      if (persistResult.topic_ids.length === ranked.length) {
+        ranked = ranked.map((t, i) => ({ ...t, id: persistResult.topic_ids[i] }));
+      }
     } catch {
       console.warn("Topic persistence failed — results shown but not saved");
     }
