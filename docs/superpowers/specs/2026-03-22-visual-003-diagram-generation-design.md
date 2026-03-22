@@ -21,13 +21,17 @@ Generate 0-2 Mermaid diagrams per article (flowcharts and sequence diagrams) fro
 
 ### Function
 
-`render_mermaid(syntax: str, output_path: Path) -> bool` in `src/agents/content/diagram_generator.py`
+`async def render_mermaid(syntax: str, output_path: Path) -> bool` in `src/agents/content/diagram_generator.py`
 
+- **Async function** — uses `asyncio.create_subprocess_exec` (non-blocking subprocess)
 - Writes Mermaid syntax to a temporary `.mmd` file
-- Calls `mmdc -i input.mmd -o output.png -b transparent` via `asyncio.create_subprocess_exec`
+- Calls `mmdc -i input.mmd -o output.png -b transparent`
+- Resolves `mmdc` path via project root: `Path(__file__).parents[3] / "node_modules" / ".bin" / "mmdc"`
 - Returns `True` on success (file exists), `False` on failure
 - Timeout: 15 seconds (diagrams render fast)
 - On any error (CLI not found, invalid syntax, timeout): logs warning via structlog, returns `False`
+
+**Note:** Since this is async, the node calls it directly with `await render_mermaid(...)` — NOT via `asyncio.to_thread` (which is for sync callables only).
 
 ### Dependency
 
@@ -55,9 +59,9 @@ class DiagramType(StrEnum):
 
 class DiagramSpec(BaseModel, frozen=True):
     diagram_type: DiagramType
-    title: str = Field(max_length=120)
+    title: str = Field(min_length=1, max_length=120)
     mermaid_syntax: str = Field(min_length=10)
-    caption: str = Field(max_length=200)
+    caption: str = Field(min_length=1, max_length=200)
     source_section_index: int = Field(ge=0)
 ```
 
@@ -68,6 +72,7 @@ class DiagramSpec(BaseModel, frozen=True):
 - Follows the exact `propose_charts` pattern
 - Prompt template (`_PROMPT_TEMPLATE`) sends all section text to LLM
 - Asks LLM to return JSON array of 0-2 diagram specs
+- **Truncate to max 2**: `for item in raw[:2]` (code-level enforcement, matching chart's `raw[:3]`)
 - Post-validation: discard specs where `source_section_index >= len(section_drafts)`
 - On JSON parse failure: log warning, return empty list
 - Invalid specs (Pydantic validation error): log warning, skip, keep valid ones
@@ -86,7 +91,7 @@ class DiagramSpec(BaseModel, frozen=True):
 2. Read existing visuals: `existing = list(state.get("visuals", []))`
 3. If no section_drafts → return `{"visuals": existing}`
 4. Call `propose_diagrams(section_drafts, llm)` → get specs
-5. For each spec, render via `asyncio.to_thread(render_mermaid, ...)`:
+5. For each spec, render via `await render_mermaid(...)` (async, non-blocking):
    - Generate unique filename: `{output_dir}/{session_id}/diagram_{uuid}.png`
    - On success: create `ImageAsset(url=path, caption=spec.caption, alt_text=spec.title, metadata={"diagram_type": spec.diagram_type, "source_section": spec.source_section_index})`
    - On failure: skip, log warning
@@ -108,6 +113,8 @@ When illustration node is absent:
 
 Diagram node is always added (no API key needed — local CLI). If `mmdc` is not installed at runtime, render calls fail gracefully and return no diagrams.
 
+Pipeline wiring uses the existing fallback pattern: `diagram_dir = settings.diagram_output_dir if settings else "generated_assets/diagrams"`.
+
 ### Visual Accumulation
 
 Same LangGraph TypedDict replacement semantics as VISUAL-002:
@@ -116,6 +123,7 @@ Same LangGraph TypedDict replacement semantics as VISUAL-002:
 - Return combined list
 
 **Files:**
+- `src/config/settings.py` — add `diagram_output_dir` setting
 - `src/agents/content/nodes.py` — add `make_diagram_node()` factory
 - `src/agents/content/pipeline.py` — wire diagram node into graph
 
@@ -158,7 +166,8 @@ Same LangGraph TypedDict replacement semantics as VISUAL-002:
 | File | Change Type | Description |
 |------|------------|-------------|
 | `src/models/visual.py` | Modified | Add DiagramType, DiagramSpec |
-| `src/agents/content/diagram_generator.py` | New | render_mermaid(), propose_diagrams(), prompt template |
+| `src/agents/content/diagram_generator.py` | New | async render_mermaid(), propose_diagrams(), prompt template |
+| `src/config/settings.py` | Modified | Add diagram_output_dir setting |
 | `src/agents/content/nodes.py` | Modified | Add make_diagram_node() factory |
 | `src/agents/content/pipeline.py` | Modified | Wire diagram node into graph |
 | `package.json` | New/Modified | Add @mermaid-js/mermaid-cli dev dependency |
