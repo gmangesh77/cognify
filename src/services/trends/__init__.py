@@ -100,10 +100,20 @@ def _register_arxiv(registry: TrendSourceRegistry, settings: Settings) -> None:
 
 def init_registry(settings: Settings) -> TrendSourceRegistry:
     """Construct all trend sources from settings."""
+    import structlog
+
+    logger = structlog.get_logger()
     registry = TrendSourceRegistry()
-    _register_hackernews(registry, settings)
-    _register_google_trends(registry, settings)
-    _register_reddit(registry, settings)
-    _register_newsapi(registry, settings)
-    _register_arxiv(registry, settings)
+    registrations = [
+        ("hackernews", _register_hackernews),
+        ("google_trends", _register_google_trends),
+        ("reddit", _register_reddit),
+        ("newsapi", _register_newsapi),
+        ("arxiv", _register_arxiv),
+    ]
+    for name, register_fn in registrations:
+        try:
+            register_fn(registry, settings)
+        except Exception as exc:
+            logger.warning("trend_source_init_failed", source=name, error=str(exc))
     return registry
