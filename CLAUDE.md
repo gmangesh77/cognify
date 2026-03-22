@@ -57,11 +57,20 @@ project-management/ # Backlog, sprints, risk register
 - No print() in production code — use structlog
 - No hardcoded configuration — externalize via pydantic-settings
 
+## Azure Boards
+- **Organization**: https://dev.azure.com/signity
+- **Project**: Cognify
+- **Work item prefix**: `AB#<id>` in commit messages and PR descriptions to link to Azure Boards
+- **CLI**: `powershell.exe -Command "& 'C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd' boards <command>"` (az.cmd requires PowerShell on this machine due to path spaces)
+- When completing a ticket: update Azure Boards work item state to Closed
+- When starting a ticket: update Azure Boards work item state to Active
+
 ## Git Workflow
 - Branch: feature/{TICKET}-description or fix/{TICKET}-description
 - Commits: conventional commits (feat:, fix:, chore:, docs:, test:)
 - Always run full test suite before committing
 - PR requires: tests passing + security scan clean + human review
+- Include `AB#<work-item-id>` in PR descriptions to link to Azure Boards
 
 ## Definition of Done
 Before marking ANY task complete, verify:
