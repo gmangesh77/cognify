@@ -4,7 +4,7 @@ Implements the repository protocols from services/research.py and
 services/content_repositories.py using SQLAlchemy async sessions.
 """
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -229,6 +229,96 @@ class PgTopicRepository:
             )
             db.add(row)
             await db.commit()
+
+    async def create_from_ranked(
+        self,
+        topic: "RankedTopic",
+        domain: str,
+    ) -> UUID:
+        """Insert a new topic from a ranked scan result."""
+        from src.api.schemas.topics import RankedTopic  # noqa: F401
+        topic_id = uuid4()
+        async with self._sf() as session:
+            row = TopicRow(
+                id=topic_id,
+                title=topic.title,
+                description=topic.description,
+                source=topic.source,
+                external_url=topic.external_url,
+                trend_score=topic.trend_score,
+                velocity=topic.velocity,
+                domain=domain,
+                discovered_at=topic.discovered_at,
+                domain_keywords=topic.domain_keywords,
+                composite_score=topic.composite_score,
+                rank=topic.rank,
+                source_count=topic.source_count,
+            )
+            session.add(row)
+            await session.commit()
+        return topic_id
+
+    async def update_from_scan(
+        self,
+        topic_id: UUID,
+        topic: "RankedTopic",
+    ) -> None:
+        """Update an existing topic with fresh scan data."""
+        async with self._sf() as session:
+            row = await session.get(TopicRow, topic_id)
+            if row is None:
+                return
+            row.trend_score = topic.trend_score
+            row.velocity = topic.velocity
+            row.discovered_at = topic.discovered_at
+            row.composite_score = topic.composite_score
+            row.rank = topic.rank
+            row.source_count = row.source_count + 1
+            await session.commit()
+
+    async def list_by_domain(
+        self,
+        domain: str,
+        page: int = 1,
+        size: int = 20,
+    ) -> "tuple[list[PersistedTopic], int]":
+        """List topics by domain, ordered by composite_score."""
+        from src.api.schemas.topics import PersistedTopic
+        async with self._sf() as session:
+            count_q = (
+                select(func.count())
+                .select_from(TopicRow)
+                .where(TopicRow.domain == domain)
+            )
+            total = (await session.execute(count_q)).scalar_one()
+            q = (
+                select(TopicRow)
+                .where(TopicRow.domain == domain)
+                .order_by(TopicRow.composite_score.desc().nulls_last())
+                .offset((page - 1) * size)
+                .limit(size)
+            )
+            rows = (await session.execute(q)).scalars().all()
+            items = [
+                PersistedTopic(
+                    id=r.id,
+                    title=r.title,
+                    description=r.description,
+                    source=r.source,
+                    external_url=r.external_url,
+                    trend_score=r.trend_score,
+                    velocity=r.velocity,
+                    domain=r.domain,
+                    discovered_at=r.discovered_at,
+                    composite_score=r.composite_score,
+                    rank=r.rank,
+                    source_count=r.source_count,
+                    created_at=r.created_at,
+                    updated_at=r.updated_at,
+                )
+                for r in rows
+            ]
+            return items, total
 
     @staticmethod
     def _to_model(row: TopicRow) -> TopicInput:

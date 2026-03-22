@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -40,3 +41,40 @@ class RankTopicsResponse(BaseModel):
     total_input: int
     total_after_dedup: int
     total_returned: int
+
+
+class PersistedTopic(BaseModel):
+    """Topic persisted in the database with cross-scan metadata."""
+
+    id: UUID
+    title: str
+    description: str
+    source: str
+    external_url: str
+    trend_score: float
+    velocity: float
+    domain: str
+    discovered_at: datetime
+    composite_score: float | None = None
+    rank: int | None = None
+    source_count: int = 1
+    created_at: datetime
+    updated_at: datetime
+
+
+class PersistTopicsRequest(BaseModel):
+    ranked_topics: list[RankedTopic]
+    domain: str
+
+
+class PersistTopicsResponse(BaseModel):
+    new_count: int
+    updated_count: int
+    total_persisted: int
+
+
+class PaginatedTopics(BaseModel):
+    items: list[PersistedTopic]
+    total: int
+    page: int
+    size: int
