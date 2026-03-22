@@ -140,7 +140,7 @@
 
 | Ticket    | Title                              | Status  | Branch | Plan | Spec |
 | --------- | ---------------------------------- | ------- | ------ | ---- | ---- |
-| INFRA-001 | PostgreSQL Persistence Layer       | Backlog | —      | —    | —    |
+| INFRA-001 | PostgreSQL Persistence Layer       | In Progress | `feature/INFRA-001-postgresql-persistence` | —    | —    |
 | INFRA-002 | Frontend-Backend API Integration   | Backlog | —      | —    | —    |
 
 **Note:** DASH-006 (in progress) covers partial frontend wiring (topic scan). INFRA-002 covers the full scope after INFRA-001 provides real persistence.
