@@ -2,6 +2,8 @@ import { useState, useCallback } from "react";
 import type { RankedTopic, ScanState } from "@/types/api";
 import { fetchTrends, rankTopics, persistTopics } from "@/lib/api/trends";
 import type { BackendRankedTopic } from "@/lib/api/trends";
+import { DOMAIN_KEYWORDS } from "@/types/domain";
+import type { DomainName } from "@/types/domain";
 
 const INITIAL_SCAN: ScanState = {
   isScanning: false,
@@ -46,8 +48,9 @@ export function useScanTopics() {
     setTopics([]);
 
     // Step 1: Fetch raw trends from all sources
+    const keywords = DOMAIN_KEYWORDS[domain as DomainName] ?? [domain];
     const fetchResult = await fetchTrends({
-      domain_keywords: [domain],
+      domain_keywords: keywords,
       max_results: 50,
     });
 
@@ -62,7 +65,7 @@ export function useScanTopics() {
     const rankResult = await rankTopics({
       topics: fetchResult.topics,
       domain,
-      domain_keywords: [domain],
+      domain_keywords: keywords,
     });
 
     const ranked = rankResult.ranked_topics.map((t) => toRankedTopic(t, domain));
