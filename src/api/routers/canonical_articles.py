@@ -7,13 +7,17 @@ from fastapi import APIRouter, Depends, Request
 from starlette.status import HTTP_201_CREATED
 
 from src.api.auth.schemas import TokenPayload
-from src.api.dependencies import require_editor_or_above, require_viewer_or_above
+from src.api.dependencies import (
+    require_editor_or_above,
+    require_viewer_or_above,
+)
 from src.api.errors import BadRequestError
 from src.api.rate_limiter import limiter
 from src.api.schemas.articles import (
     CanonicalArticleResponse,
     CitationResponse,
     ImageAssetResponse,
+    PaginatedArticlesResponse,
     ProvenanceResponse,
     SEOMetadataResponse,
     StructuredDataLDResponse,
@@ -33,6 +37,29 @@ canonical_articles_router = APIRouter()
 
 def _get_content_service(request: Request) -> ContentService:
     return request.app.state.content_service  # type: ignore[no-any-return]
+
+
+@limiter.limit("30/minute")
+@canonical_articles_router.get(
+    "/articles",
+    response_model=PaginatedArticlesResponse,
+    summary="List all articles",
+)
+async def list_articles(
+    request: Request,
+    page: int = 1,
+    size: int = 20,
+    user: TokenPayload = Depends(require_viewer_or_above),
+) -> PaginatedArticlesResponse:
+    """Return a paginated list of canonical articles."""
+    repo = request.app.state.article_repo
+    items, total = await repo.list(page, size)
+    return PaginatedArticlesResponse(
+        items=[_to_canonical_response(a) for a in items],
+        total=total,
+        page=page,
+        size=size,
+    )
 
 
 @limiter.limit("3/minute")
