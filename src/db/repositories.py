@@ -29,8 +29,8 @@ from src.models.content_pipeline import (
     ArticleOutline,
     CitationRef,
     DraftStatus,
-    SEOResult,
     SectionDraft,
+    SEOResult,
 )
 from src.models.research import TopicInput
 from src.models.research_db import AgentStep, ResearchSession
@@ -258,13 +258,21 @@ class PgArticleDraftRepository:
                 created_at=draft.created_at,
                 completed_at=draft.completed_at,
                 article_id=draft.article_id,
-                outline=draft.outline.model_dump(mode="json") if draft.outline else None,
+                outline=(
+                    draft.outline.model_dump(mode="json")
+                    if draft.outline else None
+                ),
                 section_drafts=[
-                    s.model_dump(mode="json") for s in draft.section_drafts
+                    s.model_dump(mode="json")
+                    for s in draft.section_drafts
                 ],
-                citations=[c.model_dump(mode="json") for c in draft.citations],
+                citations=[
+                    c.model_dump(mode="json")
+                    for c in draft.citations
+                ],
                 seo_result=(
-                    draft.seo_result.model_dump(mode="json") if draft.seo_result else None
+                    draft.seo_result.model_dump(mode="json")
+                    if draft.seo_result else None
                 ),
                 global_citations=draft.global_citations,
                 visuals=[v.model_dump(mode="json") for v in draft.visuals],
@@ -294,7 +302,9 @@ class PgArticleDraftRepository:
             row.outline = (
                 draft.outline.model_dump(mode="json") if draft.outline else None
             )
-            row.section_drafts = [s.model_dump(mode="json") for s in draft.section_drafts]
+            row.section_drafts = [
+                s.model_dump(mode="json") for s in draft.section_drafts
+            ]
             row.citations = [c.model_dump(mode="json") for c in draft.citations]
             row.seo_result = (
                 draft.seo_result.model_dump(mode="json") if draft.seo_result else None
