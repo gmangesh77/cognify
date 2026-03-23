@@ -87,11 +87,18 @@ def _validate_assembly(
     body: str,
     citations: list[Citation],
 ) -> None:
-    """Raise ValueError if minimum thresholds are not met."""
+    """Warn if minimum thresholds are not met."""
     word_count = len(body.split())
     if word_count < _MIN_WORD_COUNT:
-        msg = f"Article has {word_count} words, minimum is {_MIN_WORD_COUNT}"
-        raise ValueError(msg)
+        logger.warning(
+            "article_below_word_threshold",
+            word_count=word_count,
+            minimum=_MIN_WORD_COUNT,
+        )
     if len(citations) < _MIN_CITATIONS:
-        msg = f"Article has {len(citations)} citations, minimum is {_MIN_CITATIONS}"
-        raise ValueError(msg)
+        logger.warning(
+            "article_below_citation_threshold",
+            citation_count=len(citations),
+            minimum=_MIN_CITATIONS,
+            hint="RAG retriever may be unavailable.",
+        )

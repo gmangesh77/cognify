@@ -68,6 +68,11 @@ async def _parse_seo_response(
         response = await llm.ainvoke(messages)
         try:
             data = parse_llm_json(str(response.content))
+            if isinstance(data, dict):
+                if isinstance(data.get("description"), str) and len(data["description"]) > 170:
+                    data["description"] = data["description"][:167] + "..."
+                if isinstance(data.get("title"), str) and len(data["title"]) > 70:
+                    data["title"] = data["title"][:67] + "..."
             return SEOMetadata.model_validate(data)
         except (json.JSONDecodeError, ValidationError) as exc:
             logger.warning(

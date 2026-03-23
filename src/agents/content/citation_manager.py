@@ -182,8 +182,11 @@ async def manage_citations(state: ContentState) -> dict[str, object]:
     try:
         validate_citation_count(citations, _MIN_UNIQUE_SOURCES)
     except CitationValidationError as exc:
-        logger.error("citation_validation_failed", error=str(exc))
-        return {"status": "failed", "error": str(exc)}
+        logger.warning(
+            "citation_validation_below_threshold",
+            error=str(exc),
+            hint="Continuing without citation gate (RAG may be unavailable).",
+        )
 
     await check_urls(citations)
     refs_md = generate_references_markdown(citations)

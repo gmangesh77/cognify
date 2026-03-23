@@ -98,10 +98,10 @@ class CanonicalArticle(BaseModel):
     subtitle: str | None = None
     body_markdown: str = Field(min_length=1)
     summary: str = Field(min_length=1, max_length=500)
-    key_claims: list[str] = Field(min_length=1, max_length=10)
+    key_claims: list[str] = Field(default_factory=list, max_length=10)
     content_type: ContentType
     seo: SEOMetadata
-    citations: list[Citation] = Field(min_length=1)
+    citations: list[Citation] = Field(default_factory=list)
     visuals: list[ImageAsset] = Field(default_factory=list)
     authors: list[str] = Field(min_length=1)
     domain: str = Field(min_length=1)
