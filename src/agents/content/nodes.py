@@ -84,7 +84,7 @@ def make_queries_node(llm: BaseChatModel) -> Any:  # noqa: ANN401
     return queries_node
 
 
-def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever) -> Any:  # noqa: ANN401
+def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> Any:  # noqa: ANN401
     """Factory for the section drafting node."""
 
     async def draft_node(state: ContentState) -> dict[str, object]:
@@ -108,7 +108,7 @@ def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever) -> Any:  # n
     return draft_node
 
 
-def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever) -> Any:  # noqa: ANN401
+def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> Any:  # noqa: ANN401
     """Factory for the article validation node."""
 
     async def validate_node(state: ContentState) -> dict[str, object]:
@@ -277,7 +277,7 @@ async def _redraft_shortest(
     drafts: list[SectionDraft],
     idx: int,
     llm: BaseChatModel,
-    retriever: MilvusRetriever,
+    retriever: MilvusRetriever | None,
 ) -> list[SectionDraft]:
     """Re-draft the shortest section with an expanded word target."""
     topic = _coerce_topic(state)

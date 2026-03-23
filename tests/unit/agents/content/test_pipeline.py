@@ -83,9 +83,39 @@ def _outline_json() -> str:
     )
 
 
+def _full_pipeline_responses() -> list[str]:
+    """Provide enough FakeLLM responses for the full pipeline."""
+    queries_json = json.dumps([
+        {"section_index": 0, "queries": ["query 0"]},
+        {"section_index": 1, "queries": ["query 1"]},
+    ])
+    section_body = "Test section body with enough words for validation. " * 10
+    seo_json = json.dumps({
+        "title": "T", "description": "D", "keywords": ["k"],
+        "summary": "S", "key_claims": ["C"],
+        "ai_disclosure": "AI generated",
+    })
+    chart_json = json.dumps({"charts": []})
+    diagram_json = json.dumps({"diagrams": []})
+    return [
+        _outline_json(),   # outline node
+        queries_json,      # query generation (1 call for all sections)
+        section_body,      # draft section 0
+        section_body,      # draft section 1
+        section_body,      # validate (redraft if needed)
+        seo_json,          # seo optimize (summary)
+        seo_json,          # seo optimize (structured data)
+        chart_json,        # chart proposals
+        diagram_json,      # diagram proposals
+        "no changes",      # extra padding for any additional LLM calls
+        "no changes",
+    ]
+
+
 class TestContentPipeline:
     async def test_graph_generates_outline(self) -> None:
-        llm = FakeListChatModel(responses=[_outline_json()])
+        responses = _full_pipeline_responses()
+        llm = FakeListChatModel(responses=responses)
         graph = build_content_graph(llm)
         result = await graph.ainvoke(
             {
@@ -98,7 +128,6 @@ class TestContentPipeline:
                 "error": None,
             }
         )
-        assert result["status"] == "outline_complete"
         assert result["outline"] is not None
         assert len(result["outline"].sections) == 2
 
@@ -265,8 +294,9 @@ class TestContentPipelineWithDrafting:
         assert result["status"] == "failed"
         assert "Need 5 sources" in result["error"]
 
-    async def test_graph_without_retriever_stops_at_outline(self) -> None:
-        llm = FakeListChatModel(responses=[_outline_json()])
+    async def test_graph_without_retriever_runs_full_pipeline(self) -> None:
+        responses = _full_pipeline_responses()
+        llm = FakeListChatModel(responses=responses)
         graph = build_content_graph(llm)  # no retriever
         result = await graph.ainvoke(
             {
@@ -279,8 +309,8 @@ class TestContentPipelineWithDrafting:
                 "error": None,
             }
         )
-        assert result["status"] == "outline_complete"
-        assert result.get("section_drafts") is None
+        assert result["outline"] is not None
+        assert len(result.get("section_drafts", [])) > 0
 
     async def test_query_generation_failure_sets_failed(self) -> None:
         responses = [_outline_json(), "bad json", "bad json"]

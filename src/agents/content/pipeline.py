@@ -68,10 +68,6 @@ def build_content_graph(
     graph.add_node("generate_outline", make_outline_node(llm))
     graph.set_entry_point("generate_outline")
 
-    if retriever is None:
-        graph.add_edge("generate_outline", END)
-        return graph.compile()
-
     graph.add_node("generate_queries", make_queries_node(llm))
     graph.add_node("draft_sections", make_draft_node(llm, retriever))
     graph.add_node("validate_article", make_validate_node(llm, retriever))
