@@ -194,7 +194,8 @@ class ResearchService:
         result_dict = result if isinstance(result, dict) else {}
         findings_raw = result_dict.get("findings", [])
         findings_data = [
-            f.model_dump() if hasattr(f, "model_dump") else f for f in findings_raw
+            f.model_dump(mode="json") if hasattr(f, "model_dump") else f
+            for f in findings_raw
         ]
         completed_at = datetime.now(UTC)
         duration_seconds = (
