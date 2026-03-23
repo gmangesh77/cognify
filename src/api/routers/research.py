@@ -44,18 +44,23 @@ def _make_output_summary(output_data: dict[str, object]) -> str | None:
     return None
 
 
-def _get_research_service(request: Request) -> ResearchService:
+def _get_research_service_readonly(request: Request) -> ResearchService:
+    """Get research service for read operations (list, detail)."""
     if not hasattr(request.app.state, "research_service"):
         raise ServiceUnavailableError(
-            message="Research service not configured. Set ANTHROPIC_API_KEY."
+            message="Research service not configured."
         )
-    svc = request.app.state.research_service
-    # Block article generation when using NoOpOrchestrator
+    return request.app.state.research_service  # type: ignore[no-any-return]
+
+
+def _get_research_service(request: Request) -> ResearchService:
+    """Get research service for write operations (create session)."""
+    svc = _get_research_service_readonly(request)
     if type(svc._orchestrator).__name__ == "NoOpOrchestrator":
         raise ServiceUnavailableError(
             message="LLM pipeline not configured. Set COGNIFY_ANTHROPIC_API_KEY to enable article generation."
         )
-    return svc  # type: ignore[no-any-return]
+    return svc
 
 
 @limiter.limit("3/minute")
@@ -91,7 +96,7 @@ async def get_research_session(
     session_id: str,
     user: TokenPayload = Depends(require_viewer_or_above),
 ) -> ResearchSessionResponse:
-    svc = _get_research_service(request)
+    svc = _get_research_service_readonly(request)
     detail = await svc.get_session(UUID(session_id))
     s = detail.session
     steps = [
@@ -133,7 +138,7 @@ async def list_research_sessions(
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=100),
 ) -> PaginatedResearchSessions:
-    svc = _get_research_service(request)
+    svc = _get_research_service_readonly(request)
     result = await svc.list_sessions(status, page, size)
     items = [
         ResearchSessionSummary(

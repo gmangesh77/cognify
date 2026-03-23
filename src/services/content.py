@@ -127,10 +127,16 @@ class ContentService:
             domain=session.topic_domain,
         )
 
+    def _require_llm(self) -> "BaseChatModel":
+        if self._deps.llm is None:
+            msg = "LLM not configured. Set COGNIFY_ANTHROPIC_API_KEY."
+            raise ValueError(msg)
+        return self._deps.llm
+
     async def _run_pipeline(
         self, topic: TopicInput, findings: list[FacetFindings]
     ) -> ArticleOutline:
-        graph = build_content_graph(self._deps.llm, settings=self._deps.settings)
+        graph = build_content_graph(self._require_llm(), settings=self._deps.settings)
         result = await graph.ainvoke(
             {
                 "topic": topic,
@@ -157,7 +163,7 @@ class ContentService:
     ) -> dict[str, object]:
         """Run the content pipeline with existing outline."""
         graph = build_content_graph(
-            self._deps.llm, self._deps.retriever, self._deps.settings
+            self._require_llm(), self._deps.retriever, self._deps.settings
         )
         result: dict[str, object] = await graph.ainvoke(
             {

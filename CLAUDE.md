@@ -110,9 +110,9 @@ Package manager: **uv** — all commands use `uv run` prefix (no activation need
 ## Current Status
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** INFRA-002 (Frontend-Backend API Integration) — PR #34
-**Epic 9 (Infrastructure):** ALL 3 TICKETS DONE — **Epic complete.** PostgreSQL persistence (SQLAlchemy, Alembic, Docker Compose), topic persistence with cross-scan dedup, all frontend hooks wired to real APIs.
-**Epic 4 (Visual Assets):** VISUAL-001 Done — LLM-driven chart generation. VISUAL-002, VISUAL-003 remaining.
+**Last completed:** VISUAL-003 (Diagram Generation) — PR #36
+**Epic 9 (Infrastructure):** ALL 3 TICKETS DONE — **Epic complete.** PostgreSQL persistence (SQLAlchemy, Alembic, Docker Compose), topic persistence with cross-scan dedup, all frontend hooks wired to real APIs. INFRA-003/004/005 remain in backlog.
+**Epic 4 (Visual Assets):** **Epic complete.** VISUAL-001 (charts), VISUAL-002 (AI illustrations), VISUAL-003 (diagrams) all Done.
 **Epic 6 (Dashboard):** **Epic complete.** All pages show real data (except Settings — mock, needs backend CRUD endpoints).
 **Epic 3 (Content Gen):** **Epic complete.** Full pipeline with chart generation → CanonicalArticle assembly.
 **Epic 8 (Architecture):** Epic complete.
@@ -121,4 +121,4 @@ See @project-management/PROGRESS.md for full ticket status.
 **Epic 1 (Trend Discovery):** Epic complete.
 **Epic 0 (Design):** Epic complete.
 **Test suite:** ~764 backend tests + 237 frontend tests, ~98% coverage
-**Next action:** Epic 5 (Publishing) or Epic 4 (VISUAL-002/003) or Settings backend CRUD.
+**Next action:** Epic 5 (Publishing), INFRA-003 (Wire Real LLM Orchestrator), INFRA-004 (Settings Backend CRUD), or INFRA-005 (Frontend Status Alignment).

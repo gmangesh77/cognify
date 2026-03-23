@@ -34,7 +34,7 @@ class GoogleTrendsClient:
         self._pytrends = TrendReq(
             hl=language,
             tz=timezone_offset,
-            requests_args={"timeout": timeout},
+            timeout=(timeout, timeout),
         )
 
     def _fetch_trending_sync(

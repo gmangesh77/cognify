@@ -72,7 +72,7 @@ class ContentRepositories:
 class ContentDeps:
     """Bundled dependencies for ContentService."""
 
-    llm: BaseChatModel
+    llm: BaseChatModel | None = None
     retriever: MilvusRetriever | None = None
     settings: Settings | None = None
 

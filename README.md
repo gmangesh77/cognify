@@ -14,7 +14,7 @@ Cognify monitors domains of interest, automatically discovers trending topics fr
 | **API** | FastAPI (async REST + WebSocket) |
 | **Agent Framework** | LangChain + LangGraph |
 | **LLMs** | Claude Opus 4 (primary), Claude Sonnet 4 (drafting) |
-| **Image Generation** | DALL-E 3, Matplotlib (charts) |
+| **Visual Assets** | DALL-E 3 (illustrations), Matplotlib (charts), Mermaid (diagrams) |
 | **Vector DB** | Milvus (RAG embeddings + similarity search) — see [ADR-002](docs/architecture/adrs/ADR-002-milvus-vector-database.md) |
 | **Database** | PostgreSQL 16 + SQLAlchemy 2.0 + Alembic (migrations) |
 | **Cache** | Redis |
@@ -117,20 +117,36 @@ cd frontend && npm install && cd ..
 ### Local Development
 
 ```bash
-# Start PostgreSQL
+# 1. Set up environment variables
+cp .env.example .env
+# Edit .env — at minimum, set COGNIFY_DATABASE_URL and JWT keys.
+# The default database URL matches docker-compose.yml:
+#   COGNIFY_DATABASE_URL=postgresql+asyncpg://cognify:cognify@localhost:5432/cognify
+# Without COGNIFY_DATABASE_URL, the backend falls back to in-memory storage
+# (data is lost on restart).
+
+# 2. Start PostgreSQL (Docker)
 docker compose up -d
 
-# Run database migrations
+# 3. Run database migrations
 uv run alembic upgrade head
 
-# Start the backend API (port 8000)
+# 4. Start the backend API (port 8000)
 uv run uvicorn src.api.main:create_app --factory --reload --port 8000
 
-# Start the frontend (port 3000) — in a separate terminal
+# 5. Start the frontend (port 3000) — in a separate terminal
 cd frontend && npm run dev
 ```
 
 The API will be at `http://localhost:8000` (docs at `/docs`). The dashboard will be at `http://localhost:3000`.
+
+**Dev credentials** (seeded automatically when `COGNIFY_DEBUG=true`):
+
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@cognify.dev` | `admin123` | admin |
+| `editor@cognify.dev` | `editor123` | editor |
+| `viewer@cognify.dev` | `viewer123` | viewer |
 
 ### Configuration
 
@@ -144,9 +160,9 @@ cp .env.example .env
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `COGNIFY_DEBUG` | `false` | Enable debug mode |
+| `COGNIFY_DEBUG` | `false` | Enable debug mode (seeds dev users, verbose logging) |
 | `COGNIFY_LOG_LEVEL` | `INFO` | Log level |
-| `COGNIFY_DATABASE_URL` | `""` | PostgreSQL connection string (empty = in-memory) |
+| `COGNIFY_DATABASE_URL` | `""` | PostgreSQL connection string (`postgresql+asyncpg://user:pass@host:port/db`). **Required for persistent storage** — empty falls back to in-memory repos |
 | `COGNIFY_CORS_ALLOWED_ORIGINS` | `["http://localhost:3000"]` | Allowed CORS origins |
 
 **Authentication (JWT RS256)**
@@ -158,6 +174,15 @@ cp .env.example .env
 | `COGNIFY_JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `15` | Access token lifetime |
 | `COGNIFY_JWT_REFRESH_TOKEN_EXPIRE_DAYS` | `7` | Refresh token lifetime |
 
+**LLM & AI**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COGNIFY_ANTHROPIC_API_KEY` | — | Anthropic API key (required for real article generation) |
+| `COGNIFY_OPENAI_API_KEY` | — | OpenAI key (DALL-E illustrations) |
+| `COGNIFY_PRIMARY_MODEL_NAME` | `claude-sonnet-4` | Primary LLM model for generation |
+| `COGNIFY_DRAFTING_MODEL_NAME` | `claude-sonnet-4` | Drafting LLM model |
+
 **External API Keys**
 
 | Variable | Default | Description |
@@ -167,7 +192,6 @@ cp .env.example .env
 | `COGNIFY_NEWSAPI_API_KEY` | — | NewsAPI key (trend source) |
 | `COGNIFY_REDDIT_CLIENT_ID` | — | Reddit OAuth2 client ID |
 | `COGNIFY_REDDIT_CLIENT_SECRET` | — | Reddit OAuth2 client secret |
-| `COGNIFY_OPENAI_API_KEY` | — | OpenAI key (DALL-E illustrations) |
 
 **Vector Database & RAG**
 
@@ -179,6 +203,13 @@ cp .env.example .env
 | `COGNIFY_TOP_K_RETRIEVAL` | `5` | Top-k chunks for RAG retrieval |
 
 See `src/config/settings.py` for the full list of 50+ configurable settings.
+
+**Frontend** (in `frontend/.env.local`):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000/api/v1` | Backend API base URL |
+| `NEXT_PUBLIC_APP_NAME` | `Cognify` | Application name |
 
 ## API Endpoints
 

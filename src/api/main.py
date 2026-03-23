@@ -39,7 +39,13 @@ from src.db.repositories import (
     PgResearchSessionRepository,
     PgTopicRepository,
 )
-from src.services.content_repositories import ContentRepositories
+from src.services.content import ContentService
+from src.services.content_repositories import (
+    ContentDeps,
+    ContentRepositories,
+    InMemoryArticleDraftRepository,
+    InMemoryArticleRepository,
+)
 from src.services.research import (
     InMemoryAgentStepRepository,
     InMemoryResearchSessionRepository,
@@ -86,6 +92,11 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             research=PgResearchSessionRepository(sf),
             articles=article_repo,
         )
+        # Content service (LLM wired later by INFRA-003)
+        app.state.content_service = ContentService(
+            repos=app.state.content_repos,
+            deps=ContentDeps(),
+        )
         # Topic persistence service
         topic_repo = PgTopicRepository(sf)
         app.state.topic_repo = topic_repo
@@ -95,6 +106,17 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             threshold=app.state.settings.dedup_similarity_threshold,
         )
         logger.info("database_connected", url=db_url.split("@")[-1])
+    else:
+        # In-memory fallback (no database configured)
+        in_mem_repos = ContentRepositories(
+            drafts=InMemoryArticleDraftRepository(),
+            research=InMemoryResearchSessionRepository(),
+            articles=InMemoryArticleRepository(),
+        )
+        app.state.content_repos = in_mem_repos
+        app.state.content_service = ContentService(
+            repos=in_mem_repos, deps=ContentDeps(),
+        )
     yield
     if hasattr(app.state, "db_engine"):
         await app.state.db_engine.dispose()

@@ -439,8 +439,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Embedded in Markdown with caption
 - **Story Points**: 5
 
-### VISUAL-002: AI Illustration Generation [Should]
+### VISUAL-002: AI Illustration Generation [Should] — DONE
 **As a** content team, **I want** AI-generated hero images for articles, **so that** articles have engaging visuals.
+- **Status**: Done (branch `feature/VISUAL-002-ai-illustration-generation`, PR #35)
+- **Plan**: [`docs/superpowers/plans/2026-03-22-visual-002-ai-illustration-generation.md`](../docs/superpowers/plans/2026-03-22-visual-002-ai-illustration-generation.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-22-visual-002-ai-illustration-generation-design.md`](../docs/superpowers/specs/2026-03-22-visual-002-ai-illustration-generation-design.md)
 - **Acceptance Criteria**:
   - Agent crafts descriptive prompt from article topic
   - Stable Diffusion generates illustration (1024x1024)
@@ -448,8 +451,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Stored in S3 with article reference
 - **Story Points**: 5
 
-### VISUAL-003: Diagram Generation [Could]
+### VISUAL-003: Diagram Generation [Could] — DONE
 **As a** writer agent, **I want** concept diagrams auto-generated, **so that** complex topics are visually explained.
+- **Status**: Done (branch `feature/VISUAL-003-diagram-generation`, PR #36)
+- **Plan**: [`docs/superpowers/plans/2026-03-22-visual-003-diagram-generation.md`](../docs/superpowers/plans/2026-03-22-visual-003-diagram-generation.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-22-visual-003-diagram-generation-design.md`](../docs/superpowers/specs/2026-03-22-visual-003-diagram-generation-design.md)
 - **Acceptance Criteria**:
   - Mermaid diagram syntax generated from article content
   - Rendered to PNG/SVG

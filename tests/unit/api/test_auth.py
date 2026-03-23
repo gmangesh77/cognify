@@ -69,9 +69,14 @@ class TestSchemas:
         with pytest.raises(ValidationError):
             LoginRequest(email="not-an-email", password="password123")
 
-    def test_login_request_short_password(self) -> None:
+    def test_login_request_short_password_accepted(self) -> None:
+        """Short passwords are accepted at schema level to avoid leaking policy."""
+        req = LoginRequest(email="test@example.com", password="short")
+        assert req.password == "short"
+
+    def test_login_request_empty_password_rejected(self) -> None:
         with pytest.raises(ValidationError):
-            LoginRequest(email="test@example.com", password="short")
+            LoginRequest(email="test@example.com", password="")
 
     def test_refresh_request(self) -> None:
         req = RefreshRequest(refresh_token="some-token")
