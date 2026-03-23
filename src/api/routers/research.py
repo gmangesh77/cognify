@@ -56,7 +56,7 @@ def _get_research_service_readonly(request: Request) -> ResearchService:
 def _get_research_service(request: Request) -> ResearchService:
     """Get research service for write operations (create session)."""
     svc = _get_research_service_readonly(request)
-    if type(svc._orchestrator).__name__ == "NoOpOrchestrator":
+    if type(svc._orchestrator).__name__ in ("NoOpOrchestrator", "_NoOpOrchestrator"):
         raise ServiceUnavailableError(
             message="LLM pipeline not configured. Set COGNIFY_ANTHROPIC_API_KEY to enable article generation."
         )

@@ -143,7 +143,7 @@
 | INFRA-001a | PostgreSQL Persistence (Foundation) | Done | `feature/INFRA-001-postgresql-persistence` | [plan](../docs/superpowers/plans/2026-03-22-infra-001a-database-foundation.md) | [spec](../docs/superpowers/specs/2026-03-22-infra-001a-database-foundation-design.md) |
 | INFRA-001b | Topic Persistence & Cross-Scan Dedup | Done | `feature/INFRA-001b-topic-persistence` | [plan](../docs/superpowers/plans/2026-03-22-infra-001b-topic-persistence.md) | [spec](../docs/superpowers/specs/2026-03-22-infra-001b-topic-persistence-design.md) |
 | INFRA-002 | Frontend-Backend API Integration   | Done | `feature/INFRA-002-frontend-api-integration` | [plan](../docs/superpowers/plans/2026-03-22-infra-002-frontend-api-integration.md) | [spec](../docs/superpowers/specs/2026-03-22-infra-002-frontend-api-integration-design.md) |
-| INFRA-003 | Wire Real LLM Orchestrator          | Backlog | — | — | — |
+| INFRA-003 | Wire Real LLM Orchestrator          | Done | `feature/INFRA-003-wire-llm-orchestrator` | — | — |
 | INFRA-004 | Settings Backend CRUD               | Backlog | — | — | — |
 | INFRA-005 | Frontend Status Alignment           | Backlog | — | — | — |
 
