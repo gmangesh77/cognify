@@ -107,7 +107,7 @@
 | ---------- | -------------------------- | ------- | ------ | ---- | ---- |
 | VISUAL-001 | Data Chart Generation      | Done | `feature/VISUAL-001-data-chart-generation` | [plan](../docs/superpowers/plans/2026-03-21-visual-001-data-chart-generation.md) | [spec](../docs/superpowers/specs/2026-03-21-visual-001-data-chart-generation-design.md) |
 | VISUAL-002 | AI Illustration Generation | Done | `feature/VISUAL-002-ai-illustration-generation` | [plan](../docs/superpowers/plans/2026-03-22-visual-002-ai-illustration-generation.md) | [spec](../docs/superpowers/specs/2026-03-22-visual-002-ai-illustration-generation-design.md) |
-| VISUAL-003 | Diagram Generation         | Backlog | —      | —    | —    |
+| VISUAL-003 | Diagram Generation         | In Progress | `feature/VISUAL-003-diagram-generation` | [plan](../docs/superpowers/plans/2026-03-22-visual-003-diagram-generation.md) | [spec](../docs/superpowers/specs/2026-03-22-visual-003-diagram-generation-design.md) |
 
 
 ## Epic 5: Multi-Platform Publishing

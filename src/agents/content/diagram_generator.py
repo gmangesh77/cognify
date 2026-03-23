@@ -81,7 +81,7 @@ async def render_mermaid(syntax: str, output_path: Path) -> bool:
     except FileNotFoundError:
         logger.warning("mmdc_not_found", path=str(_MMDC_PATH))
         return False
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning("mermaid_render_timeout")
         return False
     except Exception as exc:
