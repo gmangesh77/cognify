@@ -213,10 +213,12 @@ def _register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+        import traceback
         logger.error(
             "unhandled_exception",
             exc_type=type(exc).__name__,
             exc_message=str(exc),
+            traceback=traceback.format_exc(),
         )
         return JSONResponse(
             status_code=500,

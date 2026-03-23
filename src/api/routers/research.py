@@ -49,7 +49,13 @@ def _get_research_service(request: Request) -> ResearchService:
         raise ServiceUnavailableError(
             message="Research service not configured. Set ANTHROPIC_API_KEY."
         )
-    return request.app.state.research_service  # type: ignore[no-any-return]
+    svc = request.app.state.research_service
+    # Block article generation when using NoOpOrchestrator
+    if type(svc._orchestrator).__name__ == "NoOpOrchestrator":
+        raise ServiceUnavailableError(
+            message="LLM pipeline not configured. Set COGNIFY_ANTHROPIC_API_KEY to enable article generation."
+        )
+    return svc  # type: ignore[no-any-return]
 
 
 @limiter.limit("3/minute")

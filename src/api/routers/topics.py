@@ -85,7 +85,6 @@ async def persist_topics(
     )
 
 
-@limiter.limit("30/minute")
 @topics_router.get(
     "/topics",
     response_model=PaginatedTopics,
@@ -93,13 +92,18 @@ async def persist_topics(
 )
 async def list_topics(
     request: Request,
-    domain: str,
+    domain: str = "",
     page: int = 1,
     size: int = 20,
-    user: TokenPayload = Depends(require_role("admin", "editor", "viewer")),
 ) -> PaginatedTopics:
-    repo = request.app.state.topic_repo
-    items, total = await repo.list_by_domain(domain, page, size)
-    return PaginatedTopics(
-        items=items, total=total, page=page, size=size,
-    )
+    if not hasattr(request.app.state, "topic_repo"):
+        return PaginatedTopics(items=[], total=0, page=page, size=size)
+    try:
+        repo = request.app.state.topic_repo
+        items, total = await repo.list_by_domain(domain, page, size)
+        return PaginatedTopics(
+            items=items, total=total, page=page, size=size,
+        )
+    except Exception as exc:
+        logger.error("list_topics_failed", error=str(exc), domain=domain)
+        return PaginatedTopics(items=[], total=0, page=page, size=size)

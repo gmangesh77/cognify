@@ -649,6 +649,40 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 8
 - **Depends on**: INFRA-001
 
+### INFRA-003: Wire Real LLM Orchestrator [Must]
+**As a** user, **I want** the "Generate Article" flow to actually run the LLM pipeline, **so that** clicking "Generate" produces a real article.
+- **Acceptance Criteria**:
+  - Replace `NoOpOrchestrator` in `main.py` with real `build_graph()` orchestrator using `ChatAnthropic`
+  - Add `anthropic_api_key: str = ""` to Settings (if not present) — `COGNIFY_ANTHROPIC_API_KEY`
+  - Add `langchain-anthropic` to dependencies (if not present)
+  - When `anthropic_api_key` is set: real orchestrator runs research → content pipeline → CanonicalArticle
+  - When empty: fallback to `NoOpOrchestrator` (current behavior, for tests)
+  - Research session status updates visible on `/research` page in real-time
+  - Generated article appears on `/articles` page after pipeline completes
+- **Story Points**: 5
+- **Depends on**: INFRA-001a (Done)
+
+### INFRA-004: Settings Backend CRUD [Must]
+**As an** admin, **I want** settings saved to the database, **so that** domain configuration, API keys, and LLM preferences persist across server restarts.
+- **Acceptance Criteria**:
+  - SQLAlchemy model for `DomainConfig` (domain name, keywords, trend sources, status)
+  - Settings CRUD endpoints: domains (list, create, update, delete), LLM config (get, update), API keys (list, add, rotate, delete), SEO defaults (get, update), General config (get, update)
+  - Frontend Settings hooks (`useSettings`) wired to real API instead of mock
+  - Topics dropdown on `/topics` page reads domains from saved settings instead of hardcoded list
+  - Domain keywords from settings used for scanning (replacing hardcoded `DOMAIN_KEYWORDS`)
+- **Story Points**: 8
+- **Depends on**: INFRA-001a (Done)
+
+### INFRA-005: Frontend Status Alignment [Should]
+**As a** user, **I want** all session statuses displayed correctly, **so that** the Research page doesn't crash on unexpected statuses.
+- **Acceptance Criteria**:
+  - Frontend `SessionStatus` type includes all backend statuses: planning, researching, evaluating, running, complete, completed, failed
+  - `SessionStatusBadge`, `SessionCard` progress bar, and `SessionFilters` handle all statuses
+  - Session detail polling works for active sessions (researching, evaluating)
+  - Dashboard "Recent Articles" and "Trending Topics" show real data with correct text colors
+- **Story Points**: 3
+- **Note**: Partially fixed (StatusBadge crash resolved), but filter tabs and progress bar logic still assume 4 statuses
+
 ---
 
 ## Backlog Summary
@@ -664,5 +698,5 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 | Publishing | 2 | 1 | 2 | 5 | 23 |
 | Dashboard & Config | 4 | 1 | 0 | 5 | 31 |
 | API & Auth | 3 | 0 | 0 | 3 | 15 |
-| Infrastructure & Integration | 2 | 0 | 0 | 2 | 21 |
-| **Total** | **34** | **9** | **3** | **46** | **243** |
+| Infrastructure & Integration | 4 | 1 | 0 | 5 | 37 |
+| **Total** | **36** | **10** | **3** | **49** | **259** |

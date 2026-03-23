@@ -132,7 +132,7 @@
 | DASH-003 | Article View & Preview   | Done | `feature/DASH-003-article-view-preview` | [plan](../docs/superpowers/plans/2026-03-21-dash-003-article-view-preview.md) | [spec](../docs/superpowers/specs/2026-03-21-dash-003-article-view-preview-design.md) |
 | DASH-004 | Research Sessions Screen | Done | `feature/DASH-004-research-sessions-screen` | [plan](../docs/superpowers/plans/2026-03-21-dash-004-research-sessions-screen.md) | [spec](../docs/superpowers/specs/2026-03-21-dash-004-research-sessions-screen-design.md) |
 | DASH-005 | Settings & Configuration | Done | `feature/DASH-005-settings-configuration` | [plan](../docs/superpowers/plans/2026-03-21-dash-005-settings-configuration.md) | [spec](../docs/superpowers/specs/2026-03-20-dash-005-settings-configuration-design.md) |
-| DASH-006 | Frontend-Backend API Integration | In Progress | `feature/DASH-006-frontend-api-integration` | — | — |
+| DASH-006 | Frontend-Backend API Integration | Done | Superseded by INFRA-002 (PR #34) | — | — |
 
 
 ## Epic 9: Infrastructure & Integration
@@ -143,8 +143,9 @@
 | INFRA-001a | PostgreSQL Persistence (Foundation) | Done | `feature/INFRA-001-postgresql-persistence` | [plan](../docs/superpowers/plans/2026-03-22-infra-001a-database-foundation.md) | [spec](../docs/superpowers/specs/2026-03-22-infra-001a-database-foundation-design.md) |
 | INFRA-001b | Topic Persistence & Cross-Scan Dedup | Done | `feature/INFRA-001b-topic-persistence` | [plan](../docs/superpowers/plans/2026-03-22-infra-001b-topic-persistence.md) | [spec](../docs/superpowers/specs/2026-03-22-infra-001b-topic-persistence-design.md) |
 | INFRA-002 | Frontend-Backend API Integration   | Done | `feature/INFRA-002-frontend-api-integration` | [plan](../docs/superpowers/plans/2026-03-22-infra-002-frontend-api-integration.md) | [spec](../docs/superpowers/specs/2026-03-22-infra-002-frontend-api-integration-design.md) |
-
-**Note:** DASH-006 (in progress) covers partial frontend wiring (topic scan). INFRA-002 covers the full scope after INFRA-001 provides real persistence.
+| INFRA-003 | Wire Real LLM Orchestrator          | Backlog | — | — | — |
+| INFRA-004 | Settings Backend CRUD               | Backlog | — | — | — |
+| INFRA-005 | Frontend Status Alignment           | Backlog | — | — | — |
 
 
 ---
