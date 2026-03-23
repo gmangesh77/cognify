@@ -85,7 +85,6 @@ async def persist_topics(
     )
 
 
-@limiter.limit("30/minute")
 @topics_router.get(
     "/topics",
     response_model=PaginatedTopics,
