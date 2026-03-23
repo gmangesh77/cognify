@@ -164,12 +164,23 @@ class ResearchService:
     async def run_and_finalize(self, session_id: UUID, topic: TopicInput) -> None:
         try:
             result = await self._orchestrator.run(session_id, topic)
-            await self._persist_success(session_id, topic, result)
         except Exception as exc:
             logger.error(
                 "orchestrator_failed",
                 session_id=str(session_id),
                 error=str(exc),
+                exc_info=True,
+            )
+            await self._persist_failure(session_id)
+            return
+        try:
+            await self._persist_success(session_id, topic, result)
+        except Exception as exc:
+            logger.error(
+                "persist_success_failed",
+                session_id=str(session_id),
+                error=str(exc),
+                exc_info=True,
             )
             await self._persist_failure(session_id)
 
