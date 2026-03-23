@@ -60,6 +60,29 @@ from src.utils.logging import setup_logging
 logger = structlog.get_logger()
 
 
+def _try_build_retriever(
+    app: FastAPI, settings: Settings,
+) -> "MilvusRetriever | None":
+    """Build MilvusRetriever if Milvus is available, else None."""
+    try:
+        from src.services.milvus_retriever import MilvusRetriever
+        from src.services.milvus_service import MilvusService
+
+        milvus_svc = MilvusService(
+            uri=settings.milvus_uri,
+            collection_name=settings.milvus_collection_name,
+        )
+        embed_svc = _get_or_create_embedding_service(app)
+        return MilvusRetriever(milvus_svc, embed_svc)
+    except Exception as exc:
+        logger.warning(
+            "milvus_unavailable",
+            error=str(exc),
+            hint="RAG retrieval disabled. Articles will be generated without vector context.",
+        )
+        return None
+
+
 def _get_or_create_embedding_service(app: FastAPI) -> "EmbeddingService":
     if not hasattr(app.state, "embedding_service"):
         from src.services.embeddings import EmbeddingService
@@ -80,19 +103,15 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     if settings.anthropic_api_key:
         try:
             llm = _build_llm(settings)
-            from src.services.milvus_retriever import MilvusRetriever
-            from src.services.milvus_service import MilvusService
-
-            milvus_svc = MilvusService(
-                uri=settings.milvus_uri,
-                collection_name=settings.milvus_collection_name,
-            )
-            embed_svc = _get_or_create_embedding_service(app)
-            retriever = MilvusRetriever(milvus_svc, embed_svc)
+            retriever = _try_build_retriever(app, settings)
             content_deps = ContentDeps(
                 llm=llm, retriever=retriever, settings=settings,
             )
-            logger.info("content_deps_initialized", mode="real_llm")
+            logger.info(
+                "content_deps_initialized",
+                mode="real_llm",
+                rag_enabled=retriever is not None,
+            )
         except Exception as exc:
             logger.error("content_deps_init_failed", error=str(exc))
 
@@ -241,8 +260,6 @@ def _build_real_orchestrator(
         LangGraphResearchOrchestrator,
     )
     from src.agents.research.web_search import WebSearchAgent
-    from src.services.chunker import TokenChunker
-    from src.services.milvus_service import MilvusService
     from src.services.semantic_scholar import SemanticScholarClient
     from src.services.serpapi_client import SerpAPIClient
     from src.services.task_dispatch import AsyncIODispatcher
@@ -263,18 +280,32 @@ def _build_real_orchestrator(
     lit_agent = LiteratureReviewAgent(scholar, llm)
     dispatcher = AsyncIODispatcher(timeout_seconds=300.0)
 
-    embed_svc = _get_or_create_embedding_service_from_settings(settings)
-    milvus_svc = MilvusService(
-        uri=settings.milvus_uri,
-        collection_name=settings.milvus_collection_name,
-    )
-    chunker = TokenChunker(
-        chunk_size=settings.chunk_size_tokens,
-        overlap=settings.chunk_overlap_tokens,
-    )
+    # Milvus indexing is optional (unavailable on Windows)
+    vector_store = None
+    embedder = None
+    chunker = None
+    try:
+        from src.services.chunker import TokenChunker
+        from src.services.milvus_service import MilvusService
+
+        embedder = _get_or_create_embedding_service_from_settings(settings)
+        vector_store = MilvusService(
+            uri=settings.milvus_uri,
+            collection_name=settings.milvus_collection_name,
+        )
+        chunker = TokenChunker(
+            chunk_size=settings.chunk_size_tokens,
+            overlap=settings.chunk_overlap_tokens,
+        )
+    except Exception as exc:
+        logger.warning(
+            "milvus_indexing_unavailable",
+            error=str(exc),
+            hint="Research will run without vector indexing.",
+        )
     deps = GraphDeps(
-        vector_store=milvus_svc,
-        embedder=embed_svc,
+        vector_store=vector_store,
+        embedder=embedder,
         chunker=chunker,
         step_repo=step_repo,
     )
