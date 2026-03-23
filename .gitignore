@@ -41,5 +41,8 @@ Thumbs.db
 private.pem
 public.pem
 
+# Node.js
+node_modules/
+
 # Generated
 project-management/dashboard.html

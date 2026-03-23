@@ -19,6 +19,7 @@ from src.agents.content.illustration_generator import OpenAIDalleGenerator
 from src.agents.content.nodes import (
     make_chart_node,
     make_citations_node,
+    make_diagram_node,
     make_draft_node,
     make_illustration_node,
     make_outline_node,
@@ -79,6 +80,10 @@ def build_content_graph(
     graph.add_node("seo_optimize", make_seo_node(llm, settings))
     chart_dir = settings.chart_output_dir if settings else "generated_assets/charts"
     graph.add_node("generate_charts", make_chart_node(llm, chart_dir))
+    diagram_dir = (
+        settings.diagram_output_dir if settings else "generated_assets/diagrams"
+    )
+    graph.add_node("generate_diagrams", make_diagram_node(llm, diagram_dir))
 
     graph.add_conditional_edges(
         "generate_outline",
@@ -107,9 +112,11 @@ def build_content_graph(
             make_illustration_node(llm, generator, settings.illustration_output_dir),
         )
         graph.add_edge("generate_charts", "generate_illustrations")
-        graph.add_edge("generate_illustrations", END)
+        graph.add_edge("generate_illustrations", "generate_diagrams")
     else:
-        graph.add_edge("generate_charts", END)
+        graph.add_edge("generate_charts", "generate_diagrams")
+
+    graph.add_edge("generate_diagrams", END)
 
     return graph.compile()
 

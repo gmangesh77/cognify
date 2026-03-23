@@ -9,12 +9,13 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import structlog
 from langchain_core.language_models import BaseChatModel
 
 from src.agents.content.chart_generator import propose_charts, render_chart
+from src.agents.content.diagram_generator import propose_diagrams, render_mermaid
 from src.agents.content.illustration_generator import (
     ImageGenerator,
     generate_illustration_prompt,
@@ -211,6 +212,48 @@ def _save_illustration(
     file_path = out_path / "hero.png"
     file_path.write_bytes(image_bytes)
     return file_path
+
+
+def make_diagram_node(
+    llm: BaseChatModel,
+    output_dir: str,
+) -> Any:  # noqa: ANN401
+    """Factory for the diagram generation node."""
+
+    async def diagram_node(state: ContentState) -> dict[str, object]:
+        existing = list(state.get("visuals", []))
+        section_drafts = state.get("section_drafts", [])
+        session_id: UUID = state["session_id"]
+        if not section_drafts:
+            return {"visuals": existing}
+
+        specs = await propose_diagrams(section_drafts, llm)
+        new_visuals: list[ImageAsset] = []
+        out_path = Path(output_dir) / str(session_id)
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        for spec in specs:
+            file_path = out_path / f"diagram_{uuid4()}.png"
+            success = await render_mermaid(spec.mermaid_syntax, file_path)
+            if success:
+                new_visuals.append(
+                    ImageAsset(
+                        url=str(file_path),
+                        caption=spec.caption,
+                        alt_text=spec.title,
+                        metadata={
+                            "diagram_type": str(spec.diagram_type),
+                            "source_section": spec.source_section_index,
+                        },
+                    )
+                )
+            else:
+                logger.warning("diagram_render_skipped", title=spec.title)
+
+        logger.info("diagram_generation_complete", count=len(new_visuals))
+        return {"visuals": existing + new_visuals}
+
+    return diagram_node
 
 
 def _coerce_topic(state: ContentState) -> TopicInput:

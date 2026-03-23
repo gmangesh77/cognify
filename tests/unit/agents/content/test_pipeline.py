@@ -349,6 +349,19 @@ class TestIllustrationNodeInGraph:
         assert "generate_illustrations" not in node_names
 
 
+class TestDiagramNodeInGraph:
+    def test_graph_includes_diagram_node(self) -> None:
+        from unittest.mock import AsyncMock
+
+        from src.agents.content.pipeline import build_content_graph
+
+        llm = AsyncMock()
+        retriever = AsyncMock()
+        graph = build_content_graph(llm, retriever)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "generate_diagrams" in node_names
+
+
 class TestContentPipelineWithHumanize:
     async def test_humanize_node_in_full_graph(self) -> None:
         """Full pipeline includes humanize node and produces section_drafts."""

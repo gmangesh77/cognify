@@ -95,3 +95,5 @@ class Settings(BaseSettings):
     illustration_output_dir: str = "generated_assets/illustrations"
     dalle_model: str = "dall-e-3"
     illustration_timeout: float = 30.0
+    # Diagram generation (Mermaid CLI)
+    diagram_output_dir: str = "generated_assets/diagrams"
