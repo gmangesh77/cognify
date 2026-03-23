@@ -78,12 +78,52 @@ async def create_research_session(
     svc = _get_research_service(request)
     session = await svc.start_session(body.topic_id)
     topic = await svc.get_topic(body.topic_id)
-    background_tasks.add_task(svc.run_and_finalize, session.id, topic)
+    content_svc = getattr(request.app.state, "content_service", None)
+    background_tasks.add_task(
+        _run_full_pipeline, svc, content_svc, session.id, topic,
+    )
     return CreateResearchSessionResponse(
         session_id=session.id,
         status=session.status,
         started_at=session.started_at,
     )
+
+
+async def _run_full_pipeline(
+    research_svc: ResearchService,
+    content_svc: object | None,
+    session_id: "UUID",
+    topic: object,
+) -> None:
+    """Research → Content generation pipeline."""
+    from uuid import UUID as _UUID
+
+    await research_svc.run_and_finalize(session_id, topic)
+    # Check if research succeeded before running content pipeline
+    detail = await research_svc.get_session(session_id)
+    if detail.session.status != "complete":
+        logger.warning(
+            "skipping_content_pipeline",
+            session_id=str(session_id),
+            reason=f"research status={detail.session.status}",
+        )
+        return
+    if content_svc is None or not hasattr(content_svc, "generate_full_article"):
+        logger.warning(
+            "skipping_content_pipeline",
+            session_id=str(session_id),
+            reason="content_service not available",
+        )
+        return
+    try:
+        await content_svc.generate_full_article(session_id)  # type: ignore[union-attr]
+    except Exception as exc:
+        logger.error(
+            "content_pipeline_failed",
+            session_id=str(session_id),
+            error=str(exc),
+            exc_info=True,
+        )
 
 
 @limiter.limit("30/minute")

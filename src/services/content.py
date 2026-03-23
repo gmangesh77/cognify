@@ -89,6 +89,23 @@ class ContentService:
         article = build_article(draft, topic)
         return await store_article(self._repos, draft, article)
 
+    async def generate_full_article(
+        self, session_id: UUID,
+    ) -> CanonicalArticle:
+        """Run the full content pipeline: outline → draft → finalize."""
+        logger.info("full_article_pipeline_started", session_id=str(session_id))
+        draft = await self.generate_outline(session_id)
+        logger.info("outline_generated", draft_id=str(draft.id))
+        draft = await self.draft_article(draft.id)
+        logger.info("sections_drafted", draft_id=str(draft.id))
+        article = await self.finalize_article(draft.id)
+        logger.info(
+            "article_finalized",
+            article_id=str(article.id),
+            title=article.title,
+        )
+        return article
+
     async def get_article(self, article_id: UUID) -> CanonicalArticle:
         """Retrieve a stored CanonicalArticle by ID."""
         return await _get_article(self._repos, article_id)
