@@ -16,6 +16,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
 from src.models.research import FacetFindings, ResearchFacet, SourceDocument
+from src.utils.llm_json import parse_llm_json
 from src.services.semantic_scholar import (
     ScholarPaper,
     SemanticScholarClient,
@@ -134,7 +135,7 @@ class LiteratureReviewAgent:
         ]
         try:
             resp = await self._llm.ainvoke(messages)
-            data = json.loads(str(resp.content))
+            data = parse_llm_json(str(resp.content))
             claims = data["claims"]
             summary = data["summary"]
             return claims, summary

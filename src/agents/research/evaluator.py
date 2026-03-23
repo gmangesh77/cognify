@@ -12,6 +12,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
+from src.utils.llm_json import parse_llm_json
 from src.models.research import (
     EvaluationResult,
     FacetFindings,
@@ -95,7 +96,7 @@ async def evaluate_completeness(
     response = await llm.ainvoke(messages)
 
     try:
-        data = json.loads(str(response.content))
+        data = parse_llm_json(str(response.content))
         result = EvaluationResult.model_validate(data)
     except (json.JSONDecodeError, ValidationError) as exc:
         logger.warning("evaluation_parse_failed", error=str(exc))

@@ -12,6 +12,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
 from src.models.research import ResearchPlan, TopicInput
+from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
 
@@ -52,13 +53,14 @@ async def generate_research_plan(topic: TopicInput, llm: BaseChatModel) -> Resea
     for attempt in range(_MAX_RETRIES):
         response = await llm.ainvoke(messages)
         try:
-            data = json.loads(str(response.content))
+            data = parse_llm_json(str(response.content))
             return ResearchPlan.model_validate(data)
         except (json.JSONDecodeError, ValidationError) as exc:
             logger.warning(
                 "plan_parse_failed",
                 attempt=attempt + 1,
                 error=str(exc),
+                raw_content=str(response.content)[:200],
             )
 
     msg = f"Failed to generate research plan after {_MAX_RETRIES} attempts"

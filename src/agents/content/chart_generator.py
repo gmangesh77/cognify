@@ -18,6 +18,7 @@ from pydantic import ValidationError
 
 from src.models.content import ImageAsset
 from src.models.visual import ChartSpec
+from src.utils.llm_json import parse_llm_json
 
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
@@ -56,7 +57,7 @@ async def propose_charts(
     prompt = _PROMPT_TEMPLATE.format(sections_text=sections_text)
     try:
         response = await llm.ainvoke(prompt)
-        raw = json.loads(response.content)
+        raw = parse_llm_json(response.content)
     except (json.JSONDecodeError, AttributeError, TypeError) as exc:
         logger.warning("chart_proposal_parse_failed", error=str(exc))
         return []

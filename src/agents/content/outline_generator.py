@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 from src.models.content_pipeline import ArticleOutline
 from src.models.research import FacetFindings, TopicInput
+from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
 
@@ -87,7 +88,7 @@ async def generate_outline(
     for attempt in range(_MAX_RETRIES):
         response = await llm.ainvoke(messages)
         try:
-            data = json.loads(str(response.content))
+            data = parse_llm_json(str(response.content))
             return ArticleOutline.model_validate(data)
         except (json.JSONDecodeError, ValidationError) as exc:
             logger.warning(

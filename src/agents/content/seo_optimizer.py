@@ -13,6 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
 from src.models.content import SEOMetadata, StructuredDataLD
+from src.utils.llm_json import parse_llm_json
 from src.models.content_pipeline import (
     AIDiscoverabilityResult,
     CitationRef,
@@ -66,7 +67,7 @@ async def _parse_seo_response(
     for attempt in range(_MAX_RETRIES):
         response = await llm.ainvoke(messages)
         try:
-            data = json.loads(str(response.content))
+            data = parse_llm_json(str(response.content))
             return SEOMetadata.model_validate(data)
         except (json.JSONDecodeError, ValidationError) as exc:
             logger.warning(
@@ -101,7 +102,7 @@ async def _parse_discoverability_response(
     for attempt in range(_MAX_RETRIES):
         response = await llm.ainvoke(messages)
         try:
-            data = json.loads(str(response.content))
+            data = parse_llm_json(str(response.content))
             data = _maybe_truncate_summary(data)
             return AIDiscoverabilityResult.model_validate(data)
         except (json.JSONDecodeError, ValidationError) as exc:
