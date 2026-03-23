@@ -51,7 +51,7 @@ def _get_research_service(request: Request) -> ResearchService:
         )
     svc = request.app.state.research_service
     # Block article generation when using NoOpOrchestrator
-    if type(svc._orchestrator).__name__ == "NoOpOrchestrator":
+    if type(svc._orchestrator).__name__ in ("NoOpOrchestrator", "_NoOpOrchestrator"):
         raise ServiceUnavailableError(
             message="LLM pipeline not configured. Set COGNIFY_ANTHROPIC_API_KEY to enable article generation."
         )

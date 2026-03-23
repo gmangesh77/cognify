@@ -82,6 +82,9 @@ class Settings(BaseSettings):
     chunk_overlap_tokens: int = 50
     # Retrieval
     top_k_retrieval: int = 5
+    # LLM — Anthropic (empty = NoOp fallback, no real generation)
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-4-20250514"
     # Content pipeline model names (for Provenance tracking)
     primary_model_name: str = "claude-sonnet-4"
     drafting_model_name: str = "claude-sonnet-4"
