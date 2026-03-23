@@ -98,8 +98,12 @@ async def list_topics(
 ) -> PaginatedTopics:
     if not hasattr(request.app.state, "topic_repo"):
         return PaginatedTopics(items=[], total=0, page=page, size=size)
-    repo = request.app.state.topic_repo
-    items, total = await repo.list_by_domain(domain, page, size)
-    return PaginatedTopics(
-        items=items, total=total, page=page, size=size,
-    )
+    try:
+        repo = request.app.state.topic_repo
+        items, total = await repo.list_by_domain(domain, page, size)
+        return PaginatedTopics(
+            items=items, total=total, page=page, size=size,
+        )
+    except Exception as exc:
+        logger.error("list_topics_failed", error=str(exc), domain=domain)
+        return PaginatedTopics(items=[], total=0, page=page, size=size)
