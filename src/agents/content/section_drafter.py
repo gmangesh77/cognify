@@ -42,7 +42,7 @@ _CITATION_PATTERN = re.compile(r"\[(\d+)\]")
 class DraftingContext:
     """Shared dependencies for section drafting."""
 
-    retriever: MilvusRetriever
+    retriever: MilvusRetriever | None
     topic_id: str
     llm: BaseChatModel
     prior_drafts: list[SectionDraft]
@@ -84,6 +84,8 @@ async def _retrieve_chunks(
     ctx: DraftingContext,
 ) -> list[ChunkResult]:
     """Retrieve and deduplicate chunks across all queries."""
+    if ctx.retriever is None:
+        return []
     seen: dict[tuple[str, int], ChunkResult] = {}
     for q in queries.queries:
         results = await ctx.retriever.retrieve(q, ctx.topic_id, top_k=5)

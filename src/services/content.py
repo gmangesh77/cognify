@@ -118,8 +118,7 @@ class ContentService:
 
     def _validate_draft_ready(self, draft: ArticleDraft) -> None:
         if self._deps.retriever is None:
-            msg = "retriever required for drafting"
-            raise ValueError(msg)
+            logger.warning("drafting_without_retriever", hint="RAG context unavailable, drafting from findings only")
         if draft.status != DraftStatus.OUTLINE_COMPLETE:
             msg = f"Draft {draft.id} not ready for drafting"
             raise ValueError(msg)
