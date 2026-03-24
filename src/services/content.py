@@ -228,8 +228,9 @@ class ContentService:
         session = await self._repos.research.get(session_id)
         if session is None:
             raise NotFoundError(f"Session {session_id} not found")
-        if session.status != "complete":
-            msg = f"Session {session_id} is not complete"
+        valid = ("complete", "generating_article", "article_complete", "article_failed")
+        if session.status not in valid:
+            msg = f"Session {session_id} is not complete (status={session.status})"
             raise ValueError(msg)
         return session
 
