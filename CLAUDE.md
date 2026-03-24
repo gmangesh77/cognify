@@ -4,7 +4,7 @@ Self-driving content platform that discovers trends, runs multi-agent research, 
 ## Tech Stack
 - **Language**: Python 3.12+ (agents, pipelines, API)
 - **Agent Framework**: LangChain + LangGraph (multi-agent orchestration)
-- **LLMs**: Claude Opus 4 (primary), Claude Sonnet 4 (drafting), Stable Diffusion XL (images)
+- **LLMs**: Claude Sonnet 4 (primary), Claude Sonnet 4 (drafting), Stable Diffusion XL (images)
 - **Vector DB**: Milvus (RAG embeddings + similarity search)
 - **API**: FastAPI (async REST endpoints)
 - **Database**: PostgreSQL 16 (metadata, users, publishing state)
@@ -107,7 +107,11 @@ Package manager: **uv** — all commands use `uv run` prefix (no activation need
 - Install deps: `uv sync --dev`
 - Conda fallback: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ...`
 
+## Change Protocol
+    Before modifying any interface, field constraint, or status value: grep all callers/consumers, check test assertions, and
+    verify the full dependency chain. Never change a contract without understanding its blast radius.
 ## Current Status
+
 See @project-management/PROGRESS.md for full ticket status.
 
 **Last completed:** VISUAL-003 (Diagram Generation) — PR #36

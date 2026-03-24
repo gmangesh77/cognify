@@ -46,3 +46,9 @@ node_modules/
 
 # Generated
 project-management/dashboard.html
+
+# Generated assets (runtime)
+generated_assets/
+
+# Playwright MCP logs
+.playwright-mcp/
