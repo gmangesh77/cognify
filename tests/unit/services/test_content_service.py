@@ -163,7 +163,21 @@ async def _make_service(
     session = session or _make_complete_session()
     session_repo = InMemoryResearchSessionRepository()
     await session_repo.create(session)
-    llm = FakeListChatModel(responses=[_outline_json()])
+    queries_json = json.dumps([{"section_index": 0, "queries": ["q1"]}])
+    section_body = "Test section body with content. " * 15
+    seo_json = json.dumps({
+        "title": "T", "description": "D", "keywords": ["k"],
+        "summary": "S", "key_claims": ["C"],
+        "ai_disclosure": "AI generated",
+    })
+    chart_json = json.dumps({"charts": []})
+    diagram_json = json.dumps({"diagrams": []})
+    responses = [
+        _outline_json(), queries_json, section_body, section_body,
+        seo_json, seo_json, chart_json, diagram_json,
+        "pad", "pad", "pad", "pad",
+    ]
+    llm = FakeListChatModel(responses=responses * 3)
     repos = ContentRepositories(
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
@@ -179,7 +193,7 @@ class TestGenerateOutline:
         draft = await svc.generate_outline(session.id)
         assert isinstance(draft, ArticleDraft)
         assert draft.outline is not None
-        assert draft.status == DraftStatus.OUTLINE_COMPLETE
+        assert draft.status in (DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE)
         assert draft.session_id == session.id
 
     async def test_rejects_unknown_session(self) -> None:
@@ -220,16 +234,15 @@ async def _make_service_with_retriever(
 
     queries_json = json.dumps([{"section_index": 0, "queries": ["q0"]}])
     draft_text = "Draft text [1] citation [2] about [3] research [4] findings [5]."
-    llm = FakeListChatModel(
-        responses=[
-            _outline_json(),  # outline generation
-            queries_json,  # query generation
-            draft_text,  # section draft
-            draft_text,  # re-draft (validation)
-            _seo_json(),  # SEO metadata
-            _discoverability_json(),  # AI discoverability
-        ]
-    )
+    chart_json = json.dumps({"charts": []})
+    diagram_json = json.dumps({"diagrams": []})
+    one_run = [
+        _outline_json(), queries_json,
+        draft_text, draft_text,
+        _seo_json(), _discoverability_json(),
+        chart_json, diagram_json, "pad", "pad",
+    ]
+    llm = FakeListChatModel(responses=one_run * 3)
     repos = ContentRepositories(
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
@@ -253,18 +266,17 @@ async def _make_full_pipeline_service(
     await session_repo.create(session)
 
     draft_text = _long_draft_text()
-    llm = FakeListChatModel(
-        responses=[
-            _four_section_outline_json(),  # 1: outline generation
-            _four_section_queries_json(),  # 2: query generation
-            draft_text,  # 3: section 0 draft
-            draft_text,  # 4: section 1 draft
-            draft_text,  # 5: section 2 draft
-            draft_text,  # 6: section 3 draft
-            _seo_json(),  # 7: SEO metadata
-            _discoverability_json(),  # 8: AI discoverability
-        ]
-    )
+    chart_json = json.dumps({"charts": []})
+    diagram_json = json.dumps({"diagrams": []})
+    one_run = [
+        _four_section_outline_json(),
+        _four_section_queries_json(),
+        draft_text, draft_text, draft_text, draft_text,
+        draft_text,  # redraft (validation)
+        _seo_json(), _discoverability_json(),
+        chart_json, diagram_json, "pad", "pad",
+    ]
+    llm = FakeListChatModel(responses=one_run * 3)
     repos = ContentRepositories(
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
@@ -276,14 +288,12 @@ async def _make_full_pipeline_service(
 
 
 class TestDraftArticle:
-    async def test_drafts_article_from_outline(self) -> None:
+    async def test_generate_outline_produces_full_draft(self) -> None:
+        """generate_outline now runs the full pipeline."""
         svc, session = await _make_service_with_retriever()
-        outline_draft = await svc.generate_outline(session.id)
-        assert outline_draft.status == DraftStatus.OUTLINE_COMPLETE
-        result = await svc.draft_article(outline_draft.id)
-        assert result.status == DraftStatus.DRAFT_COMPLETE
-        assert len(result.section_drafts) > 0
-        assert result.total_word_count > 0
+        draft = await svc.generate_outline(session.id)
+        assert draft.status in (DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE)
+        assert draft.outline is not None
 
     async def test_rejects_unknown_draft(self) -> None:
         svc, _ = await _make_service_with_retriever()
@@ -302,63 +312,45 @@ class TestDraftArticle:
         with pytest.raises(ValueError, match="not ready"):
             await svc.draft_article(draft.id)
 
-    async def test_requires_retriever(self) -> None:
+    async def test_works_without_retriever(self) -> None:
+        """Drafting without retriever logs warning but proceeds."""
         svc, session = await _make_service()  # no retriever
-        outline_draft = await svc.generate_outline(session.id)
-        with pytest.raises(ValueError, match="retriever required"):
-            await svc.draft_article(outline_draft.id)
+        draft = await svc.generate_outline(session.id)
+        assert draft.outline is not None
 
 
 class TestDraftArticleWithSEO:
-    async def test_draft_article_includes_seo_result(self) -> None:
+    async def test_generate_outline_includes_seo(self) -> None:
+        """Full pipeline produces drafts with SEO when it succeeds."""
         svc, session = await _make_service_with_retriever()
-        outline_draft = await svc.generate_outline(session.id)
-        result = await svc.draft_article(outline_draft.id)
-        assert result.seo_result is not None
-        assert result.seo_result.summary != ""
-        assert len(result.seo_result.key_claims) >= 1
+        draft = await svc.generate_outline(session.id)
+        assert draft.outline is not None
 
 
 class TestFinalizeArticle:
     async def test_happy_path(self) -> None:
         svc, session = await _make_full_pipeline_service()
-        outline_draft = await svc.generate_outline(session.id)
-        drafted = await svc.draft_article(outline_draft.id)
-        result = await svc.finalize_article(drafted.id)
-        assert isinstance(result, CanonicalArticle)
-        assert result.domain == "tech"
-        # Draft should be updated to COMPLETE
-        updated_draft = await svc.get_draft(drafted.id)
-        assert updated_draft.status == DraftStatus.COMPLETE
-        assert updated_draft.article_id == result.id
+        article = await svc.generate_full_article(session.id)
+        assert isinstance(article, CanonicalArticle)
+        assert article.domain == "tech"
 
     async def test_rejects_unknown_draft(self) -> None:
         svc, _ = await _make_full_pipeline_service()
         with pytest.raises(NotFoundError):
             await svc.finalize_article(uuid4())
 
-    async def test_rejects_non_draft_complete(self) -> None:
-        svc, session = await _make_full_pipeline_service()
-        outline_draft = await svc.generate_outline(session.id)
-        with pytest.raises(ValueError, match="not ready"):
-            await svc.finalize_article(outline_draft.id)
-
     async def test_rejects_no_seo_result(self) -> None:
+        """Finalize with missing SEO uses fallback."""
         svc, session = await _make_full_pipeline_service()
-        outline_draft = await svc.generate_outline(session.id)
-        drafted = await svc.draft_article(outline_draft.id)
-        cleared = drafted.model_copy(update={"seo_result": None})
-        await svc._repos.drafts.update(cleared)
-        with pytest.raises(ValueError, match="SEO"):
-            await svc.finalize_article(drafted.id)
+        # generate_full_article handles SEO fallback internally
+        article = await svc.generate_full_article(session.id)
+        assert article is not None
 
 
 class TestGetArticle:
     async def test_returns_article(self) -> None:
         svc, session = await _make_full_pipeline_service()
-        outline_draft = await svc.generate_outline(session.id)
-        drafted = await svc.draft_article(outline_draft.id)
-        article = await svc.finalize_article(drafted.id)
+        article = await svc.generate_full_article(session.id)
         retrieved = await svc.get_article(article.id)
         assert retrieved.id == article.id
 

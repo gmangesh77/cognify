@@ -7,6 +7,8 @@ interface FilterBarProps {
   filters: TopicFilters;
   onFilterChange: (update: Partial<TopicFilters>) => void;
   topicCount: number;
+  /** Dynamic domain options from the settings API. Falls back to hardcoded DOMAIN_LABELS when omitted. */
+  domainOptions?: Record<string, string>;
 }
 
 const TIME_OPTIONS = [
@@ -74,7 +76,10 @@ function SourceMultiSelect({
   );
 }
 
-export function FilterBar({ filters, onFilterChange, topicCount }: FilterBarProps) {
+export function FilterBar({ filters, onFilterChange, topicCount, domainOptions }: FilterBarProps) {
+  // Use dynamic domain options from the API when available, otherwise fall back to hardcoded labels
+  const resolvedDomainOptions = domainOptions ?? DOMAIN_LABELS;
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -99,9 +104,9 @@ export function FilterBar({ filters, onFilterChange, topicCount }: FilterBarProp
           className="h-9 rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-700"
         >
           <option value="">All Domains</option>
-          {(Object.keys(DOMAIN_LABELS) as DomainName[]).map((d) => (
+          {(Object.keys(resolvedDomainOptions) as DomainName[]).map((d) => (
             <option key={d} value={d}>
-              {DOMAIN_LABELS[d]}
+              {resolvedDomainOptions[d]}
             </option>
           ))}
         </select>

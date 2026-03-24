@@ -266,16 +266,7 @@ class TestContentPipelineWithSEO:
 
 class TestContentPipelineWithDrafting:
     async def test_full_graph_with_retriever(self) -> None:
-        responses = [
-            _outline_json(),  # outline generation
-            _queries_json(2),  # query generation for 2 sections
-            "Draft section 0 text with [1] citation.",  # draft section 0
-            "Draft section 1 text with [1] citation about more.",  # draft section 1
-            # re-draft (word count validation)
-            "Redrafted section with more words about the topic [1].",
-            _seo_json(),  # SEO metadata
-            _discoverability_json(),  # AI discoverability
-        ]
+        responses = _full_pipeline_responses()
         llm = FakeListChatModel(responses=responses)
         retriever = _mock_retriever()
         graph = build_content_graph(llm, retriever=retriever)
@@ -290,9 +281,9 @@ class TestContentPipelineWithDrafting:
                 "error": None,
             }
         )
-        # manage_citations node runs after validate and fails with <5 sources
-        assert result["status"] == "failed"
-        assert "Need 5 sources" in result["error"]
+        # Citation gate is now a warning, pipeline continues
+        assert result["outline"] is not None
+        assert len(result.get("section_drafts", [])) > 0
 
     async def test_graph_without_retriever_runs_full_pipeline(self) -> None:
         responses = _full_pipeline_responses()

@@ -66,6 +66,7 @@ export default function TopicsPage() {
     modalTopic,
     openModal,
     closeModal,
+    domainOptions,
   } = useTopicDiscovery();
 
   const [toast, setToast] = useState<string | null>(null);
@@ -122,6 +123,7 @@ export default function TopicsPage() {
         filters={filters}
         onFilterChange={setFilters}
         topicCount={totalTopics}
+        domainOptions={domainOptions}
       />
 
       <ScanProgressBanner

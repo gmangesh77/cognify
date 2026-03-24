@@ -5,6 +5,9 @@ import type { BackendRankedTopic, PersistedTopic } from "@/lib/api/trends";
 import { DOMAIN_KEYWORDS } from "@/types/domain";
 import type { DomainName } from "@/types/domain";
 
+/** Dynamic keyword map fetched from settings API. Overrides DOMAIN_KEYWORDS when provided. */
+export type DomainKeywordsMap = Record<string, string[]>;
+
 const INITIAL_SCAN: ScanState = {
   isScanning: false,
   completedSources: 0,
@@ -59,7 +62,7 @@ function fromPersisted(t: PersistedTopic): RankedTopic {
   return { ...partial, trend_status: deriveTrendStatus(partial) };
 }
 
-export function useScanTopics() {
+export function useScanTopics(dynamicKeywords?: DomainKeywordsMap) {
   const [topics, setTopics] = useState<RankedTopic[]>([]);
   const [scanState, setScanState] = useState<ScanState>(INITIAL_SCAN);
 
@@ -83,7 +86,9 @@ export function useScanTopics() {
     setTopics([]);
 
     // Step 1: Fetch raw trends from all sources
-    const keywords = DOMAIN_KEYWORDS[domain as DomainName] ?? [domain];
+    // Use dynamicKeywords from settings API when available; fall back to hardcoded DOMAIN_KEYWORDS
+    const keywordMap = dynamicKeywords ?? DOMAIN_KEYWORDS;
+    const keywords = keywordMap[domain] ?? DOMAIN_KEYWORDS[domain as DomainName] ?? [domain];
     const fetchResult = await fetchTrends({
       domain_keywords: keywords,
       max_results: 50,
@@ -121,7 +126,7 @@ export function useScanTopics() {
 
     setTopics(ranked);
     setScanState((s) => ({ ...s, isScanning: false }));
-  }, []);
+  }, [dynamicKeywords]);
 
   return { topics, scanState, startScan };
 }

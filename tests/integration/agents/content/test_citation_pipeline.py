@@ -108,10 +108,9 @@ async def test_fails_with_insufficient_sources() -> None:
 
     result = await manage_citations(state)  # type: ignore[arg-type]
 
-    assert result["status"] == "failed"
-    error = str(result.get("error", ""))
-    assert "5" in error
-    assert "2" in error
+    # Citation gate was relaxed to a warning (no longer fails the pipeline)
+    assert result.get("status") != "failed"
+    assert "global_citations" in result
 
 
 async def test_preserves_upstream_metadata(
