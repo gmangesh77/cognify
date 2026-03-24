@@ -9,7 +9,7 @@ interface ArticleContentProps {
 export function ArticleContent({ bodyMarkdown, citations }: ArticleContentProps) {
   return (
     <div>
-      <div className="prose prose-neutral max-w-none prose-headings:font-heading prose-h2:border-b prose-h2:border-neutral-200 prose-h2:pb-2">
+      <div className="prose prose-neutral max-w-none prose-headings:font-heading prose-h2:mt-8 prose-h2:border-b prose-h2:border-neutral-200 prose-h2:pb-2 prose-h3:mt-6 prose-p:leading-7 prose-li:leading-7">
         <Markdown>{bodyMarkdown}</Markdown>
       </div>
 

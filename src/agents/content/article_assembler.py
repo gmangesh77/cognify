@@ -71,13 +71,29 @@ def _transform_citations(
     return [Citation.model_validate(c) for c in global_citations]
 
 
+def _strip_leading_heading(body: str) -> str:
+    """Remove leading markdown heading if present (LLM often duplicates it)."""
+    import re
+
+    stripped = body.lstrip()
+    if stripped.startswith("#"):
+        # Remove the first line if it's a heading
+        first_newline = stripped.find("\n")
+        if first_newline != -1:
+            return stripped[first_newline + 1:].lstrip("\n")
+    return body
+
+
 def _compile_body(
     sections: list[SectionDraft],
     references_md: str,
 ) -> str:
     """Concatenate section drafts with H2 headings and a references tail."""
     sorted_sections = sorted(sections, key=lambda s: s.section_index)
-    parts = [f"## {s.title}\n\n{s.body_markdown}" for s in sorted_sections]
+    parts = [
+        f"## {s.title}\n\n{_strip_leading_heading(s.body_markdown)}"
+        for s in sorted_sections
+    ]
     if references_md:
         parts.append(references_md)
     return "\n\n".join(parts)
