@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     jwt_private_key: str = ""
     jwt_public_key: str = ""
     jwt_algorithm: str = "RS256"
-    jwt_access_token_expire_minutes: int = 15
+    jwt_access_token_expire_minutes: int = 1440
     jwt_refresh_token_expire_days: int = 7
     # Topic ranking weights (must sum to 1.0)
     relevance_weight: float = 0.4

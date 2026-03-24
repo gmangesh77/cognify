@@ -1,13 +1,27 @@
 import axios from "axios";
 import { ENDPOINTS } from "./endpoints";
 
-let accessToken: string | null = null;
+const TOKEN_KEY = "cognify_access_token";
+
+function readToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+let accessToken: string | null = readToken();
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  if (typeof window === "undefined") return;
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
 }
 
 export function getAccessToken(): string | null {
+  if (!accessToken) accessToken = readToken();
   return accessToken;
 }
 
