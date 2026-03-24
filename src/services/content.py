@@ -178,15 +178,23 @@ class ContentService:
         raw_drafts = result.get("section_drafts", [])
         drafts_list = list(raw_drafts) if isinstance(raw_drafts, list) else []
         citations = aggregate_citations(drafts_list)
+
+        # Serialize Pydantic objects for JSONB storage (datetime → ISO string)
+        def _jsonable(items: list[object]) -> list[object]:
+            return [
+                i.model_dump(mode="json") if hasattr(i, "model_dump") else i
+                for i in items
+            ]
+
         updated = draft.model_copy(
             update={
-                "section_drafts": drafts_list,
-                "citations": citations,
+                "section_drafts": _jsonable(drafts_list),
+                "citations": _jsonable(citations),
                 "total_word_count": result.get("total_word_count", 0),
                 "seo_result": seo_result,
-                "global_citations": list(result.get("global_citations") or []),
+                "global_citations": _jsonable(list(result.get("global_citations") or [])),
                 "references_markdown": str(result.get("references_markdown", "")),
-                "visuals": list(result.get("visuals") or []),
+                "visuals": _jsonable(list(result.get("visuals") or [])),
             }
         )
         draft = await self._repos.drafts.update(updated)
