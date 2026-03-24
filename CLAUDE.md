@@ -108,8 +108,18 @@ Package manager: **uv** — all commands use `uv run` prefix (no activation need
 - Conda fallback: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ...`
 
 ## Change Protocol
-    Before modifying any interface, field constraint, or status value: grep all callers/consumers, check test assertions, and
-    verify the full dependency chain. Never change a contract without understanding its blast radius.
+Before modifying any interface, field constraint, or status value: grep all callers/consumers, check test assertions, and verify the full dependency chain. Never change a contract without understanding its blast radius.
+
+## Engineering Learnings
+See @docs/LEARNINGS.md for hard-won debugging lessons. **Read before making changes.** Key rules:
+- **L-001**: Use `model_dump(mode="json")` for JSONB storage, never bare `model_dump()`
+- **L-002**: Use `parse_llm_json()` for LLM responses, never bare `json.loads()`
+- **L-003**: Status field changes have 8+ consumer sites — grep all before changing
+- **L-004**: Call `ensure_collection()` after every `MilvusService()` instantiation
+- **L-005**: Integration tests leak data to real DB — clean after running
+- **L-006**: `generate_outline()` runs the FULL pipeline, not just outline
+- **L-007**: FakeLLM tests need 10+ responses per pipeline invocation
+
 ## Current Status
 
 See @project-management/PROGRESS.md for full ticket status.
