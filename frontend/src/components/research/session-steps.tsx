@@ -6,7 +6,17 @@ const STEP_LABELS: Record<string, string> = {
   plan_research: "Plan Research",
   index_findings: "Index Findings",
   evaluate_completeness: "Evaluate Completeness",
-  finalize: "Finalize",
+  finalize: "Finalize Research",
+  content_outline: "Generate Outline",
+  content_queries: "Generate Queries",
+  content_draft: "Draft Sections",
+  content_validate: "Validate Article",
+  content_citations: "Manage Citations",
+  content_humanize: "Humanize Content",
+  content_seo: "SEO Optimization",
+  content_charts: "Generate Charts",
+  content_diagrams: "Generate Diagrams",
+  content_illustrations: "Generate Illustrations",
 };
 
 function getStepLabel(stepName: string): string {
@@ -56,9 +66,12 @@ export function SessionSteps({ steps, isLoading }: SessionStepsProps) {
     );
   }
 
+  const researchSteps = steps.filter((s) => !s.step_name.startsWith("content_"));
+  const contentSteps = steps.filter((s) => s.step_name.startsWith("content_"));
+
   return (
     <div className="mt-3 space-y-1.5 border-l-2 border-neutral-200 pl-4">
-      {steps.map((step) => (
+      {researchSteps.map((step) => (
         <div key={step.step_name}>
           <div className="flex items-center gap-2 text-sm">
             <StepIcon status={step.status} />
@@ -78,6 +91,35 @@ export function SessionSteps({ steps, isLoading }: SessionStepsProps) {
           )}
         </div>
       ))}
+      {contentSteps.length > 0 && (
+        <>
+          <div className="my-2 flex items-center gap-2">
+            <div className="h-px flex-1 bg-purple-200" />
+            <span className="text-xs font-medium text-purple-500">Article Generation</span>
+            <div className="h-px flex-1 bg-purple-200" />
+          </div>
+          {contentSteps.map((step) => (
+            <div key={step.step_name}>
+              <div className="flex items-center gap-2 text-sm">
+                <StepIcon status={step.status} />
+                <span className={step.status === "pending" ? "text-neutral-400" : "text-neutral-700"}>
+                  {getStepLabel(step.step_name)}
+                </span>
+                <span className="ml-auto text-xs text-neutral-400">
+                  {step.status === "complete" && step.duration_ms !== null
+                    ? formatDuration(step.duration_ms)
+                    : step.status === "running"
+                      ? "..."
+                      : ""}
+                </span>
+              </div>
+              {step.output_summary && (
+                <p className="ml-6 text-xs text-neutral-400">{step.output_summary}</p>
+              )}
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }

@@ -1,4 +1,11 @@
-export type SessionStatus = "planning" | "in_progress" | "complete" | "failed";
+export type SessionStatus =
+  | "planning"
+  | "in_progress"
+  | "complete"
+  | "generating_article"
+  | "article_complete"
+  | "article_failed"
+  | "failed";
 
 export interface AgentStep {
   step_name: string;
