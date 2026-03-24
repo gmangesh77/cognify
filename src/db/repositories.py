@@ -105,9 +105,17 @@ class PgResearchSessionRepository:
             query = select(ResearchSessionRow)
             count_query = select(func.count()).select_from(ResearchSessionRow)
             if status:
-                query = query.where(ResearchSessionRow.status == status)
+                # Group related statuses for filtering
+                status_groups: dict[str, list[str]] = {
+                    "article_complete": ["article_complete", "complete"],
+                    "failed": ["failed", "article_failed"],
+                    "generating_article": ["generating_article"],
+                    "in_progress": ["in_progress", "researching", "evaluating"],
+                }
+                statuses = status_groups.get(status, [status])
+                query = query.where(ResearchSessionRow.status.in_(statuses))
                 count_query = count_query.where(
-                    ResearchSessionRow.status == status
+                    ResearchSessionRow.status.in_(statuses)
                 )
             total_result = await db.execute(count_query)
             total = total_result.scalar_one()

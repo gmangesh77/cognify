@@ -7,7 +7,8 @@ const FILTERS: { value: FilterValue; label: string }[] = [
   { value: "all", label: "All" },
   { value: "planning", label: "Planning" },
   { value: "in_progress", label: "In Progress" },
-  { value: "complete", label: "Complete" },
+  { value: "generating_article", label: "Generating" },
+  { value: "article_complete", label: "Complete" },
   { value: "failed", label: "Failed" },
 ];
 
