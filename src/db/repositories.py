@@ -295,6 +295,7 @@ class PgTopicRepository:
         async with self._sf() as session:
             count_q = select(func.count()).select_from(TopicRow)
             q = select(TopicRow).order_by(
+                TopicRow.created_at.desc(),
                 TopicRow.composite_score.desc().nulls_last(),
             )
             if domain:
