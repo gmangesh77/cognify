@@ -30,6 +30,13 @@ Any hit near a JSONB write path is a bug.
 - `article_drafts.visuals`
 - `article_drafts.outline`
 
+**TRAP**: Even when you fix the storage layer (`_jsonable()` in content.py), upstream code may ALREADY convert Pydantic models to dicts with bare `model_dump()`. Example: `citation_manager.py` was calling `c.model_dump()` which produces dicts with datetime values. Then `_jsonable()` sees dicts (no `model_dump` method) and passes them through unchanged. **Fix BOTH the source (where model_dump is called) AND the sink (where data is written to DB).**
+
+**Full grep for L-001 compliance**:
+```bash
+grep -rn "model_dump()" src/ | grep -v "mode=" | grep -v test | grep -v __pycache__
+```
+
 ---
 
 ## L-002: LLM Responses Wrapped in Markdown Fences

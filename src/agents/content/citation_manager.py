@@ -199,6 +199,6 @@ async def manage_citations(state: ContentState) -> dict[str, object]:
 
     return {
         "section_drafts": updated_drafts,
-        "global_citations": [c.model_dump() for c in citations],
+        "global_citations": [c.model_dump(mode="json") for c in citations],
         "references_markdown": refs_md,
     }

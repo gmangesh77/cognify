@@ -412,7 +412,10 @@ class PgArticleDraftRepository:
             row.seo_result = (
                 draft.seo_result.model_dump(mode="json") if draft.seo_result else None
             )
-            row.global_citations = draft.global_citations
+            row.global_citations = [
+                c.model_dump(mode="json") if hasattr(c, "model_dump") else c
+                for c in (draft.global_citations or [])
+            ]
             row.visuals = [v.model_dump(mode="json") for v in draft.visuals]
             await db.commit()
             await db.refresh(row)
