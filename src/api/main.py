@@ -97,6 +97,7 @@ def _try_build_retriever(
             uri=settings.milvus_uri,
             collection_name=settings.milvus_collection_name,
         )
+        milvus_svc.ensure_collection()
         embed_svc = _get_or_create_embedding_service(app)
         return MilvusRetriever(milvus_svc, embed_svc)
     except Exception as exc:
@@ -328,6 +329,7 @@ def _build_real_orchestrator(
             uri=settings.milvus_uri,
             collection_name=settings.milvus_collection_name,
         )
+        vector_store.ensure_collection()
         chunker = TokenChunker(
             chunk_size=settings.chunk_size_tokens,
             overlap=settings.chunk_overlap_tokens,
