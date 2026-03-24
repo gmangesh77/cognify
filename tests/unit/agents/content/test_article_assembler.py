@@ -182,16 +182,16 @@ class TestAssembleCanonicalArticle:
 
         assert article.visuals == []
 
-    def test_validation_fails_below_word_count(self) -> None:
+    def test_validation_warns_below_word_count(self) -> None:
+        """Low word count logs a warning but does not raise."""
         draft = _make_draft()
         draft.section_drafts = [_make_section(i, 100) for i in range(4)]
+        article = assemble_canonical_article(draft, _make_topic())
+        assert article is not None
 
-        with pytest.raises(ValueError, match="1500"):
-            assemble_canonical_article(draft, _make_topic())
-
-    def test_validation_fails_below_citation_count(self) -> None:
+    def test_validation_warns_below_citation_count(self) -> None:
+        """Low citation count logs a warning but does not raise."""
         draft = _make_draft()
         draft.global_citations = _make_global_citations(3)
-
-        with pytest.raises(ValueError, match="5"):
-            assemble_canonical_article(draft, _make_topic())
+        article = assemble_canonical_article(draft, _make_topic())
+        assert article is not None

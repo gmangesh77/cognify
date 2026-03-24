@@ -27,6 +27,7 @@ from src.api.routers.canonical_articles import canonical_articles_router
 from src.api.routers.health import health_router
 from src.api.routers.metrics import metrics_router
 from src.api.routers.research import research_router
+from src.api.routers.settings import settings_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
 from src.config.settings import Settings
@@ -38,6 +39,12 @@ from src.db.repositories import (
     PgArticleRepository,
     PgResearchSessionRepository,
     PgTopicRepository,
+)
+from src.db.settings_repositories import PgApiKeyRepository, PgDomainConfigRepository
+from src.db.settings_singleton_repositories import (
+    PgGeneralConfigRepository,
+    PgLlmConfigRepository,
+    PgSeoDefaultsRepository,
 )
 from src.services.content import ContentService
 from src.services.content_repositories import (
@@ -58,6 +65,24 @@ from src.services.trends import init_registry
 from src.utils.logging import setup_logging
 
 logger = structlog.get_logger()
+
+
+class _SettingsRepos:
+    """Container for all settings repository instances."""
+
+    def __init__(
+        self,
+        domains: PgDomainConfigRepository,
+        api_keys: PgApiKeyRepository,
+        llm: PgLlmConfigRepository,
+        seo: PgSeoDefaultsRepository,
+        general: PgGeneralConfigRepository,
+    ) -> None:
+        self.domains = domains
+        self.api_keys = api_keys
+        self.llm = llm
+        self.seo = seo
+        self.general = general
 
 
 def _try_build_retriever(
@@ -162,6 +187,14 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             repo=topic_repo,
             embedding_service=_get_or_create_embedding_service(app),
             threshold=settings.dedup_similarity_threshold,
+        )
+        # Settings repositories
+        app.state.settings_repos = _SettingsRepos(
+            domains=PgDomainConfigRepository(sf),
+            api_keys=PgApiKeyRepository(sf),
+            llm=PgLlmConfigRepository(sf),
+            seo=PgSeoDefaultsRepository(sf),
+            general=PgGeneralConfigRepository(sf),
         )
         logger.info("database_connected", url=db_url.split("@")[-1])
     else:
@@ -479,4 +512,9 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         metrics_router,
         prefix=settings.api_v1_prefix,
         tags=["metrics"],
+    )
+    app.include_router(
+        settings_router,
+        prefix=settings.api_v1_prefix,
+        tags=["settings"],
     )

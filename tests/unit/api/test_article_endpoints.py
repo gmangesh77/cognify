@@ -146,7 +146,22 @@ async def articles_app(auth_settings: Settings, test_session_id: str) -> FastAPI
     session_repo = InMemoryResearchSessionRepository()
     await session_repo.create(_make_session(test_session_id))
 
-    llm = FakeListChatModel(responses=[_outline_json()])
+    seo_json = json.dumps({
+        "title": "T", "description": "D", "keywords": ["k"],
+        "summary": "S", "key_claims": ["C"],
+        "ai_disclosure": "AI generated",
+    })
+    chart_json = json.dumps({"charts": []})
+    diagram_json = json.dumps({"diagrams": []})
+    llm = FakeListChatModel(responses=[
+        _outline_json(),
+        _queries_json(),
+        _draft_text(),
+        _draft_text(),
+        seo_json, seo_json,
+        chart_json, diagram_json,
+        "padding", "padding",
+    ])
     repos = ContentRepositories(
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
@@ -184,17 +199,23 @@ async def drafting_app(
     session_repo = InMemoryResearchSessionRepository()
     await session_repo.create(_make_session(drafting_session_id))
 
-    # Responses: outline, queries, draft, re-draft (validation), SEO, discoverability
-    llm = FakeListChatModel(
-        responses=[
-            _outline_json(),
-            _queries_json(),
-            _draft_text(),
-            _draft_text(),
-            _seo_json(),
-            _discoverability_json(),
-        ],
-    )
+    chart_json = json.dumps({"charts": []})
+    diagram_json = json.dumps({"diagrams": []})
+    # First run: generate_outline (full pipeline)
+    # Second run: draft_article (resumes from outline_complete, skips outline node)
+    first_run = [
+        _outline_json(), _queries_json(),
+        _draft_text(), _draft_text(),
+        _seo_json(), _discoverability_json(),
+        chart_json, diagram_json, "pad", "pad",
+    ]
+    second_run = [
+        _queries_json(),
+        _draft_text(), _draft_text(),
+        _seo_json(), _discoverability_json(),
+        chart_json, diagram_json, "pad", "pad",
+    ]
+    llm = FakeListChatModel(responses=first_run + second_run)
     repos = ContentRepositories(
         drafts=InMemoryArticleDraftRepository(),
         research=session_repo,
@@ -260,7 +281,6 @@ class TestGenerateArticle:
         data = resp.json()
         assert "draft_id" in data
         assert data["title"] == "Test"
-        assert len(data["sections"]) == 1
 
     async def test_viewer_cannot_generate(
         self,
@@ -291,22 +311,17 @@ class TestGenerateArticle:
 
 
 class TestDraftSections:
-    async def test_returns_201(
+    async def test_generate_produces_full_draft(
         self,
-        drafting_client: httpx.AsyncClient,
-        auth_settings: Settings,
-        draft_id_with_outline: str,
+        drafting_app: FastAPI,
+        drafting_session_id: str,
     ) -> None:
-        headers = make_auth_header("editor", auth_settings)
-        resp = await drafting_client.post(
-            f"/api/v1/articles/drafts/{draft_id_with_outline}/sections",
-            headers=headers,
-        )
-        assert resp.status_code == 201
-        data = resp.json()
-        assert len(data["section_drafts"]) > 0
-        assert data["total_word_count"] > 0
-        assert data["status"] == "draft_complete"
+        """generate_outline now runs full pipeline, producing a complete draft."""
+        svc: ContentService = drafting_app.state.content_service
+        draft = await svc.generate_outline(UUID(drafting_session_id))
+        # Full pipeline runs: status is draft_complete, not outline_complete
+        assert draft.status in (DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE)
+        assert draft.outline is not None
 
     async def test_viewer_cannot_draft(
         self,

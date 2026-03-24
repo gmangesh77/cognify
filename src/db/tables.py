@@ -17,6 +17,19 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.base import Base, TimestampMixin, UUIDMixin
 
+__all__ = [
+    "TopicRow",
+    "ResearchSessionRow",
+    "AgentStepRow",
+    "ArticleDraftRow",
+    "CanonicalArticleRow",
+    "DomainConfigRow",
+    "ApiKeyRow",
+    "LlmConfigRow",
+    "SeoDefaultsRow",
+    "GeneralConfigRow",
+]
+
 
 class TopicRow(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "topics"
@@ -123,3 +136,47 @@ class CanonicalArticleRow(Base, UUIDMixin, TimestampMixin):
     visuals: Mapped[list] = mapped_column(JSONB, default=list)
     provenance: Mapped[dict] = mapped_column(JSONB)
     authors: Mapped[list] = mapped_column(JSONB, default=list)
+
+
+class DomainConfigRow(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "domain_configs"
+
+    name: Mapped[str] = mapped_column(String(200), unique=True)
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    trend_sources: Mapped[list] = mapped_column(JSONB, default=list)
+    keywords: Mapped[list] = mapped_column(JSONB, default=list)
+    article_count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ApiKeyRow(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "api_keys"
+
+    service: Mapped[str] = mapped_column(String(50), index=True)
+    encrypted_key: Mapped[str] = mapped_column(String(500))
+    masked_key: Mapped[str] = mapped_column(String(100))
+    status: Mapped[str] = mapped_column(String(20), default="active")
+
+
+class LlmConfigRow(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "llm_configs"
+
+    primary_model: Mapped[str] = mapped_column(String(100))
+    drafting_model: Mapped[str] = mapped_column(String(100))
+    image_generation: Mapped[str] = mapped_column(String(100))
+
+
+class SeoDefaultsRow(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "seo_defaults"
+
+    auto_meta_tags: Mapped[bool] = mapped_column(Boolean, default=True)
+    keyword_optimization: Mapped[bool] = mapped_column(Boolean, default=True)
+    auto_cover_images: Mapped[bool] = mapped_column(Boolean, default=True)
+    include_citations: Mapped[bool] = mapped_column(Boolean, default=True)
+    human_review_before_publish: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class GeneralConfigRow(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "general_configs"
+
+    article_length_target: Mapped[str] = mapped_column(String(50))
+    content_tone: Mapped[str] = mapped_column(String(50))
