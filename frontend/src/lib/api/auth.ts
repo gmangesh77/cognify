@@ -12,5 +12,8 @@ export async function logout(): Promise<void> {
     await apiClient.post("/auth/logout");
   } finally {
     setAccessToken(null);
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
   }
 }

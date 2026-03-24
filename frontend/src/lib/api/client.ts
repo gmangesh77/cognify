@@ -15,8 +15,10 @@ export function setAccessToken(token: string | null) {
   if (typeof window === "undefined") return;
   if (token) {
     localStorage.setItem(TOKEN_KEY, token);
+    document.cookie = `${TOKEN_KEY}=1; path=/; max-age=86400; SameSite=Lax`;
   } else {
     localStorage.removeItem(TOKEN_KEY);
+    document.cookie = `${TOKEN_KEY}=; path=/; max-age=0`;
   }
 }
 
