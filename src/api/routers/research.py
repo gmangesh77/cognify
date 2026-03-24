@@ -41,6 +41,16 @@ def _make_output_summary(output_data: dict[str, object]) -> str | None:
         return f"Evaluation: {status}"
     if "total_sources" in output_data:
         return f"{output_data['total_sources']} total sources"
+    if "sections" in output_data:
+        return f"{output_data['sections']} sections outlined"
+    if "sections_drafted" in output_data:
+        return f"{output_data['sections_drafted']} sections drafted"
+    if "word_count" in output_data:
+        return f"{output_data['word_count']} words"
+    if "seo_generated" in output_data:
+        return "SEO metadata generated"
+    if "done" in output_data:
+        return "Complete"
     return None
 
 
@@ -96,10 +106,7 @@ async def _run_full_pipeline(
     topic: object,
 ) -> None:
     """Research → Content generation pipeline."""
-    from uuid import UUID as _UUID
-
     await research_svc.run_and_finalize(session_id, topic)
-    # Check if research succeeded before running content pipeline
     detail = await research_svc.get_session(session_id)
     if detail.session.status != "complete":
         logger.warning(
@@ -115,8 +122,10 @@ async def _run_full_pipeline(
             reason="content_service not available",
         )
         return
+    await research_svc.update_session_status(session_id, "generating_article")
     try:
         await content_svc.generate_full_article(session_id)  # type: ignore[union-attr]
+        await research_svc.update_session_status(session_id, "article_complete")
     except Exception as exc:
         logger.error(
             "content_pipeline_failed",
@@ -124,6 +133,7 @@ async def _run_full_pipeline(
             error=str(exc),
             exc_info=True,
         )
+        await research_svc.update_session_status(session_id, "article_failed")
 
 
 @limiter.limit("30/minute")

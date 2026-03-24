@@ -161,6 +161,16 @@ class ResearchService:
         items, total = await self._repos.sessions.list(status, page, size)
         return PaginatedSessions(items=items, total=total, page=page, size=size)
 
+    async def update_session_status(
+        self, session_id: UUID, status: str
+    ) -> None:
+        """Update a session's status field in place."""
+        session = await self._repos.sessions.get(session_id)
+        if session is None:
+            return
+        updated = session.model_copy(update={"status": status})
+        await self._repos.sessions.update(updated)
+
     async def run_and_finalize(self, session_id: UUID, topic: TopicInput) -> None:
         try:
             result = await self._orchestrator.run(session_id, topic)

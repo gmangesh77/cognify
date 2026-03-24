@@ -7,8 +7,11 @@ const STATUS_CONFIG: Record<string, { label: string; dotClass: string }> = {
   researching: { label: "Researching", dotClass: "bg-amber-500" },
   evaluating: { label: "Evaluating", dotClass: "bg-amber-500" },
   running: { label: "Running", dotClass: "bg-amber-500" },
-  complete: { label: "Complete", dotClass: "bg-green-500" },
-  completed: { label: "Complete", dotClass: "bg-green-500" },
+  complete: { label: "Research Complete", dotClass: "bg-blue-500" },
+  completed: { label: "Research Complete", dotClass: "bg-blue-500" },
+  generating_article: { label: "Generating Article", dotClass: "bg-purple-500 animate-pulse" },
+  article_complete: { label: "Article Ready", dotClass: "bg-green-500" },
+  article_failed: { label: "Article Failed", dotClass: "bg-red-500" },
   failed: { label: "Failed", dotClass: "bg-red-500" },
 };
 

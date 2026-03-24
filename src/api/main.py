@@ -178,7 +178,9 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         )
         app.state.content_repos = content_repos
         app.state.content_service = ContentService(
-            repos=content_repos, deps=content_deps,
+            repos=content_repos,
+            deps=content_deps,
+            step_repo=step_repo,
         )
         # Topic persistence service
         topic_repo = PgTopicRepository(sf)

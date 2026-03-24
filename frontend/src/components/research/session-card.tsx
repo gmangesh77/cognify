@@ -4,30 +4,43 @@ import { cn } from "@/lib/utils";
 import { SessionStatusBadge } from "./session-status-badge";
 import type { ResearchSessionSummary, SessionStatus } from "@/types/research";
 
-const BORDER_COLORS: Record<SessionStatus, string> = {
+const BORDER_COLORS: Record<string, string> = {
   planning: "border-l-blue-500",
   in_progress: "border-l-amber-500",
-  complete: "border-l-green-500",
+  complete: "border-l-blue-500",
+  generating_article: "border-l-purple-500",
+  article_complete: "border-l-green-500",
+  article_failed: "border-l-red-500",
   failed: "border-l-red-500",
 };
 
-const PROGRESS_COLORS: Record<SessionStatus, string> = {
+const PROGRESS_COLORS: Record<string, string> = {
   planning: "bg-blue-500",
   in_progress: "bg-amber-500",
-  complete: "bg-green-500",
+  complete: "bg-blue-500",
+  generating_article: "bg-purple-500",
+  article_complete: "bg-green-500",
+  article_failed: "bg-red-500",
   failed: "bg-red-500",
 };
 
 function getProgressPercent(session: ResearchSessionSummary): number {
   switch (session.status) {
-    case "complete":
+    case "article_complete":
       return 100;
+    case "generating_article":
+      return 70;
+    case "complete":
+      return 50;
     case "planning":
       return 15;
     case "in_progress":
-      return 50;
+      return 35;
     case "failed":
+    case "article_failed":
       return Math.min(Math.round((session.round_count / 3) * 100), 90);
+    default:
+      return 50;
   }
 }
 
@@ -53,7 +66,7 @@ export function SessionCard({ session, isExpanded, onToggle, children }: Session
     <div
       className={cn(
         "rounded-lg border border-neutral-200 border-l-4 bg-white shadow-sm transition-shadow hover:shadow-md",
-        BORDER_COLORS[session.status],
+        BORDER_COLORS[session.status] ?? "border-l-neutral-300",
       )}
     >
       <button
@@ -75,7 +88,7 @@ export function SessionCard({ session, isExpanded, onToggle, children }: Session
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
             <div
               data-testid="progress-bar"
-              className={cn("h-full rounded-full transition-all", PROGRESS_COLORS[session.status])}
+              className={cn("h-full rounded-full transition-all", PROGRESS_COLORS[session.status] ?? "bg-neutral-400")}
               style={{ width: `${progress}%` }}
             />
           </div>

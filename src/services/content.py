@@ -9,7 +9,7 @@ from uuid import UUID
 
 import structlog
 
-from src.agents.content.pipeline import build_content_graph
+from src.agents.content.pipeline import ContentGraphDeps, build_content_graph
 from src.api.errors import NotFoundError
 from src.models.content import CanonicalArticle
 from src.models.content_pipeline import (
@@ -59,9 +59,11 @@ class ContentService:
         self,
         repos: ContentRepositories,
         deps: ContentDeps,
+        step_repo: object | None = None,
     ) -> None:
         self._repos = repos
         self._deps = deps
+        self._step_repo = step_repo
 
     async def generate_outline(self, session_id: UUID) -> ArticleDraft:
         session = await self._load_session(session_id)
@@ -100,8 +102,17 @@ class ContentService:
 
         # Single graph run: outline → queries → draft → validate →
         # citations → humanize → SEO → charts → diagrams
+        content_deps = None
+        if self._step_repo is not None:
+            content_deps = ContentGraphDeps(
+                step_repo=self._step_repo,  # type: ignore[arg-type]
+                session_id=session_id,
+            )
         graph = build_content_graph(
-            self._require_llm(), self._deps.retriever, self._deps.settings,
+            self._require_llm(),
+            self._deps.retriever,
+            self._deps.settings,
+            deps=content_deps,
         )
         result: dict[str, object] = await graph.ainvoke(
             {
