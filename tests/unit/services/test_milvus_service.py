@@ -398,13 +398,17 @@ class TestMilvusServiceClose:
 
 
 class TestMilvusServiceLogging:
+    def setup_method(self) -> None:
+        """Reset structlog config to avoid test pollution from cached loggers."""
+        structlog.reset_defaults()
+
     async def test_insert_chunks_logs_debug(
         self, milvus_db: MilvusService,
     ) -> None:
-        milvus_mod.logger = structlog.get_logger()
         chunks = _make_chunks(3)
         embeddings = _make_embeddings(3)
         with structlog.testing.capture_logs() as logs:
+            milvus_mod.logger = structlog.get_logger()
             await milvus_db.insert_chunks(chunks, embeddings)
         inserted = [e for e in logs if e["event"] == "milvus_chunks_inserted"]
         assert len(inserted) == 1
@@ -414,7 +418,6 @@ class TestMilvusServiceLogging:
     async def test_search_logs_debug(
         self, milvus_db: MilvusService, mock_client: MagicMock,
     ) -> None:
-        milvus_mod.logger = structlog.get_logger()
         mock_client.search.return_value = [[
             {"entity": {"text": "t", "source_url": "u", "source_title": "s",
                         "chunk_index": 0, "published_at": "", "author": ""},
@@ -422,6 +425,7 @@ class TestMilvusServiceLogging:
         ]]
         emb = _make_embeddings(1)[0]
         with structlog.testing.capture_logs() as logs:
+            milvus_mod.logger = structlog.get_logger()
             await milvus_db.search(emb, "topic-1", top_k=5)
         searched = [e for e in logs if e["event"] == "milvus_search_executed"]
         assert len(searched) == 1
@@ -431,10 +435,10 @@ class TestMilvusServiceLogging:
     async def test_search_empty_logs_warning(
         self, milvus_db: MilvusService, mock_client: MagicMock,
     ) -> None:
-        milvus_mod.logger = structlog.get_logger()
         mock_client.search.return_value = [[]]
         emb = _make_embeddings(1)[0]
         with structlog.testing.capture_logs() as logs:
+            milvus_mod.logger = structlog.get_logger()
             await milvus_db.search(emb, "topic-1", top_k=5)
         empty = [e for e in logs if e["event"] == "milvus_search_empty"]
         assert len(empty) == 1
@@ -443,12 +447,12 @@ class TestMilvusServiceLogging:
     async def test_ensure_collection_logs_info_on_create(
         self, mock_client: MagicMock,
     ) -> None:
-        milvus_mod.logger = structlog.get_logger()
         mock_client.has_collection.return_value = False
         with (
             patch("src.services.milvus_service.MilvusClient", return_value=mock_client),
             structlog.testing.capture_logs() as logs,
         ):
+            milvus_mod.logger = structlog.get_logger()
             svc = MilvusService(uri="mock://test", collection_name="test_chunks")
             svc.ensure_collection()
         created = [e for e in logs if e["event"] == "milvus_collection_created"]

@@ -19,14 +19,14 @@ class TestLogging:
 
 class TestSensitiveFieldFilter:
     def test_redacts_password_field(self) -> None:
-        from src.utils.logging import SENSITIVE_KEYS, _filter_sensitive
+        from src.utils.logging import _filter_sensitive
 
         event_dict = {"event": "test", "password": "secret123"}
         result = _filter_sensitive(None, "info", event_dict)
         assert result["password"] == "***REDACTED***"
 
     def test_redacts_api_key_field(self) -> None:
-        from src.utils.logging import SENSITIVE_KEYS, _filter_sensitive
+        from src.utils.logging import _filter_sensitive
 
         event_dict = {"event": "test", "api_key": "sk-abc123"}
         result = _filter_sensitive(None, "info", event_dict)
