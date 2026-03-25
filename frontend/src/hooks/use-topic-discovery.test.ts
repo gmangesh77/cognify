@@ -30,7 +30,7 @@ describe("useTopicDiscovery", () => {
 
   it("exposes filter state", () => {
     const { result } = renderHook(() => useTopicDiscovery());
-    expect(result.current.filters.timeRange).toBe("7d");
+    expect(result.current.filters.timeRange).toBe("all");
   });
 
   it("exposes pagination state", () => {

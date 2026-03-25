@@ -21,11 +21,11 @@ describe("SessionFilters", () => {
     const onChange = vi.fn();
     render(<SessionFilters activeFilter="all" onFilterChange={onChange} totalCount={8} />);
     fireEvent.click(screen.getByText("Complete"));
-    expect(onChange).toHaveBeenCalledWith("complete");
+    expect(onChange).toHaveBeenCalledWith("article_complete");
   });
 
   it("highlights active filter", () => {
-    render(<SessionFilters activeFilter="complete" onFilterChange={() => {}} totalCount={4} />);
+    render(<SessionFilters activeFilter="article_complete" onFilterChange={() => {}} totalCount={4} />);
     const completeBtn = screen.getByText("Complete");
     expect(completeBtn.className).toContain("bg-primary");
   });

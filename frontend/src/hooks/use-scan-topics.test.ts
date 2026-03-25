@@ -7,6 +7,7 @@ vi.mock("@/lib/api/trends", () => ({
   fetchTrends: vi.fn(),
   rankTopics: vi.fn(),
   persistTopics: vi.fn(),
+  fetchPersistedTopics: vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, page_size: 50 }),
 }));
 
 const mockFetchTrends = vi.mocked(trendsApi.fetchTrends);
@@ -45,7 +46,7 @@ beforeEach(() => {
     total_after_dedup: 1,
     total_returned: 1,
   });
-  mockPersistTopics.mockResolvedValue({ new_count: 1, updated_count: 0, total_persisted: 1 });
+  mockPersistTopics.mockResolvedValue({ new_count: 1, updated_count: 0, total_persisted: 1, topic_ids: ["t1"] });
 });
 
 describe("useScanTopics", () => {
@@ -84,7 +85,7 @@ describe("useScanTopics", () => {
     const { result } = renderHook(() => useScanTopics());
     await act(async () => { await result.current.startScan("cybersecurity"); });
     expect(mockFetchTrends).toHaveBeenCalledWith({
-      domain_keywords: ["cybersecurity"],
+      domain_keywords: ["cybersecurity", "security", "infosec", "threat", "vulnerability"],
       max_results: 50,
     });
   });
@@ -95,7 +96,7 @@ describe("useScanTopics", () => {
     expect(mockRankTopics).toHaveBeenCalledWith({
       topics: [mockRawTopic],
       domain: "cybersecurity",
-      domain_keywords: ["cybersecurity"],
+      domain_keywords: ["cybersecurity", "security", "infosec", "threat", "vulnerability"],
     });
   });
 

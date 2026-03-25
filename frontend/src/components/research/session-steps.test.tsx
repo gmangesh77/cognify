@@ -18,7 +18,7 @@ describe("SessionSteps", () => {
     expect(screen.getByText("Research Facet 0")).toBeInTheDocument();
     expect(screen.getByText("Evaluate Completeness")).toBeInTheDocument();
     expect(screen.getByText("Index Findings")).toBeInTheDocument();
-    expect(screen.getByText("Finalize")).toBeInTheDocument();
+    expect(screen.getByText("Finalize Research")).toBeInTheDocument();
   });
 
   it("shows duration for completed steps", () => {

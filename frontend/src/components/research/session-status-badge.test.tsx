@@ -6,7 +6,8 @@ import type { SessionStatus } from "@/types/research";
 const cases: { status: SessionStatus; label: string; dotClass: string }[] = [
   { status: "planning", label: "Planning", dotClass: "bg-blue-500" },
   { status: "in_progress", label: "In Progress", dotClass: "bg-amber-500" },
-  { status: "complete", label: "Complete", dotClass: "bg-green-500" },
+  { status: "complete", label: "Research Complete", dotClass: "bg-blue-500" },
+  { status: "article_complete", label: "Article Ready", dotClass: "bg-green-500" },
   { status: "failed", label: "Failed", dotClass: "bg-red-500" },
 ];
 
