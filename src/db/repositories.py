@@ -6,8 +6,11 @@ services/content_repositories.py using SQLAlchemy async sessions.
 
 from __future__ import annotations
 
+import structlog
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
+
+logger = structlog.get_logger()
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -69,7 +72,9 @@ class PgResearchSessionRepository:
             db.add(row)
             await db.commit()
             await db.refresh(row)
-            return self._to_model(row)
+            session = self._to_model(row)
+            logger.debug("research_session_created", session_id=str(session.id), status=session.status)
+            return session
 
     async def get(self, session_id: UUID) -> ResearchSession | None:
         async with self._sf() as db:
@@ -82,6 +87,7 @@ class PgResearchSessionRepository:
         async with self._sf() as db:
             row = await db.get(ResearchSessionRow, session.id)
             if row is None:
+                logger.warning("research_session_not_found", session_id=str(session.id))
                 raise ValueError(f"ResearchSession {session.id} not found")
             row.status = session.status
             row.round_count = session.round_count
@@ -96,7 +102,9 @@ class PgResearchSessionRepository:
             row.topic_domain = session.topic_domain
             await db.commit()
             await db.refresh(row)
-            return self._to_model(row)
+            updated = self._to_model(row)
+            logger.debug("research_session_updated", session_id=str(updated.id), status=updated.status)
+            return updated
 
     async def list(
         self, status: str | None, page: int, size: int
@@ -123,6 +131,7 @@ class PgResearchSessionRepository:
             query = query.offset(offset).limit(size)
             result = await db.execute(query)
             rows = result.scalars().all()
+            logger.debug("research_sessions_listed", status=status, page=page, size=size, total=total)
             return [self._to_model(r) for r in rows], total
 
     @staticmethod
@@ -167,12 +176,15 @@ class PgAgentStepRepository:
             db.add(row)
             await db.commit()
             await db.refresh(row)
-            return self._to_model(row)
+            step_model = self._to_model(row)
+            logger.debug("agent_step_created", step_id=str(step_model.id), session_id=str(step_model.session_id))
+            return step_model
 
     async def update(self, step: AgentStep) -> AgentStep:
         async with self._sf() as db:
             row = await db.get(AgentStepRow, step.id)
             if row is None:
+                logger.warning("agent_step_not_found", step_id=str(step.id))
                 raise ValueError(f"AgentStep {step.id} not found")
             row.status = step.status
             row.output_data = step.output_data or {}
@@ -180,7 +192,9 @@ class PgAgentStepRepository:
             row.completed_at = step.completed_at
             await db.commit()
             await db.refresh(row)
-            return self._to_model(row)
+            updated_step = self._to_model(row)
+            logger.debug("agent_step_updated", step_id=str(updated_step.id), status=updated_step.status)
+            return updated_step
 
     async def list_by_session(self, session_id: UUID) -> list[AgentStep]:
         async with self._sf() as db:
@@ -189,6 +203,7 @@ class PgAgentStepRepository:
             )
             result = await db.execute(query)
             rows = result.scalars().all()
+            logger.debug("agent_steps_listed", session_id=str(session_id), count=len(rows))
             return [self._to_model(r) for r in rows]
 
     @staticmethod
@@ -269,6 +284,7 @@ class PgTopicRepository:
             )
             session.add(row)
             await session.commit()
+        logger.debug("topic_created", topic_id=str(topic_id), domain=domain, source=topic.source)
         return topic_id
 
     async def update_from_scan(
@@ -288,6 +304,7 @@ class PgTopicRepository:
             row.rank = topic.rank
             row.source_count = row.source_count + 1
             await session.commit()
+        logger.debug("topic_updated", topic_id=str(topic_id), trend_score=topic.trend_score)
 
     async def list_by_domain(
         self,
@@ -331,6 +348,7 @@ class PgTopicRepository:
                 )
                 for r in rows
             ]
+            logger.debug("topics_listed", domain=domain, page=page, size=size, total=total)
             return items, total
 
     @staticmethod
@@ -372,7 +390,9 @@ class PgArticleDraftRepository:
             db.add(row)
             await db.commit()
             await db.refresh(row)
-            return self._to_model(row)
+            draft_model = self._to_model(row)
+            logger.debug("article_draft_created", draft_id=str(draft_model.id), status=draft_model.status.value)
+            return draft_model
 
     async def get(self, draft_id: UUID) -> ArticleDraft | None:
         async with self._sf() as db:
@@ -392,6 +412,7 @@ class PgArticleDraftRepository:
         async with self._sf() as db:
             row = await db.get(ArticleDraftRow, draft.id)
             if row is None:
+                logger.warning("article_draft_not_found", draft_id=str(draft.id))
                 raise ValueError(f"ArticleDraft {draft.id} not found")
             j = self._to_jsonb
             row.status = draft.status.value
@@ -407,7 +428,9 @@ class PgArticleDraftRepository:
             row.visuals = [j(v) for v in draft.visuals]
             await db.commit()
             await db.refresh(row)
-            return self._to_model(row)
+            updated_draft = self._to_model(row)
+            logger.debug("article_draft_updated", draft_id=str(updated_draft.id), status=updated_draft.status.value)
+            return updated_draft
 
     @staticmethod
     def _to_model(row: ArticleDraftRow) -> ArticleDraft:
@@ -477,7 +500,9 @@ class PgArticleRepository:
             db.add(row)
             await db.commit()
             await db.refresh(row)
-            return self._to_model(row)
+            article_model = self._to_model(row)
+            logger.debug("article_created", article_id=str(article_model.id), title=article_model.title[:80])
+            return article_model
 
     async def get(self, article_id: UUID) -> CanonicalArticle | None:
         async with self._sf() as db:
@@ -502,6 +527,7 @@ class PgArticleRepository:
                 .limit(size)
             )
             rows = (await session.execute(q)).scalars().all()
+            logger.debug("articles_listed", page=page, size=size, total=total)
             return [self._to_model(r) for r in rows], total
 
     @staticmethod
