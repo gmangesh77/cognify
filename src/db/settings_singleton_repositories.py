@@ -7,12 +7,12 @@ from __future__ import annotations
 
 import structlog
 from sqlalchemy import select
-
-logger = structlog.get_logger()
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.db.tables import GeneralConfigRow, LlmConfigRow, SeoDefaultsRow
 from src.models.settings import GeneralConfig, LlmConfig, SeoDefaults
+
+logger = structlog.get_logger()
 
 
 class PgLlmConfigRepository:

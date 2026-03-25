@@ -6,12 +6,10 @@ services/content_repositories.py using SQLAlchemy async sessions.
 
 from __future__ import annotations
 
-import structlog
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-logger = structlog.get_logger()
-
+import structlog
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -44,6 +42,8 @@ from src.models.content_pipeline import (
 from src.models.research import TopicInput
 from src.models.research_db import AgentStep, ResearchSession
 
+logger = structlog.get_logger()
+
 
 class PgResearchSessionRepository:
     """PostgreSQL-backed research session repository."""
@@ -73,7 +73,11 @@ class PgResearchSessionRepository:
             await db.commit()
             await db.refresh(row)
             session = self._to_model(row)
-            logger.debug("research_session_created", session_id=str(session.id), status=session.status)
+            logger.debug(
+                "research_session_created",
+                session_id=str(session.id),
+                status=session.status,
+            )
             return session
 
     async def get(self, session_id: UUID) -> ResearchSession | None:
@@ -103,7 +107,11 @@ class PgResearchSessionRepository:
             await db.commit()
             await db.refresh(row)
             updated = self._to_model(row)
-            logger.debug("research_session_updated", session_id=str(updated.id), status=updated.status)
+            logger.debug(
+                "research_session_updated",
+                session_id=str(updated.id),
+                status=updated.status,
+            )
             return updated
 
     async def list(
@@ -131,7 +139,13 @@ class PgResearchSessionRepository:
             query = query.offset(offset).limit(size)
             result = await db.execute(query)
             rows = result.scalars().all()
-            logger.debug("research_sessions_listed", status=status, page=page, size=size, total=total)
+            logger.debug(
+                "research_sessions_listed",
+                status=status,
+                page=page,
+                size=size,
+                total=total,
+            )
             return [self._to_model(r) for r in rows], total
 
     @staticmethod
@@ -177,7 +191,11 @@ class PgAgentStepRepository:
             await db.commit()
             await db.refresh(row)
             step_model = self._to_model(row)
-            logger.debug("agent_step_created", step_id=str(step_model.id), session_id=str(step_model.session_id))
+            logger.debug(
+                "agent_step_created",
+                step_id=str(step_model.id),
+                session_id=str(step_model.session_id),
+            )
             return step_model
 
     async def update(self, step: AgentStep) -> AgentStep:
@@ -193,7 +211,11 @@ class PgAgentStepRepository:
             await db.commit()
             await db.refresh(row)
             updated_step = self._to_model(row)
-            logger.debug("agent_step_updated", step_id=str(updated_step.id), status=updated_step.status)
+            logger.debug(
+                "agent_step_updated",
+                step_id=str(updated_step.id),
+                status=updated_step.status,
+            )
             return updated_step
 
     async def list_by_session(self, session_id: UUID) -> list[AgentStep]:
@@ -203,7 +225,11 @@ class PgAgentStepRepository:
             )
             result = await db.execute(query)
             rows = result.scalars().all()
-            logger.debug("agent_steps_listed", session_id=str(session_id), count=len(rows))
+            logger.debug(
+                "agent_steps_listed",
+                session_id=str(session_id),
+                count=len(rows),
+            )
             return [self._to_model(r) for r in rows]
 
     @staticmethod
@@ -284,7 +310,12 @@ class PgTopicRepository:
             )
             session.add(row)
             await session.commit()
-        logger.debug("topic_created", topic_id=str(topic_id), domain=domain, source=topic.source)
+        logger.debug(
+            "topic_created",
+            topic_id=str(topic_id),
+            domain=domain,
+            source=topic.source,
+        )
         return topic_id
 
     async def update_from_scan(
@@ -304,7 +335,11 @@ class PgTopicRepository:
             row.rank = topic.rank
             row.source_count = row.source_count + 1
             await session.commit()
-        logger.debug("topic_updated", topic_id=str(topic_id), trend_score=topic.trend_score)
+        logger.debug(
+            "topic_updated",
+            topic_id=str(topic_id),
+            trend_score=topic.trend_score,
+        )
 
     async def list_by_domain(
         self,
@@ -348,7 +383,13 @@ class PgTopicRepository:
                 )
                 for r in rows
             ]
-            logger.debug("topics_listed", domain=domain, page=page, size=size, total=total)
+            logger.debug(
+                "topics_listed",
+                domain=domain,
+                page=page,
+                size=size,
+                total=total,
+            )
             return items, total
 
     @staticmethod
@@ -391,7 +432,11 @@ class PgArticleDraftRepository:
             await db.commit()
             await db.refresh(row)
             draft_model = self._to_model(row)
-            logger.debug("article_draft_created", draft_id=str(draft_model.id), status=draft_model.status.value)
+            logger.debug(
+                "article_draft_created",
+                draft_id=str(draft_model.id),
+                status=draft_model.status.value,
+            )
             return draft_model
 
     async def get(self, draft_id: UUID) -> ArticleDraft | None:
@@ -429,7 +474,11 @@ class PgArticleDraftRepository:
             await db.commit()
             await db.refresh(row)
             updated_draft = self._to_model(row)
-            logger.debug("article_draft_updated", draft_id=str(updated_draft.id), status=updated_draft.status.value)
+            logger.debug(
+                "article_draft_updated",
+                draft_id=str(updated_draft.id),
+                status=updated_draft.status.value,
+            )
             return updated_draft
 
     @staticmethod
@@ -501,7 +550,11 @@ class PgArticleRepository:
             await db.commit()
             await db.refresh(row)
             article_model = self._to_model(row)
-            logger.debug("article_created", article_id=str(article_model.id), title=article_model.title[:80])
+            logger.debug(
+                "article_created",
+                article_id=str(article_model.id),
+                title=article_model.title[:80],
+            )
             return article_model
 
     async def get(self, article_id: UUID) -> CanonicalArticle | None:

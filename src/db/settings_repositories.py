@@ -7,16 +7,16 @@ Split into two modules:
 
 from __future__ import annotations
 
-import structlog
 from uuid import UUID
 
-logger = structlog.get_logger()
-
+import structlog
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.db.tables import ApiKeyRow, DomainConfigRow
 from src.models.settings import ApiKeyConfig, DomainConfig
+
+logger = structlog.get_logger()
 
 
 class PgDomainConfigRepository:
@@ -39,7 +39,11 @@ class PgDomainConfigRepository:
             await db.commit()
             await db.refresh(row)
             domain_model = self._to_model(row)
-            logger.debug("domain_config_created", domain_id=str(domain_model.id), name=domain_model.name)
+            logger.debug(
+                "domain_config_created",
+                domain_id=str(domain_model.id),
+                name=domain_model.name,
+            )
             return domain_model
 
     async def get(self, domain_id: UUID) -> DomainConfig | None:
@@ -112,7 +116,11 @@ class PgApiKeyRepository:
             await db.commit()
             await db.refresh(row)
             key_model = self._to_model(row)
-            logger.debug("api_key_created", key_id=str(key_model.id), service=key_model.service)
+            logger.debug(
+                "api_key_created",
+                key_id=str(key_model.id),
+                service=key_model.service,
+            )
             return key_model
 
     async def get(self, key_id: UUID) -> ApiKeyConfig | None:
