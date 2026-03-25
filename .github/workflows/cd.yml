@@ -1,0 +1,95 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ${{ secrets.AWS_ECR_REGISTRY }}
+
+jobs:
+  build-images:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Uncomment when AWS ECR is provisioned:
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+      #     aws-region: ${{ secrets.AWS_REGION }}
+      #
+      # - name: Login to Amazon ECR
+      #   uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.api
+          push: false  # Set to true when ECR is ready
+          tags: |
+            cognify-api:${{ github.sha }}
+            cognify-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.worker
+          push: false
+          tags: |
+            cognify-worker:${{ github.sha }}
+            cognify-worker:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.frontend
+          push: false
+          tags: |
+            cognify-frontend:${{ github.sha }}
+            cognify-frontend:latest
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=/api/v1
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build-images
+    runs-on: ubuntu-latest
+    # Uncomment when staging environment is configured:
+    # environment: staging
+    steps:
+      - name: Placeholder
+        run: echo "Staging deployment placeholder — Helm charts not yet created"
+
+  deploy-production:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    # Uncomment when production environment is configured:
+    # environment:
+    #   name: production
+    #   url: https://api.cognify.app
+    steps:
+      - name: Placeholder
+        run: echo "Production deployment placeholder — requires manual approval and Helm charts"

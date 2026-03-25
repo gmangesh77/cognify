@@ -1,0 +1,45 @@
+# ---- Stage 1: Builder ----
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+# Install uv for fast dependency resolution
+RUN pip install --no-cache-dir uv
+
+# Install production dependencies only
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-dev --frozen
+
+# Copy application source
+COPY src/ src/
+
+# ---- Stage 2: Runtime ----
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install minimal runtime system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libpq5 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r cognify && useradd -r -g cognify -u 1000 cognify
+
+# Copy virtualenv and source from builder
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/src /app/src
+COPY --from=builder /app/pyproject.toml /app/pyproject.toml
+
+# Ensure venv binaries are on PATH
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app"
+
+RUN chown -R cognify:cognify /app
+
+USER cognify
+
+# Placeholder: Celery worker is not yet wired (AsyncIODispatcher in use).
+# When Celery is integrated, replace with:
+#   CMD ["celery", "-A", "src.tasks", "worker", "--loglevel=info"]
+CMD ["python", "-c", "import time; print('Worker container ready (Celery not yet wired)'); time.sleep(999999)"]
