@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import Markdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import type { Citation } from "@/types/articles";
 
 interface ArticleContentProps {
@@ -13,7 +14,7 @@ function linkifyCitations(md: string, citations: Citation[]): string {
   return md.replace(/\[(\d+)\]/g, (match, num) => {
     const n = parseInt(num, 10);
     if (!indices.has(n)) return match;
-    return `[<sup>${n}</sup>](#cite-${n})`;
+    return `<a href="#cite-${n}" class="cite-link"><sup>${n}</sup></a>`;
   });
 }
 
@@ -26,7 +27,7 @@ export function ArticleContent({ bodyMarkdown, citations }: ArticleContentProps)
   return (
     <div>
       <div className="prose prose-neutral max-w-none prose-headings:font-heading prose-h2:mt-8 prose-h2:border-b prose-h2:border-neutral-200 prose-h2:pb-2 prose-h3:mt-6 prose-p:leading-7 prose-li:leading-7 prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
-        <Markdown>{linkedMarkdown}</Markdown>
+        <Markdown rehypePlugins={[rehypeRaw]}>{linkedMarkdown}</Markdown>
       </div>
 
       {citations.length > 0 && (

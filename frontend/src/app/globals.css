@@ -45,6 +45,18 @@
 }
 
 @layer base {
+  .cite-link {
+    color: var(--color-primary, #DC2626);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.75em;
+    vertical-align: super;
+    line-height: 0;
+    padding: 0 1px;
+  }
+  .cite-link:hover {
+    text-decoration: underline;
+  }
   body {
     font-family: var(--font-body);
     color: var(--color-secondary);
