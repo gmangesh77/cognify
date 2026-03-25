@@ -41,6 +41,12 @@ project-management/ # Backlog, sprints, risk register
 - See @docs/architecture/adrs/ for decision records
 - All new architectural decisions MUST be recorded as ADRs
 
+## Frontend Design System
+- See @frontend/DESIGN.md for colors, typography, spacing, and component patterns
+- Primary color is `#DC2626` (red) — DO NOT change without updating DESIGN.md and Pencil designs
+- Fonts: Space Grotesk (headings), Inter (body)
+- All UI changes must follow the design guidelines
+
 ## Coding Standards
 - Write tests BEFORE implementation (TDD — Red/Green/Refactor)
 - All functions < 20 lines, all files < 200 lines, max 3 params
