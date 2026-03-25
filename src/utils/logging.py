@@ -1,4 +1,5 @@
 import logging
+from collections.abc import MutableMapping
 from typing import Any
 
 import structlog
@@ -11,8 +12,10 @@ _REDACTED = "***REDACTED***"
 
 
 def _filter_sensitive(
-    logger: Any, method: str, event_dict: dict[str, Any]
-) -> dict[str, Any]:
+    logger: Any,
+    method: str,
+    event_dict: MutableMapping[str, Any],
+) -> MutableMapping[str, Any]:
     """Redact sensitive fields from log event dicts before emission."""
     for key in SENSITIVE_KEYS:
         if key in event_dict:
