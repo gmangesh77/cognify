@@ -37,6 +37,8 @@ Any hit near a JSONB write path is a bug.
 grep -rn "model_dump()" src/ | grep -v "mode=" | grep -v test | grep -v __pycache__
 ```
 
+**TRAP 2**: Repository methods that call `.model_dump(mode="json")` on items will crash if upstream code already converted them to dicts (via `_jsonable()` or bare `model_dump()`). The repository's `_to_jsonb()` helper handles BOTH cases: `hasattr(item, "model_dump")` → call it, else pass through. **Always use `_to_jsonb()` in repository create/update for ALL JSONB fields.**
+
 ---
 
 ## L-002: LLM Responses Wrapped in Markdown Fences

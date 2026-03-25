@@ -350,6 +350,7 @@ class PgArticleDraftRepository:
         self._sf = sf
 
     async def create(self, draft: ArticleDraft) -> ArticleDraft:
+        j = self._to_jsonb
         async with self._sf() as db:
             row = ArticleDraftRow(
                 id=draft.id,
@@ -361,24 +362,12 @@ class PgArticleDraftRepository:
                 created_at=draft.created_at,
                 completed_at=draft.completed_at,
                 article_id=draft.article_id,
-                outline=(
-                    draft.outline.model_dump(mode="json")
-                    if draft.outline else None
-                ),
-                section_drafts=[
-                    s.model_dump(mode="json")
-                    for s in draft.section_drafts
-                ],
-                citations=[
-                    c.model_dump(mode="json")
-                    for c in draft.citations
-                ],
-                seo_result=(
-                    draft.seo_result.model_dump(mode="json")
-                    if draft.seo_result else None
-                ),
-                global_citations=draft.global_citations,
-                visuals=[v.model_dump(mode="json") for v in draft.visuals],
+                outline=j(draft.outline) if draft.outline else None,
+                section_drafts=[j(s) for s in draft.section_drafts],
+                citations=[j(c) for c in draft.citations],
+                seo_result=j(draft.seo_result) if draft.seo_result else None,
+                global_citations=[j(c) for c in (draft.global_citations or [])],
+                visuals=[j(v) for v in draft.visuals],
             )
             db.add(row)
             await db.commit()
@@ -392,31 +381,30 @@ class PgArticleDraftRepository:
                 return None
             return self._to_model(row)
 
+    @staticmethod
+    def _to_jsonb(item: object) -> object:
+        """Serialize a Pydantic model or dict for JSONB storage."""
+        if hasattr(item, "model_dump"):
+            return item.model_dump(mode="json")
+        return item
+
     async def update(self, draft: ArticleDraft) -> ArticleDraft:
         async with self._sf() as db:
             row = await db.get(ArticleDraftRow, draft.id)
             if row is None:
                 raise ValueError(f"ArticleDraft {draft.id} not found")
+            j = self._to_jsonb
             row.status = draft.status.value
             row.total_word_count = draft.total_word_count
             row.references_markdown = draft.references_markdown
             row.completed_at = draft.completed_at
             row.article_id = draft.article_id
-            row.outline = (
-                draft.outline.model_dump(mode="json") if draft.outline else None
-            )
-            row.section_drafts = [
-                s.model_dump(mode="json") for s in draft.section_drafts
-            ]
-            row.citations = [c.model_dump(mode="json") for c in draft.citations]
-            row.seo_result = (
-                draft.seo_result.model_dump(mode="json") if draft.seo_result else None
-            )
-            row.global_citations = [
-                c.model_dump(mode="json") if hasattr(c, "model_dump") else c
-                for c in (draft.global_citations or [])
-            ]
-            row.visuals = [v.model_dump(mode="json") for v in draft.visuals]
+            row.outline = j(draft.outline) if draft.outline else None
+            row.section_drafts = [j(s) for s in draft.section_drafts]
+            row.citations = [j(c) for c in draft.citations]
+            row.seo_result = j(draft.seo_result) if draft.seo_result else None
+            row.global_citations = [j(c) for c in (draft.global_citations or [])]
+            row.visuals = [j(v) for v in draft.visuals]
             await db.commit()
             await db.refresh(row)
             return self._to_model(row)
