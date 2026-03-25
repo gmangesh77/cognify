@@ -1,11 +1,29 @@
 import logging
+from typing import Any
 
 import structlog
+
+SENSITIVE_KEYS: frozenset[str] = frozenset(
+    {"password", "token", "secret", "api_key", "authorization"}
+)
+
+_REDACTED = "***REDACTED***"
+
+
+def _filter_sensitive(
+    logger: Any, method: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
+    """Redact sensitive fields from log event dicts before emission."""
+    for key in SENSITIVE_KEYS:
+        if key in event_dict:
+            event_dict[key] = _REDACTED
+    return event_dict
 
 
 def setup_logging(debug: bool = False) -> None:
     shared_processors: list[structlog.types.Processor] = [
         structlog.contextvars.merge_contextvars,
+        _filter_sensitive,
         structlog.stdlib.add_log_level,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         structlog.processors.StackInfoRenderer(),
