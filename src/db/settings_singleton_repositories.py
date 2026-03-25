@@ -5,7 +5,10 @@ Covers: PgLlmConfigRepository, PgSeoDefaultsRepository, PgGeneralConfigRepositor
 
 from __future__ import annotations
 
+import structlog
 from sqlalchemy import select
+
+logger = structlog.get_logger()
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.db.tables import GeneralConfigRow, LlmConfigRow, SeoDefaultsRow
@@ -32,6 +35,9 @@ class PgLlmConfigRepository:
                 db.add(row)
                 await db.commit()
                 await db.refresh(row)
+                logger.debug("llm_config_loaded", created_default=True)
+            else:
+                logger.debug("llm_config_loaded", created_default=False)
             return self._to_model(row)
 
     async def update(self, config: LlmConfig) -> LlmConfig:
@@ -51,6 +57,7 @@ class PgLlmConfigRepository:
                 row.image_generation = config.image_generation
             await db.commit()
             await db.refresh(row)
+            logger.debug("llm_config_updated")
             return self._to_model(row)
 
     @staticmethod
@@ -84,6 +91,9 @@ class PgSeoDefaultsRepository:
                 db.add(row)
                 await db.commit()
                 await db.refresh(row)
+                logger.debug("seo_defaults_loaded", created_default=True)
+            else:
+                logger.debug("seo_defaults_loaded", created_default=False)
             return self._to_model(row)
 
     async def update(self, config: SeoDefaults) -> SeoDefaults:
@@ -107,6 +117,7 @@ class PgSeoDefaultsRepository:
                 row.human_review_before_publish = config.human_review_before_publish
             await db.commit()
             await db.refresh(row)
+            logger.debug("seo_defaults_updated")
             return self._to_model(row)
 
     @staticmethod
@@ -139,6 +150,9 @@ class PgGeneralConfigRepository:
                 db.add(row)
                 await db.commit()
                 await db.refresh(row)
+                logger.debug("general_config_loaded", created_default=True)
+            else:
+                logger.debug("general_config_loaded", created_default=False)
             return self._to_model(row)
 
     async def update(self, config: GeneralConfig) -> GeneralConfig:
@@ -156,6 +170,7 @@ class PgGeneralConfigRepository:
                 row.content_tone = config.content_tone
             await db.commit()
             await db.refresh(row)
+            logger.debug("general_config_updated")
             return self._to_model(row)
 
     @staticmethod
