@@ -17,6 +17,14 @@ export interface DomainConfig {
 
 export type ApiKeyService = "anthropic" | "serpapi" | "ghost" | "newsapi" | "arxiv";
 
+export const API_KEY_SERVICES: { value: ApiKeyService; label: string }[] = [
+  { value: "anthropic", label: "Anthropic API" },
+  { value: "serpapi", label: "SerpAPI" },
+  { value: "ghost", label: "Ghost Admin" },
+  { value: "newsapi", label: "NewsAPI" },
+  { value: "arxiv", label: "arXiv" },
+];
+
 export interface ApiKeyConfig {
   id: string;
   service: ApiKeyService;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_KEY_SERVICES } from "@/lib/mock/settings";
+import { API_KEY_SERVICES } from "@/types/settings";
 import type { ApiKeyConfig } from "@/types/settings";
 
 type RotateStep = "idle" | "confirm" | "input";

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_KEY_SERVICES } from "@/lib/mock/settings";
+import { API_KEY_SERVICES } from "@/types/settings";
 import type { ApiKeyService } from "@/types/settings";
 
 interface ApiKeyModalProps {
