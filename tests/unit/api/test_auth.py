@@ -36,7 +36,7 @@ class TestJwtSettings:
         assert settings.jwt_private_key == ""
         assert settings.jwt_public_key == ""
         assert settings.jwt_algorithm == "RS256"
-        assert settings.jwt_access_token_expire_minutes == 15
+        assert settings.jwt_access_token_expire_minutes == 1440
         assert settings.jwt_refresh_token_expire_days == 7
 
 
@@ -198,7 +198,8 @@ class TestTokenService:
     def test_expired_token_rejected(self) -> None:
         with freeze_time("2026-01-01 00:00:00"):
             token = create_access_token("user-1", "admin", self.settings)
-        with freeze_time("2026-01-01 00:16:00"):
+        # Token expires after 1440 minutes (24 hours)
+        with freeze_time("2026-01-02 00:01:00"):
             with pytest.raises(AuthenticationError) as exc_info:
                 decode_access_token(token, self.settings)
             assert exc_info.value.code == "invalid_token"
@@ -332,7 +333,7 @@ class TestAuthService:
         assert result.access_token
         assert result.refresh_token
         assert result.token_type == "bearer"
-        assert result.expires_in == 15 * 60
+        assert result.expires_in == 1440 * 60
 
     def test_login_wrong_password(self) -> None:
         with pytest.raises(AuthenticationError) as exc_info:

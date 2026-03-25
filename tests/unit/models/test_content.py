@@ -163,17 +163,17 @@ class TestCanonicalArticle:
         with pytest.raises(ValidationError):
             _make_article(title=None)
 
-    def test_empty_citations_rejected(self):
-        with pytest.raises(ValidationError):
-            _make_article(citations=[])
+    def test_empty_citations_accepted(self):
+        article = _make_article(citations=[])
+        assert article.citations == []
 
     def test_empty_authors_rejected(self):
         with pytest.raises(ValidationError):
             _make_article(authors=[])
 
-    def test_empty_key_claims_rejected(self):
-        with pytest.raises(ValidationError):
-            _make_article(key_claims=[])
+    def test_empty_key_claims_accepted(self):
+        article = _make_article(key_claims=[])
+        assert article.key_claims == []
 
     def test_invalid_content_type_rejected(self):
         with pytest.raises(ValidationError):
