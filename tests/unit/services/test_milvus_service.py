@@ -9,7 +9,9 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+import structlog
 
+import src.services.milvus_service as milvus_mod
 from src.models.research import DocumentChunk
 from src.services.milvus_service import MilvusService
 
@@ -393,3 +395,62 @@ class TestMilvusServiceClose:
     ) -> None:
         milvus_db.close()
         mock_client.close.assert_called_once()
+
+
+class TestMilvusServiceLogging:
+    async def test_insert_chunks_logs_debug(
+        self, milvus_db: MilvusService,
+    ) -> None:
+        milvus_mod.logger = structlog.get_logger()
+        chunks = _make_chunks(3)
+        embeddings = _make_embeddings(3)
+        with structlog.testing.capture_logs() as logs:
+            await milvus_db.insert_chunks(chunks, embeddings)
+        inserted = [e for e in logs if e["event"] == "milvus_chunks_inserted"]
+        assert len(inserted) == 1
+        assert inserted[0]["count"] == 3
+        assert inserted[0]["log_level"] == "debug"
+
+    async def test_search_logs_debug(
+        self, milvus_db: MilvusService, mock_client: MagicMock,
+    ) -> None:
+        milvus_mod.logger = structlog.get_logger()
+        mock_client.search.return_value = [[
+            {"entity": {"text": "t", "source_url": "u", "source_title": "s",
+                        "chunk_index": 0, "published_at": "", "author": ""},
+             "distance": 0.9},
+        ]]
+        emb = _make_embeddings(1)[0]
+        with structlog.testing.capture_logs() as logs:
+            await milvus_db.search(emb, "topic-1", top_k=5)
+        searched = [e for e in logs if e["event"] == "milvus_search_executed"]
+        assert len(searched) == 1
+        assert searched[0]["results_count"] == 1
+        assert searched[0]["log_level"] == "debug"
+
+    async def test_search_empty_logs_warning(
+        self, milvus_db: MilvusService, mock_client: MagicMock,
+    ) -> None:
+        milvus_mod.logger = structlog.get_logger()
+        mock_client.search.return_value = [[]]
+        emb = _make_embeddings(1)[0]
+        with structlog.testing.capture_logs() as logs:
+            await milvus_db.search(emb, "topic-1", top_k=5)
+        empty = [e for e in logs if e["event"] == "milvus_search_empty"]
+        assert len(empty) == 1
+        assert empty[0]["log_level"] == "warning"
+
+    async def test_ensure_collection_logs_info_on_create(
+        self, mock_client: MagicMock,
+    ) -> None:
+        milvus_mod.logger = structlog.get_logger()
+        mock_client.has_collection.return_value = False
+        with (
+            patch("src.services.milvus_service.MilvusClient", return_value=mock_client),
+            structlog.testing.capture_logs() as logs,
+        ):
+            svc = MilvusService(uri="mock://test", collection_name="test_chunks")
+            svc.ensure_collection()
+        created = [e for e in logs if e["event"] == "milvus_collection_created"]
+        assert len(created) == 1
+        assert created[0]["log_level"] == "info"
