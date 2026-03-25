@@ -15,9 +15,9 @@ const topics: RankedTopic[] = [
 
 describe("useTopicFilters", () => {
   it("returns all topics with default filters", () => {
-    // Default timeRange is "7d"; topic C (10 days old) is excluded
+    // Default timeRange is "all"; all topics pass
     const { result } = renderHook(() => useTopicFilters(topics));
-    expect(result.current.filteredTopics).toHaveLength(2);
+    expect(result.current.filteredTopics).toHaveLength(3);
   });
 
   it("filters by source", () => {

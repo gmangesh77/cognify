@@ -35,9 +35,9 @@ describe("ArticleContent", () => {
     expect(screen.getByText(/test article about security/)).toBeInTheDocument();
   });
 
-  it("renders sources section header", () => {
+  it("renders references section header", () => {
     render(<ArticleContent bodyMarkdown={mockMarkdown} citations={mockCitations} />);
-    expect(screen.getByText("Sources")).toBeInTheDocument();
+    expect(screen.getByText(/References \(2\)/)).toBeInTheDocument();
   });
 
   it("renders citation titles as links", () => {
@@ -51,9 +51,8 @@ describe("ArticleContent", () => {
     expect(screen.getByText(/John Doe/)).toBeInTheDocument();
   });
 
-  it("shows no sources message when citations empty", () => {
+  it("hides references section when citations empty", () => {
     render(<ArticleContent bodyMarkdown={mockMarkdown} citations={[]} />);
-    expect(screen.getByText("Sources")).toBeInTheDocument();
-    expect(screen.getByText("No sources")).toBeInTheDocument();
+    expect(screen.queryByText(/References/)).not.toBeInTheDocument();
   });
 });

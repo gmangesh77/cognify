@@ -27,7 +27,7 @@ describe("SessionCard", () => {
   it("renders topic title and status badge", () => {
     render(<SessionCard session={completeSession} isExpanded={false} onToggle={() => {}} />);
     expect(screen.getByText("AI Security Trends 2026")).toBeInTheDocument();
-    expect(screen.getByText("Complete")).toBeInTheDocument();
+    expect(screen.getByText("Research Complete")).toBeInTheDocument();
   });
 
   it("renders round count and findings count", () => {
@@ -55,7 +55,7 @@ describe("SessionCard", () => {
     const { container: c1 } = render(
       <SessionCard session={completeSession} isExpanded={false} onToggle={() => {}} />,
     );
-    expect((c1.firstChild as HTMLElement)?.className).toContain("border-l-green-500");
+    expect((c1.firstChild as HTMLElement)?.className).toContain("border-l-blue-500");
 
     const { container: c2 } = render(
       <SessionCard session={inProgressSession} isExpanded={false} onToggle={() => {}} />,

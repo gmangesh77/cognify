@@ -1,0 +1,48 @@
+# Version control
+.git
+.github
+
+# Python virtual environments & caches
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+*.egg-info
+dist
+build
+
+# Node / Frontend build artifacts
+node_modules
+.next
+frontend/node_modules
+frontend/.next
+
+# Documentation & design (not needed in containers)
+docs
+pencil_designs
+project-management
+
+# Tests (not needed in production images)
+tests
+
+# Environment & secrets
+.env
+.env.*
+*.pem
+
+# Generated assets (created at runtime)
+generated_assets
+milvus_data.db
+
+# IDE & tooling
+.claude
+.superpowers
+.playwright-mcp
+.vscode
+.idea
