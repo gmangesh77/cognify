@@ -212,6 +212,42 @@ async def rate_client(
         yield ac
 
 
+class TestRequestLoggingQueryParams:
+    async def test_logs_query_params(
+        self,
+        log_client: httpx.AsyncClient,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        setup_logging(debug=False)
+        await log_client.get("/test?page=1&size=20")
+        captured = capsys.readouterr().out
+        log_line = json.loads(captured.strip().split("\n")[-1])
+        assert log_line["query_params"] == {"page": "1", "size": "20"}
+
+    async def test_omits_query_params_when_empty(
+        self,
+        log_client: httpx.AsyncClient,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        setup_logging(debug=False)
+        await log_client.get("/test")
+        captured = capsys.readouterr().out
+        log_line = json.loads(captured.strip().split("\n")[-1])
+        assert "query_params" not in log_line
+
+    async def test_redacts_sensitive_query_params(
+        self,
+        log_client: httpx.AsyncClient,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        setup_logging(debug=False)
+        await log_client.get("/test?token=secret123&page=1")
+        captured = capsys.readouterr().out
+        log_line = json.loads(captured.strip().split("\n")[-1])
+        assert log_line["query_params"]["token"] == "***REDACTED***"
+        assert log_line["query_params"]["page"] == "1"
+
+
 class TestRateLimiting:
     async def test_health_exempt_from_rate_limit(
         self, rate_client: httpx.AsyncClient

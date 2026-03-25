@@ -64,6 +64,7 @@ class MilvusService:
             schema=schema,
             index_params=index_params,
         )
+        logger.info("milvus_collection_created", collection_name=self._collection_name)
 
     def _build_schema(self) -> CollectionSchema:
         """Build the collection schema."""
@@ -143,11 +144,14 @@ class MilvusService:
             return 0
         data = self._prepare_insert_data(chunks, embeddings)
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None,
-            self._sync_insert,
-            data,
+        count = await loop.run_in_executor(None, self._sync_insert, data)
+        logger.debug(
+            "milvus_chunks_inserted",
+            count=count,
+            topic_id=chunks[0].topic_id if chunks else "",
+            session_id=chunks[0].session_id if chunks else "",
         )
+        return count
 
     def _prepare_insert_data(
         self,
@@ -189,13 +193,19 @@ class MilvusService:
     ) -> list[ChunkResult]:
         """Top-k similarity search with topic_id filter."""
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None,
-            self._sync_search,
-            query_embedding,
-            topic_id,
-            top_k,
+        results = await loop.run_in_executor(
+            None, self._sync_search, query_embedding, topic_id, top_k,
         )
+        if not results:
+            logger.warning("milvus_search_empty", topic_id=topic_id, top_k=top_k)
+        else:
+            logger.debug(
+                "milvus_search_executed",
+                topic_id=topic_id,
+                top_k=top_k,
+                results_count=len(results),
+            )
+        return results
 
     def _sync_search(
         self,
@@ -241,11 +251,13 @@ class MilvusService:
     ) -> KnowledgeBaseStats:
         """Collection-level stats."""
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None,
-            self._sync_get_stats,
-            topic_id,
+        stats = await loop.run_in_executor(None, self._sync_get_stats, topic_id)
+        logger.debug(
+            "milvus_stats_fetched",
+            total_chunks=stats.total_chunks,
+            collection_name=stats.collection_name,
         )
+        return stats
 
     def _sync_get_stats(
         self,
