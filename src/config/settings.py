@@ -102,3 +102,9 @@ class Settings(BaseSettings):
     illustration_timeout: float = 30.0
     # Diagram generation (Mermaid CLI)
     diagram_output_dir: str = "generated_assets/diagrams"
+    # Publishing — Ghost CMS
+    ghost_api_url: str = ""
+    ghost_admin_api_key: str = ""  # format: "id:secret"
+    # Publishing — Medium (deprecated API, mock-only)
+    medium_api_token: str = ""
+    medium_user_id: str = ""

@@ -25,6 +25,7 @@ from src.api.routers.articles import articles_router
 from src.api.routers.auth import auth_router
 from src.api.routers.canonical_articles import canonical_articles_router
 from src.api.routers.health import health_router
+from src.api.routers.publishing import publishing_router
 from src.api.routers.metrics import metrics_router
 from src.api.routers.research import research_router
 from src.api.routers.settings import settings_router
@@ -233,6 +234,8 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                     logger.info("llm_rebuilt_with_resolved_keys")
                 except Exception as exc:
                     logger.error("llm_rebuild_failed", error=str(exc))
+        # Publishing service (requires article_repo)
+        _init_publishing_service(app, settings, article_repo)
         logger.info("database_connected", url=db_url.split("@")[-1])
     else:
         # In-memory fallback (no database configured)
@@ -405,6 +408,35 @@ class _NoOpOrchestrator:
         }
 
 
+def _init_publishing_service(
+    app: FastAPI, settings: Settings, article_repo: object,
+) -> None:
+    """Initialize publishing service with available platform adapters."""
+    from src.services.publishing.service import PlatformPair, PublishingService
+
+    svc = PublishingService(article_repo)
+    if settings.ghost_api_url and settings.ghost_admin_api_key:
+        from src.services.publishing.ghost.adapter import GhostAdapter
+        from src.services.publishing.ghost.transformer import GhostTransformer
+
+        pair = PlatformPair(
+            transformer=GhostTransformer(),
+            adapter=GhostAdapter(settings.ghost_api_url, settings.ghost_admin_api_key),
+        )
+        svc.register("ghost", pair)
+    if settings.medium_api_token and settings.medium_user_id:
+        from src.services.publishing.medium.adapter import MediumAdapter
+        from src.services.publishing.medium.transformer import MediumTransformer
+
+        pair = PlatformPair(
+            transformer=MediumTransformer(),
+            adapter=MediumAdapter(settings.medium_api_token, settings.medium_user_id),
+        )
+        svc.register("medium", pair)
+    app.state.publishing_service = svc
+    logger.info("publishing_service_initialized", platforms=list(svc._platforms.keys()))
+
+
 def _init_research_service(app: FastAPI) -> None:
     """Initialize research service. Uses real LLM when API key is set."""
     settings = app.state.settings
@@ -555,4 +587,9 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         settings_router,
         prefix=settings.api_v1_prefix,
         tags=["settings"],
+    )
+    app.include_router(
+        publishing_router,
+        prefix=settings.api_v1_prefix,
+        tags=["publishing"],
     )
