@@ -1,40 +1,58 @@
-# Cognify — Content Generation and Trend Insight Engine
-Self-driving content platform that discovers trends, runs multi-agent research, and generates publication-ready articles with visuals.
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+Cognify is a self-driving content platform that discovers trends, runs multi-agent research, and generates publication-ready articles with visuals.
 
 ## Tech Stack
-- **Language**: Python 3.12+ (agents, pipelines, API)
-- **Agent Framework**: LangChain + LangGraph (multi-agent orchestration)
-- **LLMs**: Claude Sonnet 4 (primary), Claude Sonnet 4 (drafting), Stable Diffusion XL (images)
-- **Vector DB**: Milvus (RAG embeddings + similarity search)
-- **API**: FastAPI (async REST endpoints)
-- **Database**: PostgreSQL 16 (metadata, users, publishing state)
-- **Cache**: Redis (trend signal caching, rate limiting)
-- **Task Queue**: Celery + Redis (background agent workflows)
-- **Frontend**: Next.js 15 + React 19 + TypeScript (dashboard UI)
-- **Testing**: pytest, pytest-asyncio, Playwright (E2E)
-- **CI/CD**: GitHub Actions
-- **Infrastructure**: Docker + Kubernetes on AWS
-
-## Project Structure
-src/
-  agents/       # LangGraph agent definitions (orchestrator, researcher, writer)
-  pipelines/    # Trend discovery, research, content gen, visual gen, publishing
-  services/     # Business logic (topic ranking, SEO, formatting)
-  api/          # FastAPI routes and middleware
-  models/       # SQLAlchemy/Pydantic models
-  utils/        # Shared utilities (logging, correlation IDs)
-  config/       # Environment config, settings
-docs/           # Architecture, testing, CI/CD, observability docs
-.claude/rules/  # Modular AI agent instructions
-.claude/commands/ # Custom slash commands
-project-management/ # Backlog, sprints, risk register
+- **Backend**: Python 3.12+, FastAPI, LangChain + LangGraph, SQLAlchemy (async), structlog
+- **LLMs**: Claude Sonnet 4 (primary + drafting), Stable Diffusion XL (images)
+- **Data**: PostgreSQL 16, Milvus (vector DB), Redis (cache + task broker)
+- **Frontend**: Next.js 15 + React 19 + TypeScript, Tailwind CSS
+- **Testing**: pytest + pytest-asyncio (backend), Vitest + Testing Library (frontend)
+- **CI/CD**: GitHub Actions, Docker
+- **Package Manager**: uv (backend), npm (frontend)
 
 ## Commands
-- Build: `docker compose build`
-- Test: `uv run pytest --cov=src --cov-report=term-missing`
-- Lint: `uv run ruff check src/ && uv run ruff format --check src/ && uv run mypy src/`
-- Dev: `uv run uvicorn src.api.main:app --reload --port 8000`
+- Build: `docker compose build` or `make build`
+- Test all: `make test` (runs backend + frontend)
+- Test backend: `uv run pytest tests/unit/ -q`
+- Test frontend: `cd frontend && npx vitest run`
 - Single test: `uv run pytest tests/path/to/test_file.py::test_name -v`
+- Lint: `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv run mypy src/ --ignore-missing-imports`
+- Lint fix: `uv run ruff check --fix src/ tests/ && uv run ruff format src/ tests/`
+- Dev backend: `uv run uvicorn src.api.main:app --reload --port 8000`
+- Dev frontend: `cd frontend && npm run dev`
+- Full stack (Docker): `make dev` or `docker compose up --build -d`
+- Infra only: `make up` (starts postgres, milvus, redis)
+- Install deps: `uv sync --dev` (backend), `cd frontend && npm ci` (frontend)
+- Migrations: `uv run alembic upgrade head`
+- New migration: `uv run alembic revision --autogenerate -m "description"`
+
+## Project Structure
+```
+src/
+  agents/       # LangGraph agent definitions (orchestrator, researcher, writer, content pipeline)
+  pipelines/    # Trend discovery, research, content gen, visual gen
+  services/     # Business logic (topic ranking, SEO, content, research, milvus)
+  api/          # FastAPI routes, middleware, auth (JWT + RBAC)
+  models/       # Pydantic models (content, research, settings) + SQLAlchemy tables
+  db/           # Database engine, repositories, Alembic migrations
+  utils/        # Shared utilities (logging with sensitive field redaction, LLM JSON parsing)
+  config/       # pydantic-settings (all env vars prefixed COGNIFY_)
+frontend/       # Next.js 15 app (app router, hooks, components, types)
+alembic/        # Database migration versions
+```
+
+## Architecture
+- **Content Pipeline**: Orchestrator → Research Agents (parallel) → Writer Agent → Visual Agent → CanonicalArticle
+- **CanonicalArticle** is the central boundary contract between content generation and publishing (see ADR-003). Publishing consumes it via Transformer/Adapter pairs per platform (see ADR-004).
+- **Service Layer Pattern**: Route handlers → Service → Repository → Database. No direct DB calls from routes.
+- **TrendSource Protocol + Registry**: All 5 trend sources (HN, Google Trends, Reddit, NewsAPI, arXiv) implement a common protocol. Single registry-driven router.
+- **Settings**: `src/config/settings.py` uses pydantic-settings with `COGNIFY_` env prefix. All configuration externalized.
+- **Auth**: JWT (RS256) with RBAC (admin/editor/viewer). Token expiry: 1440 min (24h access), 7d refresh.
+- **Frontend API layer**: Hooks in `frontend/src/hooks/` call API functions in `frontend/src/lib/api/`, which use axios via `apiClient`.
 
 ## Architecture Decisions
 - See @docs/architecture/HIGH_LEVEL_ARCHITECTURE.md for system design
@@ -54,9 +72,6 @@ project-management/ # Backlog, sprints, risk register
 - Use Pydantic for all data validation and serialization
 - Input validation on all external inputs (Pydantic models + FastAPI deps)
 - Structured logging with correlation IDs via structlog
-- No secrets in code — use environment variables via pydantic-settings
-
-## Patterns to AVOID
 - No `Any` types — use strict typing with mypy strict mode
 - No inline styles in frontend — use Tailwind CSS
 - No direct database calls from route handlers — use service layer
@@ -67,9 +82,16 @@ project-management/ # Backlog, sprints, risk register
 - **Organization**: https://dev.azure.com/signity
 - **Project**: Cognify
 - **Work item prefix**: `AB#<id>` in commit messages and PR descriptions to link to Azure Boards
-- **CLI**: `powershell.exe -Command "& 'C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd' boards <command>"` (az.cmd requires PowerShell on this machine due to path spaces)
+- **CLI (Windows)**: `powershell.exe -Command "& 'C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd' boards <command>"` (az.cmd requires PowerShell on Windows due to path spaces)
+- **CLI (Linux)**: `az boards <command>`
 - When completing a ticket: update Azure Boards work item state to Closed
 - When starting a ticket: update Azure Boards work item state to Active
+
+## Environment
+- **Package manager**: uv (backend), npm (frontend) — all Python commands use `uv run` prefix
+- **Install deps**: `uv sync --dev` (backend), `cd frontend && npm ci` (frontend)
+- **Windows Conda fallback**: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ...`
+- **Linux**: Standard uv/npm, Docker available for full stack
 
 ## Git Workflow
 - Branch: feature/{TICKET}-description or fix/{TICKET}-description
@@ -108,11 +130,6 @@ Naming convention: `{date}-{ticket-id}-{description}.md` (e.g., `2026-03-12-api-
 
 **New session checklist**: Read `project-management/PROGRESS.md` to see what's done/in-progress, then check the relevant plan file for detailed task state.
 
-## Environment
-Package manager: **uv** — all commands use `uv run` prefix (no activation needed).
-- Install deps: `uv sync --dev`
-- Conda fallback: `"C:\Users\mange\anaconda3\Library\bin\conda.bat" run -n cognify ...`
-
 ## Change Protocol
 Before modifying any interface, field constraint, or status value: grep all callers/consumers, check test assertions, and verify the full dependency chain. Never change a contract without understanding its blast radius.
 
@@ -130,15 +147,9 @@ See @docs/LEARNINGS.md for hard-won debugging lessons. **Read before making chan
 
 See @project-management/PROGRESS.md for full ticket status.
 
-**Last completed:** VISUAL-003 (Diagram Generation) — PR #36
-**Epic 9 (Infrastructure):** ALL 3 TICKETS DONE — **Epic complete.** PostgreSQL persistence (SQLAlchemy, Alembic, Docker Compose), topic persistence with cross-scan dedup, all frontend hooks wired to real APIs. INFRA-003/004/005 remain in backlog.
-**Epic 4 (Visual Assets):** **Epic complete.** VISUAL-001 (charts), VISUAL-002 (AI illustrations), VISUAL-003 (diagrams) all Done.
-**Epic 6 (Dashboard):** **Epic complete.** All pages show real data (except Settings — mock, needs backend CRUD endpoints).
-**Epic 3 (Content Gen):** **Epic complete.** Full pipeline with chart generation → CanonicalArticle assembly.
-**Epic 8 (Architecture):** Epic complete.
-**Epic 2 (Research):** **Epic complete.**
-**Epic 7 (API & Auth):** Epic complete.
-**Epic 1 (Trend Discovery):** Epic complete.
-**Epic 0 (Design):** Epic complete.
-**Test suite:** ~764 backend tests + 237 frontend tests, ~98% coverage
-**Next action:** Epic 5 (Publishing), INFRA-003 (Wire Real LLM Orchestrator), INFRA-004 (Settings Backend CRUD), or INFRA-005 (Frontend Status Alignment).
+**Epics 0-4, 6-9:** All complete (Design, Trend Discovery, Research, Content Gen, Visual Assets, Dashboard, API & Auth, Architecture, Infrastructure).
+**Epic 5 (Publishing):** Backlog — Ghost, WordPress, Medium, LinkedIn integrations.
+**INFRA-005 (Frontend Status Alignment):** Backlog.
+**CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml), Makefile, docker-compose with full stack.
+**Test suite:** 844 backend tests + 239 frontend tests.
+**Next action:** Epic 5 (Publishing) or INFRA-005 (Frontend Status Alignment).

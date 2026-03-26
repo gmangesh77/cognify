@@ -655,8 +655,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 8
 - **Depends on**: INFRA-001
 
-### INFRA-003: Wire Real LLM Orchestrator [Must]
+### INFRA-003: Wire Real LLM Orchestrator [Must] — DONE
 **As a** user, **I want** the "Generate Article" flow to actually run the LLM pipeline, **so that** clicking "Generate" produces a real article.
+- **Status**: Done (branch `feature/INFRA-003-wire-llm-orchestrator`)
 - **Acceptance Criteria**:
   - Replace `NoOpOrchestrator` in `main.py` with real `build_graph()` orchestrator using `ChatAnthropic`
   - Add `anthropic_api_key: str = ""` to Settings (if not present) — `COGNIFY_ANTHROPIC_API_KEY`
@@ -668,8 +669,10 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 5
 - **Depends on**: INFRA-001a (Done)
 
-### INFRA-004: Settings Backend CRUD [Must]
+### INFRA-004: Settings Backend CRUD [Must] — DONE
 **As an** admin, **I want** settings saved to the database, **so that** domain configuration, API keys, and LLM preferences persist across server restarts.
+- **Status**: Done (branch `feature/INFRA-004-settings-backend-crud`)
+- **Plan**: [`docs/superpowers/plans/2026-03-24-infra-004-settings-backend-crud.md`](../docs/superpowers/plans/2026-03-24-infra-004-settings-backend-crud.md)
 - **Acceptance Criteria**:
   - SQLAlchemy model for `DomainConfig` (domain name, keywords, trend sources, status)
   - Settings CRUD endpoints: domains (list, create, update, delete), LLM config (get, update), API keys (list, add, rotate, delete), SEO defaults (get, update), General config (get, update)
