@@ -156,6 +156,7 @@
 | CI/CD & Dockerization | Done | 2026-03-25 | Dockerfiles (api, worker, frontend), docker-compose (full stack + test), GitHub Actions (ci.yml, cd.yml), Makefile |
 | Frontend Test Fixes | Done | 2026-03-25 | Fixed 22 stale frontend tests (status labels, filter values, API mocking, default filters) |
 | TypeScript Build Fixes | Done | 2026-03-26 | Article status type, keywordMap index signature, login page Suspense boundary |
+| Secure API Key Encryption | Done | 2026-03-26 | Fernet encryption at rest, runtime key resolution (DB overrides .env), delete UI, expanded services. PR #42 |
 
 ---
 

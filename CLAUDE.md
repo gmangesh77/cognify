@@ -151,5 +151,5 @@ See @project-management/PROGRESS.md for full ticket status.
 **Epic 5 (Publishing):** Backlog — Ghost, WordPress, Medium, LinkedIn integrations.
 **INFRA-005 (Frontend Status Alignment):** Backlog.
 **CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml), Makefile, docker-compose with full stack.
-**Test suite:** 844 backend tests + 239 frontend tests.
+**Test suite:** 856 backend tests + 239 frontend tests.
 **Next action:** Epic 5 (Publishing) or INFRA-005 (Frontend Status Alignment).
