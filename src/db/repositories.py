@@ -136,7 +136,9 @@ class PgResearchSessionRepository:
             total_result = await db.execute(count_query)
             total = total_result.scalar_one()
             offset = (page - 1) * size
-            query = query.offset(offset).limit(size)
+            query = query.order_by(
+                ResearchSessionRow.started_at.desc(),
+            ).offset(offset).limit(size)
             result = await db.execute(query)
             rows = result.scalars().all()
             logger.debug(
