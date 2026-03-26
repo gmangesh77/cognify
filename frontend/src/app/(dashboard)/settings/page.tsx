@@ -57,6 +57,7 @@ export default function SettingsPage() {
               actions={{
                 add: (s, k) => { settings.addApiKey(s, k); showToast("API key added"); },
                 rotate: (id, k) => { settings.rotateApiKey(id, k); showToast("API key rotated"); },
+                delete: (id) => { settings.deleteApiKey(id); showToast("API key deleted"); },
               }}
             />
           )}

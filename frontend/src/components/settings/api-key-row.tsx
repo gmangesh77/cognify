@@ -1,19 +1,21 @@
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_KEY_SERVICES } from "@/types/settings";
 import type { ApiKeyConfig } from "@/types/settings";
 
-type RotateStep = "idle" | "confirm" | "input";
+type ActionStep = "idle" | "rotate-confirm" | "rotate-input" | "delete-confirm";
 
 interface ApiKeyRowProps {
   apiKey: ApiKeyConfig;
   onRotate: (id: string, newKey: string) => void;
+  onDelete: (id: string) => void;
 }
 
-export function ApiKeyRow({ apiKey, onRotate }: ApiKeyRowProps) {
-  const [step, setStep] = useState<RotateStep>("idle");
+export function ApiKeyRow({ apiKey, onRotate, onDelete }: ApiKeyRowProps) {
+  const [step, setStep] = useState<ActionStep>("idle");
   const [newKey, setNewKey] = useState("");
 
   const label =
@@ -51,22 +53,32 @@ export function ApiKeyRow({ apiKey, onRotate }: ApiKeyRowProps) {
           </span>
         </div>
         {step === "idle" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setStep("confirm")}
-            className="text-primary"
-          >
-            Rotate
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStep("rotate-confirm")}
+              className="text-primary"
+            >
+              Rotate
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStep("delete-confirm")}
+              className="text-neutral-400 hover:text-red-600"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </div>
-      {step === "confirm" && (
+      {step === "rotate-confirm" && (
         <div className="mt-2 flex items-center gap-2">
           <p className="text-xs text-neutral-500">
             Are you sure you want to rotate this key?
           </p>
-          <Button size="sm" onClick={() => setStep("input")}>
+          <Button size="sm" onClick={() => setStep("rotate-input")}>
             Confirm
           </Button>
           <Button variant="ghost" size="sm" onClick={handleCancel}>
@@ -74,7 +86,7 @@ export function ApiKeyRow({ apiKey, onRotate }: ApiKeyRowProps) {
           </Button>
         </div>
       )}
-      {step === "input" && (
+      {step === "rotate-input" && (
         <div className="mt-2 flex items-center gap-2">
           <Input
             value={newKey}
@@ -84,6 +96,23 @@ export function ApiKeyRow({ apiKey, onRotate }: ApiKeyRowProps) {
           />
           <Button size="sm" onClick={handleSave}>
             Save
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleCancel}>
+            Cancel
+          </Button>
+        </div>
+      )}
+      {step === "delete-confirm" && (
+        <div className="mt-2 flex items-center gap-2">
+          <p className="text-xs text-red-600">
+            Delete this API key? This cannot be undone.
+          </p>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => onDelete(apiKey.id)}
+          >
+            Delete
           </Button>
           <Button variant="ghost" size="sm" onClick={handleCancel}>
             Cancel

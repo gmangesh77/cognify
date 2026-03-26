@@ -1,9 +1,10 @@
 """Request/response schemas for the settings API."""
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # --- Domain schemas ---
 
@@ -38,13 +39,19 @@ class DomainListResponse(BaseModel):
 
 # --- API key schemas ---
 
+ApiKeyServiceType = Literal[
+    "anthropic", "openai", "serpapi", "ghost", "newsapi", "arxiv",
+    "reddit_client_id", "reddit_client_secret", "semantic_scholar",
+]
+
+
 class AddApiKeyRequest(BaseModel):
-    service: str
-    key: str
+    service: ApiKeyServiceType
+    key: str = Field(min_length=10, max_length=500)
 
 
 class RotateApiKeyRequest(BaseModel):
-    key: str
+    key: str = Field(min_length=10, max_length=500)
 
 
 class ApiKeyResponse(BaseModel):

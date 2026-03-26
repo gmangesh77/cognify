@@ -62,6 +62,7 @@ from src.services.research import (
 )
 from src.services.topic_persistence import TopicPersistenceService
 from src.services.trends import init_registry
+from src.utils.key_resolver import ApiKeyResolver
 from src.utils.logging import setup_logging
 
 logger = structlog.get_logger()
@@ -192,13 +193,46 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             threshold=settings.dedup_similarity_threshold,
         )
         # Settings repositories
+        api_key_repo = PgApiKeyRepository(sf)
         app.state.settings_repos = _SettingsRepos(
             domains=PgDomainConfigRepository(sf),
-            api_keys=PgApiKeyRepository(sf),
+            api_keys=api_key_repo,
             llm=PgLlmConfigRepository(sf),
             seo=PgSeoDefaultsRepository(sf),
             general=PgGeneralConfigRepository(sf),
         )
+        # Resolve API keys: DB overrides .env
+        resolver = ApiKeyResolver(api_key_repo, settings)
+        resolved = await resolver.resolve_all()
+        app.state.key_resolver = resolver
+        if resolved:
+            settings = settings.model_copy(update=resolved)
+            app.state.settings = settings
+            logger.info(
+                "api_keys_resolved",
+                resolved_services=list(resolved.keys()),
+            )
+            # Rebuild LLM deps if anthropic key was resolved
+            if "anthropic_api_key" in resolved and settings.anthropic_api_key:
+                try:
+                    llm = _build_llm(settings)
+                    retriever = _try_build_retriever(app, settings)
+                    content_deps = ContentDeps(
+                        llm=llm, retriever=retriever, settings=settings,
+                    )
+                    app.state.content_service = ContentService(
+                        repos=content_repos, deps=content_deps,
+                        step_repo=step_repo,
+                    )
+                    orchestrator = _build_real_orchestrator(
+                        settings, step_repo=step_repo,
+                    )
+                    app.state.research_service = ResearchService(
+                        repos, orchestrator,
+                    )
+                    logger.info("llm_rebuilt_with_resolved_keys")
+                except Exception as exc:
+                    logger.error("llm_rebuild_failed", error=str(exc))
         logger.info("database_connected", url=db_url.split("@")[-1])
     else:
         # In-memory fallback (no database configured)

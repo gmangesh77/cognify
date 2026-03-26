@@ -8,6 +8,7 @@ import type { ApiKeyConfig, ApiKeyService } from "@/types/settings";
 interface KeyActions {
   add: (service: ApiKeyService, key: string) => void;
   rotate: (id: string, newKey: string) => void;
+  delete: (id: string) => void;
 }
 
 interface ApiKeysTabProps {
@@ -35,7 +36,7 @@ export function ApiKeysTab({ apiKeys, actions }: ApiKeysTabProps) {
       ) : (
         <div className="mt-4 rounded-lg border border-neutral-200 px-4">
           {apiKeys.map((key) => (
-            <ApiKeyRow key={key.id} apiKey={key} onRotate={actions.rotate} />
+            <ApiKeyRow key={key.id} apiKey={key} onRotate={actions.rotate} onDelete={actions.delete} />
           ))}
         </div>
       )}

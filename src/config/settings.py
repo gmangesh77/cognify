@@ -89,6 +89,8 @@ class Settings(BaseSettings):
     primary_model_name: str = "claude-sonnet-4"
     drafting_model_name: str = "claude-sonnet-4"
     embedding_version: str = "v1"
+    # Encryption (Fernet key for API key encryption at rest)
+    encryption_key: str = ""
     # Database (empty = in-memory repos; set via COGNIFY_DATABASE_URL)
     database_url: str = ""
     # Visual asset generation
