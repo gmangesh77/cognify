@@ -115,9 +115,9 @@
 
 | Ticket      | Title                 | Status  | Branch | Plan | Spec |
 | ----------- | --------------------- | ------- | ------ | ---- | ---- |
-| PUBLISH-001 | Ghost CMS Integration | Backlog | —      | —    | —    |
+| PUBLISH-001 | Ghost CMS Integration | Done | `feature/PUBLISH-003-medium-integration` | — | — |
 | PUBLISH-002 | WordPress Integration | Backlog | —      | —    | —    |
-| PUBLISH-003 | Medium Integration    | Backlog | —      | —    | —    |
+| PUBLISH-003 | Medium Integration    | Done | `feature/PUBLISH-003-medium-integration` | — | — |
 | PUBLISH-004 | LinkedIn Integration  | Backlog | —      | —    | —    |
 | PUBLISH-005 | Publication Tracking  | Backlog | —      | —    | —    |
 
@@ -157,6 +157,7 @@
 | Frontend Test Fixes | Done | 2026-03-25 | Fixed 22 stale frontend tests (status labels, filter values, API mocking, default filters) |
 | TypeScript Build Fixes | Done | 2026-03-26 | Article status type, keywordMap index signature, login page Suspense boundary |
 | Secure API Key Encryption | Done | 2026-03-26 | Fernet encryption at rest, runtime key resolution (DB overrides .env), delete UI, expanded services. PR #42 |
+| Publishing Service + Ghost & Medium | Done | 2026-03-26 | PublishingService orchestrator, Ghost Transformer/Adapter (JWT auth), Medium Transformer/Adapter (mock-only), publish API endpoint. PR #43 |
 
 ---
 

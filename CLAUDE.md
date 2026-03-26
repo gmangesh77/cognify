@@ -148,8 +148,8 @@ See @docs/LEARNINGS.md for hard-won debugging lessons. **Read before making chan
 See @project-management/PROGRESS.md for full ticket status.
 
 **Epics 0-4, 6-9:** All complete (Design, Trend Discovery, Research, Content Gen, Visual Assets, Dashboard, API & Auth, Architecture, Infrastructure).
-**Epic 5 (Publishing):** Backlog — Ghost, WordPress, Medium, LinkedIn integrations.
+**Epic 5 (Publishing):** Ghost & Medium done (PR #43). WordPress, LinkedIn, Publication Tracking in backlog.
 **INFRA-005 (Frontend Status Alignment):** Backlog.
 **CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml), Makefile, docker-compose with full stack.
-**Test suite:** 856 backend tests + 239 frontend tests.
+**Test suite:** 898 backend tests + 239 frontend tests.
 **Next action:** Epic 5 (Publishing) or INFRA-005 (Frontend Status Alignment).
