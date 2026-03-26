@@ -158,6 +158,18 @@ class PgApiKeyRepository:
             logger.debug("api_keys_listed", count=len(items))
             return items
 
+    async def get_encrypted_key_by_service(self, service: str) -> str | None:
+        """Return the encrypted key for an active service, or None."""
+        async with self._sf() as db:
+            stmt = (
+                select(ApiKeyRow.encrypted_key)
+                .where(ApiKeyRow.service == service, ApiKeyRow.status == "active")
+                .order_by(ApiKeyRow.created_at.desc())
+                .limit(1)
+            )
+            result = await db.execute(stmt)
+            return result.scalar_one_or_none()
+
     @staticmethod
     def _to_model(row: ApiKeyRow) -> ApiKeyConfig:
         return ApiKeyConfig(

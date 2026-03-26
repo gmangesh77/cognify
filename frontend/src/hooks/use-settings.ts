@@ -277,6 +277,15 @@ export function useSettings() {
     }
   }, []);
 
+  const deleteApiKey = useCallback(async (id: string) => {
+    try {
+      await settingsApi.deleteApiKey(id);
+      setApiKeys((prev) => prev.filter((k) => k.id !== id));
+    } catch {
+      console.warn("useSettings: failed to delete api key");
+    }
+  }, []);
+
   const toggleSeoDefault = useCallback(
     async (key: keyof SeoDefaults) => {
       setSeoDefaults((prev) => {
@@ -322,6 +331,7 @@ export function useSettings() {
     updateLlmConfig,
     addApiKey,
     rotateApiKey,
+    deleteApiKey,
     toggleSeoDefault,
     updateGeneralConfig,
   };

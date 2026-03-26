@@ -22,6 +22,7 @@ from src.api.schemas.settings import (
     UpdateDomainRequest,
 )
 from src.models.settings import ApiKeyConfig, DomainConfig
+from src.utils.encryption import encrypt_value
 
 logger = structlog.get_logger()
 
@@ -153,7 +154,7 @@ async def add_api_key(
     masked = _mask_key(body.key)
     key_config = ApiKeyConfig(service=body.service, masked_key=masked)
     created = await _get_repos(request).api_keys.create(
-        key_config, encrypted_key=body.key,
+        key_config, encrypted_key=encrypt_value(body.key),
     )
     logger.info("api_key_added", service=body.service, key_id=str(created.id))
     return _key_to_response(created)
@@ -171,7 +172,7 @@ async def rotate_api_key(
 ) -> ApiKeyResponse:
     masked = _mask_key(body.key)
     updated = await _get_repos(request).api_keys.rotate(
-        key_id, encrypted_key=body.key, masked_key=masked,
+        key_id, encrypted_key=encrypt_value(body.key), masked_key=masked,
     )
     logger.info("api_key_rotated", key_id=str(key_id))
     return _key_to_response(updated)

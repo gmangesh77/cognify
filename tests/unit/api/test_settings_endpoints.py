@@ -1,6 +1,6 @@
 """Endpoint tests for settings CRUD routes."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import httpx
@@ -172,8 +172,10 @@ class TestApiKeyEndpoints:
         assert len(resp.json()["items"]) == 1
         assert resp.json()["items"][0]["service"] == "anthropic"
 
+    @patch("src.api.routers.settings_domains.encrypt_value", return_value="encrypted-token")
     async def test_add_api_key_returns_201(
         self,
+        mock_encrypt,
         settings_client: httpx.AsyncClient,
         settings_app,
         auth_settings: Settings,
@@ -188,9 +190,14 @@ class TestApiKeyEndpoints:
         )
         assert resp.status_code == 201
         assert "masked_key" in resp.json()
+        mock_encrypt.assert_called_once_with("sk-ant-api12345678abcd7f3a")
+        call_kwargs = settings_app.state.settings_repos.api_keys.create.call_args
+        assert call_kwargs.kwargs["encrypted_key"] == "encrypted-token"
 
+    @patch("src.api.routers.settings_domains.encrypt_value", return_value="encrypted-token")
     async def test_rotate_api_key_returns_200(
         self,
+        mock_encrypt,
         settings_client: httpx.AsyncClient,
         settings_app,
         auth_settings: Settings,
@@ -204,6 +211,9 @@ class TestApiKeyEndpoints:
             headers=headers,
         )
         assert resp.status_code == 200
+        mock_encrypt.assert_called_once_with("sk-ant-api12345678abcd7f3a")
+        call_kwargs = settings_app.state.settings_repos.api_keys.rotate.call_args
+        assert call_kwargs.kwargs["encrypted_key"] == "encrypted-token"
 
     async def test_delete_api_key_returns_204(
         self,

@@ -5,7 +5,7 @@ from typing import Any
 import structlog
 
 SENSITIVE_KEYS: frozenset[str] = frozenset(
-    {"password", "token", "secret", "api_key", "authorization"}
+    {"password", "token", "secret", "api_key", "authorization", "encrypted_key"}
 )
 
 _REDACTED = "***REDACTED***"

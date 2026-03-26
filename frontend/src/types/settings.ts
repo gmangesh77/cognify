@@ -15,14 +15,27 @@ export interface DomainConfig {
 
 // --- API Keys ---
 
-export type ApiKeyService = "anthropic" | "serpapi" | "ghost" | "newsapi" | "arxiv";
+export type ApiKeyService =
+  | "anthropic"
+  | "openai"
+  | "serpapi"
+  | "ghost"
+  | "newsapi"
+  | "arxiv"
+  | "reddit_client_id"
+  | "reddit_client_secret"
+  | "semantic_scholar";
 
 export const API_KEY_SERVICES: { value: ApiKeyService; label: string }[] = [
   { value: "anthropic", label: "Anthropic API" },
+  { value: "openai", label: "OpenAI" },
   { value: "serpapi", label: "SerpAPI" },
   { value: "ghost", label: "Ghost Admin" },
   { value: "newsapi", label: "NewsAPI" },
   { value: "arxiv", label: "arXiv" },
+  { value: "reddit_client_id", label: "Reddit Client ID" },
+  { value: "reddit_client_secret", label: "Reddit Client Secret" },
+  { value: "semantic_scholar", label: "Semantic Scholar" },
 ];
 
 export interface ApiKeyConfig {
