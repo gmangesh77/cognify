@@ -31,6 +31,8 @@ _MAX_RETRIES = 2
 
 _SEO_SYSTEM = (
     "You are an SEO specialist. Generate SEO metadata for an article. "
+    "Use plain, specific language. Avoid buzzwords like innovative, "
+    "transformative, comprehensive, cutting-edge, seamless, robust. "
     "Respond with valid JSON only: "
     '{"title": "50-60 char", "description": "150-160 char", '
     '"keywords": ["keyword1", "keyword2"]}'
@@ -47,6 +49,7 @@ _SEO_USER = (
 _DISCOVER_SYSTEM = (
     "You are a content analyst. Extract a concise summary (1-2 sentences, "
     "under 500 chars) and 3-5 key factual claims with citation references. "
+    "Use plain language. No buzzwords or filler phrases. "
     "Respond with valid JSON only: "
     '{"summary": "...", "key_claims": ["claim [1]", "claim [2]"]}'
 )

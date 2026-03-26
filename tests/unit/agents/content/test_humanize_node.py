@@ -33,7 +33,9 @@ class TestHumanizeNode:
     async def test_rewrites_low_scoring_sections(self) -> None:
         llm = FakeListChatModel(
             responses=[
-                "This approach focuses on practical solutions [1]. The team found concrete improvements."
+                # Up to 2 rewrite attempts per sloppy section
+                "This approach focuses on practical solutions [1]. The team found concrete improvements.",
+                "This approach focuses on practical solutions [1]. The team found concrete improvements.",
             ]
         )
         node = make_humanize_node(llm)
@@ -77,6 +79,21 @@ class TestHumanizeNode:
         state = {"section_drafts": drafts, "status": "draft_complete"}
         result = await node(state)
         assert "\u2014" not in result["section_drafts"][0].body_markdown
+
+    async def test_stops_after_max_attempts(self) -> None:
+        """Multi-pass stops after 2 attempts even if still below threshold."""
+        llm = FakeListChatModel(
+            responses=[
+                # Both rewrites still sloppy — should stop after 2
+                "Let me delve into this transformative landscape [1]. Moreover, it empowers stakeholders.",
+                "Let me delve into this transformative landscape [1]. Moreover, it empowers stakeholders.",
+            ]
+        )
+        node = make_humanize_node(llm)
+        drafts = [_make_drafts()[1]]  # sloppy section only
+        state = {"section_drafts": drafts, "status": "draft_complete"}
+        result = await node(state)
+        assert len(result["section_drafts"]) == 1
 
     async def test_skips_on_failed_status(self) -> None:
         """If pipeline already failed, humanize returns drafts unchanged."""

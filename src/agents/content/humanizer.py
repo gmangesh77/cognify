@@ -10,6 +10,7 @@ import structlog
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from src.agents.content.style_prompts import STYLE_EXAMPLES
 from src.models.content_pipeline import SectionDraft, SlopScore
 
 logger = structlog.get_logger()
@@ -17,10 +18,15 @@ logger = structlog.get_logger()
 _CITATION_RE = re.compile(r"\[(\d+)\]")
 
 _REWRITE_SYSTEM = (
-    "You are an editor making AI-generated text sound natural. "
-    "Rewrite the section to fix the listed issues. Keep all factual "
-    "claims and [N] citations exactly as they are. Do not change the "
-    "meaning. Only fix the writing style."
+    "You are an editor removing AI-generated writing patterns. "
+    "Rewrite the section to fix every listed issue. Rules:\n"
+    "1. Keep ALL [N] citations exactly as they are.\n"
+    "2. Keep all factual claims and meaning.\n"
+    "3. Replace flagged phrases with plain, specific language.\n"
+    "4. Vary sentence length. Mix short (5-8 words) and longer sentences.\n"
+    "5. Use active voice. Be direct.\n"
+    "6. Do NOT introduce new AI-sounding phrases while fixing old ones.\n\n"
+    + STYLE_EXAMPLES
 )
 
 
@@ -63,10 +69,14 @@ def fix_mechanical(text: str) -> str:
 
 
 def _build_rewrite_prompt(section: SectionDraft, score: SlopScore) -> str:
-    """Format violations into LLM instructions."""
-    lines = ["Rewrite the following section to fix these issues:\n"]
+    """Format violations grouped by category for clearer LLM instructions."""
+    by_cat: dict[str, list[str]] = {}
     for v in score.violations:
-        lines.append(f'- Sentence {v.sentence_index}: {v.category} "{v.phrase}"')
+        by_cat.setdefault(v.category, []).append(v.phrase)
+    lines = ["Fix these AI writing issues in the section below:\n"]
+    for cat, phrases in by_cat.items():
+        unique = ", ".join(sorted(set(phrases)))
+        lines.append(f"- {cat}: {unique}")
     lines.append(f"\nSection text:\n{section.body_markdown}")
     return "\n".join(lines)
 

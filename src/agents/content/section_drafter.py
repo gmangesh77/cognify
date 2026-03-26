@@ -18,6 +18,7 @@ from src.models.content_pipeline import (
     SectionQueries,
 )
 from src.models.research import ChunkResult
+from src.agents.content.style_prompts import ANTI_SLOP_RULES, TONE_INSTRUCTIONS
 from src.services.milvus_retriever import MilvusRetriever
 
 logger = structlog.get_logger()
@@ -26,13 +27,9 @@ _SYSTEM_PROMPT = (
     "You are an expert long-form writer. Draft a section of an article "
     "using the provided research context. Every factual claim must include "
     "an inline citation like [1], [2] referencing the numbered sources. "
-    "Write in a clear, authoritative tone. Target approximately "
-    "{target_word_count} words. "
-    "Do not use em-dashes or en-dashes. Use periods or commas instead. "
-    "Avoid words like delve, leverage, innovative, transformative, unprecedented. "
-    "Skip transitions like moreover, furthermore, additionally. "
-    "Vary sentence length and structure. "
-    "Write in a natural voice as a knowledgeable human, not an AI assistant."
+    "Target approximately {target_word_count} words.\n\n"
+    + TONE_INSTRUCTIONS + "\n\n"
+    + ANTI_SLOP_RULES
 )
 
 _CITATION_PATTERN = re.compile(r"\[(\d+)\]")

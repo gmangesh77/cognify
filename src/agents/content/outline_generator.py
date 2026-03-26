@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 from src.models.content_pipeline import ArticleOutline
 from src.models.research import FacetFindings, TopicInput
+from src.agents.content.style_prompts import TONE_INSTRUCTIONS
 from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
@@ -22,11 +23,8 @@ _SYSTEM_PROMPT = (
     "You are an expert content strategist. Generate a structured "
     "article outline from research findings. The outline should have "
     "4-8 sections with narrative flow: introduction, findings, "
-    "analysis, and conclusion. "
-    "Do not use em-dashes. Use periods or commas instead. "
-    "Avoid formal transitions like moreover, furthermore, in conclusion. "
-    "Write in a natural conversational tone. Vary sentence length. "
-    "Be specific and concrete, not abstract. "
+    "analysis, and conclusion.\n\n"
+    + TONE_INSTRUCTIONS + "\n"
     "Respond with valid JSON only."
 )
 
