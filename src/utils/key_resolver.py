@@ -22,6 +22,8 @@ _SERVICE_TO_SETTING: dict[str, str] = {
     "reddit_client_id": "reddit_client_id",
     "reddit_client_secret": "reddit_client_secret",
     "semantic_scholar": "semantic_scholar_api_key",
+    "ghost_admin_api_key": "ghost_admin_api_key",
+    "medium_api_token": "medium_api_token",
 }
 
 
