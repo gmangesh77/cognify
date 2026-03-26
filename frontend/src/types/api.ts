@@ -28,7 +28,7 @@ export interface DashboardMetrics {
 export interface Article {
   id: string;
   title: string;
-  status: "live" | "draft" | "scheduled" | "failed";
+  status: "live" | "draft" | "scheduled" | "failed" | "complete";
   published_at: string;
   views: number;
 }

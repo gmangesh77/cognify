@@ -88,7 +88,7 @@ export function useScanTopics(dynamicKeywords?: DomainKeywordsMap) {
     // Step 1: Fetch raw trends from all sources
     // Use dynamicKeywords from settings API when available; fall back to hardcoded DOMAIN_KEYWORDS
     const keywordMap = dynamicKeywords ?? DOMAIN_KEYWORDS;
-    const keywords = keywordMap[domain] ?? DOMAIN_KEYWORDS[domain as DomainName] ?? [domain];
+    const keywords = (keywordMap as Record<string, string[]>)[domain] ?? DOMAIN_KEYWORDS[domain as DomainName] ?? [domain];
     const fetchResult = await fetchTrends({
       domain_keywords: keywords,
       max_results: 50,
