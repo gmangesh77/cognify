@@ -148,6 +148,15 @@
 | INFRA-005 | Frontend Status Alignment           | Backlog | — | — | — |
 
 
+## Cross-Cutting Work (non-ticket)
+
+| Item | Status | Date | Description |
+| ---- | ------ | ---- | ----------- |
+| Structured Logging Improvements | Done | 2026-03-25 | Sensitive field redaction, repository/Milvus/middleware logging, pool_pre_ping. PR #40 |
+| CI/CD & Dockerization | Done | 2026-03-25 | Dockerfiles (api, worker, frontend), docker-compose (full stack + test), GitHub Actions (ci.yml, cd.yml), Makefile |
+| Frontend Test Fixes | Done | 2026-03-25 | Fixed 22 stale frontend tests (status labels, filter values, API mocking, default filters) |
+| TypeScript Build Fixes | Done | 2026-03-26 | Article status type, keywordMap index signature, login page Suspense boundary |
+
 ---
 
 ## How to Update This File
