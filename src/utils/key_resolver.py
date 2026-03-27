@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import structlog
 
-from src.utils.encryption import decrypt_value
+from src.utils.encryption import InvalidEncryptionKey, decrypt_value
 
 if TYPE_CHECKING:
     from src.config.settings import Settings
@@ -38,9 +38,16 @@ class ApiKeyResolver:
         """Return the key for *service*, or None if unavailable."""
         encrypted = await self._repo.get_encrypted_key_by_service(service)
         if encrypted:
-            value = decrypt_value(encrypted)
-            logger.debug("key_resolved_from_db", service=service)
-            return value
+            try:
+                value = decrypt_value(encrypted)
+                logger.debug("key_resolved_from_db", service=service)
+                return value
+            except InvalidEncryptionKey:
+                logger.warning(
+                    "key_decryption_failed",
+                    service=service,
+                    msg="DB key undecryptable, falling back to .env",
+                )
         setting_field = _SERVICE_TO_SETTING.get(service)
         if setting_field:
             env_val = getattr(self._settings, setting_field, "")

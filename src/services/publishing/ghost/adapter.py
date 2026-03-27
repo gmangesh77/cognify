@@ -1,5 +1,6 @@
 """Ghost CMS adapter — publishes to Ghost Admin API."""
 
+import json
 import time
 from datetime import UTC, datetime
 from uuid import UUID
@@ -61,10 +62,11 @@ def _build_post_body(
 ) -> dict:
     """Build the Ghost API request body from payload metadata."""
     meta = payload.metadata
+    lexical = _html_to_lexical(payload.content)
     post: dict = {
         "posts": [{
             "title": meta.get("title", ""),
-            "html": payload.content,
+            "lexical": lexical,
             "status": "published",
         }]
     }
@@ -83,6 +85,23 @@ def _build_post_body(
         if key in meta:
             p[key] = meta[key]
     return post
+
+
+def _html_to_lexical(html: str) -> str:
+    """Wrap HTML content in a Ghost Lexical HTML card."""
+    doc = {
+        "root": {
+            "children": [
+                {"type": "html", "version": 1, "html": html},
+            ],
+            "direction": None,
+            "format": "",
+            "indent": 0,
+            "type": "root",
+            "version": 1,
+        },
+    }
+    return json.dumps(doc)
 
 
 def _parse_response(

@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import structlog
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.requests import Request
@@ -419,8 +421,9 @@ def _init_publishing_service(
         from src.services.publishing.ghost.adapter import GhostAdapter
         from src.services.publishing.ghost.transformer import GhostTransformer
 
+        api_base = "http://localhost:8000"
         pair = PlatformPair(
-            transformer=GhostTransformer(),
+            transformer=GhostTransformer(api_base_url=api_base),
             adapter=GhostAdapter(settings.ghost_api_url, settings.ghost_admin_api_key),
         )
         svc.register("ghost", pair)
@@ -593,3 +596,10 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         prefix=settings.api_v1_prefix,
         tags=["publishing"],
     )
+    assets_dir = Path("generated_assets")
+    if assets_dir.exists():
+        app.mount(
+            "/generated_assets",
+            StaticFiles(directory=str(assets_dir)),
+            name="generated_assets",
+        )

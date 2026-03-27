@@ -9,6 +9,7 @@ import { ArticleContent } from "@/components/articles/article-content";
 import { ArticleSidebar } from "@/components/articles/article-sidebar";
 import { PublishModal } from "@/components/articles/publish-modal";
 import { useArticle } from "@/hooks/use-article";
+import { publishArticle } from "@/lib/api/articles";
 
 function NotFound() {
   return (
@@ -30,10 +31,23 @@ export default function ArticleDetailPage() {
 
   if (!article) return <NotFound />;
 
-  function handlePublish(platforms: string[]) {
+  async function handlePublish(platforms: string[]) {
     setPublishOpen(false);
-    setToast(`Article scheduled for publishing to ${platforms.join(", ")}`);
-    setTimeout(() => setToast(null), 4000);
+    const results: string[] = [];
+    for (const platform of platforms) {
+      try {
+        const res = await publishArticle(id, platform);
+        if (res.status === "success") {
+          results.push(`${platform}: published${res.external_url ? ` (${res.external_url})` : ""}`);
+        } else {
+          results.push(`${platform}: ${res.error_message ?? "failed"}`);
+        }
+      } catch {
+        results.push(`${platform}: request failed`);
+      }
+    }
+    setToast(results.join(" | "));
+    setTimeout(() => setToast(null), 8000);
   }
 
   return (

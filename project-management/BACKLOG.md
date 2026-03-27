@@ -292,8 +292,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Summarizes relevant papers with citations
 - **Story Points**: 5
 
-### RESEARCH-005: Research Session Tracking [Must]
+### RESEARCH-005: Research Session Tracking [Must] — DONE
 **As a** user, **I want** to see the status and results of research sessions, **so that** I can monitor agent progress.
+- **Status**: Done (branch `feature/RESEARCH-005-research-session-tracking`, PR #31)
+- **Plan**: [`docs/superpowers/plans/2026-03-21-research-005-research-session-tracking.md`](../docs/superpowers/plans/2026-03-21-research-005-research-session-tracking.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-21-research-005-research-session-tracking-design.md`](../docs/superpowers/specs/2026-03-21-research-005-research-session-tracking-design.md)
 - **Acceptance Criteria**:
   - Dashboard shows session status (queued, in progress, complete, failed)
   - Each agent step logged with duration and result summary
@@ -624,8 +627,13 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 ## Epic 9: Infrastructure & Integration
 **Goal**: Replace in-memory stubs with real PostgreSQL persistence and wire frontend to backend APIs.
 
-### INFRA-001: PostgreSQL Persistence Layer [Must]
+### INFRA-001: PostgreSQL Persistence Layer [Must] — DONE
 **As a** developer, **I want** all in-memory repositories replaced with PostgreSQL-backed implementations, **so that** data survives server restarts and the system is production-ready.
+- **Status**: Done (split into INFRA-001a: Database Foundation, PR #32; INFRA-001b: Topic Persistence & Cross-Scan Dedup, PR #33)
+- **Plan (a)**: [`docs/superpowers/plans/2026-03-22-infra-001a-database-foundation.md`](../docs/superpowers/plans/2026-03-22-infra-001a-database-foundation.md)
+- **Spec (a)**: [`docs/superpowers/specs/2026-03-22-infra-001a-database-foundation-design.md`](../docs/superpowers/specs/2026-03-22-infra-001a-database-foundation-design.md)
+- **Plan (b)**: [`docs/superpowers/plans/2026-03-22-infra-001b-topic-persistence.md`](../docs/superpowers/plans/2026-03-22-infra-001b-topic-persistence.md)
+- **Spec (b)**: [`docs/superpowers/specs/2026-03-22-infra-001b-topic-persistence-design.md`](../docs/superpowers/specs/2026-03-22-infra-001b-topic-persistence-design.md)
 - **Acceptance Criteria**:
   - SQLAlchemy models for: Topic, ResearchSession, AgentStep, ArticleDraft, CanonicalArticle
   - PostgreSQL-backed repository implementations replacing all `InMemory*Repository` classes
@@ -641,8 +649,11 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 - **Story Points**: 13
 - **Blocks**: INFRA-002
 
-### INFRA-002: Frontend-Backend API Integration [Must]
+### INFRA-002: Frontend-Backend API Integration [Must] — DONE
 **As a** user, **I want** all dashboard pages showing real data from the backend, **so that** the UI reflects actual system state.
+- **Status**: Done (branch `feature/INFRA-002-frontend-api-integration`, PR #34)
+- **Plan**: [`docs/superpowers/plans/2026-03-22-infra-002-frontend-api-integration.md`](../docs/superpowers/plans/2026-03-22-infra-002-frontend-api-integration.md)
+- **Spec**: [`docs/superpowers/specs/2026-03-22-infra-002-frontend-api-integration-design.md`](../docs/superpowers/specs/2026-03-22-infra-002-frontend-api-integration-design.md)
 - **Acceptance Criteria**:
   - Dashboard metrics (`/`) — aggregate real topic/article/session counts from backend
   - Article list (`/articles`) — calls backend `GET /articles` endpoint (new endpoint needed)

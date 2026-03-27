@@ -70,3 +70,24 @@ export async function fetchArticle(
   const { data } = await apiClient.get<ArticleResponse>(`/articles/${id}`);
   return data;
 }
+
+export interface PublishResult {
+  article_id: string;
+  platform: string;
+  status: string;
+  external_id: string | null;
+  external_url: string | null;
+  published_at: string | null;
+  error_message: string | null;
+}
+
+export async function publishArticle(
+  articleId: string,
+  platform: string,
+): Promise<PublishResult> {
+  const { data } = await apiClient.post<PublishResult>(
+    `/articles/${articleId}/publish`,
+    { platform },
+  );
+  return data;
+}
