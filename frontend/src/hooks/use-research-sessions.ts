@@ -25,7 +25,10 @@ export function useResearchSession(sessionId: string | null) {
     refetchInterval: (query) => {
       const status = (query.state.data as ResearchSessionDetail | undefined)
         ?.status;
-      const active = ["planning", "in_progress", "complete", "generating_article"];
+      const active = [
+        "planning", "in_progress", "researching", "evaluating",
+        "running", "complete", "generating_article",
+      ];
       if (status && active.includes(status)) return 5_000;
       return false;
     },

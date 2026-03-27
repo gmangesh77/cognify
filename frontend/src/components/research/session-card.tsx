@@ -7,7 +7,11 @@ import type { ResearchSessionSummary, SessionStatus } from "@/types/research";
 const BORDER_COLORS: Record<string, string> = {
   planning: "border-l-blue-500",
   in_progress: "border-l-amber-500",
+  researching: "border-l-amber-500",
+  evaluating: "border-l-amber-500",
+  running: "border-l-amber-500",
   complete: "border-l-blue-500",
+  completed: "border-l-blue-500",
   generating_article: "border-l-purple-500",
   article_complete: "border-l-green-500",
   article_failed: "border-l-red-500",
@@ -17,7 +21,11 @@ const BORDER_COLORS: Record<string, string> = {
 const PROGRESS_COLORS: Record<string, string> = {
   planning: "bg-blue-500",
   in_progress: "bg-amber-500",
+  researching: "bg-amber-500",
+  evaluating: "bg-amber-500",
+  running: "bg-amber-500",
   complete: "bg-blue-500",
+  completed: "bg-blue-500",
   generating_article: "bg-purple-500",
   article_complete: "bg-green-500",
   article_failed: "bg-red-500",
@@ -26,16 +34,21 @@ const PROGRESS_COLORS: Record<string, string> = {
 
 function getProgressPercent(session: ResearchSessionSummary): number {
   switch (session.status) {
+    case "planning":
+      return 10;
+    case "in_progress":
+    case "researching":
+    case "evaluating":
+      return 35;
+    case "running":
+      return 45;
+    case "complete":
+    case "completed":
+      return 60;
+    case "generating_article":
+      return 80;
     case "article_complete":
       return 100;
-    case "generating_article":
-      return 70;
-    case "complete":
-      return 50;
-    case "planning":
-      return 15;
-    case "in_progress":
-      return 35;
     case "failed":
     case "article_failed":
       return Math.min(Math.round((session.round_count / 3) * 100), 90);
