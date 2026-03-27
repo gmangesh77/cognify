@@ -158,6 +158,7 @@
 | TypeScript Build Fixes | Done | 2026-03-26 | Article status type, keywordMap index signature, login page Suspense boundary |
 | Secure API Key Encryption | Done | 2026-03-26 | Fernet encryption at rest, runtime key resolution (DB overrides .env), delete UI, expanded services. PR #42 |
 | Publishing Service + Ghost & Medium | Done | 2026-03-26 | PublishingService orchestrator, Ghost Transformer/Adapter (JWT auth), Medium Transformer/Adapter (mock-only), publish API endpoint. PR #43 |
+| Security Hardening | Done | 2026-03-27 | Env var substitution in docker-compose, debug defaults to false, encryption key enforced in production, CORS restricted, Fernet key validation. PR #44 |
 
 ---
 
