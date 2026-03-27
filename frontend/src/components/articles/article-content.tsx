@@ -8,6 +8,10 @@ interface ArticleContentProps {
   citations: Citation[];
 }
 
+function stripReferencesSection(md: string): string {
+  return md.split(/\n##\s+References\b/)[0].trimEnd();
+}
+
 function linkifyCitations(md: string, citations: Citation[]): string {
   if (citations.length === 0) return md;
   const indices = new Set(citations.map((c) => c.index));
@@ -20,7 +24,7 @@ function linkifyCitations(md: string, citations: Citation[]): string {
 
 export function ArticleContent({ bodyMarkdown, citations }: ArticleContentProps) {
   const linkedMarkdown = useMemo(
-    () => linkifyCitations(bodyMarkdown, citations),
+    () => linkifyCitations(stripReferencesSection(bodyMarkdown), citations),
     [bodyMarkdown, citations],
   );
 

@@ -97,17 +97,23 @@ export interface PaginatedTopics {
 // ---------------------------------------------------------------------------
 
 export async function fetchTrends(req: TrendFetchRequest): Promise<TrendFetchResponse> {
-  const { data } = await apiClient.post<TrendFetchResponse>("/trends/fetch", req);
+  const { data } = await apiClient.post<TrendFetchResponse>("/trends/fetch", req, {
+    timeout: 120000,
+  });
   return data;
 }
 
 export async function rankTopics(req: RankTopicsRequest): Promise<RankTopicsResponse> {
-  const { data } = await apiClient.post<RankTopicsResponse>("/topics/rank", req);
+  const { data } = await apiClient.post<RankTopicsResponse>("/topics/rank", req, {
+    timeout: 120000,
+  });
   return data;
 }
 
 export async function persistTopics(req: PersistTopicsRequest): Promise<PersistTopicsResponse> {
-  const { data } = await apiClient.post<PersistTopicsResponse>("/topics/persist", req);
+  const { data } = await apiClient.post<PersistTopicsResponse>("/topics/persist", req, {
+    timeout: 120000,
+  });
   return data;
 }
 

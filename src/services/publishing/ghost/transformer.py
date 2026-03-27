@@ -31,9 +31,11 @@ class GhostTransformer:
 
 def _build_html_body(article: CanonicalArticle, api_base: str) -> str:
     """Convert markdown to HTML, link citations, and inject JSON-LD."""
-    html = markdown.markdown(article.body_markdown, extensions=_MD_EXTENSIONS)
+    body = _strip_references_section(article.body_markdown)
+    html = markdown.markdown(body, extensions=_MD_EXTENSIONS)
     html = _linkify_citations(html, article)
     html = _rewrite_local_asset_urls(html, api_base)
+    html += _build_references_html(article)
     json_ld = _build_json_ld(article)
     if json_ld:
         html = json_ld + "\n" + html
@@ -84,6 +86,29 @@ def _slugify(title: str) -> str:
     slug = re.sub(r"[^\w\s-]", "", slug)
     slug = re.sub(r"[\s_]+", "-", slug)
     return slug.strip("-")
+
+
+def _strip_references_section(md: str) -> str:
+    """Remove the raw References section from the markdown body."""
+    return re.split(r"\n##\s+References\b", md, maxsplit=1)[0].rstrip()
+
+
+def _build_references_html(article: CanonicalArticle) -> str:
+    """Build a clean HTML references list from citations."""
+    if not article.citations:
+        return ""
+    items = []
+    for c in sorted(article.citations, key=lambda x: x.index):
+        author = f" — {', '.join(c.authors)}" if c.authors else ""
+        items.append(
+            f'<li>[{c.index}] <a href="{c.url}" target="_blank" '
+            f'rel="noopener">{c.title}</a>{author}</li>'
+        )
+    return (
+        '\n<hr>\n<h2>References</h2>\n<ol style="list-style:none;padding:0">\n'
+        + "\n".join(items)
+        + "\n</ol>"
+    )
 
 
 def _linkify_citations(html: str, article: CanonicalArticle) -> str:
