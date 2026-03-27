@@ -1,7 +1,11 @@
 export type SessionStatus =
   | "planning"
   | "in_progress"
+  | "researching"
+  | "evaluating"
+  | "running"
   | "complete"
+  | "completed"
   | "generating_article"
   | "article_complete"
   | "article_failed"
