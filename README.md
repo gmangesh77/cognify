@@ -98,48 +98,81 @@ cognify/
 
 ## Getting Started
 
-### Prerequisites
+There are two ways to run Cognify locally: **Docker (full stack)** or **manual (for active development)**.
 
-- **Python 3.12+**
-- **[uv](https://docs.astral.sh/uv/)** — Python package manager
-- **Node.js 20+** and **npm** — for the frontend
-- **Docker** — for PostgreSQL (local development)
+### Option A: Docker — Full Stack (Recommended for first run)
 
-### Installation
+Runs everything in containers. No Python/Node installation needed — only Docker.
 
 ```bash
-# Clone the repository
+# Clone and configure
 git clone git@github.com:gmangesh77/cognify.git
 cd cognify
+cp .env.example .env
+# Edit .env — add JWT keys and any API keys you have
 
-# Install Python dependencies
-uv sync --dev
+# Start the full stack (builds + runs all services)
+docker compose up -d --build
 
-# Install frontend dependencies
-cd frontend && npm install && cd ..
+# Run database migrations
+docker compose exec api uv run alembic upgrade head
 ```
 
-### Local Development
+This starts 6 services:
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **frontend** | http://localhost:3000 | Next.js dashboard |
+| **api** | http://localhost:8000 | FastAPI backend (docs at `/docs`) |
+| **worker** | — | Celery background worker |
+| **postgres** | localhost:5432 | PostgreSQL 16 database |
+| **milvus** | localhost:19530 | Vector database for RAG |
+| **redis** | localhost:6379 | Cache and task broker |
 
 ```bash
-# 1. Set up environment variables
+# View logs
+docker compose logs -f api
+
+# Stop everything (data preserved)
+docker compose down
+
+# Stop and delete all data
+docker compose down -v
+```
+
+### Option B: Manual — For Active Development
+
+Run backend and frontend natively with hot-reload. Best for writing code.
+
+**Prerequisites:**
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) — Python package manager
+- Node.js 20+ and npm
+- Docker — for infrastructure services (Postgres, Milvus, Redis)
+
+```bash
+# Clone and install
+git clone git@github.com:gmangesh77/cognify.git
+cd cognify
+uv sync --dev
+cd frontend && npm install && cd ..
+
+# Configure environment
 cp .env.example .env
-# Edit .env — at minimum, set COGNIFY_DATABASE_URL and JWT keys.
-# The default database URL matches docker-compose.yml:
+# Edit .env — at minimum, set JWT keys.
+# Default database URL matches docker-compose.yml:
 #   COGNIFY_DATABASE_URL=postgresql+asyncpg://cognify:cognify@localhost:5432/cognify
-# Without COGNIFY_DATABASE_URL, the backend falls back to in-memory storage
-# (data is lost on restart).
 
-# 2. Start PostgreSQL (Docker)
-docker compose up -d
+# Start infrastructure only (Postgres, Milvus, Redis — not api/worker/frontend)
+docker compose up postgres milvus redis -d
 
-# 3. Run database migrations
+# Run database migrations
 uv run alembic upgrade head
 
-# 4. Start the backend API (port 8000)
+# Start backend API with hot-reload (port 8000)
 uv run uvicorn src.api.main:create_app --factory --reload --port 8000
 
-# 5. Start the frontend (port 3000) — in a separate terminal
+# Start frontend with hot-reload (port 3000) — separate terminal
 cd frontend && npm run dev
 ```
 
