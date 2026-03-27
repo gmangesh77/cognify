@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: cognify
-      POSTGRES_PASSWORD: cognify
-      POSTGRES_DB: cognify
+      POSTGRES_USER: ${POSTGRES_USER:-cognify}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cognify}
+      POSTGRES_DB: ${POSTGRES_DB:-cognify}
     ports:
       - "5432:5432"
     volumes:
@@ -50,10 +50,10 @@ services:
       - "8000:8000"
     env_file: .env
     environment:
-      COGNIFY_DATABASE_URL: postgresql+asyncpg://cognify:cognify@postgres:5432/cognify
+      COGNIFY_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cognify}:${POSTGRES_PASSWORD:-cognify}@postgres:5432/${POSTGRES_DB:-cognify}
       COGNIFY_MILVUS_URI: http://milvus:19530
       COGNIFY_CORS_ALLOWED_ORIGINS: '["http://localhost:3000"]'
-      COGNIFY_DEBUG: "true"
+      COGNIFY_DEBUG: ${COGNIFY_DEBUG:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -75,7 +75,7 @@ services:
       dockerfile: Dockerfile.worker
     env_file: .env
     environment:
-      COGNIFY_DATABASE_URL: postgresql+asyncpg://cognify:cognify@postgres:5432/cognify
+      COGNIFY_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cognify}:${POSTGRES_PASSWORD:-cognify}@postgres:5432/${POSTGRES_DB:-cognify}
       COGNIFY_MILVUS_URI: http://milvus:19530
     depends_on:
       postgres:

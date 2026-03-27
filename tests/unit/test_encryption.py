@@ -15,11 +15,17 @@ from src.utils.encryption import (
 
 @pytest.fixture(autouse=True)
 def _clear_key_cache() -> None:
-    """Reset the cached encryption key between tests."""
+    """Reset the cached encryption key and set debug mode for tests."""
     import src.utils.encryption as mod
     mod._cached_key = None
+    old_debug = os.environ.get("COGNIFY_DEBUG")
+    os.environ["COGNIFY_DEBUG"] = "true"
     yield
     mod._cached_key = None
+    if old_debug is None:
+        os.environ.pop("COGNIFY_DEBUG", None)
+    else:
+        os.environ["COGNIFY_DEBUG"] = old_debug
 
 
 class TestGetEncryptionKey:
@@ -31,15 +37,34 @@ class TestGetEncryptionKey:
             result = get_encryption_key()
         assert result == key.encode()
 
-    def test_auto_generates_when_missing(self) -> None:
-        with patch.dict(os.environ, {}, clear=True):
+    def test_auto_generates_in_debug_mode(self) -> None:
+        env = {"COGNIFY_DEBUG": "true"}
+        with patch.dict(os.environ, env, clear=True):
             os.environ.pop("COGNIFY_ENCRYPTION_KEY", None)
             result = get_encryption_key()
         assert len(result) > 0
-        # Should be a valid Fernet key
         from cryptography.fernet import Fernet
 
-        Fernet(result)  # doesn't raise
+        Fernet(result)  # valid key
+
+    def test_raises_in_production_when_missing(self) -> None:
+        env = {"COGNIFY_DEBUG": "false"}
+        with patch.dict(os.environ, env, clear=True):
+            os.environ.pop("COGNIFY_ENCRYPTION_KEY", None)
+            with pytest.raises(ValueError, match="must be set"):
+                get_encryption_key()
+
+    def test_raises_when_no_debug_flag_and_no_key(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            os.environ.pop("COGNIFY_ENCRYPTION_KEY", None)
+            os.environ.pop("COGNIFY_DEBUG", None)
+            with pytest.raises(ValueError, match="must be set"):
+                get_encryption_key()
+
+    def test_validates_key_format(self) -> None:
+        with patch.dict(os.environ, {"COGNIFY_ENCRYPTION_KEY": "bad-key"}), \
+             pytest.raises(ValueError):
+            get_encryption_key()
 
 
 class TestEncryptDecrypt:
