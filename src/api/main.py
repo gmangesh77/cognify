@@ -237,7 +237,12 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                 except Exception as exc:
                     logger.error("llm_rebuild_failed", error=str(exc))
         # Publishing service (requires article_repo)
-        _init_publishing_service(app, settings, article_repo)
+        from src.db.repositories import PgPublicationRepository
+
+        pub_repo = PgPublicationRepository(async_session)
+        app.state.pub_repo = pub_repo
+        app.state.article_repo = article_repo
+        _init_publishing_service(app, settings, article_repo, pub_repo)
         logger.info("database_connected", url=db_url.split("@")[-1])
     else:
         # In-memory fallback (no database configured)
@@ -412,11 +417,12 @@ class _NoOpOrchestrator:
 
 def _init_publishing_service(
     app: FastAPI, settings: Settings, article_repo: object,
+    pub_repo: object | None = None,
 ) -> None:
     """Initialize publishing service with available platform adapters."""
     from src.services.publishing.service import PlatformPair, PublishingService
 
-    svc = PublishingService(article_repo)
+    svc = PublishingService(article_repo, pub_repo)
     if settings.ghost_api_url and settings.ghost_admin_api_key:
         from src.services.publishing.ghost.adapter import GhostAdapter
         from src.services.publishing.ghost.transformer import GhostTransformer
