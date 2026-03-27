@@ -133,3 +133,61 @@ DELETE FROM research_sessions WHERE topic_title LIKE 'Test%';
 8. Extra padding responses (for validation/retry nodes)
 
 **Rule**: Use a `_full_pipeline_responses()` helper that provides ~10+ responses and multiply by number of pipeline invocations in the test.
+
+---
+
+## L-008: Azure DevOps Work Item States Vary by Type
+
+**Issue**: Trying to close work items with `--state Closed` fails for Task type items. Different work item types have different valid terminal states.
+
+**Hit multiple times**: When bulk-closing resolved bugs and tasks after PR merges.
+
+**Valid terminal states by type**:
+
+| Work Item Type | Terminal State |
+|---------------|---------------|
+| User Story | `Closed` |
+| Bug | `Closed` |
+| Task | `Completed` |
+| Epic | `Closed` |
+
+**Rule**: Check work item type before setting state. "Resolved" is an intermediate state (fixed but not verified), not a terminal state. Never leave items in "Resolved" — move to the correct terminal state.
+
+**CLI quirks**:
+- `az boards work-item update` does NOT accept `--project` — the project is inferred from the work item
+- `az boards query` REQUIRES `--project` for WIQL filtering by `System.TeamProject`
+- Connection resets are common — add 3-5s pauses between sequential calls; parallel calls reliably fail
+- Use `az boards work-item show --id <id> -o table` to check type before bulk state changes
+
+---
+
+## L-009: Ghost 5 Requires Lexical Format, Not Raw HTML
+
+**Issue**: Ghost 5.130+ silently ignores `html` field (even with `"source": "html"`) in the Admin API POST body. Posts are created with empty content — no error returned, just status 201 with no body.
+
+**Root cause**: Ghost 5 migrated from Mobiledoc to Lexical editor. The `html` and `mobiledoc` fields are no longer writable via the API.
+
+**Rule**: **Wrap HTML content in a Lexical HTML card** when publishing to Ghost 5+:
+```python
+lexical = json.dumps({
+    "root": {
+        "children": [{"type": "html", "version": 1, "html": html_content}],
+        "direction": None, "format": "", "indent": 0,
+        "type": "root", "version": 1,
+    }
+})
+# Send as: {"posts": [{"title": "...", "lexical": lexical, ...}]}
+```
+
+**Verification**: Query the Admin API with `?formats=html` — if `html` is empty/null but `lexical` contains the card, the content is stored correctly.
+
+---
+
+## L-010: Encryption Key Must Be Stable Across Restarts
+
+**Issue**: Without `COGNIFY_ENCRYPTION_KEY` in `.env`, the encryption module auto-generates an ephemeral Fernet key. API keys saved to DB via the Settings UI are encrypted with this key. On server restart, a new ephemeral key is generated, making all DB-stored keys permanently unrecoverable. The key resolver then crashes the entire app on startup with `InvalidEncryptionKey`.
+
+**Rule**:
+1. **Always set `COGNIFY_ENCRYPTION_KEY`** in `.env` — generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+2. **Key resolver must catch decryption failures** and fall back to `.env` values (fixed in `src/utils/key_resolver.py`)
+3. After changing the encryption key, all DB-stored API keys must be re-saved through the Settings UI

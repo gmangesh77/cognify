@@ -142,6 +142,9 @@ See @docs/LEARNINGS.md for hard-won debugging lessons. **Read before making chan
 - **L-005**: Integration tests leak data to real DB — clean after running
 - **L-006**: `generate_outline()` runs the FULL pipeline, not just outline
 - **L-007**: FakeLLM tests need 10+ responses per pipeline invocation
+- **L-008**: Azure DevOps work item terminal states: User Story/Bug/Epic → `Closed`, Task → `Completed`
+- **L-009**: Ghost 5+ requires Lexical format — raw `html` field is silently ignored
+- **L-010**: `COGNIFY_ENCRYPTION_KEY` must be stable in `.env` — ephemeral keys make DB-stored API keys unrecoverable
 
 ## Current Status
 
