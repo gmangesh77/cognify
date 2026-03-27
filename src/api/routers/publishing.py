@@ -68,7 +68,9 @@ async def list_publications(
 ) -> PublicationListResponse:
     pub_repo = request.app.state.pub_repo
     article_repo = request.app.state.article_repo
-    pubs, total = await pub_repo.list(page=page, size=size, platform=platform, status=status)
+    pubs, total = await pub_repo.list(
+        page=page, size=size, platform=platform, status=status,
+    )
 
     items = []
     for pub in pubs:
@@ -88,7 +90,11 @@ async def list_publications(
                 seo_score=pub.seo_score,
                 error_message=pub.error_message,
                 event_history=[
-                    {"timestamp": e.timestamp, "status": e.status.value, "error_message": e.error_message}
+                    {
+                        "timestamp": e.timestamp,
+                        "status": e.status.value,
+                        "error_message": e.error_message,
+                    }
                     for e in pub.event_history
                 ],
                 created_at=pub.created_at,
@@ -151,7 +157,11 @@ async def get_publication(
         seo_score=pub.seo_score,
         error_message=pub.error_message,
         event_history=[
-            {"timestamp": e.timestamp, "status": e.status.value, "error_message": e.error_message}
+            {
+                "timestamp": e.timestamp,
+                "status": e.status.value,
+                "error_message": e.error_message,
+            }
             for e in pub.event_history
         ],
         created_at=pub.created_at,

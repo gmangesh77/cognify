@@ -206,5 +206,8 @@ class PublicationRow(Base, UUIDMixin, TimestampMixin):
     event_history: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("article_id", "platform", name="uq_publication_article_platform"),
+        UniqueConstraint(
+            "article_id", "platform",
+            name="uq_publication_article_platform",
+        ),
     )

@@ -239,7 +239,7 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         # Publishing service (requires article_repo)
         from src.db.repositories import PgPublicationRepository
 
-        pub_repo = PgPublicationRepository(async_session)
+        pub_repo = PgPublicationRepository(sf)
         app.state.pub_repo = pub_repo
         app.state.article_repo = article_repo
         _init_publishing_service(app, settings, article_repo, pub_repo)
