@@ -1,5 +1,6 @@
 """SQLAlchemy table models for PostgreSQL persistence."""
 
+import uuid
 from datetime import datetime
 
 from sqlalchemy import (
@@ -10,6 +11,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -28,6 +30,7 @@ __all__ = [
     "LlmConfigRow",
     "SeoDefaultsRow",
     "GeneralConfigRow",
+    "PublicationRow",
 ]
 
 
@@ -180,3 +183,28 @@ class GeneralConfigRow(Base, UUIDMixin, TimestampMixin):
 
     article_length_target: Mapped[str] = mapped_column(String(50))
     content_tone: Mapped[str] = mapped_column(String(50))
+
+
+class PublicationRow(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "publications"
+
+    article_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("canonical_articles.id"),
+        nullable=False,
+    )
+    platform: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    external_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+    )
+    view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    seo_score: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    event_history: Mapped[list] = mapped_column(JSONB, default=list, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("article_id", "platform", name="uq_publication_article_platform"),
+    )
