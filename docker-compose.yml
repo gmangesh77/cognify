@@ -94,7 +94,24 @@ services:
     depends_on:
       - api
 
+  # Optional: Ghost CMS for local publishing tests
+  # Start with: docker compose up ghost -d
+  # Then visit http://localhost:2368/ghost/ to set up admin and create an integration key.
+  # Set COGNIFY_GHOST_API_URL=http://ghost:2368 and COGNIFY_GHOST_ADMIN_API_KEY=<id>:<secret> in .env
+  ghost:
+    image: ghost:5-alpine
+    ports:
+      - "2368:2368"
+    environment:
+      url: http://localhost:2368
+      database__client: sqlite3
+    volumes:
+      - ghost_data:/var/lib/ghost/content
+    profiles:
+      - publishing
+
 volumes:
   pgdata:
   milvus_data:
   generated_assets:
+  ghost_data:

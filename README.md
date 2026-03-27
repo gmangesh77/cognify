@@ -21,6 +21,7 @@ Cognify monitors domains of interest, automatically discovers trending topics fr
 | **Task Queue** | Celery + Redis |
 | **Frontend** | Next.js 15 + React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui + TanStack Query |
 | **Testing** | pytest (backend), Vitest + Testing Library (frontend) |
+| **Publishing** | Ghost CMS (Admin API), Medium (deprecated API) |
 | **CI/CD** | GitHub Actions |
 | **Infrastructure** | Docker + Kubernetes on AWS |
 
@@ -66,6 +67,10 @@ cognify/
 │   ├── services/
 │   │   ├── content.py         # ContentService (orchestrates content pipeline)
 │   │   ├── research.py        # ResearchService (orchestrates research)
+│   │   ├── publishing/        # PublishingService + platform adapters
+│   │   │   ├── service.py     # Orchestrator (retry, registry, logging)
+│   │   │   ├── ghost/         # Ghost CMS transformer + adapter (JWT auth)
+│   │   │   └── medium/        # Medium transformer + adapter (deprecated API)
 │   │   ├── topic_ranking.py   # Composite scoring + dedup
 │   │   ├── topic_persistence.py # Cross-scan dedup + DB storage
 │   │   ├── serpapi_client.py  # Web search client
@@ -82,7 +87,7 @@ cognify/
 │   ├── src/hooks/             # TanStack Query hooks (wired to real APIs)
 │   └── src/lib/               # API client, utilities
 ├── tests/
-│   ├── unit/                  # ~764 backend tests
+│   ├── unit/                  # ~901 backend tests
 │   └── integration/           # Integration tests with real dependencies
 ├── alembic/                   # Database migrations
 ├── docs/                      # Architecture, testing, security, observability
@@ -140,6 +145,35 @@ cd frontend && npm run dev
 
 The API will be at `http://localhost:8000` (docs at `/docs`). The dashboard will be at `http://localhost:3000`.
 
+### Local Ghost CMS (Optional — for publishing tests)
+
+Ghost is included in docker-compose under the `publishing` profile. It doesn't start by default.
+
+```bash
+# Start Ghost alongside other services
+docker compose --profile publishing up -d
+
+# Or start Ghost standalone
+docker compose up ghost -d
+```
+
+Then:
+1. Visit `http://localhost:2368/ghost/` and complete the setup wizard
+2. Go to **Settings > Integrations > Add custom integration**
+3. Copy the **Admin API Key** (format: `id:secret`)
+4. Add to your `.env`:
+   ```
+   COGNIFY_GHOST_API_URL=http://localhost:2368
+   COGNIFY_GHOST_ADMIN_API_KEY=<your-id>:<your-secret>
+   ```
+5. Restart the API and publish an article:
+   ```bash
+   curl -X POST http://localhost:8000/api/v1/articles/{article_id}/publish \
+     -H "Authorization: Bearer <token>" \
+     -H "Content-Type: application/json" \
+     -d '{"platform": "ghost"}'
+   ```
+
 **Dev credentials** (seeded automatically when `COGNIFY_DEBUG=true`):
 
 | Email | Password | Role |
@@ -192,6 +226,16 @@ cp .env.example .env
 | `COGNIFY_NEWSAPI_API_KEY` | — | NewsAPI key (trend source) |
 | `COGNIFY_REDDIT_CLIENT_ID` | — | Reddit OAuth2 client ID |
 | `COGNIFY_REDDIT_CLIENT_SECRET` | — | Reddit OAuth2 client secret |
+
+**Publishing**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `COGNIFY_GHOST_API_URL` | — | Ghost Admin API URL (e.g., `http://localhost:2368`) |
+| `COGNIFY_GHOST_ADMIN_API_KEY` | — | Ghost Admin API key (`id:secret` format, from Ghost Admin > Integrations) |
+| `COGNIFY_MEDIUM_API_TOKEN` | — | Medium Integration Token (API deprecated, mock-only) |
+| `COGNIFY_MEDIUM_USER_ID` | — | Medium user ID |
+| `COGNIFY_ENCRYPTION_KEY` | — | Fernet key for encrypting API keys at rest. **Required in production.** Generate with: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
 
 **Vector Database & RAG**
 
@@ -258,6 +302,12 @@ All endpoints prefixed with `/api/v1`. Auth endpoints are public; all others req
 | GET | `/articles` | List finalized articles (paginated) |
 | GET | `/articles/{id}` | Get finalized CanonicalArticle |
 
+**Publishing**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/articles/{id}/publish` | Publish article to a platform (ghost, medium) |
+
 **Dashboard**
 
 | Method | Path | Description |
@@ -282,7 +332,7 @@ cd frontend && npm test
 cd frontend && npm run test:watch
 ```
 
-**Test suite:** ~764 backend tests + 237 frontend tests (~98% coverage)
+**Test suite:** ~901 backend tests + 239 frontend tests
 
 ### Linting and Type Checking
 
@@ -311,16 +361,16 @@ cd frontend && npm run lint
 ### Content Pipeline
 
 ```
-Trend Discovery → Research Orchestrator → Content Generation → Publishing
-     │                    │                       │
-     ├─ Google Trends     ├─ Web Search Agent     ├─ Outline Generation
-     ├─ Reddit            ├─ Literature Review    ├─ Section Drafting (RAG)
-     ├─ Hacker News       │   Agent               ├─ Validation
-     ├─ NewsAPI           └─ (parallel per facet)  ├─ Humanization
-     └─ arXiv                                      ├─ SEO + AI Discoverability
-                                                   ├─ Citation Management
-                                                   ├─ Chart Generation
-                                                   └─ CanonicalArticle Assembly
+Trend Discovery → Research Orchestrator → Content Generation → Publishing Service
+     │                    │                       │                    │
+     ├─ Google Trends     ├─ Web Search Agent     ├─ Outline          ├─ Ghost CMS
+     ├─ Reddit            ├─ Literature Review    ├─ Section Drafting │   (Admin API + JWT)
+     ├─ Hacker News       │   Agent               ├─ Validation       ├─ Medium
+     ├─ NewsAPI           └─ (parallel per facet)  ├─ Humanization     │   (deprecated API)
+     └─ arXiv                                      ├─ SEO + AI Disc.  └─ (WordPress, LinkedIn
+                                                   ├─ Citations            planned)
+                                                   ├─ Charts
+                                                   └─ CanonicalArticle
 ```
 
 The research orchestrator tags each facet with a `source_type` (web, academic, or both) and routes to the appropriate agent. All findings are indexed in Milvus for RAG retrieval during content generation.
