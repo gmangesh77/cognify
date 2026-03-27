@@ -15,15 +15,29 @@ class InvalidEncryptionKey(Exception):
 
 
 def get_encryption_key() -> bytes:
-    """Return the Fernet master key, reading from env or auto-generating."""
+    """Return the Fernet master key from env.
+
+    In debug/test mode (COGNIFY_DEBUG=true), auto-generates an ephemeral
+    key if unset. In production, raises ValueError to prevent data loss.
+    """
     global _cached_key
     if _cached_key is not None:
         return _cached_key
 
     raw = os.environ.get("COGNIFY_ENCRYPTION_KEY", "")
     if raw:
-        _cached_key = raw.encode()
+        key = raw.encode()
+        Fernet(key)  # validate it's a proper Fernet key
+        _cached_key = key
         return _cached_key
+
+    debug = os.environ.get("COGNIFY_DEBUG", "").lower() in ("true", "1")
+    if not debug:
+        raise ValueError(
+            "COGNIFY_ENCRYPTION_KEY must be set in production. Generate with: "
+            "python -c \"from cryptography.fernet import Fernet; "
+            "print(Fernet.generate_key().decode())\""
+        )
 
     logger.warning(
         "encryption_key_auto_generated",

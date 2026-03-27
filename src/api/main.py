@@ -27,8 +27,8 @@ from src.api.routers.articles import articles_router
 from src.api.routers.auth import auth_router
 from src.api.routers.canonical_articles import canonical_articles_router
 from src.api.routers.health import health_router
-from src.api.routers.publishing import publishing_router
 from src.api.routers.metrics import metrics_router
+from src.api.routers.publishing import publishing_router
 from src.api.routers.research import research_router
 from src.api.routers.settings import settings_router
 from src.api.routers.topics import topics_router
@@ -533,8 +533,8 @@ def _register_middleware(app: FastAPI, settings: Settings) -> None:
         CORSMiddleware,
         allow_origins=settings.cors_allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
     )
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(CorrelationIdMiddleware)
