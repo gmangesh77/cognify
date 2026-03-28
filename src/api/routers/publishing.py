@@ -11,6 +11,7 @@ from src.api.dependencies import require_editor_or_above, require_viewer_or_abov
 from src.api.rate_limiter import limiter
 from src.api.schemas.publishing import (
     PlatformSummaryResponse,
+    PublicationEventResponse,
     PublicationListResponse,
     PublicationResponse,
     PublishRequest,
@@ -90,11 +91,11 @@ async def list_publications(
                 seo_score=pub.seo_score,
                 error_message=pub.error_message,
                 event_history=[
-                    {
-                        "timestamp": e.timestamp,
-                        "status": e.status.value,
-                        "error_message": e.error_message,
-                    }
+                    PublicationEventResponse(
+                        timestamp=e.timestamp,
+                        status=e.status.value,
+                        error_message=e.error_message,
+                    )
                     for e in pub.event_history
                 ],
                 created_at=pub.created_at,
@@ -157,11 +158,11 @@ async def get_publication(
         seo_score=pub.seo_score,
         error_message=pub.error_message,
         event_history=[
-            {
-                "timestamp": e.timestamp,
-                "status": e.status.value,
-                "error_message": e.error_message,
-            }
+            PublicationEventResponse(
+                timestamp=e.timestamp,
+                status=e.status.value,
+                error_message=e.error_message,
+            )
             for e in pub.event_history
         ],
         created_at=pub.created_at,
