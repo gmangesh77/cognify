@@ -116,7 +116,9 @@ class TestLinkedInCallback:
         auth_settings: Settings,
     ) -> None:
         mock_exchange.side_effect = httpx.HTTPStatusError(
-            "Bad", request=httpx.Request("POST", "https://x"), response=httpx.Response(400),
+            "Bad",
+            request=httpx.Request("POST", "https://x"),
+            response=httpx.Response(400),
         )
         headers = make_auth_header("admin", auth_settings)
         auth_resp = await oauth_client.get(
