@@ -99,6 +99,7 @@ alembic/        # Database migration versions
 - Always run full test suite before committing
 - PR requires: tests passing + security scan clean + human review
 - Include `AB#<work-item-id>` in PR descriptions to link to Azure Boards
+- **NEVER create files with colons (`:`) in their names** — Windows/NTFS cannot handle them and they block `git pull` on Windows machines. This applies to ALL platforms including Linux.
 
 ## Definition of Done
 Before marking ANY task complete, verify:
