@@ -1,6 +1,5 @@
 """Unit tests for settings Pydantic models."""
 
-import pytest
 from src.models.settings import (
     ApiKeyConfig,
     DomainConfig,

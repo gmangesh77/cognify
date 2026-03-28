@@ -100,6 +100,7 @@ class TestGetTopic:
 class TestAgentStepRepository:
     async def test_update_step(self) -> None:
         from datetime import UTC, datetime
+
         from src.models.research_db import AgentStep
         repo = InMemoryAgentStepRepository()
         session_id = uuid4()

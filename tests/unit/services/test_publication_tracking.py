@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.models.content import SEOMetadata, StructuredDataLD, SchemaOrgAuthor
+from src.models.content import SchemaOrgAuthor, SEOMetadata, StructuredDataLD
 from src.models.publishing import PublicationStatus
 
 

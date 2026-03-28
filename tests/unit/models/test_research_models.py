@@ -195,6 +195,7 @@ class TestResearchSession:
     def test_indexed_count_defaults_to_zero(self) -> None:
         from datetime import UTC, datetime
         from uuid import uuid4
+
         from src.models.research_db import ResearchSession
         session = ResearchSession(
             topic_id=uuid4(),

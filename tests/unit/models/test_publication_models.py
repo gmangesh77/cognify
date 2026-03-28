@@ -4,12 +4,13 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from src.models.publishing import (
+    PlatformSummary,
     Publication,
     PublicationEvent,
     PublicationStatus,
-    PlatformSummary,
 )
 
 
@@ -35,7 +36,7 @@ class TestPublicationEvent:
             timestamp=datetime.now(UTC),
             status=PublicationStatus.SUCCESS,
         )
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             event.status = PublicationStatus.FAILED  # type: ignore[misc]
 
 
@@ -70,7 +71,7 @@ class TestPublication:
 
     def test_frozen(self) -> None:
         pub = self._make()
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             pub.status = PublicationStatus.FAILED  # type: ignore[misc]
 
     def test_with_event_history(self) -> None:
