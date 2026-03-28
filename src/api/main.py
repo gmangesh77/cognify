@@ -1,8 +1,16 @@
+from __future__ import annotations
+
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import structlog
 from fastapi import FastAPI
+
+if TYPE_CHECKING:
+    from src.services.embeddings import EmbeddingService
+    from src.services.milvus_service import MilvusRetriever
+    from src.services.research import AgentStepRepository
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -91,7 +99,7 @@ class _SettingsRepos:
 
 def _try_build_retriever(
     app: FastAPI, settings: Settings,
-) -> "MilvusRetriever | None":
+) -> MilvusRetriever | None:
     """Build MilvusRetriever if Milvus is available, else None."""
     try:
         from src.services.milvus_retriever import MilvusRetriever
@@ -116,7 +124,7 @@ def _try_build_retriever(
         return None
 
 
-def _get_or_create_embedding_service(app: FastAPI) -> "EmbeddingService":
+def _get_or_create_embedding_service(app: FastAPI) -> EmbeddingService:
     if not hasattr(app.state, "embedding_service"):
         from src.services.embeddings import EmbeddingService
         app.state.embedding_service = EmbeddingService(
@@ -329,7 +337,7 @@ def _build_llm(settings: Settings):  # type: ignore[no-untyped-def]
 
 
 def _build_real_orchestrator(
-    settings: Settings, step_repo: "AgentStepRepository | None" = None,
+    settings: Settings, step_repo: AgentStepRepository | None = None,
 ):  # type: ignore[no-untyped-def]
     """Build the full LangGraph research orchestrator."""
     from src.agents.research.literature_review import (
@@ -399,7 +407,7 @@ def _build_real_orchestrator(
 
 def _get_or_create_embedding_service_from_settings(
     settings: Settings,
-) -> "EmbeddingService":
+) -> EmbeddingService:
     """Create EmbeddingService from settings (no app state)."""
     from src.services.embeddings import EmbeddingService
 
