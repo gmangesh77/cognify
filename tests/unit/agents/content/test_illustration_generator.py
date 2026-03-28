@@ -54,12 +54,19 @@ class TestGenerateIllustrationPrompt:
     async def test_returns_prompt_string(self) -> None:
         llm = AsyncMock()
         llm.ainvoke.return_value = MagicMock(
-            content="A futuristic digital shield protecting a network of connected devices"
+            content=(
+                "A futuristic digital shield protecting a network of connected devices"
+            )
         )
         topic = TopicInput(
-            id=uuid4(), title="AI Security Trends", description="Emerging threats", domain="cybersecurity"
+            id=uuid4(),
+            title="AI Security Trends",
+            description="Emerging threats",
+            domain="cybersecurity",
         )
-        result = await generate_illustration_prompt(topic, "Summary of AI security trends in 2026", llm)
+        result = await generate_illustration_prompt(
+            topic, "Summary of AI security trends in 2026", llm
+        )
         assert result is not None
         assert len(result) > 10
 
@@ -68,7 +75,7 @@ class TestGenerateIllustrationPrompt:
         llm = AsyncMock()
         llm.ainvoke.side_effect = Exception("LLM unavailable")
         topic = TopicInput(
-            id=uuid4(), title="Test", description="Desc", domain="tech"
+            id=uuid4(), title="Test", description="Desc", domain="tech",
         )
         result = await generate_illustration_prompt(topic, "Summary", llm)
         assert result is None
@@ -78,7 +85,7 @@ class TestGenerateIllustrationPrompt:
         llm = AsyncMock()
         llm.ainvoke.return_value = MagicMock(content="")
         topic = TopicInput(
-            id=uuid4(), title="Test", description="Desc", domain="tech"
+            id=uuid4(), title="Test", description="Desc", domain="tech",
         )
         result = await generate_illustration_prompt(topic, "", llm)
         assert result is None
@@ -88,7 +95,10 @@ class TestGenerateIllustrationPrompt:
         llm = AsyncMock()
         llm.ainvoke.return_value = MagicMock(content="A prompt about emerging threats")
         topic = TopicInput(
-            id=uuid4(), title="Test", description="Emerging threats in cybersecurity", domain="tech"
+            id=uuid4(),
+            title="Test",
+            description="Emerging threats in cybersecurity",
+            domain="tech",
         )
         result = await generate_illustration_prompt(topic, "", llm)
         assert result is not None

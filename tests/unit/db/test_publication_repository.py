@@ -7,8 +7,6 @@ from uuid import uuid4
 import pytest
 
 from src.models.publishing import (
-    Publication,
-    PublicationEvent,
     PublicationStatus,
 )
 
@@ -36,7 +34,11 @@ class TestPgPublicationRepository:
         row.seo_score = 80
         row.error_message = None
         row.event_history = [
-            {"timestamp": "2026-03-27T10:00:00+00:00", "status": "success", "error_message": None},
+            {
+                "timestamp": "2026-03-27T10:00:00+00:00",
+                "status": "success",
+                "error_message": None,
+            },
         ]
         row.created_at = datetime.now(UTC)
         row.updated_at = datetime.now(UTC)

@@ -25,7 +25,9 @@ _EDITOR_TOKEN = {
 }
 
 
-def _pub(*, platform: str = "ghost", status: PublicationStatus = PublicationStatus.SUCCESS) -> Publication:
+def _pub(
+    *, platform: str = "ghost", status: PublicationStatus = PublicationStatus.SUCCESS
+) -> Publication:
     return Publication(
         id=uuid4(),
         article_id=uuid4(),
@@ -77,7 +79,9 @@ class TestListPublications:
 
     @pytest.mark.asyncio
     @patch("src.api.dependencies.decode_access_token")
-    async def test_returns_paginated_list(self, mock_decode, pub_client, pub_app) -> None:
+    async def test_returns_paginated_list(
+        self, mock_decode, pub_client, pub_app
+    ) -> None:
         from src.api.auth.schemas import TokenPayload
 
         mock_decode.return_value = TokenPayload(**_EDITOR_TOKEN)
@@ -153,7 +157,9 @@ class TestPlatformSummaries:
 
         mock_decode.return_value = TokenPayload(**_EDITOR_TOKEN)
         pub_app.state.pub_repo.get_platform_summaries.return_value = [
-            PlatformSummary(platform="ghost", total=10, success=8, failed=1, scheduled=1),
+            PlatformSummary(
+                platform="ghost", total=10, success=8, failed=1, scheduled=1
+            ),
         ]
 
         resp = await pub_client.get(

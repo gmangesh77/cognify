@@ -1,16 +1,14 @@
 """Tests for diagram generation: Mermaid rendering and LLM proposal."""
 
-import asyncio
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from pydantic import ValidationError
 
 from src.agents.content.diagram_generator import propose_diagrams, render_mermaid
 from src.models.content_pipeline import SectionDraft
-from src.models.visual import DiagramSpec, DiagramType
+from src.models.visual import DiagramType
 
 
 def _make_section(index: int, body: str) -> SectionDraft:
@@ -34,7 +32,9 @@ VALID_SPEC = {
 VALID_SEQUENCE_SPEC = {
     "diagram_type": "sequence",
     "title": "API Call",
-    "mermaid_syntax": "sequenceDiagram\n    Client->>Server: GET /api\n    Server-->>Client: 200 OK",
+    "mermaid_syntax": (
+        "sequenceDiagram\n    Client->>Server: GET /api\n    Server-->>Client: 200 OK"
+    ),
     "caption": "API request sequence.",
     "source_section_index": 0,
 }

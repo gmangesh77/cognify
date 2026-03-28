@@ -7,7 +7,13 @@ import httpx
 import pytest
 
 from src.config.settings import Settings
-from src.models.settings import ApiKeyConfig, DomainConfig, GeneralConfig, LlmConfig, SeoDefaults
+from src.models.settings import (
+    ApiKeyConfig,
+    DomainConfig,
+    GeneralConfig,
+    LlmConfig,
+    SeoDefaults,
+)
 
 from .conftest import make_auth_header
 
@@ -72,7 +78,9 @@ class TestDomainEndpoints:
         auth_settings: Settings,
     ) -> None:
         domain = _make_domain()
-        settings_app.state.settings_repos.domains.list_all = AsyncMock(return_value=[domain])
+        settings_app.state.settings_repos.domains.list_all = AsyncMock(
+            return_value=[domain]
+        )
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.get("/api/v1/settings/domains", headers=headers)
         assert resp.status_code == 200
@@ -96,11 +104,17 @@ class TestDomainEndpoints:
         auth_settings: Settings,
     ) -> None:
         domain = _make_domain()
-        settings_app.state.settings_repos.domains.create = AsyncMock(return_value=domain)
+        settings_app.state.settings_repos.domains.create = AsyncMock(
+            return_value=domain
+        )
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.post(
             "/api/v1/settings/domains",
-            json={"name": "Cybersecurity", "trend_sources": ["hackernews"], "keywords": ["security"]},
+            json={
+                "name": "Cybersecurity",
+                "trend_sources": ["hackernews"],
+                "keywords": ["security"],
+            },
             headers=headers,
         )
         assert resp.status_code == 201
@@ -130,7 +144,9 @@ class TestDomainEndpoints:
         domain = _make_domain()
         updated = domain.model_copy(update={"name": "AI"})
         settings_app.state.settings_repos.domains.get = AsyncMock(return_value=domain)
-        settings_app.state.settings_repos.domains.update = AsyncMock(return_value=updated)
+        settings_app.state.settings_repos.domains.update = AsyncMock(
+            return_value=updated
+        )
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.put(
             f"/api/v1/settings/domains/{domain.id}",
@@ -165,14 +181,19 @@ class TestApiKeyEndpoints:
         auth_settings: Settings,
     ) -> None:
         key = _make_key()
-        settings_app.state.settings_repos.api_keys.list_all = AsyncMock(return_value=[key])
+        settings_app.state.settings_repos.api_keys.list_all = AsyncMock(
+            return_value=[key]
+        )
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.get("/api/v1/settings/api-keys", headers=headers)
         assert resp.status_code == 200
         assert len(resp.json()["items"]) == 1
         assert resp.json()["items"][0]["service"] == "anthropic"
 
-    @patch("src.api.routers.settings_domains.encrypt_value", return_value="encrypted-token")
+    @patch(
+        "src.api.routers.settings_domains.encrypt_value",
+        return_value="encrypted-token",
+    )
     async def test_add_api_key_returns_201(
         self,
         mock_encrypt,
@@ -194,7 +215,10 @@ class TestApiKeyEndpoints:
         call_kwargs = settings_app.state.settings_repos.api_keys.create.call_args
         assert call_kwargs.kwargs["encrypted_key"] == "encrypted-token"
 
-    @patch("src.api.routers.settings_domains.encrypt_value", return_value="encrypted-token")
+    @patch(
+        "src.api.routers.settings_domains.encrypt_value",
+        return_value="encrypted-token",
+    )
     async def test_rotate_api_key_returns_200(
         self,
         mock_encrypt,
@@ -240,7 +264,9 @@ class TestLlmConfigEndpoints:
         auth_settings: Settings,
     ) -> None:
         config = LlmConfig()
-        settings_app.state.settings_repos.llm.get_or_create = AsyncMock(return_value=config)
+        settings_app.state.settings_repos.llm.get_or_create = AsyncMock(
+            return_value=config
+        )
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.get("/api/v1/settings/llm", headers=headers)
         assert resp.status_code == 200
@@ -253,7 +279,9 @@ class TestLlmConfigEndpoints:
         auth_settings: Settings,
     ) -> None:
         config = LlmConfig(primary_model="claude-opus-4-5")
-        settings_app.state.settings_repos.llm.get_or_create = AsyncMock(return_value=LlmConfig())
+        settings_app.state.settings_repos.llm.get_or_create = AsyncMock(
+            return_value=LlmConfig()
+        )
         settings_app.state.settings_repos.llm.update = AsyncMock(return_value=config)
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.put(
@@ -275,7 +303,9 @@ class TestSeoDefaultsEndpoints:
         auth_settings: Settings,
     ) -> None:
         config = SeoDefaults()
-        settings_app.state.settings_repos.seo.get_or_create = AsyncMock(return_value=config)
+        settings_app.state.settings_repos.seo.get_or_create = AsyncMock(
+            return_value=config
+        )
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.get("/api/v1/settings/seo", headers=headers)
         assert resp.status_code == 200
@@ -288,7 +318,9 @@ class TestSeoDefaultsEndpoints:
         auth_settings: Settings,
     ) -> None:
         updated = SeoDefaults(auto_meta_tags=False)
-        settings_app.state.settings_repos.seo.get_or_create = AsyncMock(return_value=SeoDefaults())
+        settings_app.state.settings_repos.seo.get_or_create = AsyncMock(
+            return_value=SeoDefaults()
+        )
         settings_app.state.settings_repos.seo.update = AsyncMock(return_value=updated)
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.put(
@@ -310,7 +342,9 @@ class TestGeneralConfigEndpoints:
         auth_settings: Settings,
     ) -> None:
         config = GeneralConfig()
-        settings_app.state.settings_repos.general.get_or_create = AsyncMock(return_value=config)
+        settings_app.state.settings_repos.general.get_or_create = AsyncMock(
+            return_value=config
+        )
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.get("/api/v1/settings/general", headers=headers)
         assert resp.status_code == 200
@@ -323,8 +357,12 @@ class TestGeneralConfigEndpoints:
         auth_settings: Settings,
     ) -> None:
         updated = GeneralConfig(content_tone="casual")
-        settings_app.state.settings_repos.general.get_or_create = AsyncMock(return_value=GeneralConfig())
-        settings_app.state.settings_repos.general.update = AsyncMock(return_value=updated)
+        settings_app.state.settings_repos.general.get_or_create = AsyncMock(
+            return_value=GeneralConfig()
+        )
+        settings_app.state.settings_repos.general.update = AsyncMock(
+            return_value=updated
+        )
         headers = make_auth_header("admin", auth_settings)
         resp = await settings_client.put(
             "/api/v1/settings/general",

@@ -193,7 +193,9 @@ class TestGenerateOutline:
         draft = await svc.generate_outline(session.id)
         assert isinstance(draft, ArticleDraft)
         assert draft.outline is not None
-        assert draft.status in (DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE)
+        assert draft.status in (
+            DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE
+        )
         assert draft.session_id == session.id
 
     async def test_rejects_unknown_session(self) -> None:
@@ -292,7 +294,9 @@ class TestDraftArticle:
         """generate_outline now runs the full pipeline."""
         svc, session = await _make_service_with_retriever()
         draft = await svc.generate_outline(session.id)
-        assert draft.status in (DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE)
+        assert draft.status in (
+            DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE
+        )
         assert draft.outline is not None
 
     async def test_rejects_unknown_draft(self) -> None:

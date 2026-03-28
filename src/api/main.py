@@ -108,7 +108,10 @@ def _try_build_retriever(
         logger.warning(
             "milvus_unavailable",
             error=str(exc),
-            hint="RAG retrieval disabled. Articles will be generated without vector context.",
+            hint=(
+                "RAG retrieval disabled. "
+                "Articles will be generated without vector context."
+            ),
         )
         return None
 

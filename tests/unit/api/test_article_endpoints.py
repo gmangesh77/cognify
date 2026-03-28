@@ -320,7 +320,9 @@ class TestDraftSections:
         svc: ContentService = drafting_app.state.content_service
         draft = await svc.generate_outline(UUID(drafting_session_id))
         # Full pipeline runs: status is draft_complete, not outline_complete
-        assert draft.status in (DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE)
+        assert draft.status in (
+            DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE
+        )
         assert draft.outline is not None
 
     async def test_viewer_cannot_draft(

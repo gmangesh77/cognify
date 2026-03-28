@@ -1,7 +1,6 @@
 """Tests for slop scoring engine."""
 
 from src.agents.content.slop_scorer import score_text
-from src.models.content_pipeline import SlopScore
 
 
 class TestScoreText:
@@ -62,8 +61,15 @@ class TestScoreText:
         assert score_with_q >= score_no_q
 
     def test_sentence_variance_bonus(self) -> None:
-        varied = "Security matters. The team discovered that implementing a comprehensive monitoring solution reduced incident response times by forty percent across all departments."
-        monotonous = "Security is important now. Companies need to act now. Teams should prepare for this. Everyone must be aware now."
+        varied = (
+            "Security matters. The team discovered that implementing a comprehensive "
+            "monitoring solution reduced incident response times by forty percent "
+            "across all departments."
+        )
+        monotonous = (
+            "Security is important now. Companies need to act now. "
+            "Teams should prepare for this. Everyone must be aware now."
+        )
         assert score_text(varied).score >= score_text(monotonous).score
 
     def test_score_clamped_0_100(self) -> None:

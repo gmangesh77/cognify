@@ -11,7 +11,10 @@ def _make_drafts() -> list[SectionDraft]:
         SectionDraft(
             section_index=0,
             title="Clean Section",
-            body_markdown="Security researchers found a 40% increase in breaches [1]. The team responded quickly.",
+            body_markdown=(
+                "Security researchers found a 40% increase in breaches [1]. "
+                "The team responded quickly."
+            ),
             word_count=12,
             citations_used=[
                 CitationRef(index=1, source_url="https://a.com", source_title="A")
@@ -20,7 +23,13 @@ def _make_drafts() -> list[SectionDraft]:
         SectionDraft(
             section_index=1,
             title="Sloppy Section",
-            body_markdown="Let me delve into this transformative journey. Moreover, leveraging cutting-edge solutions is crucial [1]. Furthermore, this holistic approach empowers stakeholders. Indeed, it is important to note that this unprecedented paradigm shift will revolutionize the dynamic landscape.",
+            body_markdown=(
+                "Let me delve into this transformative journey. Moreover, leveraging "
+                "cutting-edge solutions is crucial [1]. Furthermore, this holistic "
+                "approach empowers stakeholders. Indeed, it is important to note that "
+                "this unprecedented paradigm shift will revolutionize the dynamic "
+                "landscape."
+            ),
             word_count=38,
             citations_used=[
                 CitationRef(index=1, source_url="https://a.com", source_title="A")
@@ -33,7 +42,8 @@ class TestHumanizeNode:
     async def test_rewrites_low_scoring_sections(self) -> None:
         llm = FakeListChatModel(
             responses=[
-                "This approach focuses on practical solutions [1]. The team found concrete improvements."
+                "This approach focuses on practical solutions [1]. "
+                "The team found concrete improvements."
             ]
         )
         node = make_humanize_node(llm)
@@ -41,7 +51,8 @@ class TestHumanizeNode:
         result = await node(state)
         drafts = result["section_drafts"]
         assert len(drafts) == 2
-        # Sloppy section should have been modified (either rewritten or mechanically fixed)
+        # Sloppy section should have been modified
+        # (either rewritten or mechanically fixed)
         assert drafts[1].body_markdown != _make_drafts()[1].body_markdown
 
     async def test_never_returns_failed_status(self) -> None:
@@ -52,7 +63,10 @@ class TestHumanizeNode:
             SectionDraft(
                 section_index=0,
                 title="Clean",
-                body_markdown="Security researchers found a 40% increase in breaches. The team tested three different approaches over six months.",
+                body_markdown=(
+                    "Security researchers found a 40% increase in breaches. "
+                    "The team tested three different approaches over six months."
+                ),
                 word_count=18,
                 citations_used=[],
             ),

@@ -35,9 +35,21 @@ def _plan_json(num_facets: int = 3) -> str:
 def _plan_json_with_source_types() -> str:
     return json.dumps({
         "facets": [
-            {"index": 0, "title": "Recent incidents", "description": "Current events", "search_queries": ["recent incidents 2026"], "source_type": "web"},
-            {"index": 1, "title": "Detection methods", "description": "ML approaches", "search_queries": ["detection ML"], "source_type": "academic"},
-            {"index": 2, "title": "Mitigation strategies", "description": "Both practical and research", "search_queries": ["mitigation strategies"], "source_type": "both"},
+            {
+                "index": 0, "title": "Recent incidents",
+                "description": "Current events",
+                "search_queries": ["recent incidents 2026"], "source_type": "web",
+            },
+            {
+                "index": 1, "title": "Detection methods",
+                "description": "ML approaches",
+                "search_queries": ["detection ML"], "source_type": "academic",
+            },
+            {
+                "index": 2, "title": "Mitigation strategies",
+                "description": "Both practical and research",
+                "search_queries": ["mitigation strategies"], "source_type": "both",
+            },
         ],
         "reasoning": "Mixed plan",
     })

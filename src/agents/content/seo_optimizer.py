@@ -13,12 +13,12 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
 from src.models.content import SEOMetadata, StructuredDataLD
-from src.utils.llm_json import parse_llm_json
 from src.models.content_pipeline import (
     AIDiscoverabilityResult,
     CitationRef,
     SectionDraft,
 )
+from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
 
@@ -69,7 +69,10 @@ async def _parse_seo_response(
         try:
             data = parse_llm_json(str(response.content))
             if isinstance(data, dict):
-                if isinstance(data.get("description"), str) and len(data["description"]) > 170:
+                if (
+                    isinstance(data.get("description"), str)
+                    and len(data["description"]) > 170
+                ):
                     data["description"] = data["description"][:167] + "..."
                 if isinstance(data.get("title"), str) and len(data["title"]) > 70:
                     data["title"] = data["title"][:67] + "..."
