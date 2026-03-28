@@ -75,7 +75,10 @@ class TestGenerateIllustrationPrompt:
         llm = AsyncMock()
         llm.ainvoke.side_effect = Exception("LLM unavailable")
         topic = TopicInput(
-            id=uuid4(), title="Test", description="Desc", domain="tech",
+            id=uuid4(),
+            title="Test",
+            description="Desc",
+            domain="tech",
         )
         result = await generate_illustration_prompt(topic, "Summary", llm)
         assert result is None
@@ -85,7 +88,10 @@ class TestGenerateIllustrationPrompt:
         llm = AsyncMock()
         llm.ainvoke.return_value = MagicMock(content="")
         topic = TopicInput(
-            id=uuid4(), title="Test", description="Desc", domain="tech",
+            id=uuid4(),
+            title="Test",
+            description="Desc",
+            domain="tech",
         )
         result = await generate_illustration_prompt(topic, "", llm)
         assert result is None

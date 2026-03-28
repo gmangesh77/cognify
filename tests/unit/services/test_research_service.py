@@ -102,6 +102,7 @@ class TestAgentStepRepository:
         from datetime import UTC, datetime
 
         from src.models.research_db import AgentStep
+
         repo = InMemoryAgentStepRepository()
         session_id = uuid4()
         step = AgentStep(

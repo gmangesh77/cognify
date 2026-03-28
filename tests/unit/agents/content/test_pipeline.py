@@ -85,29 +85,36 @@ def _outline_json() -> str:
 
 def _full_pipeline_responses() -> list[str]:
     """Provide enough FakeLLM responses for the full pipeline."""
-    queries_json = json.dumps([
-        {"section_index": 0, "queries": ["query 0"]},
-        {"section_index": 1, "queries": ["query 1"]},
-    ])
+    queries_json = json.dumps(
+        [
+            {"section_index": 0, "queries": ["query 0"]},
+            {"section_index": 1, "queries": ["query 1"]},
+        ]
+    )
     section_body = "Test section body with enough words for validation. " * 10
-    seo_json = json.dumps({
-        "title": "T", "description": "D", "keywords": ["k"],
-        "summary": "S", "key_claims": ["C"],
-        "ai_disclosure": "AI generated",
-    })
+    seo_json = json.dumps(
+        {
+            "title": "T",
+            "description": "D",
+            "keywords": ["k"],
+            "summary": "S",
+            "key_claims": ["C"],
+            "ai_disclosure": "AI generated",
+        }
+    )
     chart_json = json.dumps({"charts": []})
     diagram_json = json.dumps({"diagrams": []})
     return [
-        _outline_json(),   # outline node
-        queries_json,      # query generation (1 call for all sections)
-        section_body,      # draft section 0
-        section_body,      # draft section 1
-        section_body,      # validate (redraft if needed)
-        seo_json,          # seo optimize (summary)
-        seo_json,          # seo optimize (structured data)
-        chart_json,        # chart proposals
-        diagram_json,      # diagram proposals
-        "no changes",      # extra padding for any additional LLM calls
+        _outline_json(),  # outline node
+        queries_json,  # query generation (1 call for all sections)
+        section_body,  # draft section 0
+        section_body,  # draft section 1
+        section_body,  # validate (redraft if needed)
+        seo_json,  # seo optimize (summary)
+        seo_json,  # seo optimize (structured data)
+        chart_json,  # chart proposals
+        diagram_json,  # diagram proposals
+        "no changes",  # extra padding for any additional LLM calls
         "no changes",
     ]
 

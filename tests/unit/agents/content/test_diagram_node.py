@@ -84,8 +84,12 @@ class TestDiagramNode:
     async def test_skips_failed_renders_keeps_successful(self, tmp_path) -> None:
         specs = [
             VALID_SPEC,
-            {**VALID_SPEC, "diagram_type": "sequence", "title": "Good Diagram",
-             "mermaid_syntax": "sequenceDiagram\n    A->>B: Request"},
+            {
+                **VALID_SPEC,
+                "diagram_type": "sequence",
+                "title": "Good Diagram",
+                "mermaid_syntax": "sequenceDiagram\n    A->>B: Request",
+            },
         ]
         llm = AsyncMock()
         llm.ainvoke.return_value = MagicMock(content=json.dumps(specs))

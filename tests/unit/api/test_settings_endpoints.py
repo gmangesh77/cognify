@@ -41,7 +41,11 @@ def _make_key(**kwargs) -> ApiKeyConfig:
 
 
 def _make_settings_repos(
-    domains=None, api_keys=None, llm=None, seo=None, general=None,
+    domains=None,
+    api_keys=None,
+    llm=None,
+    seo=None,
+    general=None,
 ) -> MagicMock:
     repos = MagicMock()
     repos.domains = MagicMock()
@@ -53,7 +57,9 @@ def _make_settings_repos(
 
 
 @pytest.fixture
-def settings_app(auth_app, ):
+def settings_app(
+    auth_app,
+):
     repos = _make_settings_repos()
     auth_app.state.settings_repos = repos
     return auth_app
@@ -378,6 +384,7 @@ class TestApiKeyMasking:
 
     def test_mask_long_key(self) -> None:
         from src.api.routers.settings_domains import _mask_key
+
         result = _mask_key("sk-ant-api12345678abcd7f3a")
         assert result.startswith("sk-ant-a")
         assert "7f3a" in result
@@ -385,5 +392,6 @@ class TestApiKeyMasking:
 
     def test_mask_short_key(self) -> None:
         from src.api.routers.settings_domains import _mask_key
+
         result = _mask_key("abcd")
         assert "••••••••" in result

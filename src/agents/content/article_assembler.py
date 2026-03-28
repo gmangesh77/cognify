@@ -78,7 +78,7 @@ def _strip_leading_heading(body: str) -> str:
         # Remove the first line if it's a heading
         first_newline = stripped.find("\n")
         if first_newline != -1:
-            return stripped[first_newline + 1:].lstrip("\n")
+            return stripped[first_newline + 1 :].lstrip("\n")
     return body
 
 

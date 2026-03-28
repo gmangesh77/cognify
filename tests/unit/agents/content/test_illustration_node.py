@@ -23,6 +23,7 @@ def _make_state(
     existing_visuals: list | None = None,
 ) -> dict:
     from src.models.content import Provenance, SEOMetadata
+
     return {
         "topic": TopicInput(
             id=uuid4(), title=topic_title, description="Desc", domain="cybersecurity"

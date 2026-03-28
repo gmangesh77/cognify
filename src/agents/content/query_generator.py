@@ -59,6 +59,7 @@ async def generate_section_queries(
             raw = response.content
             text = raw if isinstance(raw, str) else str(raw)
             from src.utils.llm_json import parse_llm_json
+
             data = parse_llm_json(text)
             result = [SectionQueries.model_validate(item) for item in data]
             logger.info(

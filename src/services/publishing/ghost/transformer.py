@@ -53,7 +53,8 @@ def _build_json_ld(article: CanonicalArticle) -> str:
 
 
 def _build_metadata(
-    article: CanonicalArticle, api_base: str,
+    article: CanonicalArticle,
+    api_base: str,
 ) -> dict[str, str | int | bool]:
     """Build Ghost-specific metadata dict."""
     meta: dict[str, str | int | bool] = {
@@ -114,12 +115,14 @@ def _build_references_html(article: CanonicalArticle) -> str:
 def _linkify_citations(html: str, article: CanonicalArticle) -> str:
     """Convert plain [1], [2] references into clickable links."""
     url_map = {c.index: c.url for c in article.citations}
+
     def _replace_ref(match: re.Match) -> str:
         idx = int(match.group(1))
         url = url_map.get(idx)
         if url:
             return f'<a href="{url}" target="_blank" rel="noopener">[{idx}]</a>'
         return match.group(0)
+
     return re.sub(r"\[(\d+)\]", _replace_ref, html)
 
 
@@ -135,7 +138,9 @@ def _asset_url(path: str, api_base: str) -> str:
 
 def _rewrite_local_asset_urls(html: str, api_base: str) -> str:
     """Replace local file paths in img src attributes with HTTP URLs."""
+
     def _replace(match: re.Match) -> str:
         url = match.group(1)
         return f'src="{_asset_url(url, api_base)}"'
+
     return re.sub(r'src="(generated_assets[^"]*)"', _replace, html)

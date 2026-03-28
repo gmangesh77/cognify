@@ -72,9 +72,7 @@ class FakeEvalLLM:
             )
             return resp
         resp = MagicMock()
-        resp.content = (
-            '{"is_complete": true, "weak_facets": [], "reasoning": "good"}'
-        )
+        resp.content = '{"is_complete": true, "weak_facets": [], "reasoning": "good"}'
         return resp
 
 
@@ -121,9 +119,7 @@ class TestStepTrackingIntegration:
         )
         orchestrator = LangGraphResearchOrchestrator(graph, step_repo=step_repo)
 
-        topic = TopicInput(
-            id=uuid4(), title="Test", description="Desc", domain="tech"
-        )
+        topic = TopicInput(id=uuid4(), title="Test", description="Desc", domain="tech")
         await orchestrator.run(session_id, topic)
 
         steps = await step_repo.list_by_session(session_id)
@@ -161,12 +157,8 @@ class TestStepTrackingIntegration:
                 summary="",
             )
 
-        graph = build_graph(
-            llm=llm, dispatcher=dispatcher, agent_fn=fake_agent
-        )
+        graph = build_graph(llm=llm, dispatcher=dispatcher, agent_fn=fake_agent)
         orchestrator = LangGraphResearchOrchestrator(graph)
-        topic = TopicInput(
-            id=uuid4(), title="Test", description="Desc", domain="tech"
-        )
+        topic = TopicInput(id=uuid4(), title="Test", description="Desc", domain="tech")
         result = await orchestrator.run(uuid4(), topic)
         assert result["status"] == "complete"

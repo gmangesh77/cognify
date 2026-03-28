@@ -29,7 +29,8 @@ class TestGhostTransformer:
         assert "schema.org" in result.content
 
     def test_tags_from_domain_and_keywords(
-        self, sample_article: CanonicalArticle,
+        self,
+        sample_article: CanonicalArticle,
     ) -> None:
         result = GhostTransformer().transform(sample_article)
         tags = result.metadata["tags"]
@@ -38,13 +39,17 @@ class TestGhostTransformer:
         assert "zero-day" in tags
 
     def test_featured_image_from_first_visual(
-        self, sample_article: CanonicalArticle,
+        self,
+        sample_article: CanonicalArticle,
     ) -> None:
         result = GhostTransformer().transform(sample_article)
-        assert result.metadata["feature_image"] == "https://cdn.cognify.app/img/hero.png"
+        assert (
+            result.metadata["feature_image"] == "https://cdn.cognify.app/img/hero.png"
+        )
 
     def test_no_visuals_omits_feature_image(
-        self, sample_article: CanonicalArticle,
+        self,
+        sample_article: CanonicalArticle,
     ) -> None:
         article = sample_article.model_copy(update={"visuals": []})
         result = GhostTransformer().transform(article)
@@ -52,7 +57,10 @@ class TestGhostTransformer:
 
     def test_sets_canonical_url(self, sample_article: CanonicalArticle) -> None:
         result = GhostTransformer().transform(sample_article)
-        assert result.metadata["canonical_url"] == "https://cognify.app/articles/zero-day-2026"
+        assert (
+            result.metadata["canonical_url"]
+            == "https://cognify.app/articles/zero-day-2026"
+        )
 
     def test_sets_seo_metadata(self, sample_article: CanonicalArticle) -> None:
         result = GhostTransformer().transform(sample_article)
@@ -67,7 +75,8 @@ class TestGhostTransformer:
         assert slug.islower() or "-" in slug
 
     def test_custom_excerpt_from_summary(
-        self, sample_article: CanonicalArticle,
+        self,
+        sample_article: CanonicalArticle,
     ) -> None:
         result = GhostTransformer().transform(sample_article)
         assert result.metadata["custom_excerpt"] == sample_article.summary

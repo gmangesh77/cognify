@@ -57,7 +57,9 @@ class TestPublication:
         return Publication(**defaults)
 
     def test_valid_construction(self) -> None:
-        pub = self._make(external_id="abc123", external_url="https://blog.example.com/post")
+        pub = self._make(
+            external_id="abc123", external_url="https://blog.example.com/post"
+        )
         assert pub.platform == "ghost"
         assert pub.seo_score == 80
 
@@ -107,7 +109,11 @@ class TestPublication:
 class TestPlatformSummary:
     def test_valid_construction(self) -> None:
         summary = PlatformSummary(
-            platform="ghost", total=10, success=8, failed=1, scheduled=1,
+            platform="ghost",
+            total=10,
+            success=8,
+            failed=1,
+            scheduled=1,
         )
         assert summary.total == 10
         assert summary.success == 8

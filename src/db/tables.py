@@ -55,7 +55,10 @@ class ResearchSessionRow(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "research_sessions"
 
     topic_id: Mapped[str | None] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("topics.id"), nullable=True, index=True,
+        PG_UUID(as_uuid=True),
+        ForeignKey("topics.id"),
+        nullable=True,
+        index=True,
     )
     status: Mapped[str] = mapped_column(String(20), default="planning", index=True)
     round_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -73,7 +76,8 @@ class ResearchSessionRow(Base, UUIDMixin, TimestampMixin):
     findings_data: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
     steps: Mapped[list["AgentStepRow"]] = relationship(
-        back_populates="session", cascade="all, delete-orphan",
+        back_populates="session",
+        cascade="all, delete-orphan",
     )
 
 
@@ -81,7 +85,9 @@ class AgentStepRow(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "agent_steps"
 
     session_id: Mapped[str] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("research_sessions.id"), index=True,
+        PG_UUID(as_uuid=True),
+        ForeignKey("research_sessions.id"),
+        index=True,
     )
     step_name: Mapped[str] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(20))
@@ -100,10 +106,14 @@ class ArticleDraftRow(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "article_drafts"
 
     session_id: Mapped[str] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("research_sessions.id"), index=True,
+        PG_UUID(as_uuid=True),
+        ForeignKey("research_sessions.id"),
+        index=True,
     )
     topic_id: Mapped[str] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("topics.id"), index=True,
+        PG_UUID(as_uuid=True),
+        ForeignKey("topics.id"),
+        index=True,
     )
     status: Mapped[str] = mapped_column(String(30))
     total_word_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -112,7 +122,9 @@ class ArticleDraftRow(Base, UUIDMixin, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
     article_id: Mapped[str | None] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("canonical_articles.id"), nullable=True,
+        PG_UUID(as_uuid=True),
+        ForeignKey("canonical_articles.id"),
+        nullable=True,
     )
     outline: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     section_drafts: Mapped[list] = mapped_column(JSONB, default=list)
@@ -198,7 +210,8 @@ class PublicationRow(Base, UUIDMixin, TimestampMixin):
     external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     external_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True,
+        DateTime(timezone=True),
+        nullable=True,
     )
     view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     seo_score: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -207,7 +220,8 @@ class PublicationRow(Base, UUIDMixin, TimestampMixin):
 
     __table_args__ = (
         UniqueConstraint(
-            "article_id", "platform",
+            "article_id",
+            "platform",
             name="uq_publication_article_platform",
         ),
     )

@@ -57,9 +57,7 @@ def _make_output_summary(output_data: dict[str, object]) -> str | None:
 def _get_research_service_readonly(request: Request) -> ResearchService:
     """Get research service for read operations (list, detail)."""
     if not hasattr(request.app.state, "research_service"):
-        raise ServiceUnavailableError(
-            message="Research service not configured."
-        )
+        raise ServiceUnavailableError(message="Research service not configured.")
     return request.app.state.research_service  # type: ignore[no-any-return]
 
 
@@ -93,7 +91,11 @@ async def create_research_session(
     topic = await svc.get_topic(body.topic_id)
     content_svc = getattr(request.app.state, "content_service", None)
     background_tasks.add_task(
-        _run_full_pipeline, svc, content_svc, session.id, topic,
+        _run_full_pipeline,
+        svc,
+        content_svc,
+        session.id,
+        topic,
     )
     return CreateResearchSessionResponse(
         session_id=session.id,

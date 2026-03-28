@@ -111,9 +111,7 @@ async def _complete_step(
         return
     try:
         completed_at = datetime.now(UTC)
-        duration_ms = int(
-            (completed_at - step.started_at).total_seconds() * 1000
-        )
+        duration_ms = int((completed_at - step.started_at).total_seconds() * 1000)
         updated = step.model_copy(
             update={
                 "status": status,
@@ -124,9 +122,7 @@ async def _complete_step(
         )
         await step_repo.update(updated)
     except Exception as exc:
-        logger.warning(
-            "step_complete_failed", step_name=step.step_name, error=str(exc)
-        )
+        logger.warning("step_complete_failed", step_name=step.step_name, error=str(exc))
 
 
 def _validate_topic(state: ResearchState) -> TopicInput:
@@ -193,15 +189,17 @@ def build_graph(
         try:
             topic = _validate_topic(state)
             plan = await generate_research_plan(topic, llm)
-            await _complete_step(step_repo, step, {
-                "facet_count": len(plan.facets),
-                "facet_titles": [f.title for f in plan.facets],
-            })
+            await _complete_step(
+                step_repo,
+                step,
+                {
+                    "facet_count": len(plan.facets),
+                    "facet_titles": [f.title for f in plan.facets],
+                },
+            )
             return {"research_plan": plan, "status": "planning"}
         except Exception as exc:
-            await _complete_step(
-                step_repo, step, {"error": str(exc)}, status="failed"
-            )
+            await _complete_step(step_repo, step, {"error": str(exc)}, status="failed")
             raise
 
     async def dispatch_agents(state: ResearchState) -> dict:  # type: ignore[type-arg]
@@ -238,11 +236,15 @@ def build_graph(
             facet_results = results_by_index.get(facet.index, [])
             total_sources = sum(len(r.sources) for r in facet_results)
             total_claims = sum(len(r.claims) for r in facet_results)
-            await _complete_step(step_repo, step, {
-                "sources_found": total_sources,
-                "claims_extracted": total_claims,
-                "facet_title": facet.title,
-            })
+            await _complete_step(
+                step_repo,
+                step,
+                {
+                    "sources_found": total_sources,
+                    "claims_extracted": total_claims,
+                    "facet_title": facet.title,
+                },
+            )
 
         now = datetime.now(UTC)
         tasks = [
@@ -272,16 +274,18 @@ def build_graph(
                 topic=topic, findings=findings, round_number=state["round_number"]
             )
             result = await evaluate_completeness(ctx, llm)
-            await _complete_step(step_repo, step, {
-                "is_complete": result.is_complete,
-                "weak_facets": result.weak_facets,
-                "reasoning": result.reasoning,
-            })
+            await _complete_step(
+                step_repo,
+                step,
+                {
+                    "is_complete": result.is_complete,
+                    "weak_facets": result.weak_facets,
+                    "reasoning": result.reasoning,
+                },
+            )
             return {"evaluation": result, "status": "evaluating"}
         except Exception as exc:
-            await _complete_step(
-                step_repo, step, {"error": str(exc)}, status="failed"
-            )
+            await _complete_step(step_repo, step, {"error": str(exc)}, status="failed")
             raise
 
     def should_retry(state: ResearchState) -> str:
@@ -294,15 +298,17 @@ def build_graph(
         findings = _validate_findings(state)
         total_sources = sum(len(f.sources) for f in findings)
         step = await _record_step(step_repo, state["session_id"], "finalize")
-        await _complete_step(step_repo, step, {
-            "total_sources": total_sources,
-        })
+        await _complete_step(
+            step_repo,
+            step,
+            {
+                "total_sources": total_sources,
+            },
+        )
         return {"status": "complete"}
 
     async def index_findings(state: ResearchState) -> dict:  # type: ignore[type-arg]
-        step = await _record_step(
-            step_repo, state["session_id"], "index_findings"
-        )
+        step = await _record_step(step_repo, state["session_id"], "index_findings")
         try:
             if not has_indexing or deps is None:
                 logger.info("index_findings_skipped", reason="services not configured")
@@ -314,9 +320,7 @@ def build_graph(
             return {"indexed_count": indexed + new_count}
         except Exception as exc:
             logger.error("index_findings_failed", error=str(exc))
-            await _complete_step(
-                step_repo, step, {"error": str(exc)}, status="failed"
-            )
+            await _complete_step(step_repo, step, {"error": str(exc)}, status="failed")
             return {}
 
     graph.add_node("plan_research", plan_research)

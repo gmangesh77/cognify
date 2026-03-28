@@ -197,6 +197,7 @@ class TestResearchSession:
         from uuid import uuid4
 
         from src.models.research_db import ResearchSession
+
         session = ResearchSession(
             topic_id=uuid4(),
             started_at=datetime.now(UTC),

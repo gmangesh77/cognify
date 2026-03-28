@@ -75,7 +75,8 @@ async def persist_topics(
 ) -> PersistTopicsResponse:
     svc = request.app.state.topic_persistence_service
     result = await svc.persist_ranked_topics(
-        body.ranked_topics, body.domain,
+        body.ranked_topics,
+        body.domain,
     )
     return PersistTopicsResponse(
         new_count=result.new_count,
@@ -102,7 +103,10 @@ async def list_topics(
         repo = request.app.state.topic_repo
         items, total = await repo.list_by_domain(domain, page, size)
         return PaginatedTopics(
-            items=items, total=total, page=page, size=size,
+            items=items,
+            total=total,
+            page=page,
+            size=size,
         )
     except Exception as exc:
         logger.error("list_topics_failed", error=str(exc), domain=domain)

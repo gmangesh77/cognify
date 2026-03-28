@@ -52,7 +52,9 @@ class TopicPersistenceService:
             return PersistResult(0, 0, 0)
 
         existing, _ = await self._repo.list_by_domain(
-            domain, page=1, size=500,
+            domain,
+            page=1,
+            size=500,
         )
         matches = self._find_matches(topics, existing)
 

@@ -129,7 +129,10 @@ class PgApiKeyRepository:
             return self._to_model(row) if row else None
 
     async def rotate(
-        self, key_id: UUID, encrypted_key: str, masked_key: str,
+        self,
+        key_id: UUID,
+        encrypted_key: str,
+        masked_key: str,
     ) -> ApiKeyConfig:
         async with self._sf() as db:
             row = await db.get(ApiKeyRow, key_id)

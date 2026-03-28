@@ -70,7 +70,10 @@ async def list_publications(
     pub_repo = request.app.state.pub_repo
     article_repo = request.app.state.article_repo
     pubs, total = await pub_repo.list(
-        page=page, size=size, platform=platform, status=status,
+        page=page,
+        size=size,
+        platform=platform,
+        status=status,
     )
 
     items = []

@@ -89,7 +89,11 @@ class PublishingService:
 
         payload = pair.transformer.transform(article)
         result = await _with_retry(
-            pair.adapter, payload, schedule_at, article_id, platform,
+            pair.adapter,
+            payload,
+            schedule_at,
+            article_id,
+            platform,
         )
 
         if self._pub_repo is not None:
@@ -114,7 +118,9 @@ class PublishingService:
         return await self.publish(pub.article_id, pub.platform)
 
     async def _persist_result(
-        self, result: PublicationResult, article: object,
+        self,
+        result: PublicationResult,
+        article: object,
     ) -> None:
         """Create or update publication record after publish attempt."""
         now = datetime.now(UTC)
@@ -126,7 +132,8 @@ class PublishingService:
         seo_score = compute_seo_score(article.seo)
 
         existing = await self._pub_repo.get_by_article_platform(
-            result.article_id, result.platform,
+            result.article_id,
+            result.platform,
         )
         if existing is not None:
             updated = Publication(
@@ -187,7 +194,7 @@ async def _with_retry(
             return result
         except Exception as exc:
             last_error = exc
-            wait = _BACKOFF_BASE * (2 ** attempt)
+            wait = _BACKOFF_BASE * (2**attempt)
             logger.warning(
                 "publish_retry",
                 attempt=attempt + 1,
@@ -204,7 +211,9 @@ async def _with_retry(
 
 
 def _log_result(
-    result: PublicationResult, article_id: UUID, platform: str,
+    result: PublicationResult,
+    article_id: UUID,
+    platform: str,
 ) -> None:
     if result.status == PublicationStatus.SUCCESS:
         logger.info(
@@ -222,7 +231,9 @@ def _log_result(
 
 
 def _failed(
-    article_id: UUID, platform: str, message: str,
+    article_id: UUID,
+    platform: str,
+    message: str,
 ) -> PublicationResult:
     return PublicationResult(
         article_id=article_id,

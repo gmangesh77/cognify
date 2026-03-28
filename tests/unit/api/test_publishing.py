@@ -42,7 +42,8 @@ def _success_result(article_id=None):
 
 class TestPublishEndpoint:
     async def test_requires_auth(
-        self, pub_client: httpx.AsyncClient,
+        self,
+        pub_client: httpx.AsyncClient,
     ) -> None:
         resp = await pub_client.post(
             f"/api/v1/articles/{uuid4()}/publish",

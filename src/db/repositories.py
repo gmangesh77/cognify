@@ -137,15 +137,17 @@ class PgResearchSessionRepository:
                 }
                 statuses = status_groups.get(status, [status])
                 query = query.where(ResearchSessionRow.status.in_(statuses))
-                count_query = count_query.where(
-                    ResearchSessionRow.status.in_(statuses)
-                )
+                count_query = count_query.where(ResearchSessionRow.status.in_(statuses))
             total_result = await db.execute(count_query)
             total = total_result.scalar_one()
             offset = (page - 1) * size
-            query = query.order_by(
-                ResearchSessionRow.started_at.desc(),
-            ).offset(offset).limit(size)
+            query = (
+                query.order_by(
+                    ResearchSessionRow.started_at.desc(),
+                )
+                .offset(offset)
+                .limit(size)
+            )
             result = await db.execute(query)
             rows = result.scalars().all()
             logger.debug(
@@ -229,9 +231,7 @@ class PgAgentStepRepository:
 
     async def list_by_session(self, session_id: UUID) -> list[AgentStep]:
         async with self._sf() as db:
-            query = select(AgentStepRow).where(
-                AgentStepRow.session_id == session_id
-            )
+            query = select(AgentStepRow).where(AgentStepRow.session_id == session_id)
             result = await db.execute(query)
             rows = result.scalars().all()
             logger.debug(
@@ -287,9 +287,9 @@ class PgTopicRepository:
                 domain=topic.domain,
                 source="seed",
                 trend_score=0.0,
-                discovered_at=__import__(
-                    "datetime"
-                ).datetime.now(__import__("datetime").timezone.utc),
+                discovered_at=__import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc
+                ),
             )
             db.add(row)
             await db.commit()
@@ -361,6 +361,7 @@ class PgTopicRepository:
         Pass an empty string for *domain* to return topics across all domains.
         """
         from src.api.schemas.topics import PersistedTopic
+
         async with self._sf() as session:
             count_q = select(func.count()).select_from(TopicRow)
             q = select(TopicRow).order_by(
@@ -492,25 +493,15 @@ class PgArticleDraftRepository:
 
     @staticmethod
     def _to_model(row: ArticleDraftRow) -> ArticleDraft:
-        outline = (
-            ArticleOutline.model_validate(row.outline)
-            if row.outline
-            else None
-        )
+        outline = ArticleOutline.model_validate(row.outline) if row.outline else None
         section_drafts = [
             SectionDraft.model_validate(s) for s in (row.section_drafts or [])
         ]
-        citations = [
-            CitationRef.model_validate(c) for c in (row.citations or [])
-        ]
+        citations = [CitationRef.model_validate(c) for c in (row.citations or [])]
         seo_result = (
-            SEOResult.model_validate(row.seo_result)
-            if row.seo_result
-            else None
+            SEOResult.model_validate(row.seo_result) if row.seo_result else None
         )
-        visuals = [
-            ImageAsset.model_validate(v) for v in (row.visuals or [])
-        ]
+        visuals = [ImageAsset.model_validate(v) for v in (row.visuals or [])]
         return ArticleDraft(
             id=row.id,
             session_id=row.session_id,
@@ -574,7 +565,9 @@ class PgArticleRepository:
             return self._to_model(row)
 
     async def list(
-        self, page: int = 1, size: int = 20,
+        self,
+        page: int = 1,
+        size: int = 20,
     ) -> tuple[list[CanonicalArticle], int]:
         """List all articles, newest first."""
         async with self._sf() as session:
@@ -651,7 +644,9 @@ class PgPublicationRepository:
             return self._to_model(row)
 
     async def get_by_article_platform(
-        self, article_id: UUID, platform: str,
+        self,
+        article_id: UUID,
+        platform: str,
     ) -> Publication | None:
         async with self._sf() as db:
             q = select(PublicationRow).where(
@@ -680,9 +675,13 @@ class PgPublicationRepository:
                 base = base.where(PublicationRow.status == status)
                 count_base = count_base.where(PublicationRow.status == status)
             total = (await db.execute(count_base)).scalar_one()
-            q = base.order_by(PublicationRow.updated_at.desc()).offset(
-                (page - 1) * size,
-            ).limit(size)
+            q = (
+                base.order_by(PublicationRow.updated_at.desc())
+                .offset(
+                    (page - 1) * size,
+                )
+                .limit(size)
+            )
             rows = (await db.execute(q)).scalars().all()
             return [self._to_model(r) for r in rows], total
 
@@ -704,7 +703,9 @@ class PgPublicationRepository:
             return self._to_model(row)
 
     async def update_view_count(
-        self, publication_id: UUID, count: int,
+        self,
+        publication_id: UUID,
+        count: int,
     ) -> None:
         async with self._sf() as db:
             row = await db.get(PublicationRow, publication_id)
@@ -717,15 +718,21 @@ class PgPublicationRepository:
             q = select(
                 PublicationRow.platform,
                 func.count().label("total"),
-                func.count().filter(
+                func.count()
+                .filter(
                     PublicationRow.status == "success",
-                ).label("success"),
-                func.count().filter(
+                )
+                .label("success"),
+                func.count()
+                .filter(
                     PublicationRow.status == "failed",
-                ).label("failed"),
-                func.count().filter(
+                )
+                .label("failed"),
+                func.count()
+                .filter(
                     PublicationRow.status == "scheduled",
-                ).label("scheduled"),
+                )
+                .label("scheduled"),
             ).group_by(PublicationRow.platform)
             rows = (await db.execute(q)).all()
             return [
@@ -741,10 +748,7 @@ class PgPublicationRepository:
 
     @staticmethod
     def _to_model(row: PublicationRow) -> Publication:
-        events = [
-            PublicationEvent.model_validate(e)
-            for e in (row.event_history or [])
-        ]
+        events = [PublicationEvent.model_validate(e) for e in (row.event_history or [])]
         return Publication(
             id=row.id,
             article_id=row.article_id,

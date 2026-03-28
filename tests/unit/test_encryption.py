@@ -17,6 +17,7 @@ from src.utils.encryption import (
 def _clear_key_cache() -> None:
     """Reset the cached encryption key and set debug mode for tests."""
     import src.utils.encryption as mod
+
     mod._cached_key = None
     old_debug = os.environ.get("COGNIFY_DEBUG")
     os.environ["COGNIFY_DEBUG"] = "true"
@@ -62,8 +63,10 @@ class TestGetEncryptionKey:
                 get_encryption_key()
 
     def test_validates_key_format(self) -> None:
-        with patch.dict(os.environ, {"COGNIFY_ENCRYPTION_KEY": "bad-key"}), \
-             pytest.raises(ValueError):
+        with (
+            patch.dict(os.environ, {"COGNIFY_ENCRYPTION_KEY": "bad-key"}),
+            pytest.raises(ValueError),
+        ):
             get_encryption_key()
 
 
@@ -90,6 +93,7 @@ class TestEncryptDecrypt:
 
         with patch.dict(os.environ, {"COGNIFY_ENCRYPTION_KEY": key1}):
             import src.utils.encryption as mod
+
             mod._cached_key = None
             ciphertext = encrypt_value("my-secret")
 

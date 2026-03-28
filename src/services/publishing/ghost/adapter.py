@@ -35,7 +35,10 @@ class GhostAdapter:
         headers = {"Authorization": f"Ghost {token}"}
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                url, json=body, headers=headers, timeout=15.0,
+                url,
+                json=body,
+                headers=headers,
+                timeout=15.0,
             )
         return _parse_response(resp, payload.article_id)
 
@@ -58,17 +61,20 @@ def _parse_admin_key(admin_api_key: str) -> tuple[str, bytes]:
 
 
 def _build_post_body(
-    payload: PlatformPayload, schedule_at: datetime | None,
+    payload: PlatformPayload,
+    schedule_at: datetime | None,
 ) -> dict:
     """Build the Ghost API request body from payload metadata."""
     meta = payload.metadata
     lexical = _html_to_lexical(payload.content)
     post: dict = {
-        "posts": [{
-            "title": meta.get("title", ""),
-            "lexical": lexical,
-            "status": "published",
-        }]
+        "posts": [
+            {
+                "title": meta.get("title", ""),
+                "lexical": lexical,
+                "status": "published",
+            }
+        ]
     }
     p = post["posts"][0]
     if schedule_at:
@@ -78,8 +84,12 @@ def _build_post_body(
         tag_names = str(meta["tags"]).split(",")
         p["tags"] = [{"name": t.strip()} for t in tag_names]
     _COPY_FIELDS = (
-        "slug", "custom_excerpt", "meta_title",
-        "meta_description", "canonical_url", "feature_image",
+        "slug",
+        "custom_excerpt",
+        "meta_title",
+        "meta_description",
+        "canonical_url",
+        "feature_image",
     )
     for key in _COPY_FIELDS:
         if key in meta:
@@ -105,13 +115,16 @@ def _html_to_lexical(html: str) -> str:
 
 
 def _parse_response(
-    resp: httpx.Response, article_id: UUID,
+    resp: httpx.Response,
+    article_id: UUID,
 ) -> PublicationResult:
     """Map Ghost API response to PublicationResult."""
     if resp.status_code >= 400:
         error = resp.text[:200]
         logger.warning(
-            "ghost_publish_failed", status=resp.status_code, error=error,
+            "ghost_publish_failed",
+            status=resp.status_code,
+            error=error,
         )
         return PublicationResult(
             article_id=article_id,

@@ -194,7 +194,11 @@ class MilvusService:
         """Top-k similarity search with topic_id filter."""
         loop = asyncio.get_running_loop()
         results = await loop.run_in_executor(
-            None, self._sync_search, query_embedding, topic_id, top_k,
+            None,
+            self._sync_search,
+            query_embedding,
+            topic_id,
+            top_k,
         )
         if not results:
             logger.warning("milvus_search_empty", topic_id=topic_id, top_k=top_k)

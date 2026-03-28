@@ -35,8 +35,8 @@ def get_encryption_key() -> bytes:
     if not debug:
         raise ValueError(
             "COGNIFY_ENCRYPTION_KEY must be set in production. Generate with: "
-            "python -c \"from cryptography.fernet import Fernet; "
-            "print(Fernet.generate_key().decode())\""
+            'python -c "from cryptography.fernet import Fernet; '
+            'print(Fernet.generate_key().decode())"'
         )
 
     logger.warning(

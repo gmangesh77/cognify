@@ -203,9 +203,7 @@ def make_illustration_node(
     return illustration_node
 
 
-def _save_illustration(
-    image_bytes: bytes, output_dir: str, session_id: UUID
-) -> Path:
+def _save_illustration(image_bytes: bytes, output_dir: str, session_id: UUID) -> Path:
     """Save illustration bytes to disk. Runs in thread."""
     out_path = Path(output_dir) / str(session_id)
     out_path.mkdir(parents=True, exist_ok=True)

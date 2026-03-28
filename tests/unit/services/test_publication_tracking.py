@@ -123,7 +123,10 @@ class TestPublishingServicePersistence:
 
     @pytest.mark.asyncio
     async def test_publish_creates_publication_record(
-        self, service, pub_repo, article_repo,
+        self,
+        service,
+        pub_repo,
+        article_repo,
     ) -> None:
         result = await service.publish(article_repo.get.return_value.id, "ghost")
         assert result.status == PublicationStatus.SUCCESS
@@ -135,7 +138,10 @@ class TestPublishingServicePersistence:
 
     @pytest.mark.asyncio
     async def test_publish_updates_existing_record(
-        self, service, pub_repo, article_repo,
+        self,
+        service,
+        pub_repo,
+        article_repo,
     ) -> None:
         from src.models.publishing import Publication
 
@@ -159,7 +165,10 @@ class TestPublishingServicePersistence:
 
     @pytest.mark.asyncio
     async def test_retry_republishes_failed(
-        self, service, pub_repo, article_repo,
+        self,
+        service,
+        pub_repo,
+        article_repo,
     ) -> None:
         from src.models.publishing import Publication
 
@@ -182,7 +191,10 @@ class TestPublishingServicePersistence:
 
     @pytest.mark.asyncio
     async def test_retry_rejects_non_failed(
-        self, service, pub_repo, article_repo,
+        self,
+        service,
+        pub_repo,
+        article_repo,
     ) -> None:
         from src.models.publishing import Publication
 

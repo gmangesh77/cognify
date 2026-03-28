@@ -47,24 +47,23 @@ _PROMPT_TEMPLATE = (
 async def render_mermaid(syntax: str, output_path: Path) -> bool:
     """Render Mermaid syntax to PNG via mmdc CLI. Returns True on success."""
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".mmd", delete=False
-        ) as tmp:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".mmd", delete=False) as tmp:
             tmp.write(syntax)
             tmp_path = Path(tmp.name)
 
         mmdc = str(_MMDC_PATH)
         process = await asyncio.create_subprocess_exec(
             mmdc,
-            "-i", str(tmp_path),
-            "-o", str(output_path),
-            "-b", "transparent",
+            "-i",
+            str(tmp_path),
+            "-o",
+            str(output_path),
+            "-b",
+            "transparent",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        _, stderr = await asyncio.wait_for(
-            process.communicate(), timeout=15.0
-        )
+        _, stderr = await asyncio.wait_for(process.communicate(), timeout=15.0)
 
         tmp_path.unlink(missing_ok=True)
 
@@ -115,9 +114,7 @@ async def propose_diagrams(
         try:
             spec = DiagramSpec.model_validate(item)
             if spec.source_section_index >= len(section_drafts):
-                logger.warning(
-                    "diagram_spec_section_out_of_range", title=spec.title
-                )
+                logger.warning("diagram_spec_section_out_of_range", title=spec.title)
                 continue
             specs.append(spec)
         except (ValidationError, TypeError) as exc:

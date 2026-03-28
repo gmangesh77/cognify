@@ -165,17 +165,31 @@ async def _make_service(
     await session_repo.create(session)
     queries_json = json.dumps([{"section_index": 0, "queries": ["q1"]}])
     section_body = "Test section body with content. " * 15
-    seo_json = json.dumps({
-        "title": "T", "description": "D", "keywords": ["k"],
-        "summary": "S", "key_claims": ["C"],
-        "ai_disclosure": "AI generated",
-    })
+    seo_json = json.dumps(
+        {
+            "title": "T",
+            "description": "D",
+            "keywords": ["k"],
+            "summary": "S",
+            "key_claims": ["C"],
+            "ai_disclosure": "AI generated",
+        }
+    )
     chart_json = json.dumps({"charts": []})
     diagram_json = json.dumps({"diagrams": []})
     responses = [
-        _outline_json(), queries_json, section_body, section_body,
-        seo_json, seo_json, chart_json, diagram_json,
-        "pad", "pad", "pad", "pad",
+        _outline_json(),
+        queries_json,
+        section_body,
+        section_body,
+        seo_json,
+        seo_json,
+        chart_json,
+        diagram_json,
+        "pad",
+        "pad",
+        "pad",
+        "pad",
     ]
     llm = FakeListChatModel(responses=responses * 3)
     repos = ContentRepositories(
@@ -194,7 +208,8 @@ class TestGenerateOutline:
         assert isinstance(draft, ArticleDraft)
         assert draft.outline is not None
         assert draft.status in (
-            DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE
+            DraftStatus.OUTLINE_COMPLETE,
+            DraftStatus.DRAFT_COMPLETE,
         )
         assert draft.session_id == session.id
 
@@ -239,10 +254,16 @@ async def _make_service_with_retriever(
     chart_json = json.dumps({"charts": []})
     diagram_json = json.dumps({"diagrams": []})
     one_run = [
-        _outline_json(), queries_json,
-        draft_text, draft_text,
-        _seo_json(), _discoverability_json(),
-        chart_json, diagram_json, "pad", "pad",
+        _outline_json(),
+        queries_json,
+        draft_text,
+        draft_text,
+        _seo_json(),
+        _discoverability_json(),
+        chart_json,
+        diagram_json,
+        "pad",
+        "pad",
     ]
     llm = FakeListChatModel(responses=one_run * 3)
     repos = ContentRepositories(
@@ -273,10 +294,17 @@ async def _make_full_pipeline_service(
     one_run = [
         _four_section_outline_json(),
         _four_section_queries_json(),
-        draft_text, draft_text, draft_text, draft_text,
+        draft_text,
+        draft_text,
+        draft_text,
+        draft_text,
         draft_text,  # redraft (validation)
-        _seo_json(), _discoverability_json(),
-        chart_json, diagram_json, "pad", "pad",
+        _seo_json(),
+        _discoverability_json(),
+        chart_json,
+        diagram_json,
+        "pad",
+        "pad",
     ]
     llm = FakeListChatModel(responses=one_run * 3)
     repos = ContentRepositories(
@@ -295,7 +323,8 @@ class TestDraftArticle:
         svc, session = await _make_service_with_retriever()
         draft = await svc.generate_outline(session.id)
         assert draft.status in (
-            DraftStatus.OUTLINE_COMPLETE, DraftStatus.DRAFT_COMPLETE
+            DraftStatus.OUTLINE_COMPLETE,
+            DraftStatus.DRAFT_COMPLETE,
         )
         assert draft.outline is not None
 

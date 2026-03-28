@@ -42,7 +42,9 @@ async def get_metrics(
     article_count = 0
     if hasattr(state, "topic_repo"):
         _, topic_count = await state.topic_repo.list_by_domain(
-            "", 1, 0,
+            "",
+            1,
+            0,
         )
     if hasattr(state, "article_repo"):
         _, article_count = await state.article_repo.list(1, 0)

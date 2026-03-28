@@ -98,7 +98,8 @@ class ContentService:
         return await store_article(self._repos, draft, article)
 
     async def generate_full_article(
-        self, session_id: UUID,
+        self,
+        session_id: UUID,
     ) -> CanonicalArticle:
         """Run the full content pipeline in a single graph invocation."""
         logger.info("full_article_pipeline_started", session_id=str(session_id))
@@ -164,6 +165,7 @@ class ContentService:
             seo_result = SEOResult.model_validate(seo_result)
         if seo_result is None:
             from src.models.content import Provenance, SEOMetadata
+
             seo_result = SEOResult(
                 seo=SEOMetadata(
                     title=outline.title[:70],
@@ -180,19 +182,23 @@ class ContentService:
                 provenance=Provenance(
                     primary_model=(
                         self._deps.settings.primary_model_name
-                        if self._deps.settings else "unknown"
+                        if self._deps.settings
+                        else "unknown"
                     ),
                     drafting_model=(
                         self._deps.settings.drafting_model_name
-                        if self._deps.settings else "unknown"
+                        if self._deps.settings
+                        else "unknown"
                     ),
                     embedding_model=(
                         self._deps.settings.embedding_model
-                        if self._deps.settings else "unknown"
+                        if self._deps.settings
+                        else "unknown"
                     ),
                     embedding_version=(
                         self._deps.settings.embedding_version
-                        if self._deps.settings else "v1"
+                        if self._deps.settings
+                        else "v1"
                     ),
                 ),
             )

@@ -38,8 +38,12 @@ def sample_article() -> CanonicalArticle:
             title="Zero-Day Exploits 2026",
             description="Comprehensive analysis of zero-day threats.",
             keywords=[
-                "cybersecurity", "zero-day", "exploits",
-                "threats", "analysis", "2026",
+                "cybersecurity",
+                "zero-day",
+                "exploits",
+                "threats",
+                "analysis",
+                "2026",
             ],
             canonical_url="https://cognify.app/articles/zero-day-2026",
             structured_data=StructuredDataLD(

@@ -171,26 +171,34 @@ class TestIndexFindingsNode:
 
 
 def _plan_json_with_source_types() -> str:
-    return json.dumps({
-        "facets": [
-            {
-                "index": 0, "title": "Web Facet",
-                "description": "Web only",
-                "search_queries": ["q0"], "source_type": "web",
-            },
-            {
-                "index": 1, "title": "Academic Facet",
-                "description": "Academic only",
-                "search_queries": ["q1"], "source_type": "academic",
-            },
-            {
-                "index": 2, "title": "Both Facet",
-                "description": "Both sources",
-                "search_queries": ["q2"], "source_type": "both",
-            },
-        ],
-        "reasoning": "Mixed plan",
-    })
+    return json.dumps(
+        {
+            "facets": [
+                {
+                    "index": 0,
+                    "title": "Web Facet",
+                    "description": "Web only",
+                    "search_queries": ["q0"],
+                    "source_type": "web",
+                },
+                {
+                    "index": 1,
+                    "title": "Academic Facet",
+                    "description": "Academic only",
+                    "search_queries": ["q1"],
+                    "source_type": "academic",
+                },
+                {
+                    "index": 2,
+                    "title": "Both Facet",
+                    "description": "Both sources",
+                    "search_queries": ["q2"],
+                    "source_type": "both",
+                },
+            ],
+            "reasoning": "Mixed plan",
+        }
+    )
 
 
 class TestDualAgentRouting:
@@ -235,7 +243,9 @@ class TestDualAgentRouting:
         )
         dispatcher = AsyncIODispatcher(timeout_seconds=10)
         graph = build_graph(
-            llm, dispatcher, stub_research_agent,
+            llm,
+            dispatcher,
+            stub_research_agent,
             literature_agent_fn=stub_research_agent,
         )
         result = await graph.ainvoke(_initial_state())
