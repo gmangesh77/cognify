@@ -3,10 +3,14 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-import pytest
-
 from src.agents.content.article_assembler import assemble_canonical_article
-from src.models.content import CanonicalArticle, ContentType, ImageAsset, Provenance, SEOMetadata
+from src.models.content import (
+    CanonicalArticle,
+    ContentType,
+    ImageAsset,
+    Provenance,
+    SEOMetadata,
+)
 from src.models.content_pipeline import (
     ArticleDraft,
     ArticleOutline,

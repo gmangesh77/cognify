@@ -91,7 +91,9 @@ class TestMediumAdapter:
 
 
 async def _publish_with_mock(
-    payload: PlatformPayload, status_code: int, response_json: dict,
+    payload: PlatformPayload,
+    status_code: int,
+    response_json: dict,
 ) -> PublicationResult:
     """Helper: mock HTTP response and parse."""
     resp = httpx.Response(status_code, json=response_json)

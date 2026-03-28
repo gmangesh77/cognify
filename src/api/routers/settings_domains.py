@@ -78,7 +78,9 @@ async def list_domains(
 
 @limiter.limit("30/minute")
 @settings_domains_router.post(
-    "/settings/domains", response_model=DomainResponse, status_code=HTTP_201_CREATED,
+    "/settings/domains",
+    response_model=DomainResponse,
+    status_code=HTTP_201_CREATED,
 )
 async def create_domain(
     request: Request,
@@ -98,7 +100,8 @@ async def create_domain(
 
 @limiter.limit("30/minute")
 @settings_domains_router.put(
-    "/settings/domains/{domain_id}", response_model=DomainResponse,
+    "/settings/domains/{domain_id}",
+    response_model=DomainResponse,
 )
 async def update_domain(
     request: Request,
@@ -110,9 +113,9 @@ async def update_domain(
     existing = await repos.domains.get(domain_id)
     if existing is None:
         raise NotFoundError(message=f"Domain {domain_id} not found")
-    updated = existing.model_copy(update={
-        k: v for k, v in body.model_dump().items() if v is not None
-    })
+    updated = existing.model_copy(
+        update={k: v for k, v in body.model_dump().items() if v is not None}
+    )
     saved = await repos.domains.update(updated)
     logger.info("domain_updated", domain_id=str(domain_id))
     return _domain_to_response(saved)
@@ -120,7 +123,8 @@ async def update_domain(
 
 @limiter.limit("30/minute")
 @settings_domains_router.delete(
-    "/settings/domains/{domain_id}", status_code=HTTP_204_NO_CONTENT,
+    "/settings/domains/{domain_id}",
+    status_code=HTTP_204_NO_CONTENT,
 )
 async def delete_domain(
     request: Request,
@@ -144,7 +148,9 @@ async def list_api_keys(
 
 @limiter.limit("30/minute")
 @settings_domains_router.post(
-    "/settings/api-keys", response_model=ApiKeyResponse, status_code=HTTP_201_CREATED,
+    "/settings/api-keys",
+    response_model=ApiKeyResponse,
+    status_code=HTTP_201_CREATED,
 )
 async def add_api_key(
     request: Request,
@@ -154,7 +160,8 @@ async def add_api_key(
     masked = _mask_key(body.key)
     key_config = ApiKeyConfig(service=body.service, masked_key=masked)
     created = await _get_repos(request).api_keys.create(
-        key_config, encrypted_key=encrypt_value(body.key),
+        key_config,
+        encrypted_key=encrypt_value(body.key),
     )
     logger.info("api_key_added", service=body.service, key_id=str(created.id))
     return _key_to_response(created)
@@ -162,7 +169,8 @@ async def add_api_key(
 
 @limiter.limit("30/minute")
 @settings_domains_router.put(
-    "/settings/api-keys/{key_id}/rotate", response_model=ApiKeyResponse,
+    "/settings/api-keys/{key_id}/rotate",
+    response_model=ApiKeyResponse,
 )
 async def rotate_api_key(
     request: Request,
@@ -172,7 +180,9 @@ async def rotate_api_key(
 ) -> ApiKeyResponse:
     masked = _mask_key(body.key)
     updated = await _get_repos(request).api_keys.rotate(
-        key_id, encrypted_key=encrypt_value(body.key), masked_key=masked,
+        key_id,
+        encrypted_key=encrypt_value(body.key),
+        masked_key=masked,
     )
     logger.info("api_key_rotated", key_id=str(key_id))
     return _key_to_response(updated)
@@ -180,7 +190,8 @@ async def rotate_api_key(
 
 @limiter.limit("30/minute")
 @settings_domains_router.delete(
-    "/settings/api-keys/{key_id}", status_code=HTTP_204_NO_CONTENT,
+    "/settings/api-keys/{key_id}",
+    status_code=HTTP_204_NO_CONTENT,
 )
 async def delete_api_key(
     request: Request,

@@ -40,7 +40,10 @@ class MediumAdapter:
         }
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                url, json=body, headers=headers, timeout=15.0,
+                url,
+                json=body,
+                headers=headers,
+                timeout=15.0,
             )
         return _parse_response(resp, payload.article_id)
 
@@ -63,13 +66,16 @@ def _build_request_body(payload: PlatformPayload) -> dict:
 
 
 def _parse_response(
-    resp: httpx.Response, article_id: UUID,
+    resp: httpx.Response,
+    article_id: UUID,
 ) -> PublicationResult:
     """Map Medium API response to PublicationResult."""
     if resp.status_code >= 400:
         error = resp.text[:200]
         logger.warning(
-            "medium_publish_failed", status=resp.status_code, error=error,
+            "medium_publish_failed",
+            status=resp.status_code,
+            error=error,
         )
         return PublicationResult(
             article_id=article_id,

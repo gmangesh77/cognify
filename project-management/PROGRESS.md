@@ -119,7 +119,7 @@
 | PUBLISH-002 | WordPress Integration | Backlog | —      | —    | —    |
 | PUBLISH-003 | Medium Integration    | Done | `feature/PUBLISH-003-medium-integration` | — | — |
 | PUBLISH-004 | LinkedIn Integration  | Backlog | —      | —    | —    |
-| PUBLISH-005 | Publication Tracking  | Backlog | —      | —    | —    |
+| PUBLISH-005 | Publication Tracking  | Done | `feature/PUBLISH-005-publication-tracking` | [plan](../docs/superpowers/plans/2026-03-27-publish-005-publication-tracking.md) | [spec](../docs/superpowers/specs/2026-03-27-publish-005-publication-tracking-design.md) |
 
 
 ## Epic 6: Dashboard & Configuration

@@ -33,7 +33,9 @@ def repo() -> AsyncMock:
 
 class TestApiKeyResolver:
     async def test_returns_db_key_when_present(
-        self, repo: AsyncMock, settings: Settings,
+        self,
+        repo: AsyncMock,
+        settings: Settings,
     ) -> None:
         repo.get_encrypted_key_by_service.return_value = "encrypted-db-key"
         resolver = ApiKeyResolver(repo, settings)
@@ -43,7 +45,9 @@ class TestApiKeyResolver:
         assert result == "decrypted-db-key"
 
     async def test_falls_back_to_env(
-        self, repo: AsyncMock, settings: Settings,
+        self,
+        repo: AsyncMock,
+        settings: Settings,
     ) -> None:
         repo.get_encrypted_key_by_service.return_value = None
         resolver = ApiKeyResolver(repo, settings)
@@ -51,7 +55,9 @@ class TestApiKeyResolver:
         assert result == "env-anthropic"
 
     async def test_returns_none_when_no_key(
-        self, repo: AsyncMock, settings: Settings,
+        self,
+        repo: AsyncMock,
+        settings: Settings,
     ) -> None:
         repo.get_encrypted_key_by_service.return_value = None
         resolver = ApiKeyResolver(repo, settings)
@@ -59,7 +65,9 @@ class TestApiKeyResolver:
         assert result is None
 
     async def test_resolve_all_returns_update_dict(
-        self, repo: AsyncMock, settings: Settings,
+        self,
+        repo: AsyncMock,
+        settings: Settings,
     ) -> None:
         repo.get_encrypted_key_by_service.return_value = None
         resolver = ApiKeyResolver(repo, settings)
@@ -68,7 +76,9 @@ class TestApiKeyResolver:
         assert updates["serpapi_api_key"] == "env-serpapi"
 
     async def test_unknown_service_returns_none(
-        self, repo: AsyncMock, settings: Settings,
+        self,
+        repo: AsyncMock,
+        settings: Settings,
     ) -> None:
         repo.get_encrypted_key_by_service.return_value = None
         resolver = ApiKeyResolver(repo, settings)

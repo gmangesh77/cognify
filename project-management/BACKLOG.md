@@ -119,10 +119,10 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 
 ## Active Backlog
 
-### Epic 5: Multi-Platform Publishing (2/5 done)
+### Epic 5: Multi-Platform Publishing (3/5 done)
 **Goal**: Publish articles to multiple platforms with correct formatting and metadata.
 
-**Completed:** PUBLISH-001 (Ghost CMS), PUBLISH-003 (Medium) — PR #43
+**Completed:** PUBLISH-001 (Ghost CMS), PUBLISH-003 (Medium) — PR #43, PUBLISH-005 (Publication Tracking)
 
 #### PUBLISH-002: WordPress Integration [Should]
 **As a** publisher, **I want** articles published to WordPress, **so that** I can reach my WordPress audience.
@@ -139,15 +139,6 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Posts article to LinkedIn page via Marketing API
   - Includes title, excerpt, cover image, and link
   - OAuth2 authentication flow
-- **Story Points**: 5
-
-#### PUBLISH-005: Publication Tracking [Must]
-**As a** publisher, **I want** to see all publications and their status, **so that** I can track what's live.
-- **Acceptance Criteria**:
-  - Dashboard shows publications by platform with status (live, scheduled, failed)
-  - View count tracking where platform API supports it
-  - SEO score displayed per publication
-  - Failed publications can be retried from dashboard
 - **Story Points**: 5
 
 ---
@@ -176,10 +167,10 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 | Research Pipeline | 5 | 5 | 0 | 0 |
 | Content Generation | 6 | 6 | 0 | 0 |
 | Visual Assets | 3 | 3 | 0 | 0 |
-| **Publishing** | **5** | **2** | **3** | **15** |
+| **Publishing** | **5** | **3** | **2** | **10** |
 | Dashboard & Config | 5 | 5 | 0 | 0 |
 | API & Auth | 3 | 3 | 0 | 0 |
 | **Infrastructure** | **5** | **4** | **1** | **3** |
-| **Total** | **49** | **45** | **4** | **18** |
+| **Total** | **49** | **46** | **3** | **13** |
 
-**Velocity**: 241 SP completed across 9 epics. 18 SP remaining (4 tickets).
+**Velocity**: 246 SP completed across 9 epics. 13 SP remaining (3 tickets).

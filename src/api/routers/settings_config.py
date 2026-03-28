@@ -43,9 +43,9 @@ async def update_llm_config(
 ) -> LlmConfigResponse:
     repos = _get_repos(request)
     existing = await repos.llm.get_or_create()
-    updated = existing.model_copy(update={
-        k: v for k, v in body.model_dump().items() if v is not None
-    })
+    updated = existing.model_copy(
+        update={k: v for k, v in body.model_dump().items() if v is not None}
+    )
     saved = await repos.llm.update(updated)
     logger.info("llm_config_updated")
     return LlmConfigResponse(**saved.model_dump())
@@ -70,9 +70,9 @@ async def update_seo_defaults(
 ) -> SeoDefaultsResponse:
     repos = _get_repos(request)
     existing = await repos.seo.get_or_create()
-    updated = existing.model_copy(update={
-        k: v for k, v in body.model_dump().items() if v is not None
-    })
+    updated = existing.model_copy(
+        update={k: v for k, v in body.model_dump().items() if v is not None}
+    )
     saved = await repos.seo.update(updated)
     logger.info("seo_defaults_updated")
     return SeoDefaultsResponse(**saved.model_dump())
@@ -97,9 +97,9 @@ async def update_general_config(
 ) -> GeneralConfigResponse:
     repos = _get_repos(request)
     existing = await repos.general.get_or_create()
-    updated = existing.model_copy(update={
-        k: v for k, v in body.model_dump().items() if v is not None
-    })
+    updated = existing.model_copy(
+        update={k: v for k, v in body.model_dump().items() if v is not None}
+    )
     saved = await repos.general.update(updated)
     logger.info("general_config_updated")
     return GeneralConfigResponse(**saved.model_dump())

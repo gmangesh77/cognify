@@ -403,7 +403,8 @@ class TestMilvusServiceLogging:
         structlog.reset_defaults()
 
     async def test_insert_chunks_logs_debug(
-        self, milvus_db: MilvusService,
+        self,
+        milvus_db: MilvusService,
     ) -> None:
         chunks = _make_chunks(3)
         embeddings = _make_embeddings(3)
@@ -416,13 +417,25 @@ class TestMilvusServiceLogging:
         assert inserted[0]["log_level"] == "debug"
 
     async def test_search_logs_debug(
-        self, milvus_db: MilvusService, mock_client: MagicMock,
+        self,
+        milvus_db: MilvusService,
+        mock_client: MagicMock,
     ) -> None:
-        mock_client.search.return_value = [[
-            {"entity": {"text": "t", "source_url": "u", "source_title": "s",
-                        "chunk_index": 0, "published_at": "", "author": ""},
-             "distance": 0.9},
-        ]]
+        mock_client.search.return_value = [
+            [
+                {
+                    "entity": {
+                        "text": "t",
+                        "source_url": "u",
+                        "source_title": "s",
+                        "chunk_index": 0,
+                        "published_at": "",
+                        "author": "",
+                    },
+                    "distance": 0.9,
+                },
+            ]
+        ]
         emb = _make_embeddings(1)[0]
         with structlog.testing.capture_logs() as logs:
             milvus_mod.logger = structlog.get_logger()
@@ -433,7 +446,9 @@ class TestMilvusServiceLogging:
         assert searched[0]["log_level"] == "debug"
 
     async def test_search_empty_logs_warning(
-        self, milvus_db: MilvusService, mock_client: MagicMock,
+        self,
+        milvus_db: MilvusService,
+        mock_client: MagicMock,
     ) -> None:
         mock_client.search.return_value = [[]]
         emb = _make_embeddings(1)[0]
@@ -445,7 +460,8 @@ class TestMilvusServiceLogging:
         assert empty[0]["log_level"] == "warning"
 
     async def test_ensure_collection_logs_info_on_create(
-        self, mock_client: MagicMock,
+        self,
+        mock_client: MagicMock,
     ) -> None:
         mock_client.has_collection.return_value = False
         with (

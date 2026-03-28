@@ -36,10 +36,13 @@ class TestTopicPersistenceService:
         embedding.embed.return_value = [[0.1, 0.2, 0.3]]
 
         svc = TopicPersistenceService(
-            repo=repo, embedding_service=embedding, threshold=0.85,
+            repo=repo,
+            embedding_service=embedding,
+            threshold=0.85,
         )
         result = await svc.persist_ranked_topics(
-            [_make_ranked("New Topic", 80)], "tech",
+            [_make_ranked("New Topic", 80)],
+            "tech",
         )
         assert result.new_count == 1
         assert result.updated_count == 0
@@ -51,11 +54,18 @@ class TestTopicPersistenceService:
 
         existing_id = uuid4()
         existing = PersistedTopic(
-            id=existing_id, title="AI Trends",
-            description="About AI", source="reddit",
-            external_url="", trend_score=70, velocity=5,
-            domain="tech", discovered_at=datetime.now(UTC),
-            composite_score=70, rank=1, source_count=1,
+            id=existing_id,
+            title="AI Trends",
+            description="About AI",
+            source="reddit",
+            external_url="",
+            trend_score=70,
+            velocity=5,
+            domain="tech",
+            discovered_at=datetime.now(UTC),
+            composite_score=70,
+            rank=1,
+            source_count=1,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -66,10 +76,13 @@ class TestTopicPersistenceService:
         embedding.embed.return_value = [[1.0, 0.0, 0.0]]
 
         svc = TopicPersistenceService(
-            repo=repo, embedding_service=embedding, threshold=0.85,
+            repo=repo,
+            embedding_service=embedding,
+            threshold=0.85,
         )
         result = await svc.persist_ranked_topics(
-            [_make_ranked("AI Trends 2026", 85)], "tech",
+            [_make_ranked("AI Trends 2026", 85)],
+            "tech",
         )
         assert result.new_count == 0
         assert result.updated_count == 1
@@ -80,11 +93,18 @@ class TestTopicPersistenceService:
         from src.api.schemas.topics import PersistedTopic
 
         existing = PersistedTopic(
-            id=uuid4(), title="Existing Topic",
-            description="", source="reddit",
-            external_url="", trend_score=60, velocity=0,
-            domain="tech", discovered_at=datetime.now(UTC),
-            composite_score=60, rank=1, source_count=1,
+            id=uuid4(),
+            title="Existing Topic",
+            description="",
+            source="reddit",
+            external_url="",
+            trend_score=60,
+            velocity=0,
+            domain="tech",
+            discovered_at=datetime.now(UTC),
+            composite_score=60,
+            rank=1,
+            source_count=1,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )
@@ -101,7 +121,9 @@ class TestTopicPersistenceService:
         ]
 
         svc = TopicPersistenceService(
-            repo=repo, embedding_service=embedding, threshold=0.85,
+            repo=repo,
+            embedding_service=embedding,
+            threshold=0.85,
         )
         result = await svc.persist_ranked_topics(
             [
@@ -118,7 +140,9 @@ class TestTopicPersistenceService:
         repo = AsyncMock()
         embedding = MagicMock()
         svc = TopicPersistenceService(
-            repo=repo, embedding_service=embedding, threshold=0.85,
+            repo=repo,
+            embedding_service=embedding,
+            threshold=0.85,
         )
         result = await svc.persist_ranked_topics([], "tech")
         assert result.new_count == 0

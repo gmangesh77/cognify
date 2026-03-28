@@ -68,7 +68,10 @@ class TestChartNode:
 
     @pytest.mark.asyncio
     async def test_skips_failed_renders(self, tmp_path) -> None:
-        bad_spec = {**VALID_SPEC, "y_values": []}  # will fail Pydantic validation (min_length=2)
+        bad_spec = {
+            **VALID_SPEC,
+            "y_values": [],  # will fail Pydantic validation (min_length=2)
+        }
         good_spec = VALID_SPEC
         llm = AsyncMock()
         llm.ainvoke.return_value = AsyncMock(content=json.dumps([bad_spec, good_spec]))

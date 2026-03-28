@@ -81,9 +81,7 @@ class InMemoryAgentStepRepository:
         return step
 
     async def update(self, step: AgentStep) -> AgentStep:
-        self._store = [
-            step if s.id == step.id else s for s in self._store
-        ]
+        self._store = [step if s.id == step.id else s for s in self._store]
         return step
 
     async def list_by_session(self, session_id: UUID) -> list[AgentStep]:
@@ -161,9 +159,7 @@ class ResearchService:
         items, total = await self._repos.sessions.list(status, page, size)
         return PaginatedSessions(items=items, total=total, page=page, size=size)
 
-    async def update_session_status(
-        self, session_id: UUID, status: str
-    ) -> None:
+    async def update_session_status(self, session_id: UUID, status: str) -> None:
         """Update a session's status field in place."""
         session = await self._repos.sessions.get(session_id)
         if session is None:

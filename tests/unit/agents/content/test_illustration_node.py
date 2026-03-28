@@ -1,6 +1,5 @@
 """Tests for illustration generation pipeline node."""
 
-import base64
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -24,13 +23,17 @@ def _make_state(
     existing_visuals: list | None = None,
 ) -> dict:
     from src.models.content import Provenance, SEOMetadata
+
     return {
         "topic": TopicInput(
             id=uuid4(), title=topic_title, description="Desc", domain="cybersecurity"
         ),
         "session_id": uuid4(),
         "seo_result": SEOResult(
-            seo=SEOMetadata(title="Meta Title for Test", description="A test meta description for the article."),
+            seo=SEOMetadata(
+                title="Meta Title for Test",
+                description="A test meta description for the article.",
+            ),
             summary=summary,
             key_claims=["claim"],
             provenance=Provenance(
@@ -88,7 +91,9 @@ class TestIllustrationNode:
         assert result["visuals"] == [existing]
 
     @pytest.mark.asyncio
-    async def test_returns_existing_visuals_on_generator_failure(self, tmp_path) -> None:
+    async def test_returns_existing_visuals_on_generator_failure(
+        self, tmp_path
+    ) -> None:
         llm = AsyncMock()
         llm.ainvoke.return_value = MagicMock(content="A prompt")
         gen = _make_mock_generator(image_bytes=None)

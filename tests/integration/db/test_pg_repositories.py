@@ -1,7 +1,8 @@
 """Integration tests for PostgreSQL repository implementations.
 
 Tests all 5 PG repositories against a real PostgreSQL database.
-Requires PostgreSQL running on localhost:5432 (user: cognify, password: cognify, db: cognify).
+Requires PostgreSQL running on localhost:5432
+(user: cognify, password: cognify, db: cognify).
 """
 
 from datetime import UTC, datetime
@@ -9,7 +10,7 @@ from uuid import uuid4
 
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.db import tables  # noqa: F401 — registers all table models on Base.metadata
 from src.db.base import Base
@@ -476,8 +477,13 @@ def _make_canonical_article(session_id: object) -> CanonicalArticle:
         id=uuid4(),
         title="AI Security Threats in 2024",
         subtitle="A deep dive into emerging attack vectors",
-        body_markdown="## Introduction\n\nThis article covers AI security threats [1].\n\n## Key Findings\n\nThreats are increasing [2].\n",
-        summary="An analysis of AI security threats in 2024 covering key attack vectors.",
+        body_markdown=(
+            "## Introduction\n\nThis article covers AI security threats [1].\n\n"
+            "## Key Findings\n\nThreats are increasing [2].\n"
+        ),
+        summary=(
+            "An analysis of AI security threats in 2024 covering key attack vectors."
+        ),
         key_claims=[
             "AI-based attacks increased 40% in 2024",
             "LLM prompt injection is a top 5 threat",

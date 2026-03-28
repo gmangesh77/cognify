@@ -24,14 +24,18 @@ class TestMediumTransformer:
 
     def test_sets_canonical_url(self, sample_article: CanonicalArticle) -> None:
         result = MediumTransformer().transform(sample_article)
-        assert result.metadata["canonicalUrl"] == "https://cognify.app/articles/zero-day-2026"
+        assert (
+            result.metadata["canonicalUrl"]
+            == "https://cognify.app/articles/zero-day-2026"
+        )
 
     def test_content_format_is_html(self, sample_article: CanonicalArticle) -> None:
         result = MediumTransformer().transform(sample_article)
         assert result.metadata["contentFormat"] == "html"
 
     def test_no_canonical_url_omits_field(
-        self, sample_article: CanonicalArticle,
+        self,
+        sample_article: CanonicalArticle,
     ) -> None:
         seo = sample_article.seo.model_copy(update={"canonical_url": None})
         article = sample_article.model_copy(update={"seo": seo})

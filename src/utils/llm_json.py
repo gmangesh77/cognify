@@ -14,7 +14,7 @@ def strip_markdown_fences(text: str) -> str:
     if stripped.startswith("```"):
         first_newline = stripped.find("\n")
         if first_newline != -1:
-            stripped = stripped[first_newline + 1:]
+            stripped = stripped[first_newline + 1 :]
         if stripped.endswith("```"):
             stripped = stripped[:-3].rstrip()
     return stripped

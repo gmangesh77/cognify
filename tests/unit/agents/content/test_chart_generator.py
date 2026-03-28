@@ -53,7 +53,10 @@ class TestProposeCharts:
     @pytest.mark.asyncio
     async def test_returns_valid_specs(self) -> None:
         llm = _make_llm_response([VALID_BAR_SPEC, VALID_LINE_SPEC])
-        sections = [_make_section(0, "Attacks increased 45%."), _make_section(1, "Growth data.")]
+        sections = [
+            _make_section(0, "Attacks increased 45%."),
+            _make_section(1, "Growth data."),
+        ]
         result = await propose_charts(sections, llm)
         assert len(result) == 2
         assert result[0].chart_type == ChartType.BAR

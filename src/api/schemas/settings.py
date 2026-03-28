@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 # --- Domain schemas ---
 
+
 class CreateDomainRequest(BaseModel):
     name: str
     status: str = "active"
@@ -40,8 +41,15 @@ class DomainListResponse(BaseModel):
 # --- API key schemas ---
 
 ApiKeyServiceType = Literal[
-    "anthropic", "openai", "serpapi", "ghost", "newsapi", "arxiv",
-    "reddit_client_id", "reddit_client_secret", "semantic_scholar",
+    "anthropic",
+    "openai",
+    "serpapi",
+    "ghost",
+    "newsapi",
+    "arxiv",
+    "reddit_client_id",
+    "reddit_client_secret",
+    "semantic_scholar",
 ]
 
 
@@ -68,6 +76,7 @@ class ApiKeyListResponse(BaseModel):
 
 # --- LLM config schemas ---
 
+
 class UpdateLlmConfigRequest(BaseModel):
     primary_model: str | None = None
     drafting_model: str | None = None
@@ -81,6 +90,7 @@ class LlmConfigResponse(BaseModel):
 
 
 # --- SEO defaults schemas ---
+
 
 class UpdateSeoDefaultsRequest(BaseModel):
     auto_meta_tags: bool | None = None
@@ -99,6 +109,7 @@ class SeoDefaultsResponse(BaseModel):
 
 
 # --- General config schemas ---
+
 
 class UpdateGeneralConfigRequest(BaseModel):
     article_length_target: str | None = None

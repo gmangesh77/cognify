@@ -23,9 +23,7 @@ logger = structlog.get_logger()
 class ImageGenerator(Protocol):
     """Provider-agnostic image generation protocol."""
 
-    async def generate(
-        self, prompt: str, size: tuple[int, int]
-    ) -> bytes | None: ...
+    async def generate(self, prompt: str, size: tuple[int, int]) -> bytes | None: ...
 
 
 class OpenAIDalleGenerator:
@@ -37,9 +35,7 @@ class OpenAIDalleGenerator:
         self._client = AsyncOpenAI(api_key=api_key, timeout=timeout)
         self._model = model
 
-    async def generate(
-        self, prompt: str, size: tuple[int, int]
-    ) -> bytes | None:
+    async def generate(self, prompt: str, size: tuple[int, int]) -> bytes | None:
         """Generate an image. Returns bytes on success, None on failure."""
         size_str = f"{size[0]}x{size[1]}"
         try:

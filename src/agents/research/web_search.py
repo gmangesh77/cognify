@@ -17,8 +17,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
 from src.models.research import FacetFindings, ResearchFacet, SourceDocument
-from src.utils.llm_json import parse_llm_json
 from src.services.serpapi_client import SerpAPIClient, SerpAPIError, SerpAPIResult
+from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
 

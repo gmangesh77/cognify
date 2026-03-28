@@ -31,11 +31,13 @@ def _make_payload() -> PlatformPayload:
 
 def _ghost_success_response() -> dict:
     return {
-        "posts": [{
-            "id": "ghost-post-123",
-            "url": "https://test.ghost.io/test-article/",
-            "published_at": "2026-03-26T12:00:00Z",
-        }]
+        "posts": [
+            {
+                "id": "ghost-post-123",
+                "url": "https://test.ghost.io/test-article/",
+                "published_at": "2026-03-26T12:00:00Z",
+            }
+        ]
     }
 
 
@@ -73,13 +75,17 @@ class TestGhostAdapter:
 
         async def handler(request: httpx.Request) -> httpx.Response:
             import json
+
             captured_body.update(json.loads(request.content))
             return httpx.Response(201, json=_ghost_success_response())
 
         transport = httpx.MockTransport(handler)
-        await _publish_with_transport(adapter=GhostAdapter(_API_URL, _ADMIN_KEY),
-                                      payload=payload, transport=transport,
-                                      schedule_at=schedule_time)
+        await _publish_with_transport(
+            adapter=GhostAdapter(_API_URL, _ADMIN_KEY),
+            payload=payload,
+            transport=transport,
+            schedule_at=schedule_time,
+        )
         post = captured_body["posts"][0]
         assert post["status"] == "scheduled"
         assert schedule_time.isoformat() in post["published_at"]
@@ -89,7 +95,8 @@ class TestGhostAdapter:
 
         async def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(
-                422, json={"errors": [{"message": "Validation failed"}]},
+                422,
+                json={"errors": [{"message": "Validation failed"}]},
             )
 
         transport = httpx.MockTransport(handler)
@@ -123,6 +130,7 @@ async def _publish_with_transport(
     """Helper: run publish with a mock transport."""
     token = adapter._build_jwt()
     from src.services.publishing.ghost.adapter import _build_post_body, _parse_response
+
     body = _build_post_body(payload, schedule_at)
     url = adapter._api_url + "/ghost/api/admin/posts/"
     headers = {"Authorization": f"Ghost {token}"}

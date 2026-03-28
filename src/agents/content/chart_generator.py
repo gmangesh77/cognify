@@ -32,7 +32,7 @@ _PROMPT_TEMPLATE = (  # noqa: E501
     "You are a data visualization expert. "
     "Read the article sections below and propose 0-3 data charts.\n\n"
     "For each chart, provide:\n"
-    "- chart_type: \"bar\", \"line\", or \"pie\"\n"
+    '- chart_type: "bar", "line", or "pie"\n'
     "- title: chart title (max 120 chars)\n"
     "- x_labels: category labels or x-axis points\n"
     "- y_values: numeric values corresponding to each label\n"

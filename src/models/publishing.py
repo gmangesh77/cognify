@@ -46,6 +46,42 @@ class PublicationResult(BaseModel):
     error_message: str | None = None
 
 
+class PublicationEvent(BaseModel, frozen=True):
+    """Single event in the publication attempt history."""
+
+    timestamp: datetime
+    status: PublicationStatus
+    error_message: str | None = None
+
+
+class Publication(BaseModel, frozen=True):
+    """Persisted publication record with event history."""
+
+    id: UUID
+    article_id: UUID
+    platform: str
+    status: PublicationStatus
+    external_id: str | None = None
+    external_url: str | None = None
+    published_at: datetime | None = None
+    view_count: int = 0
+    seo_score: int = 0
+    error_message: str | None = None
+    event_history: list[PublicationEvent] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
+
+
+class PlatformSummary(BaseModel, frozen=True):
+    """Aggregated stats for a single platform."""
+
+    platform: str
+    total: int
+    success: int
+    failed: int
+    scheduled: int
+
+
 @runtime_checkable
 class Transformer(Protocol):
     """Pure function contract: CanonicalArticle -> PlatformPayload.

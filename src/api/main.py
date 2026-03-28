@@ -1,8 +1,16 @@
+from __future__ import annotations
+
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import structlog
 from fastapi import FastAPI
+
+if TYPE_CHECKING:
+    from src.services.embeddings import EmbeddingService
+    from src.services.milvus_service import MilvusRetriever
+    from src.services.research import AgentStepRepository
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -90,8 +98,9 @@ class _SettingsRepos:
 
 
 def _try_build_retriever(
-    app: FastAPI, settings: Settings,
-) -> "MilvusRetriever | None":
+    app: FastAPI,
+    settings: Settings,
+) -> MilvusRetriever | None:
     """Build MilvusRetriever if Milvus is available, else None."""
     try:
         from src.services.milvus_retriever import MilvusRetriever
@@ -108,14 +117,18 @@ def _try_build_retriever(
         logger.warning(
             "milvus_unavailable",
             error=str(exc),
-            hint="RAG retrieval disabled. Articles will be generated without vector context.",
+            hint=(
+                "RAG retrieval disabled. "
+                "Articles will be generated without vector context."
+            ),
         )
         return None
 
 
-def _get_or_create_embedding_service(app: FastAPI) -> "EmbeddingService":
+def _get_or_create_embedding_service(app: FastAPI) -> EmbeddingService:
     if not hasattr(app.state, "embedding_service"):
         from src.services.embeddings import EmbeddingService
+
         app.state.embedding_service = EmbeddingService(
             model_name=app.state.settings.embedding_model,
         )
@@ -135,7 +148,9 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             llm = _build_llm(settings)
             retriever = _try_build_retriever(app, settings)
             content_deps = ContentDeps(
-                llm=llm, retriever=retriever, settings=settings,
+                llm=llm,
+                retriever=retriever,
+                settings=settings,
             )
             logger.info(
                 "content_deps_initialized",
@@ -164,14 +179,17 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         ):
             try:
                 orchestrator = _build_real_orchestrator(
-                    settings, step_repo=step_repo,
+                    settings,
+                    step_repo=step_repo,
                 )
             except Exception as exc:
                 logger.error(
-                    "orchestrator_rebuild_failed", error=str(exc),
+                    "orchestrator_rebuild_failed",
+                    error=str(exc),
                 )
         app.state.research_service = ResearchService(
-            repos, orchestrator,
+            repos,
+            orchestrator,
         )
 
         article_repo = PgArticleRepository(sf)
@@ -221,23 +239,33 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                     llm = _build_llm(settings)
                     retriever = _try_build_retriever(app, settings)
                     content_deps = ContentDeps(
-                        llm=llm, retriever=retriever, settings=settings,
+                        llm=llm,
+                        retriever=retriever,
+                        settings=settings,
                     )
                     app.state.content_service = ContentService(
-                        repos=content_repos, deps=content_deps,
+                        repos=content_repos,
+                        deps=content_deps,
                         step_repo=step_repo,
                     )
                     orchestrator = _build_real_orchestrator(
-                        settings, step_repo=step_repo,
+                        settings,
+                        step_repo=step_repo,
                     )
                     app.state.research_service = ResearchService(
-                        repos, orchestrator,
+                        repos,
+                        orchestrator,
                     )
                     logger.info("llm_rebuilt_with_resolved_keys")
                 except Exception as exc:
                     logger.error("llm_rebuild_failed", error=str(exc))
         # Publishing service (requires article_repo)
-        _init_publishing_service(app, settings, article_repo)
+        from src.db.repositories import PgPublicationRepository
+
+        pub_repo = PgPublicationRepository(sf)
+        app.state.pub_repo = pub_repo
+        app.state.article_repo = article_repo
+        _init_publishing_service(app, settings, article_repo, pub_repo)
         logger.info("database_connected", url=db_url.split("@")[-1])
     else:
         # In-memory fallback (no database configured)
@@ -248,7 +276,8 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         )
         app.state.content_repos = in_mem_repos
         app.state.content_service = ContentService(
-            repos=in_mem_repos, deps=content_deps,
+            repos=in_mem_repos,
+            deps=content_deps,
         )
     yield
     if hasattr(app.state, "db_engine"):
@@ -321,7 +350,8 @@ def _build_llm(settings: Settings):  # type: ignore[no-untyped-def]
 
 
 def _build_real_orchestrator(
-    settings: Settings, step_repo: "AgentStepRepository | None" = None,
+    settings: Settings,
+    step_repo: AgentStepRepository | None = None,
 ):  # type: ignore[no-untyped-def]
     """Build the full LangGraph research orchestrator."""
     from src.agents.research.literature_review import (
@@ -391,7 +421,7 @@ def _build_real_orchestrator(
 
 def _get_or_create_embedding_service_from_settings(
     settings: Settings,
-) -> "EmbeddingService":
+) -> EmbeddingService:
     """Create EmbeddingService from settings (no app state)."""
     from src.services.embeddings import EmbeddingService
 
@@ -411,12 +441,15 @@ class _NoOpOrchestrator:
 
 
 def _init_publishing_service(
-    app: FastAPI, settings: Settings, article_repo: object,
+    app: FastAPI,
+    settings: Settings,
+    article_repo: object,
+    pub_repo: object | None = None,
 ) -> None:
     """Initialize publishing service with available platform adapters."""
     from src.services.publishing.service import PlatformPair, PublishingService
 
-    svc = PublishingService(article_repo)
+    svc = PublishingService(article_repo, pub_repo)
     if settings.ghost_api_url and settings.ghost_admin_api_key:
         from src.services.publishing.ghost.adapter import GhostAdapter
         from src.services.publishing.ghost.transformer import GhostTransformer
@@ -460,7 +493,8 @@ def _init_research_service(app: FastAPI) -> None:
                 error=str(exc),
             )
     app.state.research_service = ResearchService(
-        repos, _NoOpOrchestrator(),
+        repos,
+        _NoOpOrchestrator(),
     )  # type: ignore[arg-type]
     logger.info("research_service_initialized", mode="noop")
 
@@ -504,6 +538,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
         import traceback
+
         logger.error(
             "unhandled_exception",
             exc_type=type(exc).__name__,
