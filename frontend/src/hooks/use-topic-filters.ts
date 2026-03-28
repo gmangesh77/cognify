@@ -14,6 +14,14 @@ const DEFAULT_FILTERS: TopicFilters = {
   domain: "",
 };
 
+function isWithinTimeRange(discoveredAt: string, timeRange: string): boolean {
+  if (timeRange === "all") return true;
+  const ms = TIME_RANGE_MS[timeRange];
+  if (!ms) return true;
+  const age = Date.now() - new Date(discoveredAt).getTime();
+  return age <= ms;
+}
+
 export function useTopicFilters(
   topics: RankedTopic[],
   initialFilters: Partial<TopicFilters> = {},
@@ -28,14 +36,10 @@ export function useTopicFilters(
   };
 
   const filteredTopics = useMemo(() => {
-    const now = Date.now();
     return topics.filter((t) => {
       if (filters.sources.length > 0 && !filters.sources.includes(t.source)) return false;
       if (filters.domain && t.domain !== filters.domain) return false;
-      if (filters.timeRange !== "all") {
-        const ms = TIME_RANGE_MS[filters.timeRange];
-        if (ms && now - new Date(t.discovered_at).getTime() > ms) return false;
-      }
+      if (!isWithinTimeRange(t.discovered_at, filters.timeRange)) return false;
       return true;
     });
   }, [topics, filters]);
