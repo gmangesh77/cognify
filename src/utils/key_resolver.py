@@ -24,6 +24,9 @@ _SERVICE_TO_SETTING: dict[str, str] = {
     "semantic_scholar": "semantic_scholar_api_key",
     "ghost_admin_api_key": "ghost_admin_api_key",
     "medium_api_token": "medium_api_token",
+    "linkedin_access_token": "linkedin_access_token",
+    "linkedin_refresh_token": "linkedin_refresh_token",
+    "linkedin_client_secret": "linkedin_client_secret",
 }
 
 
