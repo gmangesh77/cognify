@@ -13,9 +13,7 @@ class TestLinkedInTransformer:
         result = LinkedInTransformer().transform(sample_article)
         assert result.article_id == sample_article.id
 
-    def test_commentary_includes_title(
-        self, sample_article: CanonicalArticle
-    ) -> None:
+    def test_commentary_includes_title(self, sample_article: CanonicalArticle) -> None:
         result = LinkedInTransformer().transform(sample_article)
         assert sample_article.title in result.content
 
@@ -31,16 +29,12 @@ class TestLinkedInTransformer:
         result = LinkedInTransformer().transform(sample_article)
         assert "#cybersecurity" in result.content
 
-    def test_hashtags_limited_to_five(
-        self, sample_article: CanonicalArticle
-    ) -> None:
+    def test_hashtags_limited_to_five(self, sample_article: CanonicalArticle) -> None:
         result = LinkedInTransformer().transform(sample_article)
         hashtag_count = result.content.count("#")
         assert hashtag_count <= 5
 
-    def test_metadata_has_source_url(
-        self, sample_article: CanonicalArticle
-    ) -> None:
+    def test_metadata_has_source_url(self, sample_article: CanonicalArticle) -> None:
         result = LinkedInTransformer().transform(sample_article)
         assert (
             result.metadata["source_url"]
@@ -51,9 +45,7 @@ class TestLinkedInTransformer:
         result = LinkedInTransformer().transform(sample_article)
         assert result.metadata["title"] == sample_article.title
 
-    def test_metadata_has_description(
-        self, sample_article: CanonicalArticle
-    ) -> None:
+    def test_metadata_has_description(self, sample_article: CanonicalArticle) -> None:
         result = LinkedInTransformer().transform(sample_article)
         desc = str(result.metadata["description"])
         assert len(desc) <= 256

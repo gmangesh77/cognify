@@ -14,9 +14,7 @@ from .conftest import make_auth_header
 @pytest.fixture
 def oauth_app(auth_app: FastAPI, auth_settings: Settings) -> FastAPI:
     auth_app.state.settings = auth_settings
-    auth_app.state.settings_repos = type(
-        "_Repos", (), {"api_keys": AsyncMock()}
-    )()
+    auth_app.state.settings_repos = type("_Repos", (), {"api_keys": AsyncMock()})()
     return auth_app
 
 
@@ -37,7 +35,8 @@ class TestLinkedInAuthorize:
     ) -> None:
         headers = make_auth_header("admin", auth_settings)
         resp = await oauth_client.get(
-            "/api/v1/oauth/linkedin/authorize", headers=headers,
+            "/api/v1/oauth/linkedin/authorize",
+            headers=headers,
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -53,14 +52,16 @@ class TestLinkedInAuthorize:
     ) -> None:
         headers = make_auth_header("viewer", auth_settings)
         resp = await oauth_client.get(
-            "/api/v1/oauth/linkedin/authorize", headers=headers,
+            "/api/v1/oauth/linkedin/authorize",
+            headers=headers,
         )
         assert resp.status_code == 403
 
 
 class TestLinkedInCallback:
     async def test_invalid_state_returns_400(
-        self, oauth_client: httpx.AsyncClient,
+        self,
+        oauth_client: httpx.AsyncClient,
     ) -> None:
         resp = await oauth_client.get(
             "/api/v1/oauth/linkedin/callback",
@@ -69,7 +70,8 @@ class TestLinkedInCallback:
         assert resp.status_code == 400
 
     async def test_missing_code_returns_422(
-        self, oauth_client: httpx.AsyncClient,
+        self,
+        oauth_client: httpx.AsyncClient,
     ) -> None:
         resp = await oauth_client.get(
             "/api/v1/oauth/linkedin/callback",
@@ -95,7 +97,8 @@ class TestLinkedInCallback:
         # First, get a valid state by calling authorize
         headers = make_auth_header("admin", auth_settings)
         auth_resp = await oauth_client.get(
-            "/api/v1/oauth/linkedin/authorize", headers=headers,
+            "/api/v1/oauth/linkedin/authorize",
+            headers=headers,
         )
         url = auth_resp.json()["authorization_url"]
         state = url.split("state=")[1].split("&")[0]
@@ -122,7 +125,8 @@ class TestLinkedInCallback:
         )
         headers = make_auth_header("admin", auth_settings)
         auth_resp = await oauth_client.get(
-            "/api/v1/oauth/linkedin/authorize", headers=headers,
+            "/api/v1/oauth/linkedin/authorize",
+            headers=headers,
         )
         url = auth_resp.json()["authorization_url"]
         state = url.split("state=")[1].split("&")[0]

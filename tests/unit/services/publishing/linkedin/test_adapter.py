@@ -61,7 +61,9 @@ class TestLinkedInAdapter:
         async def handler(req: httpx.Request) -> httpx.Response:
             captured.update(dict(req.headers))
             return httpx.Response(
-                201, json={}, headers={"x-restli-id": "urn:li:share:1"},
+                201,
+                json={},
+                headers={"x-restli-id": "urn:li:share:1"},
             )
 
         adapter = LinkedInAdapter(_CREDS)
@@ -78,7 +80,9 @@ class TestLinkedInAdapter:
         async def handler(req: httpx.Request) -> httpx.Response:
             captured.update(dict(req.headers))
             return httpx.Response(
-                201, json={}, headers={"x-restli-id": "urn:li:share:1"},
+                201,
+                json={},
+                headers={"x-restli-id": "urn:li:share:1"},
             )
 
         adapter = LinkedInAdapter(_CREDS)
@@ -153,15 +157,20 @@ class TestLinkedInAdapter:
             nonlocal call_count
             url = str(req.url)
             if "accessToken" in url:
-                return httpx.Response(200, json={
-                    "access_token": "new-token",
-                    "expires_in": 5184000,
-                })
+                return httpx.Response(
+                    200,
+                    json={
+                        "access_token": "new-token",
+                        "expires_in": 5184000,
+                    },
+                )
             call_count += 1
             if call_count == 1:
                 return httpx.Response(401, json={"message": "Expired"})
             return httpx.Response(
-                201, json={}, headers={"x-restli-id": "urn:li:share:99"},
+                201,
+                json={},
+                headers={"x-restli-id": "urn:li:share:99"},
             )
 
         adapter = LinkedInAdapter(_CREDS_WITH_REFRESH)
