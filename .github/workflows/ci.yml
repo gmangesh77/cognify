@@ -9,13 +9,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint & Format
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      deps: ${{ steps.filter.outputs.deps }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'src/**'
+              - 'tests/**'
+              - 'alembic/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+            frontend:
+              - 'frontend/**'
+            deps:
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
+
+  lint-backend:
+    name: Lint Backend
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # Python linting
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
@@ -27,7 +54,13 @@ jobs:
       - run: uv run ruff format --check src/ tests/
       - run: uv run mypy src/ --ignore-missing-imports || true  # TODO: fix 90+ pre-existing errors then remove || true
 
-      # Frontend linting
+  lint-frontend:
+    name: Lint Frontend
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -38,7 +71,11 @@ jobs:
 
   test-backend:
     name: Backend Unit Tests
-    needs: lint
+    needs: [detect-changes, lint-backend]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.backend == 'true' &&
+      !contains(needs.lint-backend.result, 'failure')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,7 +97,11 @@ jobs:
 
   test-frontend:
     name: Frontend Tests
-    needs: lint
+    needs: [detect-changes, lint-frontend]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.frontend == 'true' &&
+      !contains(needs.lint-frontend.result, 'failure')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +115,11 @@ jobs:
 
   test-integration:
     name: Integration Tests
-    needs: lint
+    needs: [detect-changes, lint-backend]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.backend == 'true' &&
+      !contains(needs.lint-backend.result, 'failure')
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -119,6 +164,11 @@ jobs:
 
   security:
     name: Security Scan
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.deps == 'true' ||
+      needs.detect-changes.outputs.backend == 'true' ||
+      needs.detect-changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
