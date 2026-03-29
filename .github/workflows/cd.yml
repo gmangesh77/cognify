@@ -12,56 +12,118 @@ env:
   REGISTRY: ${{ secrets.AWS_ECR_REGISTRY }}
 
 jobs:
-  build-images:
-    name: Build ${{ matrix.image }}
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'src/**'
+              - 'alembic/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'Dockerfile.api'
+              - 'Dockerfile.worker'
+              - 'docker-entrypoint.sh'
+            frontend:
+              - 'frontend/**'
+              - 'Dockerfile.frontend'
+
+  build-api:
+    name: Build API
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image: cognify-api
-            file: Dockerfile.api
-          - image: cognify-worker
-            file: Dockerfile.worker
-          - image: cognify-frontend
-            file: Dockerfile.frontend
-            build-args: NEXT_PUBLIC_API_BASE_URL=/api/v1
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
       # Uncomment when AWS ECR is provisioned:
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v4
+      # - uses: aws-actions/configure-aws-credentials@v4
       #   with:
       #     role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
       #     aws-region: ${{ secrets.AWS_REGION }}
-      #
-      # - name: Login to Amazon ECR
-      #   uses: aws-actions/amazon-ecr-login@v2
+      # - uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build ${{ matrix.image }}
+      - name: Build API image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.file }}
-          push: false  # Set to true when ECR is ready
+          file: Dockerfile.api
+          push: false
           load: true
           tags: |
-            ${{ matrix.image }}:${{ github.sha }}
-            ${{ matrix.image }}:latest
-          build-args: ${{ matrix.build-args || '' }}
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+            cognify-api:${{ github.sha }}
+            cognify-api:latest
+          cache-from: type=gha,scope=cognify-api
+          cache-to: type=gha,mode=max,scope=cognify-api
+
+  build-worker:
+    name: Build Worker
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build Worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.worker
+          push: false
+          load: true
+          tags: |
+            cognify-worker:${{ github.sha }}
+            cognify-worker:latest
+          cache-from: type=gha,scope=cognify-worker
+          cache-to: type=gha,mode=max,scope=cognify-worker
+
+  build-frontend:
+    name: Build Frontend
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.frontend
+          push: false
+          load: true
+          tags: |
+            cognify-frontend:${{ github.sha }}
+            cognify-frontend:latest
+          build-args: NEXT_PUBLIC_API_BASE_URL=/api/v1
+          cache-from: type=gha,scope=cognify-frontend
+          cache-to: type=gha,mode=max,scope=cognify-frontend
 
   deploy-staging:
     name: Deploy to Staging
-    needs: build-images
+    needs: [build-api, build-worker, build-frontend]
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     # Uncomment when staging environment is configured:
     # environment: staging
