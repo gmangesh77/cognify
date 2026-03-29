@@ -13,11 +13,22 @@ env:
 
 jobs:
   build-images:
-    name: Build & Push Docker Images
+    name: Build ${{ matrix.image }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: cognify-api
+            file: Dockerfile.api
+          - image: cognify-worker
+            file: Dockerfile.worker
+          - image: cognify-frontend
+            file: Dockerfile.frontend
+            build-args: NEXT_PUBLIC_API_BASE_URL=/api/v1
     steps:
       - uses: actions/checkout@v4
 
@@ -34,43 +45,19 @@ jobs:
       # - name: Login to Amazon ECR
       #   uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build API image
+      - name: Build ${{ matrix.image }}
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: Dockerfile.api
+          file: ${{ matrix.file }}
           push: false  # Set to true when ECR is ready
+          load: true
           tags: |
-            cognify-api:${{ github.sha }}
-            cognify-api:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build Worker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile.worker
-          push: false
-          tags: |
-            cognify-worker:${{ github.sha }}
-            cognify-worker:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build Frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: Dockerfile.frontend
-          push: false
-          tags: |
-            cognify-frontend:${{ github.sha }}
-            cognify-frontend:latest
-          build-args: |
-            NEXT_PUBLIC_API_BASE_URL=/api/v1
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ${{ matrix.image }}:${{ github.sha }}
+            ${{ matrix.image }}:latest
+          build-args: ${{ matrix.build-args || '' }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
   deploy-staging:
     name: Deploy to Staging
