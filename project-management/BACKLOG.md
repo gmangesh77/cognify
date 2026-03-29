@@ -119,10 +119,10 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 
 ## Active Backlog
 
-### Epic 5: Multi-Platform Publishing (3/5 done)
+### Epic 5: Multi-Platform Publishing (4/5 done)
 **Goal**: Publish articles to multiple platforms with correct formatting and metadata.
 
-**Completed:** PUBLISH-001 (Ghost CMS), PUBLISH-003 (Medium) — PR #43, PUBLISH-005 (Publication Tracking)
+**Completed:** PUBLISH-001 (Ghost CMS), PUBLISH-003 (Medium) — PR #43, PUBLISH-004 (LinkedIn) — PR #48, PUBLISH-005 (Publication Tracking)
 
 #### PUBLISH-002: WordPress Integration [Should]
 **As a** publisher, **I want** articles published to WordPress, **so that** I can reach my WordPress audience.
@@ -133,7 +133,7 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
   - Handles authentication via Application Password
 - **Story Points**: 5
 
-#### PUBLISH-004: LinkedIn Integration [Could]
+#### ~~PUBLISH-004: LinkedIn Integration [Could]~~ — DONE (PR #48)
 **As a** publisher, **I want** articles shared on LinkedIn, **so that** professional audience is reached.
 - **Acceptance Criteria**:
   - Posts article to LinkedIn page via Marketing API
@@ -167,10 +167,10 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 | Research Pipeline | 5 | 5 | 0 | 0 |
 | Content Generation | 6 | 6 | 0 | 0 |
 | Visual Assets | 3 | 3 | 0 | 0 |
-| **Publishing** | **5** | **3** | **2** | **10** |
+| **Publishing** | **5** | **4** | **1** | **5** |
 | Dashboard & Config | 5 | 5 | 0 | 0 |
 | API & Auth | 3 | 3 | 0 | 0 |
 | **Infrastructure** | **5** | **4** | **1** | **3** |
-| **Total** | **49** | **46** | **3** | **13** |
+| **Total** | **49** | **47** | **2** | **8** |
 
-**Velocity**: 246 SP completed across 9 epics. 13 SP remaining (3 tickets).
+**Velocity**: 251 SP completed across 9 epics. 8 SP remaining (2 tickets).
