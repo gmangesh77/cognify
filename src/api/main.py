@@ -36,6 +36,7 @@ from src.api.routers.auth import auth_router
 from src.api.routers.canonical_articles import canonical_articles_router
 from src.api.routers.health import health_router
 from src.api.routers.metrics import metrics_router
+from src.api.routers.oauth import oauth_router
 from src.api.routers.publishing import publishing_router
 from src.api.routers.research import research_router
 from src.api.routers.settings import settings_router
@@ -469,6 +470,25 @@ def _init_publishing_service(
             adapter=MediumAdapter(settings.medium_api_token, settings.medium_user_id),
         )
         svc.register("medium", pair)
+    if settings.linkedin_access_token and settings.linkedin_author_urn:
+        from src.services.publishing.linkedin.adapter import (
+            LinkedInAdapter,
+            LinkedInCredentials,
+        )
+        from src.services.publishing.linkedin.transformer import LinkedInTransformer
+
+        creds = LinkedInCredentials(
+            access_token=settings.linkedin_access_token,
+            author_urn=settings.linkedin_author_urn,
+            refresh_token=settings.linkedin_refresh_token,
+            client_id=settings.linkedin_client_id,
+            client_secret=settings.linkedin_client_secret,
+        )
+        pair = PlatformPair(
+            transformer=LinkedInTransformer(),
+            adapter=LinkedInAdapter(creds),
+        )
+        svc.register("linkedin", pair)
     app.state.publishing_service = svc
     logger.info("publishing_service_initialized", platforms=list(svc._platforms.keys()))
 
@@ -630,6 +650,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         publishing_router,
         prefix=settings.api_v1_prefix,
         tags=["publishing"],
+    )
+    app.include_router(
+        oauth_router,
+        prefix=settings.api_v1_prefix,
+        tags=["oauth"],
     )
     assets_dir = Path("generated_assets")
     if assets_dir.exists():

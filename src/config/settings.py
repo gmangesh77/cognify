@@ -108,3 +108,9 @@ class Settings(BaseSettings):
     # Publishing — Medium (deprecated API, mock-only)
     medium_api_token: str = ""
     medium_user_id: str = ""
+    # Publishing — LinkedIn (OAuth 2.0, link sharing via Posts API)
+    linkedin_client_id: str = ""
+    linkedin_client_secret: str = ""
+    linkedin_author_urn: str = ""  # "urn:li:organization:XXX" or "urn:li:person:XXX"
+    linkedin_access_token: str = ""  # stored via OAuth callback
+    linkedin_refresh_token: str = ""  # stored via OAuth callback

@@ -24,7 +24,9 @@ export type ApiKeyService =
   | "arxiv"
   | "reddit_client_id"
   | "reddit_client_secret"
-  | "semantic_scholar";
+  | "semantic_scholar"
+  | "linkedin_access_token"
+  | "linkedin_refresh_token";
 
 export const API_KEY_SERVICES: { value: ApiKeyService; label: string }[] = [
   { value: "anthropic", label: "Anthropic API" },
@@ -36,6 +38,8 @@ export const API_KEY_SERVICES: { value: ApiKeyService; label: string }[] = [
   { value: "reddit_client_id", label: "Reddit Client ID" },
   { value: "reddit_client_secret", label: "Reddit Client Secret" },
   { value: "semantic_scholar", label: "Semantic Scholar" },
+  { value: "linkedin_access_token", label: "LinkedIn Access Token" },
+  { value: "linkedin_refresh_token", label: "LinkedIn Refresh Token" },
 ];
 
 export interface ApiKeyConfig {

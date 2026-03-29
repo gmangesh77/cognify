@@ -47,6 +47,20 @@ export async function deleteApiKey(id: string) {
   await apiClient.delete(`/settings/api-keys/${id}`);
 }
 
+// ---- LinkedIn OAuth ----
+
+export async function getLinkedInAuthUrl(): Promise<string> {
+  const { data } = await apiClient.get("/oauth/linkedin/authorize");
+  return data.authorization_url;
+}
+
+export async function disconnectLinkedIn(apiKeys: { id: string; service: string }[]) {
+  const linkedinKeys = apiKeys.filter(
+    (k) => k.service === "linkedin_access_token" || k.service === "linkedin_refresh_token",
+  );
+  await Promise.all(linkedinKeys.map((k) => deleteApiKey(k.id)));
+}
+
 // ---- LLM Config ----
 
 export async function fetchLlmConfig() {
