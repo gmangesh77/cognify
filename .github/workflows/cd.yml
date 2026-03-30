@@ -2,7 +2,7 @@ name: CD
 
 on:
   push:
-    branches: [main]
+    branches: [staging]
 
 concurrency:
   group: cd-${{ github.ref }}
@@ -129,16 +129,34 @@ jobs:
     # environment: staging
     steps:
       - name: Placeholder
-        run: echo "Staging deployment placeholder — Helm charts not yet created"
+        run: echo "Staging deployment placeholder — Ubuntu server details TBD"
+      # TODO: Add SSH deploy or docker-compose pull on staging Ubuntu server
+      # - name: Deploy to staging server
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.STAGING_HOST }}
+      #     username: ${{ secrets.STAGING_USER }}
+      #     key: ${{ secrets.STAGING_SSH_KEY }}
+      #     script: |
+      #       cd /opt/cognify
+      #       docker compose pull
+      #       docker compose up -d
 
-  deploy-production:
-    name: Deploy to Production
+  # Auto-merge staging to main (temporary — remove when production server is in place)
+  sync-to-main:
+    name: Sync Staging to Main
     needs: deploy-staging
     runs-on: ubuntu-latest
-    # Uncomment when production environment is configured:
-    # environment:
-    #   name: production
-    #   url: https://api.cognify.app
+    permissions:
+      contents: write
     steps:
-      - name: Placeholder
-        run: echo "Production deployment placeholder — requires manual approval and Helm charts"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - name: Merge staging into main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git merge origin/staging --no-edit
+          git push origin main
