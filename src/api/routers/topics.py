@@ -2,9 +2,13 @@ import structlog
 from fastapi import APIRouter, Depends, Request
 
 from src.api.auth.schemas import TokenPayload
-from src.api.dependencies import require_role
+from src.api.dependencies import require_editor_or_above, require_role
 from src.api.errors import ServiceUnavailableError
 from src.api.rate_limiter import limiter
+from src.api.schemas.topic_analysis import (
+    AnalyzeTopicRequest,
+    TopicAnalysisResult,
+)
 from src.api.schemas.topics import (
     PaginatedTopics,
     PersistTopicsRequest,
@@ -13,6 +17,7 @@ from src.api.schemas.topics import (
     RankTopicsResponse,
 )
 from src.services.embeddings import EmbeddingService
+from src.services.topic_analyzer import TopicAnalyzer
 from src.services.topic_ranking import TopicRankingService
 
 logger = structlog.get_logger()
@@ -111,3 +116,32 @@ async def list_topics(
     except Exception as exc:
         logger.error("list_topics_failed", error=str(exc), domain=domain)
         return PaginatedTopics(items=[], total=0, page=page, size=size)
+
+
+@limiter.limit("5/minute")
+@topics_router.post(
+    "/topics/analyze",
+    response_model=TopicAnalysisResult,
+    summary="Analyze a topic title and suggest metadata",
+)
+async def analyze_topic(
+    request: Request,
+    body: AnalyzeTopicRequest,
+    user: TokenPayload = Depends(require_editor_or_above),
+) -> TopicAnalysisResult:
+    llm = getattr(request.app.state, "drafting_llm", None)
+    if llm is None:
+        raise ServiceUnavailableError(
+            message="LLM not configured. Set COGNIFY_ANTHROPIC_API_KEY."
+        )
+    domains: list[str] = []
+    domain_repo = getattr(request.app.state, "domain_config_repo", None)
+    if domain_repo is not None:
+        domains = await domain_repo.list_domain_names()
+    analyzer = TopicAnalyzer(llm=llm)
+    return await analyzer.analyze(
+        title=body.title,
+        configured_domains=domains or None,
+        regenerate_field=body.regenerate_field,
+        current_values=body.current_values,
+    )
