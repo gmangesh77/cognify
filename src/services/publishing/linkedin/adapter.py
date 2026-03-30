@@ -19,7 +19,7 @@ logger = structlog.get_logger()
 
 _API_BASE = "https://api.linkedin.com/rest/posts"
 _TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
-_API_VERSION = "202501"
+_API_VERSION = "202603"
 _TIMEOUT = 15.0
 
 
@@ -28,7 +28,7 @@ class LinkedInCredentials:
     """Bundle of LinkedIn OAuth credentials."""
 
     access_token: str
-    author_urn: str
+    author_urn: str = ""
     refresh_token: str = ""
     client_id: str = ""
     client_secret: str = ""
@@ -52,7 +52,16 @@ class LinkedInAdapter:
                 payload.article_id,
                 "LinkedIn does not support scheduled publishing",
             )
-        body = _build_request_body(payload, self._creds.author_urn)
+        author_urn = self._creds.author_urn
+        if not author_urn:
+            author_urn = await self._resolve_author_urn()
+        if not author_urn:
+            return _failed(
+                payload.article_id,
+                "LinkedIn author URN not configured. Set COGNIFY_LINKEDIN_AUTHOR_URN in .env "
+                "(e.g. urn:li:person:YOUR_MEMBER_ID or urn:li:organization:YOUR_ORG_ID)",
+            )
+        body = _build_request_body(payload, author_urn)
         resp = await self._post(body)
         if resp.status_code == 401:
             return await self._handle_401(payload, body, resp)
@@ -78,6 +87,28 @@ class LinkedInAdapter:
             if self._client is None:
                 await client.aclose()
 
+    async def _resolve_author_urn(self) -> str | None:
+        """Try to fetch author URN via /v2/me or /userinfo."""
+        headers = {"Authorization": f"Bearer {self._access_token}"}
+        async with httpx.AsyncClient() as client:
+            for url in [
+                "https://api.linkedin.com/v2/userinfo",
+                "https://api.linkedin.com/v2/me",
+            ]:
+                try:
+                    resp = await client.get(url, headers=headers, timeout=10.0)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        member_id = data.get("sub") or data.get("id")
+                        if member_id:
+                            urn = f"urn:li:person:{member_id}"
+                            logger.info("linkedin_author_urn_resolved", urn=urn)
+                            return urn
+                except Exception:
+                    continue
+        logger.warning("linkedin_author_urn_not_resolved")
+        return None
+
     async def _handle_401(
         self,
         payload: PlatformPayload,
@@ -95,19 +126,23 @@ class LinkedInAdapter:
 
 def _build_request_body(payload: PlatformPayload, author_urn: str) -> dict[str, object]:
     meta = payload.metadata
-    return {
+    body: dict[str, object] = {
         "author": author_urn,
         "commentary": payload.content,
         "visibility": str(meta.get("visibility", "PUBLIC")),
         "distribution": {"feedDistribution": "MAIN_FEED"},
-        "content": {
+        "lifecycleState": "PUBLISHED",
+    }
+    source_url = str(meta.get("source_url", ""))
+    if source_url:
+        body["content"] = {
             "article": {
-                "source": str(meta.get("source_url", "")),
+                "source": source_url,
                 "title": str(meta.get("title", "")),
                 "description": str(meta.get("description", "")),
             }
-        },
-    }
+        }
+    return body
 
 
 def _parse_response(resp: httpx.Response, article_id: UUID) -> PublicationResult:

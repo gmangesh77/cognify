@@ -167,7 +167,7 @@ class ApiKeyRow(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "api_keys"
 
     service: Mapped[str] = mapped_column(String(50), index=True)
-    encrypted_key: Mapped[str] = mapped_column(String(500))
+    encrypted_key: Mapped[str] = mapped_column(String(2000))
     masked_key: Mapped[str] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(20), default="active")
 

@@ -470,7 +470,7 @@ def _init_publishing_service(
             adapter=MediumAdapter(settings.medium_api_token, settings.medium_user_id),
         )
         svc.register("medium", pair)
-    if settings.linkedin_access_token and settings.linkedin_author_urn:
+    if settings.linkedin_access_token:
         from src.services.publishing.linkedin.adapter import (
             LinkedInAdapter,
             LinkedInCredentials,
@@ -589,7 +589,7 @@ def _register_middleware(app: FastAPI, settings: Settings) -> None:
         allow_origins=settings.cors_allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization"],
+        allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
     )
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(CorrelationIdMiddleware)

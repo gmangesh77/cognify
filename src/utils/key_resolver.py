@@ -27,6 +27,7 @@ _SERVICE_TO_SETTING: dict[str, str] = {
     "linkedin_access_token": "linkedin_access_token",
     "linkedin_refresh_token": "linkedin_refresh_token",
     "linkedin_client_secret": "linkedin_client_secret",
+    "linkedin_author_urn": "linkedin_author_urn",
 }
 
 

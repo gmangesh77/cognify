@@ -1,4 +1,4 @@
-"""LinkedIn transformer: CanonicalArticle -> link-share PlatformPayload."""
+"""LinkedIn transformer: CanonicalArticle -> standalone thought-leadership post."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ _MAX_DESCRIPTION = 256
 
 
 class LinkedInTransformer:
-    """Pure transformer for LinkedIn link-share posts."""
+    """Pure transformer for LinkedIn posts."""
 
     def transform(self, article: CanonicalArticle) -> PlatformPayload:
         commentary = _build_commentary(article)
@@ -30,8 +30,37 @@ class LinkedInTransformer:
 
 
 def _build_commentary(article: CanonicalArticle) -> str:
+    parts: list[str] = []
+
+    # Lead with key insights directly — no "this article" framing
+    claims = getattr(article, "key_claims", []) or []
+    if claims:
+        # Use first claim as the hook (stripped of citations)
+        hook = re.sub(r"\s*\[\d+\](\[\d+\])*", "", claims[0])
+        parts.append(hook)
+        parts.append("")
+
+        # Remaining claims as takeaways
+        if len(claims) > 1:
+            for claim in claims[1:4]:
+                clean = re.sub(r"\s*\[\d+\](\[\d+\])*", "", claim)
+                parts.append(f"→ {clean}")
+            parts.append("")
+    else:
+        # Fallback to summary if no claims, but strip "article" references
+        summary = re.sub(
+            r"(?i)^the article\s+(discusses|explores|examines|covers|presents)\s+",
+            "",
+            article.summary,
+        )
+        parts.append(summary)
+        parts.append("")
+
+    # Hashtags
     hashtags = _build_hashtags(article.seo.keywords)
-    parts = [article.title, "", article.summary, "", hashtags]
+    if hashtags:
+        parts.append(hashtags)
+
     text = "\n".join(parts).strip()
     return text[:_MAX_COMMENTARY]
 

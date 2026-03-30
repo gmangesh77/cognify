@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { SettingsNav } from "@/components/settings/settings-nav";
 import { DomainsTab } from "@/components/settings/domains-tab";
@@ -11,11 +12,33 @@ import { GeneralTab } from "@/components/settings/general-tab";
 import { useSettings } from "@/hooks/use-settings";
 import type { SettingsTab } from "@/types/settings";
 
+const OAUTH_MESSAGES: Record<string, string> = {
+  success: "LinkedIn connected successfully",
+  expired: "OAuth session expired — please try again",
+  token_exchange_failed: "Failed to connect with LinkedIn — token exchange error",
+  storage_failed: "LinkedIn authorized but failed to save token — please retry",
+};
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("domains");
   const [toast, setToast] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const settings = useSettings();
+
+  useEffect(() => {
+    const oauth = searchParams.get("oauth");
+    const message = searchParams.get("message");
+    if (oauth) {
+      const text = oauth === "success"
+        ? OAUTH_MESSAGES.success
+        : OAUTH_MESSAGES[message ?? ""] ?? "OAuth error — please try again";
+      showToast(text);
+      setActiveTab("api-keys");
+      router.replace("/settings", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   function showToast(message: string) {
     setToast(message);

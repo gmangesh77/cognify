@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 import httpx
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 
 from src.api.dependencies import require_admin
 from src.utils.encryption import encrypt_value
@@ -43,7 +44,7 @@ async def linkedin_authorize(
         "client_id": settings.linkedin_client_id,
         "redirect_uri": callback,
         "state": state,
-        "scope": "w_member_social",
+        "scope": "openid profile w_member_social",
     }
     url = f"{_LINKEDIN_AUTH_URL}?{urlencode(params)}"
     return {"authorization_url": url}
@@ -52,13 +53,21 @@ async def linkedin_authorize(
 @oauth_router.get("/oauth/linkedin/callback")
 async def linkedin_callback(
     request: Request,
-    code: str = Query(...),
+    code: str | None = Query(default=None),
     state: str = Query(...),
-) -> dict[str, str]:
+    error: str | None = Query(default=None),
+    error_description: str | None = Query(default=None),
+) -> RedirectResponse:
     """Handle LinkedIn OAuth callback — exchange code for tokens."""
+    frontend_settings = "http://localhost:3000/settings"
+    if error:
+        logger.warning("linkedin_oauth_denied", error=error, description=error_description)
+        return RedirectResponse(f"{frontend_settings}?oauth=error&message={error}")
+    if not code:
+        return RedirectResponse(f"{frontend_settings}?oauth=error&message=no_code")
     expiry = _pending_states.pop(state, None)
     if expiry is None or time.time() > expiry:
-        raise HTTPException(400, "Invalid or expired OAuth state")
+        return RedirectResponse(f"{frontend_settings}?oauth=error&message=expired")
 
     settings = request.app.state.settings
     callback = _build_callback_url(request)
@@ -68,20 +77,44 @@ async def linkedin_callback(
             settings,
             callback,
         )
-    except (httpx.HTTPStatusError, httpx.ConnectError) as exc:
+    except httpx.HTTPError as exc:
         logger.error("linkedin_token_exchange_failed", error=str(exc))
-        raise HTTPException(502, "Failed to exchange code with LinkedIn") from exc
+        return RedirectResponse(f"{frontend_settings}?oauth=error&message=token_exchange_failed")
 
-    api_keys = request.app.state.settings_repos.api_keys
-    await _store_token(api_keys, "linkedin_access_token", tokens["access_token"])
-    if tokens.get("refresh_token"):
-        await _store_token(
-            api_keys,
-            "linkedin_refresh_token",
-            tokens["refresh_token"],
-        )
+    try:
+        api_keys = request.app.state.settings_repos.api_keys
+        await _store_token(api_keys, "linkedin_access_token", tokens["access_token"])
+        if tokens.get("refresh_token"):
+            await _store_token(
+                api_keys,
+                "linkedin_refresh_token",
+                tokens["refresh_token"],
+            )
+    except Exception as exc:
+        logger.error("linkedin_token_storage_failed", error=str(exc))
+        return RedirectResponse(f"{frontend_settings}?oauth=error&message=storage_failed")
+
+    # Fetch and store the author URN so publishing works without manual config
+    author_urn = ""
+    try:
+        author_urn = await _fetch_author_urn(tokens["access_token"]) or ""
+        if author_urn:
+            await _store_token(api_keys, "linkedin_author_urn", author_urn)
+            logger.info("linkedin_author_urn_stored", urn=author_urn)
+    except Exception as exc:
+        logger.warning("linkedin_author_urn_fetch_failed", error=str(exc))
+
+    # Register LinkedIn with publishing service immediately (no restart needed)
+    _register_linkedin_live(
+        request.app,
+        tokens["access_token"],
+        author_urn,
+        tokens.get("refresh_token", ""),
+        settings,
+    )
+
     logger.info("linkedin_oauth_complete")
-    return {"status": "connected", "platform": "linkedin"}
+    return RedirectResponse(f"{frontend_settings}?oauth=success&platform=linkedin")
 
 
 def _build_callback_url(request: Request) -> str:
@@ -117,8 +150,67 @@ async def _store_token(
 
     encrypted = encrypt_value(token)
     masked = f"{token[:4]}...{token[-4:]}" if len(token) > 8 else "****"
+    # Delete existing entry for this service to avoid duplicates on re-auth
+    await _delete_by_service(api_key_repo, service)
     config = ApiKeyConfig(service=service, masked_key=masked)
     await api_key_repo.create(config, encrypted_key=encrypted)  # type: ignore[attr-defined]
+
+
+async def _delete_by_service(api_key_repo: object, service: str) -> None:
+    """Remove existing keys for a service before storing a new one."""
+    all_keys = await api_key_repo.list_all()  # type: ignore[attr-defined]
+    for key in all_keys:
+        if key.service == service:
+            await api_key_repo.delete(key.id)  # type: ignore[attr-defined]
+
+
+def _register_linkedin_live(
+    app: object,
+    access_token: str,
+    author_urn: str,
+    refresh_token: str,
+    settings: object,
+) -> None:
+    """Register LinkedIn with the publishing service without server restart."""
+    try:
+        from src.services.publishing.linkedin.adapter import (
+            LinkedInAdapter,
+            LinkedInCredentials,
+        )
+        from src.services.publishing.linkedin.transformer import LinkedInTransformer
+        from src.services.publishing.service import PlatformPair
+
+        creds = LinkedInCredentials(
+            access_token=access_token,
+            author_urn=author_urn,
+            refresh_token=refresh_token,
+            client_id=settings.linkedin_client_id,  # type: ignore[attr-defined]
+            client_secret=settings.linkedin_client_secret,  # type: ignore[attr-defined]
+        )
+        pair = PlatformPair(
+            transformer=LinkedInTransformer(),
+            adapter=LinkedInAdapter(creds),
+        )
+        app.state.publishing_service.register("linkedin", pair)  # type: ignore[attr-defined]
+        logger.info("linkedin_registered_live")
+    except Exception as exc:
+        logger.warning("linkedin_live_registration_failed", error=str(exc))
+
+
+async def _fetch_author_urn(access_token: str) -> str | None:
+    """Fetch the authenticated user's LinkedIn URN via the /v2/userinfo endpoint."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            "https://api.linkedin.com/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        sub = data.get("sub")
+        if sub:
+            return f"urn:li:person:{sub}"
+    return None
 
 
 def _cleanup_expired_states() -> None:
