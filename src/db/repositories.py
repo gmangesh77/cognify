@@ -75,6 +75,9 @@ class PgResearchSessionRepository:
                 completed_at=session.completed_at,
                 agent_plan=session.agent_plan or {},
                 findings_data=session.findings_data or [],
+                target_audience=session.target_audience,
+                content_tone=session.content_tone,
+                preferred_angle=session.preferred_angle,
             )
             db.add(row)
             await db.commit()
@@ -111,6 +114,9 @@ class PgResearchSessionRepository:
             row.topic_title = session.topic_title
             row.topic_description = session.topic_description
             row.topic_domain = session.topic_domain
+            row.target_audience = session.target_audience
+            row.content_tone = session.content_tone
+            row.preferred_angle = session.preferred_angle
             await db.commit()
             await db.refresh(row)
             updated = self._to_model(row)
@@ -176,6 +182,9 @@ class PgResearchSessionRepository:
             completed_at=row.completed_at,
             agent_plan=row.agent_plan or {},
             findings_data=row.findings_data or [],
+            target_audience=row.target_audience,
+            content_tone=row.content_tone,
+            preferred_angle=row.preferred_angle,
         )
 
 
