@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, Compass, Search } from "lucide-react";
+import { Zap, Compass, Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/header";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,8 +10,10 @@ import { FilterBar } from "@/components/topics/filter-bar";
 import { ScanProgressBanner } from "@/components/topics/scan-progress-banner";
 import { TopicPagination } from "@/components/topics/topic-pagination";
 import { GenerateArticleModal } from "@/components/topics/generate-article-modal";
+import { CreateTopicModal, type CreateTopicData } from "@/components/topics/create-topic-modal";
 import { useTopicDiscovery } from "@/hooks/use-topic-discovery";
-import { createResearchSession } from "@/lib/api/trends";
+import { createResearchSession, createManualTopic } from "@/lib/api/trends";
+import type { ArticleParams, RankedTopic } from "@/types/api";
 
 function SkeletonGrid() {
   return (
@@ -70,6 +72,7 @@ export default function TopicsPage() {
   } = useTopicDiscovery();
 
   const [toast, setToast] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const isScanning = scanState.isScanning;
   const hasDomain = filters.domain !== "";
@@ -81,10 +84,50 @@ export default function TopicsPage() {
   const showEmptyNoMatch = !isScanning && scanHasEverRun && totalTopics === 0;
   const showGrid = topics.length > 0;
 
-  async function handleConfirm() {
-    const topic = modalTopic;
+  async function handleCreateOnly(data: CreateTopicData) {
+    setShowCreateModal(false);
+    try {
+      const result = await createManualTopic({
+        title: data.title,
+        description: data.description,
+        domain: data.domain,
+        keywords: data.keywords,
+      });
+      if (result.is_duplicate) {
+        setToast(`Similar topic already exists: "${result.topic.title}"`);
+      } else {
+        setToast(`Topic "${data.title}" created.`);
+      }
+    } catch {
+      setToast(`Failed to create topic.`);
+    }
+    setTimeout(() => setToast(null), 5000);
+  }
+
+  async function handleCreateAndGenerate(data: CreateTopicData) {
+    setShowCreateModal(false);
+    try {
+      const result = await createManualTopic({
+        title: data.title,
+        description: data.description,
+        domain: data.domain,
+        keywords: data.keywords,
+      });
+      const topicId = result.duplicate_of || result.topic.id;
+      await createResearchSession(topicId, {
+        target_audience: data.target_audience,
+        content_tone: data.content_tone,
+        preferred_angle: data.preferred_angle,
+      });
+      setToast(`Research started for "${data.title}". Check Research page.`);
+    } catch {
+      setToast(`Failed to create topic and start research.`);
+    }
+    setTimeout(() => setToast(null), 5000);
+  }
+
+  async function handleConfirm(topic: RankedTopic, articleParams?: ArticleParams) {
     closeModal();
-    if (!topic) return;
     if (!topic.id) {
       setToast(`Cannot start research — topic has no ID. Try scanning again.`);
       setTimeout(() => setToast(null), 5000);
@@ -92,7 +135,7 @@ export default function TopicsPage() {
     }
     setToast(`Starting research for "${topic.title}"...`);
     try {
-      await createResearchSession(topic.id);
+      await createResearchSession(topic.id, articleParams);
       setToast(
         `Research started for "${topic.title}". Check Research page for progress.`,
       );
@@ -108,6 +151,14 @@ export default function TopicsPage() {
         title="Topic Discovery"
         subtitle="Browse trending topics and trigger research and content generation."
       >
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowCreateModal(true)}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Create Topic
+        </Button>
         <Button
           size="sm"
           className="bg-primary hover:bg-primary/90"
@@ -158,7 +209,14 @@ export default function TopicsPage() {
       <GenerateArticleModal
         topic={modalTopic}
         onClose={closeModal}
-        onConfirm={handleConfirm}
+        onConfirm={(topic, params) => handleConfirm(topic, params)}
+      />
+
+      <CreateTopicModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreateOnly={handleCreateOnly}
+        onCreateAndGenerate={handleCreateAndGenerate}
       />
 
       {toast && (
