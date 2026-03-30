@@ -3,10 +3,12 @@ from fastapi import APIRouter, Depends, Request
 
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above, require_role
-from src.api.errors import ServiceUnavailableError
+from src.api.errors import NotFoundError, ServiceUnavailableError
 from src.api.rate_limiter import limiter
 from src.api.schemas.topic_analysis import (
     AnalyzeTopicRequest,
+    ManualTopicCreateRequest,
+    ManualTopicResult,
     TopicAnalysisResult,
 )
 from src.api.schemas.topics import (
@@ -145,3 +147,45 @@ async def analyze_topic(
         regenerate_field=body.regenerate_field,
         current_values=body.current_values,
     )
+
+
+@limiter.limit("10/minute")
+@topics_router.post(
+    "/topics",
+    response_model=ManualTopicResult,
+    summary="Create a manual topic",
+    status_code=201,
+)
+async def create_manual_topic(
+    request: Request,
+    body: ManualTopicCreateRequest,
+    user: TokenPayload = Depends(require_editor_or_above),
+) -> ManualTopicResult:
+    """Create a topic manually (not from trend scanning).
+
+    Checks for an exact title duplicate unless *force_create* is True.
+    Returns the existing topic with ``is_duplicate=True`` if one is found.
+    """
+    topic_repo = request.app.state.topic_repo
+    persistence_svc = request.app.state.topic_persistence_service
+
+    if not body.force_create:
+        existing_id = await persistence_svc.find_duplicate_by_title(
+            body.title, body.domain
+        )
+        if existing_id is not None:
+            existing, _ = await topic_repo.list_by_domain(body.domain, 1, 500)
+            match = next((t for t in existing if t.id == existing_id), None)
+            if match:
+                return ManualTopicResult(
+                    topic=match,
+                    is_duplicate=True,
+                    duplicate_of=str(existing_id),
+                )
+
+    topic_id = await topic_repo.create_manual(body)
+    new_items, _ = await topic_repo.list_by_domain(body.domain, 1, 500)
+    created = next((t for t in new_items if t.id == topic_id), None)
+    if created is None:
+        raise NotFoundError(f"Topic {topic_id} created but not retrievable")
+    return ManualTopicResult(topic=created, is_duplicate=False)

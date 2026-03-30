@@ -6,6 +6,7 @@ services/content_repositories.py using SQLAlchemy async sessions.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
@@ -14,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 if TYPE_CHECKING:
+    from src.api.schemas.topic_analysis import ManualTopicCreateRequest
     from src.api.schemas.topics import PersistedTopic, RankedTopic
 
 from src.db.tables import (
@@ -333,6 +335,35 @@ class PgTopicRepository:
             topic_id=str(topic_id),
             domain=domain,
             source=topic.source,
+        )
+        return topic_id
+
+    async def create_manual(self, req: ManualTopicCreateRequest) -> UUID:
+        """Insert a manually created topic."""
+        topic_id = uuid4()
+        async with self._sf() as session:
+            row = TopicRow(
+                id=topic_id,
+                title=req.title,
+                description=req.description,
+                source="manual",
+                external_url="",
+                trend_score=0.0,
+                velocity=0.0,
+                domain=req.domain,
+                discovered_at=datetime.now(UTC),
+                domain_keywords=req.keywords,
+                composite_score=None,
+                rank=None,
+                source_count=1,
+            )
+            session.add(row)
+            await session.commit()
+        logger.debug(
+            "topic_created_manual",
+            topic_id=str(topic_id),
+            domain=req.domain,
+            title=req.title,
         )
         return topic_id
 
