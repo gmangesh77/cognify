@@ -8,6 +8,9 @@ from pydantic import BaseModel
 
 class CreateResearchSessionRequest(BaseModel):
     topic_id: UUID
+    target_audience: str | None = None
+    content_tone: str | None = None
+    preferred_angle: str | None = None
 
 
 class CreateResearchSessionResponse(BaseModel):
