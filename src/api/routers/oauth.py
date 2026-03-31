@@ -85,9 +85,7 @@ async def linkedin_callback(
         )
     except httpx.HTTPError as exc:
         logger.error("linkedin_token_exchange_failed", error=str(exc))
-        redirect = (
-            f"{frontend_settings}?oauth=error&message=token_exchange_failed"
-        )
+        redirect = f"{frontend_settings}?oauth=error&message=token_exchange_failed"
         return RedirectResponse(redirect)
 
     try:
@@ -101,9 +99,7 @@ async def linkedin_callback(
             )
     except Exception as exc:
         logger.error("linkedin_token_storage_failed", error=str(exc))
-        redirect = (
-            f"{frontend_settings}?oauth=error&message=storage_failed"
-        )
+        redirect = f"{frontend_settings}?oauth=error&message=storage_failed"
         return RedirectResponse(redirect)
 
     # Fetch and store the author URN so publishing works without manual config
