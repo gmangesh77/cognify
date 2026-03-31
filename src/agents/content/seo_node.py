@@ -85,7 +85,12 @@ async def _run_seo(
     body_text = "\n\n".join(d.body_markdown for d in drafts)
     citations = _collect_citations(drafts)
 
-    seo = await generate_seo_metadata(outline.title, body_text, llm)
+    seo = await generate_seo_metadata(
+        outline.title,
+        body_text,
+        llm,
+        target_audience=state.get("target_audience"),
+    )
     discover = await generate_ai_discoverability(drafts, citations, llm)
 
     provenance = _build_provenance(state, settings)

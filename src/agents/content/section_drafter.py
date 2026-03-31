@@ -46,6 +46,8 @@ class DraftingContext:
     topic_id: str
     llm: BaseChatModel
     prior_drafts: list[SectionDraft]
+    target_audience: str | None = None
+    content_tone: str | None = None
 
 
 async def draft_section(
@@ -106,6 +108,10 @@ async def _call_llm(
     system = _SYSTEM_PROMPT.format(
         target_word_count=section.target_word_count,
     )
+    if ctx.target_audience:
+        system += f"\nWrite for this audience: {ctx.target_audience}."
+    if ctx.content_tone:
+        system += f"\nTone: {ctx.content_tone}."
     user = _build_user_prompt(section, chunks, ctx.prior_drafts)
     messages = [SystemMessage(content=system), HumanMessage(content=user)]
     response = await ctx.llm.ainvoke(messages)

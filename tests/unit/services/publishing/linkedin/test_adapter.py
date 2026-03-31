@@ -90,7 +90,7 @@ class TestLinkedInAdapter:
             transport=httpx.MockTransport(handler),
         )
         await adapter.publish(payload)
-        assert captured["linkedin-version"] == "202501"
+        assert captured["linkedin-version"] == "202603"
 
     async def test_schedule_returns_failed(self) -> None:
         payload = _make_payload()

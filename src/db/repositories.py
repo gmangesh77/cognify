@@ -6,6 +6,7 @@ services/content_repositories.py using SQLAlchemy async sessions.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
@@ -14,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 if TYPE_CHECKING:
+    from src.api.schemas.topic_analysis import ManualTopicCreateRequest
     from src.api.schemas.topics import PersistedTopic, RankedTopic
 
 from src.db.tables import (
@@ -75,6 +77,9 @@ class PgResearchSessionRepository:
                 completed_at=session.completed_at,
                 agent_plan=session.agent_plan or {},
                 findings_data=session.findings_data or [],
+                target_audience=session.target_audience,
+                content_tone=session.content_tone,
+                preferred_angle=session.preferred_angle,
             )
             db.add(row)
             await db.commit()
@@ -111,6 +116,9 @@ class PgResearchSessionRepository:
             row.topic_title = session.topic_title
             row.topic_description = session.topic_description
             row.topic_domain = session.topic_domain
+            row.target_audience = session.target_audience
+            row.content_tone = session.content_tone
+            row.preferred_angle = session.preferred_angle
             await db.commit()
             await db.refresh(row)
             updated = self._to_model(row)
@@ -176,6 +184,9 @@ class PgResearchSessionRepository:
             completed_at=row.completed_at,
             agent_plan=row.agent_plan or {},
             findings_data=row.findings_data or [],
+            target_audience=row.target_audience,
+            content_tone=row.content_tone,
+            preferred_angle=row.preferred_angle,
         )
 
 
@@ -324,6 +335,35 @@ class PgTopicRepository:
             topic_id=str(topic_id),
             domain=domain,
             source=topic.source,
+        )
+        return topic_id
+
+    async def create_manual(self, req: ManualTopicCreateRequest) -> UUID:
+        """Insert a manually created topic."""
+        topic_id = uuid4()
+        async with self._sf() as session:
+            row = TopicRow(
+                id=topic_id,
+                title=req.title,
+                description=req.description,
+                source="manual",
+                external_url="",
+                trend_score=0.0,
+                velocity=0.0,
+                domain=req.domain,
+                discovered_at=datetime.now(UTC),
+                domain_keywords=req.keywords,
+                composite_score=None,
+                rank=None,
+                source_count=1,
+            )
+            session.add(row)
+            await session.commit()
+        logger.debug(
+            "topic_created_manual",
+            topic_id=str(topic_id),
+            domain=req.domain,
+            title=req.title,
         )
         return topic_id
 

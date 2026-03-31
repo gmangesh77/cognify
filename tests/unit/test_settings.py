@@ -10,7 +10,10 @@ class TestSettings:
         assert settings.app_version == "0.1.0"
         assert settings.debug is False
         assert settings.log_level == "INFO"
-        assert settings.cors_allowed_origins == ["http://localhost:3000"]
+        assert settings.cors_allowed_origins == [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
         assert settings.rate_limit_default == "100/minute"
         assert settings.api_v1_prefix == "/api/v1"
 

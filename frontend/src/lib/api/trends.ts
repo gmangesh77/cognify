@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import type { TopicAnalysisResult, ManualTopicCreateRequest, ManualTopicResult, ArticleParams } from "@/types/api";
 
 // ---------------------------------------------------------------------------
 // Backend-shaped types (mirror src/api/schemas/topics.py + trends.py)
@@ -128,9 +129,40 @@ export interface CreateSessionResponse {
   started_at: string;
 }
 
-export async function createResearchSession(topicId: string): Promise<CreateSessionResponse> {
+export async function createResearchSession(
+  topicId: string,
+  articleParams?: ArticleParams,
+): Promise<CreateSessionResponse> {
   const { data } = await apiClient.post<CreateSessionResponse>("/research/sessions", {
     topic_id: topicId,
+    ...articleParams,
   });
+  return data;
+}
+
+export async function analyzeTopic(
+  title: string,
+  regenerateField?: string | null,
+  currentValues?: TopicAnalysisResult | null,
+): Promise<TopicAnalysisResult> {
+  const { data } = await apiClient.post<TopicAnalysisResult>(
+    "/topics/analyze",
+    {
+      title,
+      regenerate_field: regenerateField ?? null,
+      current_values: currentValues ?? null,
+    },
+    { timeout: 30000 },
+  );
+  return data;
+}
+
+export async function createManualTopic(
+  req: ManualTopicCreateRequest,
+): Promise<ManualTopicResult> {
+  const { data } = await apiClient.post<ManualTopicResult>(
+    "/topics",
+    req,
+  );
   return data;
 }

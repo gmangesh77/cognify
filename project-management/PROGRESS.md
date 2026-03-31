@@ -161,6 +161,7 @@
 | Security Hardening | Done | 2026-03-27 | Env var substitution in docker-compose, debug defaults to false, encryption key enforced in production, CORS restricted, Fernet key validation. PR #44 |
 | Ghost Publishing Fixes | Done | 2026-03-27 | Wire frontend publish to backend API, Lexical format for Ghost 5, static asset serving, citation linkification, key resolver crash fix. Commits `25e8b1c`, `be68912` |
 | References Rendering & Timeouts | Done | 2026-03-27 | Strip raw References from markdown (Ghost + frontend), clean HTML reference list, increase trend API timeouts to 120s. Commit `be68912` |
+| Custom Topic Entry | Done | 2026-03-31 | Manual topic creation with LLM auto-fill, per-article params (audience, tone, angle) threaded through content pipeline, CreateTopicModal + useTopicAnalysis hook, GenerateArticleModal per-article customization. PR #49. [plan](../docs/superpowers/plans/2026-03-30-custom-topic-entry.md), [spec](../docs/superpowers/specs/2026-03-30-custom-topic-entry-design.md) |
 
 ---
 

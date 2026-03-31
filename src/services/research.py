@@ -133,10 +133,22 @@ class ResearchService:
         self._repos = repos
         self._orchestrator = orchestrator
 
-    async def start_session(self, topic_id: UUID) -> ResearchSession:
+    async def start_session(
+        self,
+        topic_id: UUID,
+        target_audience: str | None = None,
+        content_tone: str | None = None,
+        preferred_angle: str | None = None,
+    ) -> ResearchSession:
         if not await self._repos.topics.exists(topic_id):
             raise NotFoundError(f"Topic {topic_id} not found")
-        session = ResearchSession(topic_id=topic_id, started_at=datetime.now(UTC))
+        session = ResearchSession(
+            topic_id=topic_id,
+            started_at=datetime.now(UTC),
+            target_audience=target_audience,
+            content_tone=content_tone,
+            preferred_angle=preferred_angle,
+        )
         return await self._repos.sessions.create(session)
 
     async def get_topic(self, topic_id: UUID) -> TopicInput:

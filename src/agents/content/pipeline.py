@@ -68,6 +68,9 @@ class ContentState(TypedDict):
     references_markdown: NotRequired[str]
     seo_result: NotRequired[SEOResult]
     visuals: NotRequired[list[ImageAsset]]
+    target_audience: NotRequired[str | None]
+    content_tone: NotRequired[str | None]
+    preferred_angle: NotRequired[str | None]
 
 
 def _wrap_node(

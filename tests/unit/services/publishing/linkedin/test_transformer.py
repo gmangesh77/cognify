@@ -13,14 +13,18 @@ class TestLinkedInTransformer:
         result = LinkedInTransformer().transform(sample_article)
         assert result.article_id == sample_article.id
 
-    def test_commentary_includes_title(self, sample_article: CanonicalArticle) -> None:
-        result = LinkedInTransformer().transform(sample_article)
-        assert sample_article.title in result.content
-
-    def test_commentary_includes_summary(
+    def test_commentary_includes_key_claims(
         self, sample_article: CanonicalArticle
     ) -> None:
         result = LinkedInTransformer().transform(sample_article)
+        assert "Claim one" in result.content
+        assert "Claim two" in result.content
+
+    def test_commentary_uses_summary_without_claims(
+        self, sample_article: CanonicalArticle
+    ) -> None:
+        article = sample_article.model_copy(update={"key_claims": []})
+        result = LinkedInTransformer().transform(article)
         assert sample_article.summary in result.content
 
     def test_commentary_includes_hashtags(

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import structlog
 
@@ -84,6 +85,21 @@ class TopicPersistenceService:
             total_persisted=new_count + updated_count,
             topic_ids=topic_ids,
         )
+
+    async def find_duplicate_by_title(
+        self,
+        title: str,
+        domain: str,
+    ) -> UUID | None:
+        """Check if a similar topic already exists by simple title match."""
+        existing, _ = await self._repo.list_by_domain(domain, 1, 200)
+        if not existing:
+            return None
+        normalized = title.lower().strip()
+        for topic in existing:
+            if topic.title.lower().strip() == normalized:
+                return topic.id
+        return None
 
     def _find_matches(
         self,
