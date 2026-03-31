@@ -19,31 +19,36 @@ const OAUTH_MESSAGES: Record<string, string> = {
   storage_failed: "LinkedIn authorized but failed to save token — please retry",
 };
 
+function getOAuthToast(params: URLSearchParams): string | null {
+  const oauth = params.get("oauth");
+  if (!oauth) return null;
+  const message = params.get("message");
+  return oauth === "success"
+    ? OAUTH_MESSAGES.success
+    : OAUTH_MESSAGES[message ?? ""] ?? "OAuth error — please try again";
+}
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>("domains");
-  const [toast, setToast] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const settings = useSettings();
+  const oauthToast = getOAuthToast(searchParams);
+  const [activeTab, setActiveTab] = useState<SettingsTab>(oauthToast ? "api-keys" : "domains");
+  const [toast, setToast] = useState<string | null>(oauthToast);
 
-  useEffect(() => {
-    const oauth = searchParams.get("oauth");
-    const message = searchParams.get("message");
-    if (oauth) {
-      const text = oauth === "success"
-        ? OAUTH_MESSAGES.success
-        : OAUTH_MESSAGES[message ?? ""] ?? "OAuth error — please try again";
-      showToast(text);
-      setActiveTab("api-keys");
-      router.replace("/settings", { scroll: false });
-    }
-  }, [searchParams, router]);
+  const settings = useSettings();
 
   function showToast(message: string) {
     setToast(message);
     setTimeout(() => setToast(null), 4000);
   }
+
+  useEffect(() => {
+    if (!oauthToast) return;
+    router.replace("/settings", { scroll: false });
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [oauthToast, router]);
 
   return (
     <div className="space-y-8">

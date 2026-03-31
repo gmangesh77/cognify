@@ -74,6 +74,9 @@ class ResearchSessionRow(Base, UUIDMixin, TimestampMixin):
     )
     agent_plan: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     findings_data: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    target_audience: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    content_tone: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    preferred_angle: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     steps: Mapped[list["AgentStepRow"]] = relationship(
         back_populates="session",

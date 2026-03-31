@@ -44,6 +44,6 @@ describe("GenerateArticleModal", () => {
     const onConfirm = vi.fn();
     render(<GenerateArticleModal topic={mockTopic} onClose={vi.fn()} onConfirm={onConfirm} />);
     fireEvent.click(screen.getByText("Generate"));
-    expect(onConfirm).toHaveBeenCalledWith(mockTopic);
+    expect(onConfirm).toHaveBeenCalledWith(mockTopic, undefined);
   });
 });

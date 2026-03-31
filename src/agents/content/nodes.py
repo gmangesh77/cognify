@@ -54,7 +54,13 @@ def make_outline_node(llm: BaseChatModel) -> Any:  # noqa: ANN401
             for f in state["findings"]
         ]
         try:
-            outline = await generate_outline(topic, findings, llm)
+            outline = await generate_outline(
+                topic,
+                findings,
+                llm,
+                target_audience=state.get("target_audience"),
+                preferred_angle=state.get("preferred_angle"),
+            )
             logger.info(
                 "outline_generation_complete",
                 section_count=len(outline.sections),
@@ -99,6 +105,8 @@ def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> An
                 topic_id=str(topic.id),
                 llm=llm,
                 prior_drafts=list(drafts),
+                target_audience=state.get("target_audience"),
+                content_tone=state.get("content_tone"),
             )
             draft = await draft_section(section, sq, ctx)
             drafts.append(draft)

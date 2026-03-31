@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 
 import httpx
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 
 from src.api.dependencies import require_admin
@@ -61,10 +61,16 @@ async def linkedin_callback(
     """Handle LinkedIn OAuth callback — exchange code for tokens."""
     frontend_settings = "http://localhost:3000/settings"
     if error:
-        logger.warning("linkedin_oauth_denied", error=error, description=error_description)
-        return RedirectResponse(f"{frontend_settings}?oauth=error&message={error}")
+        logger.warning(
+            "linkedin_oauth_denied",
+            error=error,
+            description=error_description,
+        )
+        redirect = f"{frontend_settings}?oauth=error&message={error}"
+        return RedirectResponse(redirect)
     if not code:
-        return RedirectResponse(f"{frontend_settings}?oauth=error&message=no_code")
+        redirect = f"{frontend_settings}?oauth=error&message=no_code"
+        return RedirectResponse(redirect)
     expiry = _pending_states.pop(state, None)
     if expiry is None or time.time() > expiry:
         return RedirectResponse(f"{frontend_settings}?oauth=error&message=expired")
@@ -79,7 +85,8 @@ async def linkedin_callback(
         )
     except httpx.HTTPError as exc:
         logger.error("linkedin_token_exchange_failed", error=str(exc))
-        return RedirectResponse(f"{frontend_settings}?oauth=error&message=token_exchange_failed")
+        redirect = f"{frontend_settings}?oauth=error&message=token_exchange_failed"
+        return RedirectResponse(redirect)
 
     try:
         api_keys = request.app.state.settings_repos.api_keys
@@ -92,7 +99,8 @@ async def linkedin_callback(
             )
     except Exception as exc:
         logger.error("linkedin_token_storage_failed", error=str(exc))
-        return RedirectResponse(f"{frontend_settings}?oauth=error&message=storage_failed")
+        redirect = f"{frontend_settings}?oauth=error&message=storage_failed"
+        return RedirectResponse(redirect)
 
     # Fetch and store the author URN so publishing works without manual config
     author_urn = ""

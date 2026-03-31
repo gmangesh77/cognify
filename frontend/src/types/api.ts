@@ -1,3 +1,5 @@
+import type { PersistedTopic } from "@/lib/api/trends";
+
 export interface RawTopic {
   title: string;
   description: string;
@@ -72,4 +74,46 @@ export interface GenerateArticleResponse {
   task_id: string;
   status: "queued";
   estimated_time_seconds: number;
+}
+
+export interface TopicAnalysisResult {
+  description: string;
+  domain: string;
+  keywords: string[];
+  target_audience: string;
+  content_tone: string;
+  preferred_angle: string;
+}
+
+export interface AnalyzeTopicRequest {
+  title: string;
+  regenerate_field?: string | null;
+  current_values?: TopicAnalysisResult | null;
+}
+
+export interface ManualTopicCreateRequest {
+  title: string;
+  description: string;
+  domain: string;
+  keywords: string[];
+  force_create?: boolean;
+}
+
+export interface ManualTopicResult {
+  topic: PersistedTopic;
+  is_duplicate: boolean;
+  duplicate_of: string | null;
+}
+
+export type ContentTone =
+  | "technical-authoritative"
+  | "conversational"
+  | "educational"
+  | "analytical"
+  | "news-reporting";
+
+export interface ArticleParams {
+  target_audience?: string;
+  content_tone?: ContentTone;
+  preferred_angle?: string;
 }

@@ -4,6 +4,7 @@ export const SOURCE_NAMES = [
   "hackernews",
   "newsapi",
   "arxiv",
+  "manual",
 ] as const;
 
 export type SourceName = (typeof SOURCE_NAMES)[number];
@@ -14,6 +15,7 @@ export const SOURCE_LABELS: Record<SourceName, string> = {
   hackernews: "Hacker News",
   newsapi: "NewsAPI",
   arxiv: "arXiv",
+  manual: "Manual",
 };
 
 export function getSourceLabel(source: string): string {

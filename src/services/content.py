@@ -130,6 +130,9 @@ class ContentService:
                 "outline": None,
                 "status": "outline_generating",
                 "error": None,
+                "target_audience": session.target_audience,
+                "content_tone": session.content_tone,
+                "preferred_angle": session.preferred_angle,
             }
         )
         # Only fail if outline generation itself failed
@@ -305,6 +308,9 @@ class ContentService:
                 "outline": None,
                 "status": "outline_generating",
                 "error": None,
+                "target_audience": None,
+                "content_tone": None,
+                "preferred_angle": None,
             }
         )
         if result["status"] == "failed":
@@ -333,6 +339,9 @@ class ContentService:
                 "outline": draft.outline,
                 "status": "outline_complete",
                 "error": None,
+                "target_audience": None,
+                "content_tone": None,
+                "preferred_angle": None,
             }
         )
         if result["status"] == "failed":

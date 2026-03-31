@@ -70,6 +70,8 @@ async def generate_outline(
     topic: TopicInput,
     findings: list[FacetFindings],
     llm: BaseChatModel,
+    target_audience: str | None = None,
+    preferred_angle: str | None = None,
 ) -> ArticleOutline:
     """Generate an article outline from topic and findings."""
     logger.info("outline_generation_started", topic_title=topic.title)
@@ -80,6 +82,17 @@ async def generate_outline(
         findings_summary=_summarize_findings(findings),
         schema_hint=_SCHEMA_HINT,
     )
+    audience_section = ""
+    if target_audience:
+        audience_section = f"Target audience: {target_audience}\n"
+    angle_section = ""
+    if preferred_angle:
+        angle_section = f"Editorial angle: {preferred_angle}\n"
+    if audience_section or angle_section:
+        user_msg = user_msg.replace(
+            "Requirements:\n",
+            f"{audience_section}{angle_section}\nRequirements:\n",
+        )
     messages = [
         SystemMessage(content=_SYSTEM_PROMPT),
         HumanMessage(content=user_msg),

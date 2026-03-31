@@ -24,6 +24,9 @@ class ResearchSession(BaseModel):
     topic_title: str = ""
     topic_description: str = ""
     topic_domain: str = ""
+    target_audience: str | None = None
+    content_tone: str | None = None
+    preferred_angle: str | None = None
     duration_seconds: float | None = None
     started_at: datetime
     completed_at: datetime | None = None

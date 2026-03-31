@@ -1,6 +1,7 @@
 """Endpoint tests for OAuth routes."""
 
 from unittest.mock import AsyncMock, patch
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 import pytest
@@ -25,6 +26,13 @@ async def oauth_client(oauth_app: FastAPI) -> httpx.AsyncClient:
         base_url="http://test",
     ) as ac:
         yield ac
+
+
+def _parse_redirect(resp: httpx.Response) -> dict[str, str]:
+    """Extract query params from a redirect Location header."""
+    parsed = urlparse(resp.headers["location"])
+    qs = parse_qs(parsed.query)
+    return {k: v[0] for k, v in qs.items()}
 
 
 class TestLinkedInAuthorize:
@@ -59,7 +67,7 @@ class TestLinkedInAuthorize:
 
 
 class TestLinkedInCallback:
-    async def test_invalid_state_returns_400(
+    async def test_invalid_state_redirects_with_error(
         self,
         oauth_client: httpx.AsyncClient,
     ) -> None:
@@ -67,9 +75,12 @@ class TestLinkedInCallback:
             "/api/v1/oauth/linkedin/callback",
             params={"code": "abc", "state": "bad-state"},
         )
-        assert resp.status_code == 400
+        assert resp.status_code == 307
+        params = _parse_redirect(resp)
+        assert params["oauth"] == "error"
+        assert params["message"] == "expired"
 
-    async def test_missing_code_returns_422(
+    async def test_missing_code_redirects_with_error(
         self,
         oauth_client: httpx.AsyncClient,
     ) -> None:
@@ -77,7 +88,10 @@ class TestLinkedInCallback:
             "/api/v1/oauth/linkedin/callback",
             params={"state": "some-state"},
         )
-        assert resp.status_code == 422
+        assert resp.status_code == 307
+        params = _parse_redirect(resp)
+        assert params["oauth"] == "error"
+        assert params["message"] == "no_code"
 
     @patch("src.api.routers.oauth._store_token", new_callable=AsyncMock)
     @patch("src.api.routers.oauth._exchange_code_for_tokens")
@@ -108,11 +122,13 @@ class TestLinkedInCallback:
             "/api/v1/oauth/linkedin/callback",
             params={"code": "auth-code-123", "state": state},
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 307
+        params = _parse_redirect(resp)
+        assert params["oauth"] == "success"
         mock_exchange.assert_called_once()
 
     @patch("src.api.routers.oauth._exchange_code_for_tokens")
-    async def test_exchange_failure_returns_502(
+    async def test_exchange_failure_redirects_with_error(
         self,
         mock_exchange: AsyncMock,
         oauth_client: httpx.AsyncClient,
@@ -135,4 +151,7 @@ class TestLinkedInCallback:
             "/api/v1/oauth/linkedin/callback",
             params={"code": "bad-code", "state": state},
         )
-        assert resp.status_code == 502
+        assert resp.status_code == 307
+        params = _parse_redirect(resp)
+        assert params["oauth"] == "error"
+        assert params["message"] == "token_exchange_failed"

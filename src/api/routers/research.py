@@ -87,7 +87,12 @@ async def create_research_session(
     user: TokenPayload = Depends(require_editor_or_above),
 ) -> CreateResearchSessionResponse:
     svc = _get_research_service(request)
-    session = await svc.start_session(body.topic_id)
+    session = await svc.start_session(
+        body.topic_id,
+        target_audience=body.target_audience,
+        content_tone=body.content_tone,
+        preferred_angle=body.preferred_angle,
+    )
     topic = await svc.get_topic(body.topic_id)
     content_svc = getattr(request.app.state, "content_service", None)
     background_tasks.add_task(
