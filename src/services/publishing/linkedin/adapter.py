@@ -56,11 +56,13 @@ class LinkedInAdapter:
         if not author_urn:
             author_urn = await self._resolve_author_urn()
         if not author_urn:
-            return _failed(
-                payload.article_id,
-                "LinkedIn author URN not configured. Set COGNIFY_LINKEDIN_AUTHOR_URN in .env "
-                "(e.g. urn:li:person:YOUR_MEMBER_ID or urn:li:organization:YOUR_ORG_ID)",
+            msg = (
+                "LinkedIn author URN not configured."
+                " Set COGNIFY_LINKEDIN_AUTHOR_URN in .env"
+                " (e.g. urn:li:person:YOUR_MEMBER_ID"
+                " or urn:li:organization:YOUR_ORG_ID)"
             )
+            return _failed(payload.article_id, msg)
         body = _build_request_body(payload, author_urn)
         resp = await self._post(body)
         if resp.status_code == 401:
