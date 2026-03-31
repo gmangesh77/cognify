@@ -1,7 +1,7 @@
 """Tests for manual topic creation — repository, dedup service, and endpoint."""
 
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -140,7 +140,9 @@ class TestFindDuplicateByTitle:
 
         svc = TopicPersistenceService(repo=repo, embedding_service=embedding)
 
-        result = await svc.find_duplicate_by_title("AI Security Trends", "cybersecurity")
+        result = await svc.find_duplicate_by_title(
+            "AI Security Trends", "cybersecurity"
+        )
 
         assert result is None
 
@@ -176,9 +178,7 @@ class TestFindDuplicateByTitle:
 
         svc = TopicPersistenceService(repo=repo, embedding_service=embedding)
 
-        result = await svc.find_duplicate_by_title(
-            "cloud native 2026", "cybersecurity"
-        )
+        result = await svc.find_duplicate_by_title("cloud native 2026", "cybersecurity")
 
         assert result == existing_id
 
@@ -200,7 +200,9 @@ class TestManualTopicCreateRequest:
         assert req.force_create is False
 
     def test_title_too_short_raises(self) -> None:
-        with pytest.raises(Exception):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
             ManualTopicCreateRequest(
                 title="AB",
                 description="desc",

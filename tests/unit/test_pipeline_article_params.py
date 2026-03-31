@@ -1,6 +1,5 @@
 """Tests for per-article params in content pipeline."""
 
-import pytest
 from unittest.mock import MagicMock
 
 from src.agents.content.pipeline import ContentState

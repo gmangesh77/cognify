@@ -86,7 +86,9 @@ async def _run_seo(
     citations = _collect_citations(drafts)
 
     seo = await generate_seo_metadata(
-        outline.title, body_text, llm,
+        outline.title,
+        body_text,
+        llm,
         target_audience=state.get("target_audience"),
     )
     discover = await generate_ai_discoverability(drafts, citations, llm)
