@@ -153,6 +153,7 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                 retriever=retriever,
                 settings=settings,
             )
+            app.state.drafting_llm = llm
             logger.info(
                 "content_deps_initialized",
                 mode="real_llm",
@@ -257,6 +258,7 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                         repos,
                         orchestrator,
                     )
+                    app.state.drafting_llm = llm
                     logger.info("llm_rebuilt_with_resolved_keys")
                 except Exception as exc:
                     logger.error("llm_rebuild_failed", error=str(exc))

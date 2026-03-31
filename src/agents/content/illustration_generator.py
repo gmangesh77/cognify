@@ -60,18 +60,21 @@ class OpenAIDalleGenerator:
 
 
 _PROMPT_TEMPLATE = (
-    "You are an expert art director. Write a detailed image generation prompt "
-    "for a professional article hero image.\n\n"
+    "You are an expert art director at a premium tech publication like Wired or "
+    "The Verge. Write a detailed DALL-E prompt for a stunning article hero image.\n\n"
     "Article title: {title}\n"
     "Domain: {domain}\n"
     "Summary: {summary}\n\n"
     "Requirements:\n"
-    "- Professional, editorial-style illustration\n"
-    "- NO text, words, or letters in the image\n"
+    "- Modern, visually striking digital illustration — NOT a stock photo\n"
+    "- Abstract or conceptual representation of the topic\n"
+    "- Rich color palette with depth, gradients, and lighting effects\n"
+    "- Clean composition suitable for a 16:9 hero banner\n"
+    "- Style: blend of 3D render and flat design, cinematic lighting\n"
+    "- NO text, words, letters, or numbers in the image\n"
     "- NO photorealistic human faces\n"
-    "- Clean composition, modern aesthetic\n"
-    "- Relevant to the article's domain and topic\n"
-    "- Suitable as an article header/cover image\n\n"
+    "- NO charts, graphs, diagrams, or data visualizations\n"
+    "- Think: abstract tech art, futuristic, editorial quality\n\n"
     "Write ONLY the image prompt (100-200 words). No explanation."
 )
 

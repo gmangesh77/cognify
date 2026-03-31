@@ -188,7 +188,7 @@ def make_illustration_node(
             return {"visuals": existing}
 
         try:
-            image_bytes = await generator.generate(prompt, (1024, 1024))
+            image_bytes = await generator.generate(prompt, (1792, 1024))
         except Exception as exc:
             logger.warning("illustration_generator_error", error=str(exc))
             return {"visuals": existing}
@@ -206,7 +206,7 @@ def make_illustration_node(
             metadata={"generator": "dall-e-3", "type": "hero"},
         )
         logger.info("illustration_generation_complete", path=str(path))
-        return {"visuals": existing + [asset]}
+        return {"visuals": [asset] + existing}
 
     return illustration_node
 

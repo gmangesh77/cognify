@@ -30,11 +30,12 @@ class GhostTransformer:
 
 
 def _build_html_body(article: CanonicalArticle, api_base: str) -> str:
-    """Convert markdown to HTML, link citations, and inject JSON-LD."""
+    """Convert markdown to HTML, link citations, inject visuals, and JSON-LD."""
     body = _strip_references_section(article.body_markdown)
     html = markdown.markdown(body, extensions=_MD_EXTENSIONS)
     html = _linkify_citations(html, article)
     html = _rewrite_local_asset_urls(html, api_base)
+    html = _inject_visuals(html, article, api_base)
     html += _build_references_html(article)
     json_ld = _build_json_ld(article)
     if json_ld:
@@ -69,9 +70,55 @@ def _build_metadata(
     tags = _build_tags(article)
     if tags:
         meta["tags"] = tags
-    if article.visuals:
+    hero = _find_hero_visual(article)
+    if hero:
+        meta["feature_image"] = _asset_url(hero.url, api_base)
+    elif article.visuals:
         meta["feature_image"] = _asset_url(article.visuals[0].url, api_base)
     return meta
+
+
+def _inject_visuals(html: str, article: CanonicalArticle, api_base: str) -> str:
+    """Inject chart/diagram visuals into the HTML body after relevant sections."""
+    charts = [
+        v for v in article.visuals
+        if getattr(v, "metadata", None) and v.metadata.get("type") != "hero"
+    ]
+    if not charts:
+        return html
+
+    # Split HTML into sections by <h2> tags
+    sections = re.split(r"(<h2[^>]*>)", html)
+
+    # Insert charts after their target section (or at the end)
+    for chart in charts:
+        source_section = (chart.metadata or {}).get("source_section", -1)
+        url = _asset_url(chart.url, api_base)
+        alt = getattr(chart, "alt_text", "") or ""
+        caption = getattr(chart, "caption", "") or ""
+        img_html = (
+            f'\n<figure>'
+            f'<img src="{url}" alt="{alt}" style="max-width:100%;height:auto;" />'
+            f'<figcaption>{caption}</figcaption>'
+            f'</figure>\n'
+        )
+        # Each <h2> split produces: [before, <h2>, content, <h2>, content, ...]
+        # Section index in the split: section N content is at index 2*N+2
+        target_idx = 2 * source_section + 2 if source_section >= 0 else len(sections) - 1
+        if target_idx < len(sections):
+            sections[target_idx] += img_html
+        else:
+            sections[-1] += img_html
+
+    return "".join(sections)
+
+
+def _find_hero_visual(article: CanonicalArticle):  # type: ignore[no-untyped-def]
+    """Find the DALL-E hero illustration, if any."""
+    for v in article.visuals:
+        if getattr(v, "metadata", None) and v.metadata.get("type") == "hero":
+            return v
+    return None
 
 
 def _build_tags(article: CanonicalArticle) -> str:
