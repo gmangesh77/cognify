@@ -19,7 +19,7 @@
 - Modify: `src/db/tables.py:54-82`
 - Modify: `src/models/research_db.py:13-30`
 
-- [ ] **Step 1: Add columns to SQLAlchemy model**
+- [x] **Step 1: Add columns to SQLAlchemy model**
 
 In `src/db/tables.py`, add three nullable columns to `ResearchSessionRow` after line 76 (`findings_data`):
 
@@ -29,7 +29,7 @@ In `src/db/tables.py`, add three nullable columns to `ResearchSessionRow` after 
     preferred_angle: Mapped[str | None] = mapped_column(String(500), nullable=True)
 ```
 
-- [ ] **Step 2: Add fields to Pydantic model**
+- [x] **Step 2: Add fields to Pydantic model**
 
 In `src/models/research_db.py`, add three fields to the `ResearchSession` class after `topic_domain`:
 
@@ -39,17 +39,17 @@ In `src/models/research_db.py`, add three fields to the `ResearchSession` class 
     preferred_angle: str | None = None
 ```
 
-- [ ] **Step 3: Generate Alembic migration**
+- [x] **Step 3: Generate Alembic migration**
 
 Run: `uv run alembic revision --autogenerate -m "add per-article params to research_sessions"`
 Expected: New migration file created in `alembic/versions/`
 
-- [ ] **Step 4: Apply migration**
+- [x] **Step 4: Apply migration**
 
 Run: `uv run alembic upgrade head`
 Expected: Migration applies successfully (if DB is available), or note this for Docker setup.
 
-- [ ] **Step 5: Update PgResearchSessionRepository**
+- [x] **Step 5: Update PgResearchSessionRepository**
 
 In `src/db/repositories.py`, update the `PgResearchSessionRepository.create` method to include the new fields when creating a `ResearchSessionRow`. Find the `create` method (around line 55-90) and add:
 
@@ -67,7 +67,7 @@ Also update the `_to_model` method to read these fields back:
             preferred_angle=row.preferred_angle,
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/db/tables.py src/models/research_db.py src/db/repositories.py alembic/
@@ -84,7 +84,7 @@ git commit -m "feat: add per-article params (audience, tone, angle) to research_
 - Modify: `src/api/routers/topics.py`
 - Test: `tests/unit/test_topic_analyzer.py`
 
-- [ ] **Step 1: Write failing test for topic analyzer service**
+- [x] **Step 1: Write failing test for topic analyzer service**
 
 Create `tests/unit/test_topic_analyzer.py`:
 
@@ -174,12 +174,12 @@ async def test_analyze_regenerate_single_field():
     assert "keywords" in prompt_text
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/unit/test_topic_analyzer.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'src.services.topic_analyzer'`
 
-- [ ] **Step 3: Create TopicAnalysisResult schema**
+- [x] **Step 3: Create TopicAnalysisResult schema**
 
 Create `src/api/schemas/topic_analysis.py`:
 
@@ -240,7 +240,7 @@ from src.api.schemas.topics import PersistedTopic  # noqa: E402
 ManualTopicResult.model_rebuild()
 ```
 
-- [ ] **Step 4: Implement TopicAnalyzer service**
+- [x] **Step 4: Implement TopicAnalyzer service**
 
 Create `src/services/topic_analyzer.py`:
 
@@ -361,12 +361,12 @@ class TopicAnalyzer:
         raise ValueError(msg)
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `uv run pytest tests/unit/test_topic_analyzer.py -v`
 Expected: All 3 tests PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/services/topic_analyzer.py src/api/schemas/topic_analysis.py tests/unit/test_topic_analyzer.py
@@ -382,7 +382,7 @@ git commit -m "feat: add topic analyzer service with LLM-powered metadata sugges
 - Modify: `src/db/repositories.py:259-412` (PgTopicRepository)
 - Test: `tests/unit/test_manual_topic_creation.py`
 
-- [ ] **Step 1: Write failing test for manual topic creation**
+- [x] **Step 1: Write failing test for manual topic creation**
 
 Create `tests/unit/test_manual_topic_creation.py`:
 
@@ -424,12 +424,12 @@ async def test_create_manual_topic():
     assert add_call.velocity == 0.0
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/unit/test_manual_topic_creation.py -v`
 Expected: FAIL — `AttributeError: 'PgTopicRepository' object has no attribute 'create_manual'`
 
-- [ ] **Step 3: Add `create_manual` method to PgTopicRepository**
+- [x] **Step 3: Add `create_manual` method to PgTopicRepository**
 
 In `src/db/repositories.py`, add a new method to `PgTopicRepository` after `create_from_ranked` (around line 328):
 
@@ -474,12 +474,12 @@ Add the import at the top of `repositories.py` (TYPE_CHECKING block):
     from src.api.schemas.topic_analysis import ManualTopicCreateRequest
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/unit/test_manual_topic_creation.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Add API routes for analyze and create**
+- [x] **Step 5: Add API routes for analyze and create**
 
 In `src/api/routers/topics.py`, add the two new endpoints. Add imports at the top:
 
@@ -568,7 +568,7 @@ async def create_manual_topic(
     return ManualTopicResult(topic=created, is_duplicate=False)
 ```
 
-- [ ] **Step 6: Add `find_duplicate_by_title` to TopicPersistenceService**
+- [x] **Step 6: Add `find_duplicate_by_title` to TopicPersistenceService**
 
 In `src/services/topic_persistence.py`, add a method to check for duplicate topics by title embedding:
 
@@ -606,12 +606,12 @@ In `src/services/topic_persistence.py`, add a method to check for duplicate topi
         return None
 ```
 
-- [ ] **Step 7: Run tests**
+- [x] **Step 7: Run tests**
 
 Run: `uv run pytest tests/unit/test_manual_topic_creation.py tests/unit/test_topic_analyzer.py -v`
 Expected: All tests PASS
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/api/routers/topics.py src/db/repositories.py src/services/topic_persistence.py src/api/schemas/topic_analysis.py tests/unit/test_manual_topic_creation.py
@@ -628,7 +628,7 @@ git commit -m "feat: add manual topic creation and analysis API endpoints"
 - Modify: `src/services/research.py:136-140`
 - Test: `tests/unit/test_research_session_params.py`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `tests/unit/test_research_session_params.py`:
 
@@ -708,12 +708,12 @@ async def test_start_session_without_article_params():
     assert session.preferred_angle is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/unit/test_research_session_params.py -v`
 Expected: FAIL — `TypeError: start_session() got an unexpected keyword argument 'target_audience'`
 
-- [ ] **Step 3: Update CreateResearchSessionRequest schema**
+- [x] **Step 3: Update CreateResearchSessionRequest schema**
 
 In `src/api/schemas/research.py`, add optional fields to `CreateResearchSessionRequest`:
 
@@ -725,7 +725,7 @@ class CreateResearchSessionRequest(BaseModel):
     preferred_angle: str | None = None
 ```
 
-- [ ] **Step 4: Update ResearchService.start_session**
+- [x] **Step 4: Update ResearchService.start_session**
 
 In `src/services/research.py`, update `start_session` to accept and store per-article params:
 
@@ -749,7 +749,7 @@ In `src/services/research.py`, update `start_session` to accept and store per-ar
         return await self._repos.sessions.create(session)
 ```
 
-- [ ] **Step 5: Update the API route to pass params**
+- [x] **Step 5: Update the API route to pass params**
 
 In `src/api/routers/research.py`, update `create_research_session` (line 90):
 
@@ -762,12 +762,12 @@ In `src/api/routers/research.py`, update `create_research_session` (line 90):
     )
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `uv run pytest tests/unit/test_research_session_params.py -v`
 Expected: All 2 tests PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/api/schemas/research.py src/services/research.py src/api/routers/research.py tests/unit/test_research_session_params.py
@@ -787,7 +787,7 @@ git commit -m "feat: extend research session creation with per-article params"
 - Modify: `src/agents/content/seo_node.py:77-107` (_run_seo)
 - Test: `tests/unit/test_pipeline_article_params.py`
 
-- [ ] **Step 1: Write failing test for pipeline state params**
+- [x] **Step 1: Write failing test for pipeline state params**
 
 Create `tests/unit/test_pipeline_article_params.py`:
 
@@ -833,12 +833,12 @@ def test_content_state_works_without_article_params():
     assert state.get("target_audience") is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/unit/test_pipeline_article_params.py -v`
 Expected: FAIL (or type error) — `target_audience` not in ContentState
 
-- [ ] **Step 3: Add per-article params to ContentState**
+- [x] **Step 3: Add per-article params to ContentState**
 
 In `src/agents/content/pipeline.py`, add three fields to `ContentState` (after line 70, `visuals`):
 
@@ -848,12 +848,12 @@ In `src/agents/content/pipeline.py`, add three fields to `ContentState` (after l
     preferred_angle: NotRequired[str | None]
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/unit/test_pipeline_article_params.py -v`
 Expected: All 2 tests PASS
 
-- [ ] **Step 5: Update ContentService.generate_full_article to pass params**
+- [x] **Step 5: Update ContentService.generate_full_article to pass params**
 
 In `src/services/content.py`, update `generate_full_article` (around line 124-134) to read per-article params from the session and pass them to the graph:
 
@@ -886,7 +886,7 @@ In `_run_pipeline` (line 295-315), add the three `None` params to the `ainvoke` 
 
 In `_run_drafting` (line 317-340), add the same three `None` params.
 
-- [ ] **Step 6: Update outline_generator.py prompts**
+- [x] **Step 6: Update outline_generator.py prompts**
 
 In `src/agents/content/outline_generator.py`, update `_USER_TEMPLATE` (line 33-45) to include conditional audience and angle sections. Update `generate_outline` function to accept optional params:
 
@@ -938,7 +938,7 @@ Update `make_outline_node` in `nodes.py` to pass params from state:
             )
 ```
 
-- [ ] **Step 7: Update section_drafter.py prompts**
+- [x] **Step 7: Update section_drafter.py prompts**
 
 In `src/agents/content/section_drafter.py`, update `_SYSTEM_PROMPT` to accept audience and tone. Update `DraftingContext` to include per-article params:
 
@@ -992,7 +992,7 @@ Update `make_draft_node` in `nodes.py` to pass params to DraftingContext:
             )
 ```
 
-- [ ] **Step 8: Update seo_node.py to include audience**
+- [x] **Step 8: Update seo_node.py to include audience**
 
 In `src/agents/content/seo_node.py`, update `_run_seo` to pass audience to `generate_seo_metadata`. The `generate_seo_metadata` function in `seo_optimizer.py` takes `(title, body_text, llm)` — add an optional `target_audience` param:
 
@@ -1027,12 +1027,12 @@ And include it in the prompt if provided:
     # Add audience_hint to the user message
 ```
 
-- [ ] **Step 9: Run all backend tests**
+- [x] **Step 9: Run all backend tests**
 
 Run: `uv run pytest tests/unit/ -q`
 Expected: All tests PASS (no regressions)
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/agents/content/pipeline.py src/services/content.py src/agents/content/outline_generator.py src/agents/content/nodes.py src/agents/content/section_drafter.py src/agents/content/humanize_node.py src/agents/content/seo_node.py src/agents/content/seo_optimizer.py tests/unit/test_pipeline_article_params.py
@@ -1048,7 +1048,7 @@ git commit -m "feat: thread per-article params through content pipeline nodes"
 - Modify: `frontend/src/types/api.ts`
 - Test: (covered by component tests in Task 8)
 
-- [ ] **Step 1: Add TypeScript types**
+- [x] **Step 1: Add TypeScript types**
 
 In `frontend/src/types/api.ts`, add new types after `GenerateArticleResponse` (line 76):
 
@@ -1095,7 +1095,7 @@ export interface ArticleParams {
 }
 ```
 
-- [ ] **Step 2: Add API functions**
+- [x] **Step 2: Add API functions**
 
 In `frontend/src/lib/api/trends.ts`, add new functions after `createResearchSession`:
 
@@ -1143,7 +1143,7 @@ export async function createResearchSession(
 }
 ```
 
-- [ ] **Step 3: Add "Manual" source label**
+- [x] **Step 3: Add "Manual" source label**
 
 In `frontend/src/types/sources.ts`, add "manual" to the source names and labels:
 
@@ -1169,7 +1169,7 @@ export const SOURCE_LABELS: Record<SourceName, string> = {
 
 This ensures manual topics display "Manual" in the topic card source label rather than the raw string "manual".
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 cd frontend && git add src/types/api.ts src/lib/api/trends.ts src/types/sources.ts
@@ -1185,7 +1185,7 @@ git commit -m "feat: add frontend API functions for topic analysis and manual cr
 - Create: `frontend/src/hooks/use-topic-analysis.ts`
 - Modify: `frontend/src/app/(dashboard)/topics/page.tsx`
 
-- [ ] **Step 1: Create useTopicAnalysis hook**
+- [x] **Step 1: Create useTopicAnalysis hook**
 
 Create `frontend/src/hooks/use-topic-analysis.ts`:
 
@@ -1276,7 +1276,7 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
 }
 ```
 
-- [ ] **Step 2: Create the CreateTopicModal component**
+- [x] **Step 2: Create the CreateTopicModal component**
 
 Create `frontend/src/components/topics/create-topic-modal.tsx`:
 
@@ -1565,7 +1565,7 @@ function FieldWithRegenerate({
 }
 ```
 
-- [ ] **Step 3: Wire modal into Topics page**
+- [x] **Step 3: Wire modal into Topics page**
 
 In `frontend/src/app/(dashboard)/topics/page.tsx`, add the Create Topic button and modal:
 
@@ -1662,7 +1662,7 @@ Add the modal before the toast (around line 162):
       />
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/hooks/use-topic-analysis.ts frontend/src/components/topics/create-topic-modal.tsx frontend/src/app/\(dashboard\)/topics/page.tsx
@@ -1677,7 +1677,7 @@ git commit -m "feat: add Create Topic modal with LLM-powered auto-fill"
 - Modify: `frontend/src/components/topics/generate-article-modal.tsx`
 - Modify: `frontend/src/app/(dashboard)/topics/page.tsx:84-103`
 
-- [ ] **Step 1: Update GenerateArticleModal component**
+- [x] **Step 1: Update GenerateArticleModal component**
 
 Replace `frontend/src/components/topics/generate-article-modal.tsx` with extended version:
 
@@ -1834,7 +1834,7 @@ export function GenerateArticleModal({
 }
 ```
 
-- [ ] **Step 2: Update handleConfirm in Topics page**
+- [x] **Step 2: Update handleConfirm in Topics page**
 
 In `frontend/src/app/(dashboard)/topics/page.tsx`, update `handleConfirm` to pass article params:
 
@@ -1867,12 +1867,12 @@ Add the `ArticleParams` import at the top:
 import type { ArticleParams } from "@/types/api";
 ```
 
-- [ ] **Step 3: Run frontend tests**
+- [x] **Step 3: Run frontend tests**
 
 Run: `cd frontend && npx vitest run`
 Expected: All tests pass (update any broken tests due to changed modal props)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/components/topics/generate-article-modal.tsx frontend/src/app/\(dashboard\)/topics/page.tsx
@@ -1887,7 +1887,7 @@ git commit -m "feat: extend Generate Article modal with per-article customizatio
 - Create: `frontend/src/components/topics/__tests__/create-topic-modal.test.tsx`
 - Modify: existing generate-article-modal tests (if any)
 
-- [ ] **Step 1: Write tests for CreateTopicModal**
+- [x] **Step 1: Write tests for CreateTopicModal**
 
 Create `frontend/src/components/topics/__tests__/create-topic-modal.test.tsx`:
 
@@ -1965,12 +1965,12 @@ describe("CreateTopicModal", () => {
 });
 ```
 
-- [ ] **Step 2: Run frontend tests**
+- [x] **Step 2: Run frontend tests**
 
 Run: `cd frontend && npx vitest run`
 Expected: All tests pass
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/components/topics/__tests__/create-topic-modal.test.tsx
@@ -1985,7 +1985,7 @@ git commit -m "test: add tests for CreateTopicModal component"
 - Create: `tests/unit/test_topic_analysis_endpoint.py`
 - Modify: any existing tests broken by schema changes
 
-- [ ] **Step 1: Write endpoint-level test**
+- [x] **Step 1: Write endpoint-level test**
 
 Create `tests/unit/test_topic_analysis_endpoint.py`:
 
@@ -2032,17 +2032,17 @@ async def test_analyze_topic_endpoint():
         assert result.target_audience == "Engineers"
 ```
 
-- [ ] **Step 2: Run all backend tests**
+- [x] **Step 2: Run all backend tests**
 
 Run: `uv run pytest tests/unit/ -q`
 Expected: All tests pass — no regressions from schema changes
 
-- [ ] **Step 3: Run linting**
+- [x] **Step 3: Run linting**
 
 Run: `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/`
 Expected: No lint errors. If there are, fix with `uv run ruff check --fix src/ tests/ && uv run ruff format src/ tests/`
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/unit/test_topic_analysis_endpoint.py
@@ -2057,7 +2057,7 @@ git commit -m "test: add endpoint tests for topic analysis and fix regressions"
 - Modify: `project-management/PROGRESS.md`
 - Modify: `project-management/BACKLOG.md`
 
-- [ ] **Step 1: Update PROGRESS.md**
+- [x] **Step 1: Update PROGRESS.md**
 
 Add a new section for the custom topic entry feature under a new "Feature Enhancements" section:
 
@@ -2069,11 +2069,11 @@ Add a new section for the custom topic entry feature under a new "Feature Enhanc
 | CUSTOM-001 | Custom Topic Entry with Auto-Fill | In Progress | `feature/custom-topic-entry` | [plan](../docs/superpowers/plans/2026-03-30-custom-topic-entry.md) | [spec](../docs/superpowers/specs/2026-03-30-custom-topic-entry-design.md) |
 ```
 
-- [ ] **Step 2: Update BACKLOG.md**
+- [x] **Step 2: Update BACKLOG.md**
 
 Add the custom topic entry as a new item in the backlog with its acceptance criteria.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add project-management/PROGRESS.md project-management/BACKLOG.md
