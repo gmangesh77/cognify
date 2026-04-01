@@ -73,11 +73,10 @@ export function CreateTopicModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={handleClose}
     >
       <div
         role="dialog"
-        className="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="font-heading text-lg font-semibold text-neutral-900">
@@ -134,7 +133,7 @@ export function CreateTopicModal({
               <textarea
                 value={analysis.description}
                 onChange={(e) => updateField("description", e.target.value)}
-                rows={2}
+                rows={4}
                 className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
             </FieldWithRegenerate>
@@ -159,8 +158,7 @@ export function CreateTopicModal({
               isRegenerating={isRegenerating}
               onRegenerate={() => regenerateField(title, "keywords")}
             >
-              <input
-                type="text"
+              <textarea
                 value={analysis.keywords.join(", ")}
                 onChange={(e) =>
                   updateField(
@@ -168,6 +166,7 @@ export function CreateTopicModal({
                     e.target.value.split(",").map((k) => k.trim()).filter(Boolean),
                   )
                 }
+                rows={2}
                 className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
                 placeholder="comma-separated keywords"
               />
@@ -179,10 +178,10 @@ export function CreateTopicModal({
               isRegenerating={isRegenerating}
               onRegenerate={() => regenerateField(title, "target_audience")}
             >
-              <input
-                type="text"
+              <textarea
                 value={analysis.target_audience}
                 onChange={(e) => updateField("target_audience", e.target.value)}
+                rows={2}
                 className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
             </FieldWithRegenerate>
@@ -212,10 +211,10 @@ export function CreateTopicModal({
               isRegenerating={isRegenerating}
               onRegenerate={() => regenerateField(title, "preferred_angle")}
             >
-              <input
-                type="text"
+              <textarea
                 value={analysis.preferred_angle}
                 onChange={(e) => updateField("preferred_angle", e.target.value)}
+                rows={3}
                 className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
             </FieldWithRegenerate>
