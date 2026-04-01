@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 _CITATION_PATTERN = re.compile(r"\[(\d+)\]")
+_STRIP_MARKERS = re.compile(r"\s*\[\d+\](?:\[\d+\])*")
 _MIN_UNIQUE_SOURCES = 5
 _URL_CHECK_TIMEOUT = 3.0
 
@@ -92,6 +93,14 @@ def _renumber_text(text: str, remap: dict[int, int]) -> str:
         return f"[{remap.get(int(m.group(1)), int(m.group(1)))}]"
 
     return _CITATION_PATTERN.sub(_replace, text)
+
+
+def strip_citation_markers(markdown: str) -> str:
+    """Remove all [N] citation markers from markdown body."""
+    segments = _split_code_blocks(markdown)
+    return "".join(
+        _STRIP_MARKERS.sub("", s) if not is_code else s for s, is_code in segments
+    )
 
 
 def validate_citation_count(
@@ -176,8 +185,9 @@ async def manage_citations(state: ContentState) -> dict[str, object]:
             for (sec_idx, local) in remap
             if sec_idx == draft.section_index
         }
-        new_md = renumber_section_markdown(draft.body_markdown, section_remap)
-        updated_drafts.append(draft.model_copy(update={"body_markdown": new_md}))
+        renumbered = renumber_section_markdown(draft.body_markdown, section_remap)
+        clean_md = strip_citation_markers(renumbered)
+        updated_drafts.append(draft.model_copy(update={"body_markdown": clean_md}))
 
     try:
         validate_citation_count(citations, _MIN_UNIQUE_SOURCES)

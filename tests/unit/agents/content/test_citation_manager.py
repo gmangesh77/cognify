@@ -14,6 +14,7 @@ from src.agents.content.citation_manager import (
     check_urls,
     generate_references_markdown,
     renumber_section_markdown,
+    strip_citation_markers,
     validate_citation_count,
 )
 from src.models.content import Citation
@@ -167,6 +168,33 @@ class TestRenumberSectionMarkdown:
         md = "No citations here."
         result = renumber_section_markdown(md, {})
         assert result == "No citations here."
+
+
+# -- strip_citation_markers ----------------------------------------------------
+
+
+class TestStripCitationMarkers:
+    def test_removes_single_marker(self) -> None:
+        md = "Zero-day exploits increased by 40% [1] last year."
+        assert strip_citation_markers(md) == (
+            "Zero-day exploits increased by 40% last year."
+        )
+
+    def test_removes_clustered_markers(self) -> None:
+        md = "Multiple sources confirm this [1][2][3] finding."
+        assert strip_citation_markers(md) == (
+            "Multiple sources confirm this finding."
+        )
+
+    def test_preserves_code_blocks(self) -> None:
+        md = "Text [1] here.\n```\ncode [2] inside\n```\nAfter [3]."
+        result = strip_citation_markers(md)
+        assert "code [2] inside" in result
+        assert "[1]" not in result.split("```")[0]
+        assert "[3]" not in result
+
+    def test_no_markers(self) -> None:
+        assert strip_citation_markers("Clean text.") == "Clean text."
 
 
 # -- validate_citation_count ---------------------------------------------------

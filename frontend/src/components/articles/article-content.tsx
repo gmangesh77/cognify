@@ -12,26 +12,16 @@ function stripReferencesSection(md: string): string {
   return md.split(/\n##\s+References\b/)[0].trimEnd();
 }
 
-function linkifyCitations(md: string, citations: Citation[]): string {
-  if (citations.length === 0) return md;
-  const indices = new Set(citations.map((c) => c.index));
-  return md.replace(/\[(\d+)\]/g, (match, num) => {
-    const n = parseInt(num, 10);
-    if (!indices.has(n)) return match;
-    return `<a href="#cite-${n}" class="cite-link"><sup>${n}</sup></a>`;
-  });
-}
-
 export function ArticleContent({ bodyMarkdown, citations }: ArticleContentProps) {
-  const linkedMarkdown = useMemo(
-    () => linkifyCitations(stripReferencesSection(bodyMarkdown), citations),
-    [bodyMarkdown, citations],
+  const cleanMarkdown = useMemo(
+    () => stripReferencesSection(bodyMarkdown),
+    [bodyMarkdown],
   );
 
   return (
     <div>
       <div className="prose prose-neutral max-w-none prose-headings:font-heading prose-h2:mt-8 prose-h2:border-b prose-h2:border-neutral-200 prose-h2:pb-2 prose-h3:mt-6 prose-p:leading-7 prose-li:leading-7 prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
-        <Markdown rehypePlugins={[rehypeRaw]}>{linkedMarkdown}</Markdown>
+        <Markdown rehypePlugins={[rehypeRaw]}>{cleanMarkdown}</Markdown>
       </div>
 
       {citations.length > 0 && (

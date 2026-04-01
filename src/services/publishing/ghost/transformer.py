@@ -33,7 +33,6 @@ def _build_html_body(article: CanonicalArticle, api_base: str) -> str:
     """Convert markdown to HTML, link citations, inject visuals, and JSON-LD."""
     body = _strip_references_section(article.body_markdown)
     html = markdown.markdown(body, extensions=_MD_EXTENSIONS)
-    html = _linkify_citations(html, article)
     html = _rewrite_local_asset_urls(html, api_base)
     html = _inject_visuals(html, article, api_base)
     html += _build_references_html(article)
@@ -81,7 +80,8 @@ def _build_metadata(
 def _inject_visuals(html: str, article: CanonicalArticle, api_base: str) -> str:
     """Inject chart/diagram visuals into the HTML body after relevant sections."""
     charts = [
-        v for v in article.visuals
+        v
+        for v in article.visuals
         if getattr(v, "metadata", None) and v.metadata.get("type") != "hero"
     ]
     if not charts:
@@ -97,14 +97,17 @@ def _inject_visuals(html: str, article: CanonicalArticle, api_base: str) -> str:
         alt = getattr(chart, "alt_text", "") or ""
         caption = getattr(chart, "caption", "") or ""
         img_html = (
-            f'\n<figure>'
+            f"\n<figure>"
             f'<img src="{url}" alt="{alt}" style="max-width:100%;height:auto;" />'
-            f'<figcaption>{caption}</figcaption>'
-            f'</figure>\n'
+            f"<figcaption>{caption}</figcaption>"
+            f"</figure>\n"
         )
         # Each <h2> split produces: [before, <h2>, content, <h2>, content, ...]
         # Section index in the split: section N content is at index 2*N+2
-        target_idx = 2 * source_section + 2 if source_section >= 0 else len(sections) - 1
+        if source_section >= 0:
+            target_idx = 2 * source_section + 2
+        else:
+            target_idx = len(sections) - 1
         if target_idx < len(sections):
             sections[target_idx] += img_html
         else:
@@ -157,20 +160,6 @@ def _build_references_html(article: CanonicalArticle) -> str:
         + "\n".join(items)
         + "\n</ol>"
     )
-
-
-def _linkify_citations(html: str, article: CanonicalArticle) -> str:
-    """Convert plain [1], [2] references into clickable links."""
-    url_map = {c.index: c.url for c in article.citations}
-
-    def _replace_ref(match: re.Match) -> str:
-        idx = int(match.group(1))
-        url = url_map.get(idx)
-        if url:
-            return f'<a href="{url}" target="_blank" rel="noopener">[{idx}]</a>'
-        return match.group(0)
-
-    return re.sub(r"\[(\d+)\]", _replace_ref, html)
 
 
 def _asset_url(path: str, api_base: str) -> str:
