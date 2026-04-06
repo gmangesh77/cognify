@@ -262,6 +262,12 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                     logger.info("llm_rebuilt_with_resolved_keys")
                 except Exception as exc:
                     logger.error("llm_rebuild_failed", error=str(exc))
+        # Rebuild trend registry with resolved API keys (AB#16751)
+        # The registry was initially built at app creation with potentially
+        # empty keys; now that DB keys are resolved, rebuild it.
+        app.state.trend_registry = init_registry(settings)
+        logger.info("trend_registry_rebuilt_with_resolved_keys")
+
         # Publishing service (requires article_repo)
         from src.db.repositories import PgPublicationRepository
 
