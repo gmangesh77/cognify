@@ -19,6 +19,20 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger()
 
+# Canonical hero image dimensions enforced on every generated illustration.
+# DALL-E 3 returns 1792x1024 (its widest landscape), which we center-crop
+# and downscale to exact 16:9 at 1600x900. Having a single fixed size
+# guarantees consistent appearance across Ghost list cards, article detail
+# pages, and any other consumer of the feature_image. Normalization lives
+# in src/agents/content/nodes.py::_normalize_hero_image.
+HERO_CANONICAL_WIDTH = 1600
+HERO_CANONICAL_HEIGHT = 900
+HERO_CANONICAL_SIZE = (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
+# Source size requested from DALL-E 3 before cropping. DALL-E 3 only
+# accepts 1024x1024, 1024x1792, or 1792x1024 — 1792x1024 is the widest
+# landscape option and the closest to our 16:9 target.
+DALLE_SOURCE_SIZE = (1792, 1024)
+
 
 class ImageGenerator(Protocol):
     """Provider-agnostic image generation protocol."""

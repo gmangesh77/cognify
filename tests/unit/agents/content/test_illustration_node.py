@@ -1,19 +1,39 @@
 """Tests for illustration generation pipeline node."""
 
+from io import BytesIO
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+from PIL import Image
 
-from src.agents.content.nodes import make_illustration_node
+from src.agents.content.illustration_generator import (
+    HERO_CANONICAL_HEIGHT,
+    HERO_CANONICAL_WIDTH,
+)
+from src.agents.content.nodes import _normalize_hero_image, make_illustration_node
 from src.models.content import ImageAsset
 from src.models.content_pipeline import SEOResult
 from src.models.research import TopicInput
 
 
-def _make_mock_generator(image_bytes: bytes | None = b"fake-png") -> AsyncMock:
+def _make_png_bytes(width: int = 1792, height: int = 1024) -> bytes:
+    """Create a real PNG with the given dimensions for test fixtures."""
+    img = Image.new("RGB", (width, height), color=(100, 150, 200))
+    out = BytesIO()
+    img.save(out, format="PNG")
+    return out.getvalue()
+
+
+_DEFAULT = object()
+
+
+def _make_mock_generator(image_bytes: bytes | None = _DEFAULT) -> AsyncMock:  # type: ignore[assignment]
     gen = AsyncMock()
-    gen.generate.return_value = image_bytes
+    if image_bytes is _DEFAULT:
+        gen.generate.return_value = _make_png_bytes()
+    else:
+        gen.generate.return_value = image_bytes
     return gen
 
 
@@ -119,3 +139,52 @@ class TestIllustrationNode:
         }
         result = await node(state)
         assert len(result["visuals"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_saved_hero_has_canonical_dimensions(self, tmp_path) -> None:
+        """Whatever DALL-E returns, the saved hero.png is always 1600x900."""
+        llm = AsyncMock()
+        llm.ainvoke.return_value = MagicMock(content="A prompt")
+        # Simulate DALL-E returning its standard 1792x1024 landscape
+        gen = _make_mock_generator(image_bytes=_make_png_bytes(1792, 1024))
+        node = make_illustration_node(llm, gen, str(tmp_path))
+        state = _make_state()
+        result = await node(state)
+        assert len(result["visuals"]) == 1
+        hero = result["visuals"][0]
+        # Metadata reflects the canonical size
+        assert hero.metadata["width"] == HERO_CANONICAL_WIDTH
+        assert hero.metadata["height"] == HERO_CANONICAL_HEIGHT
+        # The saved PNG is actually 1600x900 on disk
+        with Image.open(hero.url) as img:
+            assert img.size == (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
+
+
+class TestNormalizeHeroImage:
+    def test_resizes_widescreen_source_to_canonical(self) -> None:
+        """1792x1024 input -> exact 1600x900 output."""
+        src = _make_png_bytes(1792, 1024)
+        result = _normalize_hero_image(src)
+        with Image.open(BytesIO(result)) as img:
+            assert img.size == (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
+
+    def test_crops_square_source_to_canonical(self) -> None:
+        """1024x1024 square input -> exact 1600x900 output (upscaled + cropped)."""
+        src = _make_png_bytes(1024, 1024)
+        result = _normalize_hero_image(src)
+        with Image.open(BytesIO(result)) as img:
+            assert img.size == (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
+
+    def test_handles_ultra_wide_source(self) -> None:
+        """3000x800 ultra-wide input is still normalized to 1600x900."""
+        src = _make_png_bytes(3000, 800)
+        result = _normalize_hero_image(src)
+        with Image.open(BytesIO(result)) as img:
+            assert img.size == (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
+
+    def test_handles_tall_source(self) -> None:
+        """Tall 800x1600 input is still normalized to 1600x900."""
+        src = _make_png_bytes(800, 1600)
+        result = _normalize_hero_image(src)
+        with Image.open(BytesIO(result)) as img:
+            assert img.size == (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)

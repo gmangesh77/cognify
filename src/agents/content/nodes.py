@@ -17,6 +17,10 @@ from langchain_core.language_models import BaseChatModel
 from src.agents.content.chart_generator import propose_charts, render_chart
 from src.agents.content.diagram_generator import propose_diagrams, render_mermaid
 from src.agents.content.illustration_generator import (
+    DALLE_SOURCE_SIZE,
+    HERO_CANONICAL_HEIGHT,
+    HERO_CANONICAL_SIZE,
+    HERO_CANONICAL_WIDTH,
     ImageGenerator,
     generate_illustration_prompt,
 )
@@ -192,7 +196,7 @@ def make_illustration_node(
             return {"visuals": existing}
 
         try:
-            image_bytes = await generator.generate(prompt, (1792, 1024))
+            image_bytes = await generator.generate(prompt, DALLE_SOURCE_SIZE)
         except Exception as exc:
             logger.warning("illustration_generator_error", error=str(exc))
             return {"visuals": existing}
@@ -200,19 +204,59 @@ def make_illustration_node(
         if not image_bytes:
             return {"visuals": existing}
 
+        # Enforce canonical dimensions so every hero is identical 16:9.
+        normalized = await asyncio.to_thread(_normalize_hero_image, image_bytes)
         path = await asyncio.to_thread(
-            _save_illustration, image_bytes, output_dir, session_id
+            _save_illustration, normalized, output_dir, session_id
         )
         asset = ImageAsset(
             url=str(path),
             caption=topic.title,
             alt_text=prompt[:200],
-            metadata={"generator": "dall-e-3", "type": "hero"},
+            metadata={
+                "generator": "dall-e-3",
+                "type": "hero",
+                "width": HERO_CANONICAL_WIDTH,
+                "height": HERO_CANONICAL_HEIGHT,
+            },
         )
         logger.info("illustration_generation_complete", path=str(path))
         return {"visuals": [asset] + existing}
 
     return illustration_node
+
+
+def _normalize_hero_image(image_bytes: bytes) -> bytes:
+    """Center-crop and resize to canonical 16:9 hero dimensions.
+
+    Guarantees every hero.png is exactly HERO_CANONICAL_SIZE regardless of
+    what the generator returned, so Ghost themes render consistently across
+    list cards and article detail pages.
+    """
+    from io import BytesIO
+
+    from PIL import Image
+
+    with Image.open(BytesIO(image_bytes)) as img:
+        src_w, src_h = img.size
+        target_ratio = HERO_CANONICAL_WIDTH / HERO_CANONICAL_HEIGHT
+        src_ratio = src_w / src_h
+        # Center-crop to the target aspect ratio
+        if src_ratio > target_ratio:
+            # Source is wider than target — crop sides
+            new_w = int(src_h * target_ratio)
+            left = (src_w - new_w) // 2
+            box = (left, 0, left + new_w, src_h)
+        else:
+            # Source is taller than target — crop top/bottom
+            new_h = int(src_w / target_ratio)
+            top = (src_h - new_h) // 2
+            box = (0, top, src_w, top + new_h)
+        cropped = img.crop(box)
+        resized = cropped.resize(HERO_CANONICAL_SIZE, Image.Resampling.LANCZOS)
+        out = BytesIO()
+        resized.save(out, format="PNG")
+        return out.getvalue()
 
 
 def _save_illustration(image_bytes: bytes, output_dir: str, session_id: UUID) -> Path:
