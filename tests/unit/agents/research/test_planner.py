@@ -91,6 +91,56 @@ class TestGenerateResearchPlan:
             await generate_research_plan(_make_topic(), llm)
 
 
+class TestPlannerContextBlock:
+    """Planner should use audience/tone/angle/keywords when provided."""
+
+    async def test_plain_topic_has_no_context_section(self) -> None:
+        """Bare topic should not inject a context block."""
+        from src.agents.research.planner import _build_context_block
+
+        topic = _make_topic()
+        assert _build_context_block(topic) == ""
+
+    async def test_topic_with_audience_includes_audience_line(self) -> None:
+        from src.agents.research.planner import _build_context_block
+
+        topic = _make_topic().model_copy(
+            update={"target_audience": "CTOs and security leads"}
+        )
+        block = _build_context_block(topic)
+        assert "CTOs and security leads" in block
+        assert "Target audience" in block
+
+    async def test_topic_with_keywords_includes_keywords_line(self) -> None:
+        from src.agents.research.planner import _build_context_block
+
+        topic = _make_topic().model_copy(
+            update={"keywords": ("zero trust", "mTLS", "service mesh")}
+        )
+        block = _build_context_block(topic)
+        assert "zero trust" in block
+        assert "mTLS" in block
+        assert "MUST cover" in block
+
+    async def test_topic_with_all_context_fields(self) -> None:
+        from src.agents.research.planner import _build_context_block
+
+        topic = _make_topic().model_copy(
+            update={
+                "target_audience": "senior engineers",
+                "content_tone": "technical-authoritative",
+                "preferred_angle": "practical implementation",
+                "keywords": ("kubernetes", "observability"),
+            }
+        )
+        block = _build_context_block(topic)
+        assert "senior engineers" in block
+        assert "technical-authoritative" in block
+        assert "practical implementation" in block
+        assert "kubernetes" in block
+        assert "observability" in block
+
+
 class TestPlannerSourceType:
     async def test_plan_includes_source_type(self) -> None:
         llm = FakeListChatModel(responses=[_plan_json_with_source_types()])

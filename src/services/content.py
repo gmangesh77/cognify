@@ -133,6 +133,7 @@ class ContentService:
                 "target_audience": session.target_audience,
                 "content_tone": session.content_tone,
                 "preferred_angle": session.preferred_angle,
+                "keywords": session.keywords,
             }
         )
         # Only fail if outline generation itself failed
@@ -282,10 +283,11 @@ class ContentService:
         return [FacetFindings.model_validate(f) for f in session.findings_data]
 
     def _build_topic_input(self, session: ResearchSession) -> TopicInput:
+        description = session.topic_description_override or session.topic_description
         return TopicInput(
             id=session.topic_id,
             title=session.topic_title or f"Topic {session.topic_id}",
-            description=session.topic_description,
+            description=description,
             domain=session.topic_domain,
         )
 

@@ -92,8 +92,22 @@ async def create_research_session(
         target_audience=body.target_audience,
         content_tone=body.content_tone,
         preferred_angle=body.preferred_angle,
+        keywords=body.keywords,
+        topic_description_override=body.topic_description_override,
     )
     topic = await svc.get_topic(body.topic_id)
+    # Enrich topic with session context so the research planner can use
+    # audience/tone/angle/keywords to tailor search queries.
+    description = body.topic_description_override or topic.description
+    topic = topic.model_copy(
+        update={
+            "description": description,
+            "target_audience": body.target_audience,
+            "content_tone": body.content_tone,
+            "preferred_angle": body.preferred_angle,
+            "keywords": tuple(body.keywords) if body.keywords else None,
+        }
+    )
     content_svc = getattr(request.app.state, "content_service", None)
     background_tasks.add_task(
         _run_full_pipeline,

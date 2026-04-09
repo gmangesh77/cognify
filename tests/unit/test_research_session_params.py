@@ -45,7 +45,7 @@ async def test_start_session_with_article_params(
     repos: ResearchRepositories,
     mock_orchestrator: AsyncMock,
 ) -> None:
-    """Session stores target_audience, content_tone, preferred_angle when provided."""
+    """Session stores all per-article params when provided."""
     repos.topics.seed(topic)  # type: ignore[attr-defined]
     svc = ResearchService(repos=repos, orchestrator=mock_orchestrator)
 
@@ -54,11 +54,15 @@ async def test_start_session_with_article_params(
         target_audience="senior engineers",
         content_tone="technical",
         preferred_angle="practical applications",
+        keywords=["zero trust", "mTLS", "service mesh"],
+        topic_description_override="An edited description",
     )
 
     assert session.target_audience == "senior engineers"
     assert session.content_tone == "technical"
     assert session.preferred_angle == "practical applications"
+    assert session.keywords == ["zero trust", "mTLS", "service mesh"]
+    assert session.topic_description_override == "An edited description"
     assert session.topic_id == topic.id
     assert session.status == "planning"
 
@@ -78,5 +82,7 @@ async def test_start_session_without_article_params(
     assert session.target_audience is None
     assert session.content_tone is None
     assert session.preferred_angle is None
+    assert session.keywords is None
+    assert session.topic_description_override is None
     assert session.topic_id == topic.id
     assert session.status == "planning"

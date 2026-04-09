@@ -139,6 +139,8 @@ class ResearchService:
         target_audience: str | None = None,
         content_tone: str | None = None,
         preferred_angle: str | None = None,
+        keywords: list[str] | None = None,
+        topic_description_override: str | None = None,
     ) -> ResearchSession:
         if not await self._repos.topics.exists(topic_id):
             raise NotFoundError(f"Topic {topic_id} not found")
@@ -148,6 +150,8 @@ class ResearchService:
             target_audience=target_audience,
             content_tone=content_tone,
             preferred_angle=preferred_angle,
+            keywords=keywords,
+            topic_description_override=topic_description_override,
         )
         return await self._repos.sessions.create(session)
 

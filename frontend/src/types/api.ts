@@ -116,4 +116,6 @@ export interface ArticleParams {
   target_audience?: string;
   content_tone?: ContentTone;
   preferred_angle?: string;
+  keywords?: string[];
+  topic_description_override?: string;
 }

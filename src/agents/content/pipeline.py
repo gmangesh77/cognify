@@ -73,6 +73,7 @@ class ContentState(TypedDict):
     target_audience: NotRequired[str | None]
     content_tone: NotRequired[str | None]
     preferred_angle: NotRequired[str | None]
+    keywords: NotRequired[list[str] | None]
 
 
 def _wrap_node(

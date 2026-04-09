@@ -60,6 +60,8 @@ def make_outline_node(llm: BaseChatModel) -> Any:  # noqa: ANN401
                 llm,
                 target_audience=state.get("target_audience"),
                 preferred_angle=state.get("preferred_angle"),
+                content_tone=state.get("content_tone"),
+                keywords=state.get("keywords"),
             )
             logger.info(
                 "outline_generation_complete",
@@ -107,6 +109,8 @@ def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> An
                 prior_drafts=list(drafts),
                 target_audience=state.get("target_audience"),
                 content_tone=state.get("content_tone"),
+                preferred_angle=state.get("preferred_angle"),
+                keywords=state.get("keywords"),
             )
             draft = await draft_section(section, sq, ctx)
             drafts.append(draft)
@@ -298,6 +302,10 @@ async def _redraft_shortest(
         topic_id=str(topic.id),
         llm=llm,
         prior_drafts=[d for d in drafts if d.section_index != idx],
+        target_audience=state.get("target_audience"),
+        content_tone=state.get("content_tone"),
+        preferred_angle=state.get("preferred_angle"),
+        keywords=state.get("keywords"),
     )
     new_draft = await draft_section(expanded, sq, ctx)
     logger.info("section_redraft_triggered", section_index=idx)

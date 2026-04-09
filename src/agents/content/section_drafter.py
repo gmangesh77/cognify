@@ -48,6 +48,8 @@ class DraftingContext:
     prior_drafts: list[SectionDraft]
     target_audience: str | None = None
     content_tone: str | None = None
+    preferred_angle: str | None = None
+    keywords: list[str] | None = None
 
 
 async def draft_section(
@@ -112,6 +114,13 @@ async def _call_llm(
         system += f"\nWrite for this audience: {ctx.target_audience}."
     if ctx.content_tone:
         system += f"\nTone: {ctx.content_tone}."
+    if ctx.preferred_angle:
+        system += f"\nEditorial angle: {ctx.preferred_angle}."
+    if ctx.keywords:
+        system += (
+            f"\nEnsure these key topics are referenced naturally: "
+            f"{', '.join(ctx.keywords)}."
+        )
     user = _build_user_prompt(section, chunks, ctx.prior_drafts)
     messages = [SystemMessage(content=system), HumanMessage(content=user)]
     response = await ctx.llm.ainvoke(messages)

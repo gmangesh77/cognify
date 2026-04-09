@@ -10,6 +10,10 @@ interface UseTopicAnalysisReturn {
   isRegenerating: string | null;
   error: string | null;
   analyze: (title: string) => Promise<void>;
+  analyzeWithSeed: (
+    title: string,
+    seed: Partial<TopicAnalysisResult>,
+  ) => Promise<void>;
   regenerateField: (title: string, field: string) => Promise<void>;
   updateField: <K extends keyof TopicAnalysisResult>(
     field: K,
@@ -36,6 +40,34 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
       setIsAnalyzing(false);
     }
   }, []);
+
+  const analyzeWithSeed = useCallback(
+    async (title: string, seed: Partial<TopicAnalysisResult>) => {
+      setIsAnalyzing(true);
+      setError(null);
+      try {
+        const fresh = await analyzeTopic(title);
+        // Prefer seed values where provided (e.g. topic's existing
+        // description/domain), fall back to analyzer output for blanks.
+        setAnalysis({
+          description: seed.description || fresh.description,
+          domain: seed.domain || fresh.domain,
+          keywords:
+            seed.keywords && seed.keywords.length > 0
+              ? seed.keywords
+              : fresh.keywords,
+          target_audience: seed.target_audience || fresh.target_audience,
+          content_tone: seed.content_tone || fresh.content_tone,
+          preferred_angle: seed.preferred_angle || fresh.preferred_angle,
+        });
+      } catch {
+        setError("Failed to analyze topic. Please try again.");
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [],
+  );
 
   const regenerateField = useCallback(
     async (title: string, field: string) => {
@@ -77,6 +109,7 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
     isRegenerating,
     error,
     analyze,
+    analyzeWithSeed,
     regenerateField,
     updateField,
     reset,

@@ -11,6 +11,8 @@ class CreateResearchSessionRequest(BaseModel):
     target_audience: str | None = None
     content_tone: str | None = None
     preferred_angle: str | None = None
+    keywords: list[str] | None = None
+    topic_description_override: str | None = None
 
 
 class CreateResearchSessionResponse(BaseModel):

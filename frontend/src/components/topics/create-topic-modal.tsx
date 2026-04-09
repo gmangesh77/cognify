@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FieldWithRegenerate } from "@/components/topics/field-with-regenerate";
 import { useTopicAnalysis } from "@/hooks/use-topic-analysis";
 import type { ContentTone } from "@/types/api";
 
@@ -248,34 +249,3 @@ export function CreateTopicModal({
   );
 }
 
-function FieldWithRegenerate({
-  label,
-  field,
-  isRegenerating,
-  onRegenerate,
-  children,
-}: {
-  label: string;
-  field: string;
-  isRegenerating: string | null;
-  onRegenerate: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-neutral-700">{label}</label>
-        <button
-          type="button"
-          onClick={onRegenerate}
-          disabled={isRegenerating === field}
-          className="text-neutral-400 hover:text-neutral-600 disabled:animate-spin"
-          title={`Regenerate ${label.toLowerCase()}`}
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="mt-1">{children}</div>
-    </div>
-  );
-}
