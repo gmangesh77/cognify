@@ -41,6 +41,7 @@ from src.services.milvus_retriever import MilvusRetriever
 
 if TYPE_CHECKING:
     from src.services.research import AgentStepRepository
+    from src.utils.llm_call_repo import LlmCallRepository
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,7 @@ class ContentGraphDeps:
 
     step_repo: AgentStepRepository | None = field(default=None)
     session_id: UUID | None = field(default=None)
+    llm_call_repo: LlmCallRepository | None = field(default=None)
 
 
 class ContentState(TypedDict):
@@ -106,13 +108,25 @@ def _extract_output(name: str, result: dict) -> dict:  # type: ignore[type-arg]
     if "outline" in result and result["outline"]:
         outline = result["outline"]
         count = len(outline.sections) if hasattr(outline, "sections") else 0
-        return {"sections": count}
+        title = getattr(outline, "title", "")
+        return {"sections": count, "title": title}
     if "section_drafts" in result:
-        return {"sections_drafted": len(result["section_drafts"])}
+        drafts = result["section_drafts"]
+        return {"sections_drafted": len(drafts)}
     if "total_word_count" in result:
         return {"word_count": result["total_word_count"]}
+    if "global_citations" in result:
+        cites = result.get("global_citations") or []
+        return {"citation_count": len(cites)}
     if "seo_result" in result and result.get("seo_result"):
+        seo = result["seo_result"]
+        title = getattr(seo, "seo", {})
+        if hasattr(title, "title"):
+            return {"seo_title": title.title, "seo_generated": True}
         return {"seo_generated": True}
+    if "visuals" in result:
+        visuals = result.get("visuals") or []
+        return {"visuals_count": len(visuals)}
     return {"done": True}
 
 

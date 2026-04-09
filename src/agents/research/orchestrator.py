@@ -35,6 +35,7 @@ from src.services.task_dispatch import AgentFunction, TaskDispatcher
 
 if TYPE_CHECKING:
     from src.services.research import AgentStepRepository
+    from src.utils.llm_call_repo import LlmCallRepository
 
 logger = structlog.get_logger()
 
@@ -69,6 +70,7 @@ class GraphDeps:
     embedder: Embedder | None = None
     chunker: ChunkService | None = None
     step_repo: AgentStepRepository | None = field(default=None)
+    llm_call_repo: LlmCallRepository | None = field(default=None)
 
     @property
     def has_indexing(self) -> bool:
@@ -85,6 +87,16 @@ async def _record_step(
     step_name: str,
 ) -> AgentStepModel | None:
     """Create a step record. Returns None if step_repo not configured."""
+    from src.utils.tracked_llm import (
+        current_session_id,
+        current_step_id,
+        current_step_name,
+    )
+
+    # Set contextvars so TrackedChatModel can tag LLM calls
+    current_session_id.set(session_id)
+    current_step_name.set(step_name)
+
     if step_repo is None:
         return None
     try:
@@ -94,7 +106,9 @@ async def _record_step(
             status="running",
             started_at=datetime.now(UTC),
         )
-        return await step_repo.create(step)
+        created = await step_repo.create(step)
+        current_step_id.set(created.id)
+        return created
     except Exception as exc:
         logger.warning("step_record_failed", step_name=step_name, error=str(exc))
         return None

@@ -23,6 +23,7 @@ __all__ = [
     "TopicRow",
     "ResearchSessionRow",
     "AgentStepRow",
+    "LlmCallRow",
     "ArticleDraftRow",
     "CanonicalArticleRow",
     "DomainConfigRow",
@@ -103,6 +104,34 @@ class AgentStepRow(Base, UUIDMixin, TimestampMixin):
     output_data: Mapped[dict] = mapped_column(JSONB, default=dict)
 
     session: Mapped["ResearchSessionRow"] = relationship(back_populates="steps")
+
+
+class LlmCallRow(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "llm_calls"
+
+    step_id: Mapped[str | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("agent_steps.id"),
+        nullable=True,
+        index=True,
+    )
+    session_id: Mapped[str] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("research_sessions.id"),
+        index=True,
+    )
+    call_name: Mapped[str] = mapped_column(String(100))
+    model_name: Mapped[str] = mapped_column(String(100))
+    prompt_messages: Mapped[list] = mapped_column(JSONB, default=list)
+    response_content: Mapped[str] = mapped_column(Text, default="")
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class ArticleDraftRow(Base, UUIDMixin, TimestampMixin):
