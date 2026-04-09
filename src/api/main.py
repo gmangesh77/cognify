@@ -37,6 +37,7 @@ from src.api.routers.canonical_articles import canonical_articles_router
 from src.api.routers.health import health_router
 from src.api.routers.metrics import metrics_router
 from src.api.routers.oauth import oauth_router
+from src.api.routers.pipeline_debug import pipeline_debug_router
 from src.api.routers.publishing import publishing_router
 from src.api.routers.research import research_router
 from src.api.routers.settings import settings_router
@@ -45,6 +46,7 @@ from src.api.routers.trends import trends_router
 from src.config.settings import Settings
 from src.db.engine import create_async_engine as create_db_engine
 from src.db.engine import get_session_factory
+from src.db.llm_call_repository import PgLlmCallRepository
 from src.db.repositories import (
     PgAgentStepRepository,
     PgArticleDraftRepository,
@@ -169,6 +171,8 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
 
         # Re-wire research service with PG repos
         step_repo = PgAgentStepRepository(sf)
+        llm_call_repo = PgLlmCallRepository(sf)
+        app.state.llm_call_repo = llm_call_repo
         repos = ResearchRepositories(
             sessions=PgResearchSessionRepository(sf),
             steps=step_repo,
@@ -183,6 +187,7 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                 orchestrator = _build_real_orchestrator(
                     settings,
                     step_repo=step_repo,
+                    llm_call_repo=llm_call_repo,
                 )
             except Exception as exc:
                 logger.error(
@@ -238,7 +243,7 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             # Rebuild LLM deps if anthropic key was resolved
             if "anthropic_api_key" in resolved and settings.anthropic_api_key:
                 try:
-                    llm = _build_llm(settings)
+                    llm = _build_llm(settings, llm_call_repo=llm_call_repo)
                     retriever = _try_build_retriever(app, settings)
                     content_deps = ContentDeps(
                         llm=llm,
@@ -253,6 +258,7 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                     orchestrator = _build_real_orchestrator(
                         settings,
                         step_repo=step_repo,
+                        llm_call_repo=llm_call_repo,
                     )
                     app.state.research_service = ResearchService(
                         repos,
@@ -341,20 +347,29 @@ def _seed_dev_users(settings: Settings) -> list[UserData]:
     ]
 
 
-def _build_llm(settings: Settings):  # type: ignore[no-untyped-def]
+def _build_llm(
+    settings: Settings,
+    llm_call_repo: object | None = None,
+):  # type: ignore[no-untyped-def]
     """Build ChatAnthropic LLM instance from settings."""
     from langchain_anthropic import ChatAnthropic
 
-    return ChatAnthropic(
+    llm = ChatAnthropic(
         model=settings.anthropic_model,
         api_key=settings.anthropic_api_key,
         max_tokens=4096,
     )
+    if llm_call_repo is not None:
+        from src.utils.tracked_llm import TrackedChatModel
+
+        return TrackedChatModel(inner=llm, repo=llm_call_repo)
+    return llm
 
 
 def _build_real_orchestrator(
     settings: Settings,
     step_repo: AgentStepRepository | None = None,
+    llm_call_repo: object | None = None,
 ):  # type: ignore[no-untyped-def]
     """Build the full LangGraph research orchestrator."""
     from src.agents.research.literature_review import (
@@ -372,7 +387,7 @@ def _build_real_orchestrator(
     from src.services.serpapi_client import SerpAPIClient
     from src.services.task_dispatch import AsyncIODispatcher
 
-    llm = _build_llm(settings)
+    llm = _build_llm(settings, llm_call_repo=llm_call_repo)
     serpapi = SerpAPIClient(
         api_key=settings.serpapi_api_key,
         base_url=settings.serpapi_base_url,
@@ -417,6 +432,7 @@ def _build_real_orchestrator(
         embedder=embedder,
         chunker=chunker,
         step_repo=step_repo,
+        llm_call_repo=llm_call_repo,
     )
     graph = build_graph(llm, dispatcher, web_agent, lit_agent, deps)
     return LangGraphResearchOrchestrator(graph, step_repo)
@@ -657,6 +673,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         oauth_router,
         prefix=settings.api_v1_prefix,
         tags=["oauth"],
+    )
+    app.include_router(
+        pipeline_debug_router,
+        prefix=settings.api_v1_prefix,
+        tags=["debug"],
     )
     assets_dir = Path("generated_assets")
     if assets_dir.exists():
