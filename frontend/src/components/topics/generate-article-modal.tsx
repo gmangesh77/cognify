@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TrendBadge } from "@/components/common/trend-badge";
 import { DomainBadge } from "@/components/common/domain-badge";
+import { FieldWithRegenerate } from "@/components/topics/field-with-regenerate";
+import { useTopicAnalysis } from "@/hooks/use-topic-analysis";
 import type { RankedTopic, ContentTone, ArticleParams } from "@/types/api";
 
 const TONE_OPTIONS: { value: ContentTone; label: string }[] = [
@@ -26,22 +28,53 @@ export function GenerateArticleModal({
   onClose,
   onConfirm,
 }: GenerateArticleModalProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [audience, setAudience] = useState("");
-  const [tone, setTone] = useState<ContentTone>("technical-authoritative");
-  const [angle, setAngle] = useState("");
+  const {
+    analysis,
+    isAnalyzing,
+    isRegenerating,
+    error,
+    analyzeWithSeed,
+    regenerateField,
+    updateField,
+    reset,
+  } = useTopicAnalysis();
+  // Track the topic's original description (non-reactive — used only to
+  // detect if the user edited it before submit). A ref avoids the
+  // setState-in-effect lint rule.
+  const originalDescriptionRef = useRef("");
+
+  // On topic change, reset hook state and auto-analyze seeded with
+  // the topic's existing description/domain/keywords so the user sees
+  // their data immediately while the LLM fills in the blanks.
+  useEffect(() => {
+    if (!topic) {
+      reset();
+      return;
+    }
+    originalDescriptionRef.current = topic.description;
+    analyzeWithSeed(topic.title, {
+      description: topic.description,
+      domain: topic.domain,
+      keywords: topic.domain_keywords,
+    });
+  }, [topic, analyzeWithSeed, reset]);
 
   if (!topic) return null;
 
   function handleConfirm() {
-    const params: ArticleParams | undefined = expanded
-      ? {
-          target_audience: audience || undefined,
-          content_tone: tone,
-          preferred_angle: angle || undefined,
-        }
-      : undefined;
-    onConfirm(topic!, params);
+    if (!analysis || !topic) return;
+    const edited = analysis.description !== originalDescriptionRef.current;
+    const params: ArticleParams = {
+      target_audience: analysis.target_audience || undefined,
+      content_tone: analysis.content_tone as ContentTone,
+      preferred_angle: analysis.preferred_angle || undefined,
+      keywords:
+        analysis.keywords && analysis.keywords.length > 0
+          ? analysis.keywords
+          : undefined,
+      topic_description_override: edited ? analysis.description : undefined,
+    };
+    onConfirm(topic, params);
   }
 
   return (
@@ -51,13 +84,15 @@ export function GenerateArticleModal({
     >
       <div
         role="dialog"
-        className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="font-heading text-lg font-semibold text-neutral-900">
           Generate Article
         </h2>
-        <div className="mt-4 space-y-3">
+
+        {/* Topic meta header */}
+        <div className="mt-4 space-y-2">
           <div className="flex items-center gap-2">
             <TrendBadge variant={topic.trend_status} />
             <DomainBadge domain={topic.domain} />
@@ -65,7 +100,6 @@ export function GenerateArticleModal({
           <h3 className="font-heading text-base font-medium text-neutral-900">
             {topic.title}
           </h3>
-          <p className="text-sm text-neutral-500">{topic.description}</p>
           <p className="text-sm text-neutral-500">
             Score:{" "}
             <span className="font-semibold text-neutral-900">
@@ -74,42 +108,86 @@ export function GenerateArticleModal({
           </p>
         </div>
 
-        {/* Customize Article section */}
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="mt-4 flex w-full items-center justify-between rounded-md border border-neutral-200 px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50"
-        >
-          <span>Customize Article</span>
-          {expanded ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </button>
+        {/* Loading skeleton */}
+        {isAnalyzing && (
+          <div className="mt-6 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 rounded-md" />
+            ))}
+          </div>
+        )}
 
-        {expanded && (
-          <div className="mt-3 space-y-3 rounded-md border border-neutral-100 p-3">
-            <div>
-              <label className="text-xs font-medium text-neutral-500">
-                Target Audience
-              </label>
-              <input
-                type="text"
-                value={audience}
-                onChange={(e) => setAudience(e.target.value)}
-                placeholder="e.g., Security engineers and CTOs"
-                className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+        {/* Error */}
+        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+        {/* Editable fields */}
+        {analysis && !isAnalyzing && (
+          <div className="mt-6 space-y-4">
+            <FieldWithRegenerate
+              label="Description"
+              field="description"
+              isRegenerating={isRegenerating}
+              onRegenerate={() => regenerateField(topic.title, "description")}
+            >
+              <textarea
+                value={analysis.description}
+                onChange={(e) => updateField("description", e.target.value)}
+                rows={3}
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-neutral-500">
-                Content Tone
-              </label>
+            </FieldWithRegenerate>
+
+            <FieldWithRegenerate
+              label="Keywords"
+              field="keywords"
+              isRegenerating={isRegenerating}
+              onRegenerate={() => regenerateField(topic.title, "keywords")}
+            >
+              <textarea
+                value={analysis.keywords.join(", ")}
+                onChange={(e) =>
+                  updateField(
+                    "keywords",
+                    e.target.value
+                      .split(",")
+                      .map((k) => k.trim())
+                      .filter(Boolean),
+                  )
+                }
+                rows={2}
+                placeholder="comma-separated keywords"
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </FieldWithRegenerate>
+
+            <FieldWithRegenerate
+              label="Target Audience"
+              field="target_audience"
+              isRegenerating={isRegenerating}
+              onRegenerate={() =>
+                regenerateField(topic.title, "target_audience")
+              }
+            >
+              <textarea
+                value={analysis.target_audience}
+                onChange={(e) =>
+                  updateField("target_audience", e.target.value)
+                }
+                rows={2}
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </FieldWithRegenerate>
+
+            <FieldWithRegenerate
+              label="Content Tone"
+              field="content_tone"
+              isRegenerating={isRegenerating}
+              onRegenerate={() => regenerateField(topic.title, "content_tone")}
+            >
               <select
-                value={tone}
-                onChange={(e) => setTone(e.target.value as ContentTone)}
-                className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+                value={analysis.content_tone}
+                onChange={(e) => updateField("content_tone", e.target.value)}
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               >
                 {TONE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -117,19 +195,25 @@ export function GenerateArticleModal({
                   </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-neutral-500">
-                Preferred Angle
-              </label>
-              <input
-                type="text"
-                value={angle}
-                onChange={(e) => setAngle(e.target.value)}
-                placeholder="e.g., Practical implementation guide"
-                className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+            </FieldWithRegenerate>
+
+            <FieldWithRegenerate
+              label="Preferred Angle"
+              field="preferred_angle"
+              isRegenerating={isRegenerating}
+              onRegenerate={() =>
+                regenerateField(topic.title, "preferred_angle")
+              }
+            >
+              <textarea
+                value={analysis.preferred_angle}
+                onChange={(e) =>
+                  updateField("preferred_angle", e.target.value)
+                }
+                rows={3}
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
-            </div>
+            </FieldWithRegenerate>
           </div>
         )}
 
@@ -141,7 +225,9 @@ export function GenerateArticleModal({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm}>Generate</Button>
+          <Button onClick={handleConfirm} disabled={!analysis || isAnalyzing}>
+            Generate
+          </Button>
         </div>
       </div>
     </div>

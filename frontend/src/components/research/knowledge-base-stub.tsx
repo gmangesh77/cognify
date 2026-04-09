@@ -1,19 +1,14 @@
+"use client";
+
 import { Database, FileText, Box } from "lucide-react";
-import type { ResearchSessionSummary } from "@/types/research";
+import { useKnowledgeBaseStats } from "@/hooks/use-metrics";
 
-interface KnowledgeBaseStatsProps {
-  sessions: ResearchSessionSummary[];
-}
+export function KnowledgeBaseStub() {
+  const { data, isLoading } = useKnowledgeBaseStats();
 
-export function KnowledgeBaseStub({ sessions }: KnowledgeBaseStatsProps) {
-  const totalSources = sessions.reduce((sum, s) => sum + s.sources_count, 0);
-  const totalEmbeddings = sessions.reduce(
-    (sum, s) => sum + s.embeddings_count,
-    0,
-  );
-  const completedSessions = sessions.filter(
-    (s) => s.status === "complete",
-  ).length;
+  const sessions = data?.total_sessions ?? 0;
+  const sources = data?.total_sources ?? 0;
+  const embeddings = data?.total_embeddings ?? 0;
 
   return (
     <div className="flex items-center gap-6 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
@@ -21,7 +16,7 @@ export function KnowledgeBaseStub({ sessions }: KnowledgeBaseStatsProps) {
         <Database className="h-4 w-4 text-neutral-400" />
         <div>
           <p className="text-sm font-medium text-neutral-700">
-            {completedSessions}
+            {isLoading ? "—" : sessions}
           </p>
           <p className="text-xs text-neutral-400">Sessions</p>
         </div>
@@ -29,7 +24,9 @@ export function KnowledgeBaseStub({ sessions }: KnowledgeBaseStatsProps) {
       <div className="flex items-center gap-2">
         <FileText className="h-4 w-4 text-neutral-400" />
         <div>
-          <p className="text-sm font-medium text-neutral-700">{totalSources}</p>
+          <p className="text-sm font-medium text-neutral-700">
+            {isLoading ? "—" : sources}
+          </p>
           <p className="text-xs text-neutral-400">Sources</p>
         </div>
       </div>
@@ -37,7 +34,7 @@ export function KnowledgeBaseStub({ sessions }: KnowledgeBaseStatsProps) {
         <Box className="h-4 w-4 text-neutral-400" />
         <div>
           <p className="text-sm font-medium text-neutral-700">
-            {totalEmbeddings}
+            {isLoading ? "—" : embeddings}
           </p>
           <p className="text-xs text-neutral-400">Embeddings</p>
         </div>

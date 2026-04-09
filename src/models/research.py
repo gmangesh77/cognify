@@ -18,6 +18,10 @@ class TopicInput(BaseModel, frozen=True):
     title: str
     description: str
     domain: str
+    target_audience: str | None = None
+    content_tone: str | None = None
+    preferred_angle: str | None = None
+    keywords: tuple[str, ...] | None = None
 
 
 class ResearchFacet(BaseModel, frozen=True):

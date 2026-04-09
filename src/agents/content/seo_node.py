@@ -90,6 +90,8 @@ async def _run_seo(
         body_text,
         llm,
         target_audience=state.get("target_audience"),
+        seed_keywords=state.get("keywords"),
+        content_tone=state.get("content_tone"),
     )
     discover = await generate_ai_discoverability(drafts, citations, llm)
 

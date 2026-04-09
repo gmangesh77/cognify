@@ -31,7 +31,8 @@ _USER_TEMPLATE = (
     "Plan research for this topic:\n"
     "Title: {title}\n"
     "Description: {description}\n"
-    "Domain: {domain}\n\n"
+    "Domain: {domain}\n"
+    "{context_block}\n"
     'Return JSON: {{"facets": [{{"index": 0, "title": "...", '
     '"description": "...", "search_queries": ["..."], '
     '"source_type": "web|academic|both"}}], '
@@ -41,12 +42,31 @@ _USER_TEMPLATE = (
 _MAX_RETRIES = 2
 
 
+def _build_context_block(topic: TopicInput) -> str:
+    """Assemble audience/tone/angle/keywords hints for the planner."""
+    lines: list[str] = []
+    if topic.target_audience:
+        lines.append(f"Target audience: {topic.target_audience}")
+    if topic.content_tone:
+        lines.append(f"Content tone: {topic.content_tone}")
+    if topic.preferred_angle:
+        lines.append(f"Editorial angle: {topic.preferred_angle}")
+    if topic.keywords:
+        lines.append(f"Key terms the research MUST cover: {', '.join(topic.keywords)}")
+    if not lines:
+        return ""
+    return "Tailor research facets and search queries to this context:\n" + "\n".join(
+        lines
+    )
+
+
 async def generate_research_plan(topic: TopicInput, llm: BaseChatModel) -> ResearchPlan:
     """Generate a research plan from a topic via LLM."""
     user_msg = _USER_TEMPLATE.format(
         title=topic.title,
         description=topic.description,
         domain=topic.domain,
+        context_block=_build_context_block(topic),
     )
     messages = [SystemMessage(content=_SYSTEM_PROMPT), HumanMessage(content=user_msg)]
 

@@ -80,6 +80,8 @@ class PgResearchSessionRepository:
                 target_audience=session.target_audience,
                 content_tone=session.content_tone,
                 preferred_angle=session.preferred_angle,
+                keywords=session.keywords,
+                topic_description_override=session.topic_description_override,
             )
             db.add(row)
             await db.commit()
@@ -119,6 +121,8 @@ class PgResearchSessionRepository:
             row.target_audience = session.target_audience
             row.content_tone = session.content_tone
             row.preferred_angle = session.preferred_angle
+            row.keywords = session.keywords
+            row.topic_description_override = session.topic_description_override
             await db.commit()
             await db.refresh(row)
             updated = self._to_model(row)
@@ -187,6 +191,8 @@ class PgResearchSessionRepository:
             target_audience=row.target_audience,
             content_tone=row.content_tone,
             preferred_angle=row.preferred_angle,
+            keywords=row.keywords,
+            topic_description_override=row.topic_description_override,
         )
 
 

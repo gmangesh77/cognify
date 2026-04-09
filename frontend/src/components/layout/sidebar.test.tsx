@@ -19,6 +19,7 @@ describe("Sidebar", () => {
     expect(screen.getByText("Articles")).toBeInTheDocument();
     expect(screen.getByText("Research")).toBeInTheDocument();
     expect(screen.getByText("Publishing")).toBeInTheDocument();
+    expect(screen.getByText("Pipeline Debug")).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
   });
 

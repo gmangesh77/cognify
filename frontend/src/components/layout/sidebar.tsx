@@ -10,6 +10,7 @@ import {
   Search,
   Send,
   Settings,
+  Bug,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { label: "Articles", href: "/articles", icon: FileText },
   { label: "Research", href: "/research", icon: Search },
   { label: "Publishing", href: "/publishing", icon: Send },
+  { label: "Pipeline Debug", href: "/pipeline-debug", icon: Bug },
   { label: "Settings", href: "/settings", icon: Settings },
 ] as const;
 

@@ -50,6 +50,13 @@ def _register_google_trends(registry: TrendSourceRegistry, settings: Settings) -
 
 
 def _register_reddit(registry: TrendSourceRegistry, settings: Settings) -> None:
+    if not settings.reddit_client_id or not settings.reddit_client_secret:
+        import structlog
+
+        structlog.get_logger().info(
+            "reddit_skipped", reason="credentials not configured"
+        )
+        return
     client = RedditClient(
         client_id=settings.reddit_client_id,
         client_secret=settings.reddit_client_secret,
@@ -71,6 +78,11 @@ def _register_reddit(registry: TrendSourceRegistry, settings: Settings) -> None:
 
 
 def _register_newsapi(registry: TrendSourceRegistry, settings: Settings) -> None:
+    if not settings.newsapi_api_key:
+        import structlog
+
+        structlog.get_logger().info("newsapi_skipped", reason="API key not configured")
+        return
     client = NewsAPIClient(
         api_key=settings.newsapi_api_key,
         base_url=settings.newsapi_base_url,

@@ -128,15 +128,24 @@ async def generate_seo_metadata(
     body_text: str,
     llm: BaseChatModel,
     target_audience: str | None = None,
+    seed_keywords: list[str] | None = None,
+    content_tone: str | None = None,
 ) -> SEOMetadata:
     """Generate SEO metadata from article title and body."""
     logger.info("seo_metadata_generation_started", title=article_title)
-    audience_hint = ""
+    extras = ""
     if target_audience:
-        audience_hint = (
+        extras += (
             f"\nTarget audience: {target_audience}. "
             "Optimize keywords for what this audience searches."
         )
+    if seed_keywords:
+        extras += (
+            f"\nMust include these seed keywords in the keyword list: "
+            f"{', '.join(seed_keywords)}."
+        )
+    if content_tone:
+        extras += f"\nContent tone: {content_tone}."
     messages: list[SystemMessage | HumanMessage] = [
         SystemMessage(content=_SEO_SYSTEM),
         HumanMessage(
@@ -144,7 +153,7 @@ async def generate_seo_metadata(
                 title=article_title,
                 body_excerpt=body_text[:2000],
             )
-            + audience_hint
+            + extras
         ),
     ]
     return await _parse_seo_response(llm, messages)
