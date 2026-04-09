@@ -94,12 +94,8 @@ async def get_knowledge_base_stats(
         result = await db.execute(
             select(
                 func.count(ResearchSessionRow.id),
-                func.coalesce(
-                    func.sum(ResearchSessionRow.findings_count), 0
-                ),
-                func.coalesce(
-                    func.sum(ResearchSessionRow.indexed_count), 0
-                ),
+                func.coalesce(func.sum(ResearchSessionRow.findings_count), 0),
+                func.coalesce(func.sum(ResearchSessionRow.indexed_count), 0),
             )
         )
         row = result.one()
@@ -120,9 +116,9 @@ async def _avg_research_time(state: object) -> str:
     sf = get_session_factory(state.db_engine)
     async with sf() as db:
         result = await db.execute(
-            select(
-                func.avg(ResearchSessionRow.duration_seconds)
-            ).where(ResearchSessionRow.duration_seconds.is_not(None))
+            select(func.avg(ResearchSessionRow.duration_seconds)).where(
+                ResearchSessionRow.duration_seconds.is_not(None)
+            )
         )
         avg_seconds = result.scalar()
     if avg_seconds is None or avg_seconds == 0:

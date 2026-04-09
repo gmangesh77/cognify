@@ -81,9 +81,7 @@ def _register_newsapi(registry: TrendSourceRegistry, settings: Settings) -> None
     if not settings.newsapi_api_key:
         import structlog
 
-        structlog.get_logger().info(
-            "newsapi_skipped", reason="API key not configured"
-        )
+        structlog.get_logger().info("newsapi_skipped", reason="API key not configured")
         return
     client = NewsAPIClient(
         api_key=settings.newsapi_api_key,

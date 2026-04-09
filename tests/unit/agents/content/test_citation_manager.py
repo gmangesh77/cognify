@@ -182,9 +182,7 @@ class TestStripCitationMarkers:
 
     def test_removes_clustered_markers(self) -> None:
         md = "Multiple sources confirm this [1][2][3] finding."
-        assert strip_citation_markers(md) == (
-            "Multiple sources confirm this finding."
-        )
+        assert strip_citation_markers(md) == ("Multiple sources confirm this finding.")
 
     def test_preserves_code_blocks(self) -> None:
         md = "Text [1] here.\n```\ncode [2] inside\n```\nAfter [3]."

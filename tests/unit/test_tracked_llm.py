@@ -132,10 +132,12 @@ class TestTrackedChatModel:
         current_step_id.set(None)
         current_step_name.set("test_step")
 
-        await wrapper._agenerate([
-            SystemMessage(content="system prompt"),
-            HumanMessage(content="user input"),
-        ])
+        await wrapper._agenerate(
+            [
+                SystemMessage(content="system prompt"),
+                HumanMessage(content="user input"),
+            ]
+        )
 
         calls = await repo.list_by_session(session_id)
         msgs = calls[0].prompt_messages

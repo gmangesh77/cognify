@@ -39,9 +39,7 @@ async def list_debug_sessions(
     step_repo = _get_step_repo(request)
     llm_repo = _get_llm_repo(request)
 
-    session_list, total = await session_repo.list(
-        status=None, page=page, size=size
-    )
+    session_list, total = await session_repo.list(status=None, page=page, size=size)
     items = []
     for s in session_list:
         steps = await step_repo.list_by_session(s.id)
@@ -57,9 +55,7 @@ async def list_debug_sessions(
                 llm_call_count=len(llm_calls),
             )
         )
-    return PaginatedDebugSessions(
-        items=items, total=total, page=page, size=size
-    )
+    return PaginatedDebugSessions(items=items, total=total, page=page, size=size)
 
 
 @pipeline_debug_router.get(
