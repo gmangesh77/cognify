@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendBadge } from "@/components/common/trend-badge";
@@ -38,7 +38,10 @@ export function GenerateArticleModal({
     updateField,
     reset,
   } = useTopicAnalysis();
-  const [originalDescription, setOriginalDescription] = useState("");
+  // Track the topic's original description (non-reactive — used only to
+  // detect if the user edited it before submit). A ref avoids the
+  // setState-in-effect lint rule.
+  const originalDescriptionRef = useRef("");
 
   // On topic change, reset hook state and auto-analyze seeded with
   // the topic's existing description/domain/keywords so the user sees
@@ -48,7 +51,7 @@ export function GenerateArticleModal({
       reset();
       return;
     }
-    setOriginalDescription(topic.description);
+    originalDescriptionRef.current = topic.description;
     analyzeWithSeed(topic.title, {
       description: topic.description,
       domain: topic.domain,
@@ -60,7 +63,7 @@ export function GenerateArticleModal({
 
   function handleConfirm() {
     if (!analysis || !topic) return;
-    const edited = analysis.description !== originalDescription;
+    const edited = analysis.description !== originalDescriptionRef.current;
     const params: ArticleParams = {
       target_audience: analysis.target_audience || undefined,
       content_tone: analysis.content_tone as ContentTone,

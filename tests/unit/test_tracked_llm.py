@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import pytest
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 
 from src.models.llm_call import LlmCall
