@@ -76,8 +76,11 @@ class TestIllustrationNode:
         state = _make_state(existing_visuals=[existing])
         result = await node(state)
         assert len(result["visuals"]) == 2
-        assert result["visuals"][0] == existing
-        assert result["visuals"][1].metadata["type"] == "hero"
+        # Hero illustration is prepended (so it appears first in published
+        # articles); original chart is preserved at index 1.
+        assert result["visuals"][0].metadata["type"] == "hero"
+        assert result["visuals"][1].url == existing.url
+        assert result["visuals"][1].caption == existing.caption
 
     @pytest.mark.asyncio
     async def test_returns_existing_visuals_on_prompt_failure(self, tmp_path) -> None:
