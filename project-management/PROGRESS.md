@@ -166,6 +166,7 @@
 | Dashboard & Research Fixes (AB#16748, AB#16749, AB#16751) | Done | 2026-04-06 | Trend registry rebuilt after key resolution (fixes NewsAPI 401), dashboard metrics return real published/research counts, Knowledge Base panel fetches aggregated stats from new `/metrics/knowledge-base` endpoint. Reddit/NewsAPI registration guarded on missing credentials. Merged via PR #50, commits `3112cc9`, `606a533`. |
 | Generate Article Modal Rework | Done | 2026-04-09 | Description/Keywords fields editable with regenerate buttons, audience/tone/angle/keywords now actually propagate through planner, outliner, section drafter, and SEO optimizer (previously accepted but ignored). New `research_sessions.keywords` and `topic_description_override` columns. PR #50, commit `cd89ff4`. |
 | Hero Image Canonical Sizing | Done | 2026-04-10 | Every generated hero image is center-cropped and resized to exactly 1600x900 via Pillow (LANCZOS) for consistent Ghost list-card and detail-page rendering. New HERO_CANONICAL_* constants + `_normalize_hero_image()` helper. PR #51, commit `d4d526b`. |
+| Mermaid Diagram In-Article Rendering | In Progress | 2026-04-10 | Preserve raw `mermaid_syntax` end-to-end (DiagramSpec → ImageAsset metadata → API response → frontend), expand DiagramType enum (class/state/ER/pie/journey), lift 0-2 cap to 0-5 contextual, add `mermaid.js` client renderer + inline placement in `ArticleContent`. Ghost PNG path preserved. Branch: `feature/mermaid-diagram-rendering`. Plan: `~/.claude/plans/joyful-napping-crown.md`. |
 
 ---
 

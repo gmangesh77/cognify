@@ -159,12 +159,17 @@ def _to_citation_response(c: Citation) -> CitationResponse:
 
 
 def _to_image_response(v: ImageAsset) -> ImageAssetResponse:
-    """Map an ImageAsset model to its response schema."""
+    """Map an ImageAsset model to its response schema.
+
+    Preserves ``metadata`` so diagram clients can read ``mermaid_syntax``,
+    ``diagram_type``, and ``source_section`` for inline rendering.
+    """
     return ImageAssetResponse(
         id=v.id,
         url=v.url,
         caption=v.caption,
         alt_text=v.alt_text,
+        metadata=v.metadata or None,
     )
 
 

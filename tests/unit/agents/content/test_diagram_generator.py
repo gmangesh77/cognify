@@ -117,9 +117,46 @@ class TestProposeDiagrams:
         assert result == []
 
     @pytest.mark.asyncio
-    async def test_truncates_to_max_two(self) -> None:
-        specs = [VALID_SPEC, VALID_SEQUENCE_SPEC, {**VALID_SPEC, "title": "Third"}]
+    async def test_truncates_to_max_five(self) -> None:
+        specs = [{**VALID_SPEC, "title": f"Diagram {i}"} for i in range(7)]
         llm = AsyncMock()
         llm.ainvoke.return_value = MagicMock(content=json.dumps(specs))
         result = await propose_diagrams([_make_section(0, "Text.")], llm)
-        assert len(result) <= 2
+        assert len(result) == 5
+
+    @pytest.mark.asyncio
+    async def test_accepts_overview_diagram_section_index(self) -> None:
+        overview = {**VALID_SPEC, "source_section_index": -1, "title": "Overview"}
+        llm = AsyncMock()
+        llm.ainvoke.return_value = MagicMock(content=json.dumps([overview]))
+        sections = [_make_section(0, "Body.")]
+        result = await propose_diagrams(sections, llm)
+        assert len(result) == 1
+        assert result[0].source_section_index == -1
+
+    @pytest.mark.asyncio
+    async def test_accepts_extended_diagram_types(self) -> None:
+        class_spec = {
+            "diagram_type": "class",
+            "title": "Entity Classes",
+            "mermaid_syntax": "classDiagram\n    class Foo {\n      +bar()\n    }",
+            "caption": "Core entities.",
+            "source_section_index": 0,
+        }
+        state_spec = {
+            "diagram_type": "state",
+            "title": "Lifecycle",
+            "mermaid_syntax": "stateDiagram-v2\n    [*] --> Idle\n    Idle --> Done",
+            "caption": "Request lifecycle.",
+            "source_section_index": 0,
+        }
+        llm = AsyncMock()
+        llm.ainvoke.return_value = MagicMock(
+            content=json.dumps([class_spec, state_spec])
+        )
+        result = await propose_diagrams([_make_section(0, "Text.")], llm)
+        assert len(result) == 2
+        assert {r.diagram_type for r in result} == {
+            DiagramType.CLASS,
+            DiagramType.STATE,
+        }

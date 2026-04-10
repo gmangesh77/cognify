@@ -71,7 +71,11 @@ export default function ArticleDetailPage() {
 
       <div className="flex gap-8">
         <div className="min-w-0 flex-[2]">
-          <ArticleContent bodyMarkdown={article.bodyMarkdown} citations={article.citations} />
+          <ArticleContent
+            bodyMarkdown={article.bodyMarkdown}
+            citations={article.citations}
+            visuals={article.visuals}
+          />
         </div>
         <div className="w-80 shrink-0">
           <ArticleSidebar article={article} onPublish={() => setPublishOpen(true)} />

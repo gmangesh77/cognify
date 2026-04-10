@@ -42,11 +42,18 @@ export interface SEOMetadata {
   structuredData: StructuredDataLD | null;
 }
 
+export interface ImageAssetMetadata {
+  diagram_type?: string;
+  source_section?: number;
+  mermaid_syntax?: string;
+}
+
 export interface ImageAsset {
   id: string;
   url: string;
   caption: string | null;
   altText: string | null;
+  metadata?: ImageAssetMetadata | null;
 }
 
 export interface WorkflowStep {

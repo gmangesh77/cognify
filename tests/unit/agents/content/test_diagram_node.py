@@ -81,6 +81,25 @@ class TestDiagramNode:
         assert result["visuals"] == [existing]
 
     @pytest.mark.asyncio
+    async def test_preserves_mermaid_syntax_in_metadata(self, tmp_path) -> None:
+        llm = AsyncMock()
+        llm.ainvoke.return_value = MagicMock(content=json.dumps([VALID_SPEC]))
+        node = make_diagram_node(llm, str(tmp_path))
+        state = {
+            "session_id": uuid4(),
+            "section_drafts": [_make_section(0, "Auth flow text.")],
+        }
+        with patch(
+            "src.agents.content.nodes.render_mermaid",
+            new_callable=AsyncMock,
+            return_value=True,
+        ):
+            result = await node(state)
+        asset = result["visuals"][0]
+        assert asset.metadata["mermaid_syntax"] == VALID_SPEC["mermaid_syntax"]
+        assert asset.metadata["source_section"] == 0
+
+    @pytest.mark.asyncio
     async def test_skips_failed_renders_keeps_successful(self, tmp_path) -> None:
         specs = [
             VALID_SPEC,

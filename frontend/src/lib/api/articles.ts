@@ -36,6 +36,11 @@ export interface ArticleResponse {
     url: string;
     caption: string | null;
     alt_text: string | null;
+    metadata: {
+      diagram_type?: string;
+      source_section?: number;
+      mermaid_syntax?: string;
+    } | null;
   }[];
   provenance: {
     research_session_id: string;
