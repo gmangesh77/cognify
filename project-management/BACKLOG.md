@@ -143,17 +143,9 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 
 ---
 
-### Epic 9: Infrastructure (remaining)
+### Epic 9: Infrastructure — DONE
 
-#### INFRA-005: Frontend Status Alignment [Should]
-**As a** user, **I want** all session statuses displayed correctly, **so that** the Research page doesn't crash on unexpected statuses.
-- **Acceptance Criteria**:
-  - Frontend `SessionStatus` type includes all backend statuses: planning, researching, evaluating, running, complete, completed, failed
-  - `SessionStatusBadge`, `SessionCard` progress bar, and `SessionFilters` handle all statuses
-  - Session detail polling works for active sessions (researching, evaluating)
-  - Dashboard "Recent Articles" and "Trending Topics" show real data with correct text colors
-- **Story Points**: 3
-- **Note**: Partially fixed (StatusBadge crash resolved), but filter tabs and progress bar logic still assume 4 statuses
+All Infrastructure tickets complete. INFRA-005 (Frontend Status Alignment) merged via PR #46.
 
 ---
 
@@ -170,7 +162,7 @@ Ordered by business value and dependency. MoSCoW priority: **Must**, **Should**,
 | **Publishing** | **5** | **4** | **1** | **5** |
 | Dashboard & Config | 5 | 5 | 0 | 0 |
 | API & Auth | 3 | 3 | 0 | 0 |
-| **Infrastructure** | **5** | **4** | **1** | **3** |
-| **Total** | **49** | **47** | **2** | **8** |
+| Infrastructure | 5 | 5 | 0 | 0 |
+| **Total** | **49** | **48** | **1** | **5** |
 
-**Velocity**: 251 SP completed across 9 epics. 8 SP remaining (2 tickets).
+**Velocity**: 254 SP completed across 9 epics. 5 SP remaining (1 ticket: PUBLISH-002).
