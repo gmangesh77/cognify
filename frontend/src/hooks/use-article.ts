@@ -39,6 +39,13 @@ function toDetail(a: ArticleResponse): ArticleDetail {
       url: v.url,
       caption: v.caption,
       altText: v.alt_text,
+      metadata: v.metadata
+        ? {
+            diagram_type: v.metadata.diagram_type,
+            source_section: v.metadata.source_section,
+            mermaid_syntax: v.metadata.mermaid_syntax,
+          }
+        : null,
     })),
     authors: a.authors,
     domain: a.domain,

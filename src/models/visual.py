@@ -26,17 +26,26 @@ class ChartSpec(BaseModel, frozen=True):
 
 
 class DiagramType(StrEnum):
-    """Supported diagram types."""
+    """Supported diagram types (rendered via mermaid-cli / mermaid.js)."""
 
     FLOWCHART = "flowchart"
     SEQUENCE = "sequence"
+    CLASS = "class"
+    STATE = "state"
+    ER = "er"
+    JOURNEY = "journey"
 
 
 class DiagramSpec(BaseModel, frozen=True):
-    """LLM-proposed diagram specification with Mermaid syntax."""
+    """LLM-proposed diagram specification with Mermaid syntax.
+
+    `source_section_index = -1` marks an article-level overview diagram
+    (rendered above the body). Non-negative values index into the section
+    drafts list.
+    """
 
     diagram_type: DiagramType
     title: str = Field(min_length=1, max_length=120)
     mermaid_syntax: str = Field(min_length=10)
     caption: str = Field(min_length=1, max_length=200)
-    source_section_index: int = Field(ge=0)
+    source_section_index: int = Field(ge=-1)

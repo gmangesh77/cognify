@@ -28,18 +28,32 @@ logger = structlog.get_logger()
 _MMDC_PATH = Path(__file__).parents[3] / "node_modules" / ".bin" / "mmdc"
 
 _PROMPT_TEMPLATE = (
-    "You are a technical diagram expert. "
-    "Read the article sections below and propose 0-2 diagrams.\n\n"
-    "Supported types: flowchart, sequence.\n\n"
+    "You are a technical diagram expert. Read the article sections below and "
+    "decide which diagrams (if any) would make the prose clearer and more "
+    "impactful. Draw diagrams ONLY when they clarify a concept the text "
+    "already describes -- never force a diagram onto text that does not call "
+    "for one.\n\n"
+    "Supported types (pick the one that best fits the concept):\n"
+    "- flowchart: decision trees, process flows, pipelines, branching logic\n"
+    "- sequence: request/response and message exchanges between actors\n"
+    "- class: data models, class hierarchies, component relationships\n"
+    "- state: state machines, lifecycles, status transitions\n"
+    "- er: entity-relationship / database schema\n"
+    "- journey: step-by-step user journeys or experience maps\n\n"
     "For each diagram, provide:\n"
-    '- diagram_type: "flowchart" or "sequence"\n'
-    "- title: diagram title (max 120 chars)\n"
-    "- mermaid_syntax: valid Mermaid diagram code\n"
+    "- diagram_type: one of the types listed above\n"
+    "- title: concise diagram title (max 120 chars)\n"
+    "- mermaid_syntax: valid Mermaid code for the chosen type\n"
     "- caption: one-sentence description for the article\n"
-    "- source_section_index: which section (0-indexed) the diagram illustrates\n\n"
-    "Only propose diagrams where a process flow or interaction sequence "
-    "is described in the text. Return an empty array [] if nothing is diagrammable.\n\n"
-    "Return ONLY a JSON array. No explanation.\n\n"
+    "- source_section_index: the 0-indexed section this diagram illustrates. "
+    "Use -1 for an article-level overview / high-level architecture diagram "
+    "(it will render above the article body).\n\n"
+    "Guidance on count: prefer 0 diagrams over a forced diagram. If the "
+    "article warrants it, include a high-level overview (section_index = -1) "
+    "plus a handful of per-section diagrams where they add genuine value. "
+    "Do not exceed 5 total.\n\n"
+    "Return ONLY a JSON array. Empty array [] if nothing is diagrammable. "
+    "No prose, no markdown fences, no explanation.\n\n"
     "## Article Sections\n{sections_text}"
 )
 
@@ -93,7 +107,11 @@ async def propose_diagrams(
     section_drafts: list[SectionDraft],
     llm: BaseChatModel,
 ) -> list[DiagramSpec]:
-    """Ask LLM to propose 0-2 diagram specs from section drafts."""
+    """Ask LLM to propose up to 5 diagram specs from section drafts.
+
+    Returned specs may include an overview diagram with
+    ``source_section_index == -1`` which should render above the article body.
+    """
     sections_text = "\n\n".join(
         f"### {d.title}\n{d.body_markdown}" for d in section_drafts
     )
@@ -110,7 +128,7 @@ async def propose_diagrams(
         return []
 
     specs: list[DiagramSpec] = []
-    for item in raw[:2]:
+    for item in raw[:5]:
         try:
             spec = DiagramSpec.model_validate(item)
             if spec.source_section_index >= len(section_drafts):

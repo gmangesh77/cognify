@@ -98,6 +98,18 @@ class TestDiagramType:
     def test_sequence_value(self) -> None:
         assert DiagramType.SEQUENCE == "sequence"
 
+    def test_class_value(self) -> None:
+        assert DiagramType.CLASS == "class"
+
+    def test_state_value(self) -> None:
+        assert DiagramType.STATE == "state"
+
+    def test_er_value(self) -> None:
+        assert DiagramType.ER == "er"
+
+    def test_journey_value(self) -> None:
+        assert DiagramType.JOURNEY == "journey"
+
     def test_invalid_type_rejected(self) -> None:
         with pytest.raises(ValueError):
             DiagramType("invalid")
@@ -154,3 +166,33 @@ class TestDiagramSpec:
                 caption="",
                 source_section_index=0,
             )
+
+    def test_overview_section_index_allowed(self) -> None:
+        spec = DiagramSpec(
+            diagram_type=DiagramType.FLOWCHART,
+            title="System Overview",
+            mermaid_syntax="graph TD\n    A --> B --> C",
+            caption="High-level architecture.",
+            source_section_index=-1,
+        )
+        assert spec.source_section_index == -1
+
+    def test_section_index_below_minus_one_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            DiagramSpec(
+                diagram_type=DiagramType.FLOWCHART,
+                title="Title",
+                mermaid_syntax="graph TD\n    A --> B",
+                caption="Caption",
+                source_section_index=-2,
+            )
+
+    def test_class_diagram_spec(self) -> None:
+        spec = DiagramSpec(
+            diagram_type=DiagramType.CLASS,
+            title="Data Model",
+            mermaid_syntax="classDiagram\n    class Foo {\n      +bar()\n    }",
+            caption="Core data model classes.",
+            source_section_index=2,
+        )
+        assert spec.diagram_type == "class"

@@ -298,6 +298,7 @@ def make_diagram_node(
                         metadata={
                             "diagram_type": str(spec.diagram_type),
                             "source_section": spec.source_section_index,
+                            "mermaid_syntax": spec.mermaid_syntax,
                         },
                     )
                 )

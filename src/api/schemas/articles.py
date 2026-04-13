@@ -96,6 +96,7 @@ class ImageAssetResponse(BaseModel):
     url: str
     caption: str | None
     alt_text: str | None
+    metadata: dict[str, str | int | float] | None = None
 
 
 class SEOMetadataResponse(BaseModel):
