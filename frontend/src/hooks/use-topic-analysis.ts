@@ -1,8 +1,24 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { AxiosError } from "axios";
 import { analyzeTopic } from "@/lib/api/trends";
 import type { TopicAnalysisResult } from "@/types/api";
+
+function formatAnalyzeError(err: unknown, action: string): string {
+  if (err instanceof AxiosError) {
+    const status = err.response?.status;
+    const detail =
+      (err.response?.data as { error?: { message?: string } } | undefined)
+        ?.error?.message ?? err.message;
+    if (status === 429) return `Rate limit hit — wait a minute and retry.`;
+    if (status === 503)
+      return `LLM not configured. Set COGNIFY_ANTHROPIC_API_KEY.`;
+    if (status) return `${action} failed (HTTP ${status}): ${detail}`;
+    return `${action} failed: ${err.message}`;
+  }
+  return `${action} failed. Please try again.`;
+}
 
 interface UseTopicAnalysisReturn {
   analysis: TopicAnalysisResult | null;
@@ -34,8 +50,9 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
     try {
       const result = await analyzeTopic(title);
       setAnalysis(result);
-    } catch {
-      setError("Failed to analyze topic. Please try again.");
+    } catch (err) {
+      console.error("analyzeTopic failed", err);
+      setError(formatAnalyzeError(err, "Topic analysis"));
     } finally {
       setIsAnalyzing(false);
     }
@@ -60,8 +77,9 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
           content_tone: seed.content_tone || fresh.content_tone,
           preferred_angle: seed.preferred_angle || fresh.preferred_angle,
         });
-      } catch {
-        setError("Failed to analyze topic. Please try again.");
+      } catch (err) {
+        console.error("analyzeTopic (seeded) failed", err);
+        setError(formatAnalyzeError(err, "Topic analysis"));
       } finally {
         setIsAnalyzing(false);
       }
@@ -76,8 +94,9 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
       try {
         const result = await analyzeTopic(title, field, analysis);
         setAnalysis(result);
-      } catch {
-        setError(`Failed to regenerate ${field}.`);
+      } catch (err) {
+        console.error(`regenerate ${field} failed`, err);
+        setError(formatAnalyzeError(err, `Regenerate ${field}`));
       } finally {
         setIsRegenerating(null);
       }

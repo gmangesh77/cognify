@@ -192,7 +192,7 @@ export default function TopicsPage() {
         <div className="grid grid-cols-2 gap-6">
           {topics.map((topic) => (
             <TopicCard
-              key={topic.rank}
+              key={topic.id ?? `${topic.source}:${topic.external_url}`}
               topic={topic}
               onRequestGeneration={openModal}
             />
