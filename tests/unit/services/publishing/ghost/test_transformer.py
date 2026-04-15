@@ -80,3 +80,19 @@ class TestGhostTransformer:
     ) -> None:
         result = GhostTransformer().transform(sample_article)
         assert result.metadata["custom_excerpt"] == sample_article.summary
+
+    def test_custom_excerpt_truncated_to_ghost_limit(
+        self,
+        sample_article: CanonicalArticle,
+    ) -> None:
+        """Ghost rejects custom_excerpt > 300 chars with HTTP 422.
+
+        CanonicalArticle.summary allows up to 500 chars; the transformer
+        must truncate to stay within Ghost's limit.
+        """
+        long_summary = "A" * 450
+        article = sample_article.model_copy(update={"summary": long_summary})
+        result = GhostTransformer().transform(article)
+        excerpt = result.metadata["custom_excerpt"]
+        assert isinstance(excerpt, str)
+        assert len(excerpt) <= 300

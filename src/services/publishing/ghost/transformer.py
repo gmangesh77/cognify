@@ -10,6 +10,19 @@ from src.models.publishing import PlatformPayload
 
 _MD_EXTENSIONS = ["tables", "fenced_code"]
 _DEFAULT_API_BASE = "http://localhost:8000"
+_GHOST_EXCERPT_MAX = 300
+
+
+def _truncate_excerpt(text: str, limit: int = _GHOST_EXCERPT_MAX) -> str:
+    """Truncate to Ghost's excerpt limit, snapping to word boundary + ellipsis."""
+    if len(text) <= limit:
+        return text
+    cutoff = limit - 1  # reserve 1 char for ellipsis
+    snippet = text[:cutoff]
+    last_space = snippet.rfind(" ")
+    if last_space >= int(cutoff * 0.8):  # only snap if boundary is close
+        snippet = snippet[:last_space]
+    return snippet.rstrip() + "\u2026"
 
 
 class GhostTransformer:
@@ -60,7 +73,7 @@ def _build_metadata(
     meta: dict[str, str | int | bool] = {
         "title": article.title,
         "slug": _slugify(article.title),
-        "custom_excerpt": article.summary,
+        "custom_excerpt": _truncate_excerpt(article.summary),
         "meta_title": article.seo.title,
         "meta_description": article.seo.description,
     }
