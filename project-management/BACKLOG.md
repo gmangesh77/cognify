@@ -157,18 +157,20 @@ All Infrastructure tickets complete. INFRA-005 (Frontend Status Alignment) merge
 **Pencil brief**: [`docs/superpowers/specs/2026-05-06-visual-studio-pencil-design-brief.md`](../docs/superpowers/specs/2026-05-06-visual-studio-pencil-design-brief.md)
 **Architecture review**: [`docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW.md`](../docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW.md)
 
-| Ticket      | Title                                                                          | Priority | SP |
-|-------------|--------------------------------------------------------------------------------|----------|---:|
-| VISUAL-004  | Phase 1 — Style catalogue + provider abstraction + MinIO + SSRF guard          | Must     | 13 |
-| VISUAL-005  | Phase 2 — Persona-aware planner + pipeline nodes                               | Must     | 13 |
-| VISUAL-006  | Phase 3 — Markdown injection + multi-platform publishing transformers          | Must     |  8 |
-| VISUAL-007  | Phase 4 — Studio API (plan/render/refine/upload/fetch-url/section-html-refine) | Must     |  8 |
-| VISUAL-008  | Phase 5 — Frontend Visual Studio (chip rails, spec cards, HTML refine)         | Must     | 21 |
-| VISUAL-009  | Phase 6 — MinIO production rollout + cost dashboard                            | Should   |  5 |
-| VISUAL-010  | Phase 7 — Saved-asset gallery + audience-persona Settings UI                   | Should   |  8 |
-| VISUAL-011  | Phase 8 — Per-section content editing (text + AI rewrite + history)            | Should   | 13 |
+| Ticket      | Title                                                                          | Priority | SP | Status |
+|-------------|--------------------------------------------------------------------------------|----------|---:|--------|
+| VISUAL-004  | Phase 1 — Style catalogue + provider abstraction + MinIO + SSRF guard          | Must     | 13 | DONE   |
+| VISUAL-005  | Phase 2 — Persona-aware planner + pipeline nodes                               | Must     | 13 | DONE   |
+| VISUAL-006  | Phase 3 — Markdown injection + multi-platform publishing transformers          | Must     |  8 | DONE   |
+| VISUAL-007  | Phase 4 — Studio API (plan/render/refine/upload/fetch-url/section-html-refine) | Must     |  8 | DONE   |
+| VISUAL-008  | Phase 5 — Frontend Visual Studio (chip rails, spec cards, HTML refine)         | Must     | 21 | DONE   |
+| VISUAL-009  | Phase 6 — MinIO production rollout + cost dashboard                            | Should   |  5 | DONE   |
+| VISUAL-010  | Phase 7 — Saved-asset gallery + audience-persona Settings UI                   | Should   |  8 | DONE   |
+| VISUAL-011  | Phase 8 — Per-section content editing (text + AI rewrite + history)            | Should   | 13 |        |
 
 Per-phase acceptance criteria are documented in the implementation plan (§11). Boundary invariants (ADR-003, ADR-004) are enforced as called out per phase.
+
+**Phase 5 (VISUAL-008) note on Playwright E2E**: the plan §11.5 calls for Playwright coverage of the plan → render → refine flow. Playwright is not yet wired into the repo (no browsers, no CI lane, no fixtures). VISUAL-008 ships equivalent coverage via Vitest component + integration tests; the Playwright scaffolding itself is tracked as a follow-up alongside the broader testing-infrastructure work.
 
 ---
 
@@ -186,7 +188,11 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | Dashboard & Config | 5 | 5 | 0 | 0 |
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
-| **Visual Generation Overhaul** | **8** | **0** | **8** | **89** |
-| **Total** | **57** | **48** | **9** | **94** |
+| **Visual Generation Overhaul** | **8** | **7** | **1** | **13** |
+| **Total** | **57** | **55** | **2** | **18** |
 
-**Velocity**: 254 SP completed across 9 epics. 94 SP remaining (1 publishing + 8 visual-generation tickets).
+**Velocity update (2026-05-07)**: VISUAL-004 through VISUAL-010 shipped on
+branch `claude/vibrant-chatterjee-1115a8` (76 SP). Remaining: VISUAL-011
+(13 SP, per-section content editing) + PUBLISH-002 (5 SP, WordPress).
+
+**Velocity**: 330 SP completed across 10 epics. 18 SP remaining (PUBLISH-002 + VISUAL-011).

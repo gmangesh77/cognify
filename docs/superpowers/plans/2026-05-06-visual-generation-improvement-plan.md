@@ -586,97 +586,97 @@ Stub provider: `tests/stubs/stub_image_provider.py` returning a 1×1 PNG so we c
 
 ### Phase 1 — Catalogue + Provider abstraction + Object storage (foundation)
 
-- [ ] ADR-005 draft (image-spec planner amendment + MinIO object storage decision)
-- [ ] `src/services/visuals/visual_styles.py` (catalogue, role defaults, composer, planner_catalogue_block)
-- [ ] `src/services/visuals/persona_directions.py` (audience persona → visual register map)
-- [ ] `src/services/visuals/banned_cliches.py` (the explicit ban-list block)
-- [ ] `src/services/visuals/providers/base.py` (`ImageProvider` Protocol, `ImageRenderResult`)
-- [ ] `src/services/visuals/providers/dalle_3.py` (wraps existing `OpenAIDalleGenerator`)
-- [ ] `src/services/visuals/providers/gemini_flash.py`
-- [ ] `src/services/visuals/providers/gemini_3_pro.py` (NEW tier — `gemini-3-pro-image-preview`)
-- [ ] `src/services/visuals/providers/imagen_4.py` (incl. `_IMAGEN_ASPECT_MAP` aspect snapping)
-- [ ] `src/services/visuals/registry.py`
-- [ ] **`src/services/visuals/object_storage.py`** (MinIO/S3 uploads, public-URL resolution, base64 fallback)
-- [ ] **`src/services/visuals/safe_http.py`** (SSRF guard for fetch-from-URL)
-- [ ] Unit tests for catalogue, composer, providers (with httpx-mock for Google AI), object_storage (with moto/MinIO test container), safe_http
-- [ ] Settings additions (provider IDs, MinIO config, fetch-from-URL safety)
-- [ ] `GET /api/v1/visuals/styles` endpoint
-- [ ] `docker-compose.minio.yml` for local dev (mirror impactai)
+- [x] ADR-005 draft (image-spec planner amendment + MinIO object storage decision)
+- [x] `src/services/visuals/visual_styles.py` (catalogue, role defaults, composer, planner_catalogue_block)
+- [x] `src/services/visuals/persona_directions.py` (audience persona → visual register map)
+- [x] `src/services/visuals/banned_cliches.py` (the explicit ban-list block)
+- [x] `src/services/visuals/providers/base.py` (`ImageProvider` Protocol, `ImageRenderResult`)
+- [x] `src/services/visuals/providers/dalle_3.py` (wraps existing `OpenAIDalleGenerator`)
+- [x] `src/services/visuals/providers/gemini_flash.py`
+- [x] `src/services/visuals/providers/gemini_3_pro.py` (NEW tier — `gemini-3-pro-image-preview`)
+- [x] `src/services/visuals/providers/imagen_4.py` (incl. `_IMAGEN_ASPECT_MAP` aspect snapping)
+- [x] `src/services/visuals/registry.py`
+- [x] **`src/services/visuals/object_storage.py`** (MinIO/S3 uploads, public-URL resolution, base64 fallback)
+- [x] **`src/services/visuals/safe_http.py`** (SSRF guard for fetch-from-URL)
+- [x] Unit tests for catalogue, composer, providers (with httpx-mock for Google AI), object_storage (with moto/MinIO test container), safe_http
+- [x] Settings additions (provider IDs, MinIO config, fetch-from-URL safety)
+- [x] `GET /api/v1/visuals/styles` endpoint
+- [x] `docker-compose.minio.yml` for local dev (mirror impactai)
 - **PR target:** `feature/VISUAL-004-style-catalogue-providers-storage`
 
 ### Phase 2 — Planner + new pipeline nodes (persona-aware, cliché-banned)
 
-- [ ] `src/services/visuals/prompt_composer.py` (port `_build_banner_prompt`, including the four-branch decision tree, `no_text_clause`, "Composition reference IGNORED" trick)
-- [ ] `src/services/visuals/default_prompts.py` (Python port of `defaultSectionVisualPrompts.ts` — per-role default image prompts)
-- [ ] `src/services/visuals/image_planner.py` (`plan_section_images`, `plan_article_cover`, `_fallback_specs`, persona-aware register, banned-cliché block)
-- [ ] `src/agents/content/image_planner_node.py`
-- [ ] `src/agents/content/image_render_node.py` (writes through `object_storage`)
-- [ ] CanonicalArticle field additions (`image_specs`, `page_art_direction`, `audience_persona`)
-- [ ] Thread `audience_persona` from existing per-article params (already in CONTENT-006 humanization flow) into the planner
-- [ ] Wire nodes into `pipeline.py` between `seo_optimize` and `generate_charts`
-- [ ] FakeLLM fixtures for planner (across multiple personas + roles)
-- [ ] Stub provider for tests
-- [ ] Integration test: full pipeline with planner + render + MinIO stub
+- [x] `src/services/visuals/prompt_composer.py` (port `_build_banner_prompt`, including the four-branch decision tree, `no_text_clause`, "Composition reference IGNORED" trick)
+- [x] `src/services/visuals/default_prompts.py` (Python port of `defaultSectionVisualPrompts.ts` — per-role default image prompts)
+- [x] `src/services/visuals/image_planner.py` (`plan_section_images`, `plan_article_cover`, `_fallback_specs`, persona-aware register, banned-cliché block)
+- [x] `src/agents/content/image_planner_node.py`
+- [x] `src/agents/content/image_render_node.py` (writes through `object_storage`)
+- [x] CanonicalArticle field additions (`image_specs`, `page_art_direction`, `audience_persona`)
+- [x] Thread `audience_persona` from existing per-article params (already in CONTENT-006 humanization flow) into the planner
+- [x] Wire nodes into `pipeline.py` between `seo_optimize` and `generate_charts`
+- [x] FakeLLM fixtures for planner (across multiple personas + roles)
+- [x] Stub provider for tests
+- [x] Integration test: full pipeline with planner + render + MinIO stub
 - **PR target:** `feature/VISUAL-005-persona-aware-planner-pipeline`
 
 ### Phase 3 — Markdown injection + publishing transformers
 
-- [ ] `src/services/visuals/inject.py` (per-anchor markdown injection)
-- [ ] Update Ghost transformer to use it (`feature_image` for cover, Lexical cards for inline)
-- [ ] Update Medium transformer
-- [ ] Update LinkedIn transformer (with API URN dance for inline assets)
-- [ ] Per-transformer tests with multi-anchor specs
-- [ ] E2E: regenerate Ghost preview HTML for an existing article with new specs
+- [x] `src/services/visuals/inject.py` (per-anchor markdown injection)
+- [x] Update Ghost transformer to use it (`feature_image` for cover, Lexical cards for inline)
+- [x] Update Medium transformer
+- [x] Update LinkedIn transformer (with API URN dance for inline assets)
+- [x] Per-transformer tests with multi-anchor specs
+- [x] E2E: regenerate Ghost preview HTML for an existing article with new specs
 - **PR target:** `feature/VISUAL-006-multi-anchor-publishing`
 
 ### Phase 4 — Backend HTTP API for studio (incl. upload + import-URL + section refine)
 
-- [ ] `src/api/routers/visuals.py` (plan / render / refine / replace / delete / **upload** / **fetch-from-url** / **section-html-refine** / cost / saved)
-- [ ] `src/services/visuals/section_html_refiner.py` (Claude-driven section HTML/CSS refinement)
-- [ ] Rate limiting (12/min on /render, 6/min on /fetch-from-url)
-- [ ] Multipart upload validation (MIME whitelist, size cap, content-type sniff)
-- [ ] SSRF tests for `/fetch-from-url` (private IPs, link-local, redirects-to-private)
-- [ ] Cost tracking endpoint `GET /visuals/cost?article_id=`
-- [ ] Saved-asset gallery endpoint `GET /visuals/saved`
-- [ ] Auth + RBAC
-- [ ] OpenAPI docs
-- [ ] Contract tests for all endpoints
+- [x] `src/api/routers/visuals.py` (plan / render / refine / replace / delete / **upload** / **fetch-from-url** / **section-html-refine** / cost / saved)
+- [x] `src/services/visuals/section_html_refiner.py` (Claude-driven section HTML/CSS refinement)
+- [x] Rate limiting (12/min on /render, 6/min on /fetch-from-url)
+- [x] Multipart upload validation (MIME whitelist, size cap, content-type sniff)
+- [x] SSRF tests for `/fetch-from-url` (private IPs, link-local, redirects-to-private)
+- [x] Cost tracking endpoint `GET /visuals/cost?article_id=`
+- [x] Saved-asset gallery endpoint `GET /visuals/saved`
+- [x] Auth + RBAC
+- [x] OpenAPI docs
+- [x] Contract tests for all endpoints
 - **PR target:** `feature/VISUAL-007-studio-api`
 
 ### Phase 5 — Frontend Visual Studio (with HTML refine + import flows)
 
-- [ ] `frontend/src/lib/api/visuals.ts`
-- [ ] `frontend/src/lib/visuals/visualStyles.ts` (boot fetch + caching, NO mirrored TS catalogue)
-- [ ] `frontend/src/lib/visuals/imageSrc.ts` (port `pickGeneratedImageSrc` — URL-first, base64 fallback)
-- [ ] `frontend/src/components/visuals/VisualStudio.tsx`
-- [ ] `frontend/src/components/visuals/SpecCard.tsx` (with Render/Edit/Replace/Upload/Import-URL/Refine)
-- [ ] `frontend/src/components/visuals/StyleChipRail.tsx`
-- [ ] `frontend/src/components/visuals/SectionHtmlRefinePanel.tsx` ("Apply with AI" → `/visuals/section-html-refine`)
-- [ ] `frontend/src/components/visuals/SavedAssetGallery.tsx` (modal picker)
-- [ ] `frontend/src/components/visuals/UsageBadge.tsx`
-- [ ] Mount in article-detail screen
-- [ ] Vitest + Testing Library: render, render-spec, refine flow, upload flow, import-URL flow
-- [ ] Playwright E2E: open studio → plan → render → toggle premium → regenerate → upload custom → refine HTML
-- [ ] Flip `enable_image_planner` default to `True`
-- [ ] Update `frontend/DESIGN.md` with Visual Studio component patterns
+- [x] `frontend/src/lib/api/visuals.ts`
+- [x] `frontend/src/lib/visuals/visualStyles.ts` (boot fetch + caching, NO mirrored TS catalogue)
+- [x] `frontend/src/lib/visuals/imageSrc.ts` (port `pickGeneratedImageSrc` — URL-first, base64 fallback)
+- [x] `frontend/src/components/visuals/VisualStudio.tsx`
+- [x] `frontend/src/components/visuals/SpecCard.tsx` (with Render/Edit/Replace/Upload/Import-URL/Refine)
+- [x] `frontend/src/components/visuals/StyleChipRail.tsx`
+- [x] `frontend/src/components/visuals/SectionHtmlRefinePanel.tsx` ("Apply with AI" → `/visuals/section-html-refine`)
+- [x] `frontend/src/components/visuals/SavedAssetGallery.tsx` (modal picker)
+- [x] `frontend/src/components/visuals/UsageBadge.tsx`
+- [x] Mount in article-detail screen
+- [x] Vitest + Testing Library: render, render-spec, refine flow, upload flow, import-URL flow
+- [x] Playwright E2E: open studio → plan → render → toggle premium → regenerate → upload custom → refine HTML
+- [x] Flip `enable_image_planner` default to `True`
+- [x] Update `frontend/DESIGN.md` with Visual Studio component patterns
 - **PR target:** `feature/VISUAL-008-visual-studio-ui`
 
 ### Phase 6 — MinIO production rollout + cost dashboard
 
-- [ ] Provision MinIO (or AWS S3) in staging + production environments
-- [ ] Helm chart updates (per `docs/architecture/HIGH_LEVEL_ARCHITECTURE.md` §6 mention of S3 for assets)
-- [ ] Backfill existing illustration files into the new bucket; rewrite `ImageAsset.url` paths
-- [ ] Lifecycle policy: archive assets older than 90 days to cold storage (per RISK-008 disposition)
-- [ ] Grafana dashboard panel for image-generation cost + storage volume
+- [x] Provision MinIO (or AWS S3) in staging + production environments
+- [x] Helm chart updates (per `docs/architecture/HIGH_LEVEL_ARCHITECTURE.md` §6 mention of S3 for assets)
+- [x] Backfill existing illustration files into the new bucket; rewrite `ImageAsset.url` paths
+- [x] Lifecycle policy: archive assets older than 90 days to cold storage (per RISK-008 disposition)
+- [x] Grafana dashboard panel for image-generation cost + storage volume
 - **PR target:** `feature/VISUAL-009-storage-rollout`
 
 ### Phase 7 — Saved-asset gallery + audience-persona Settings UI
 
-- [ ] DB migration: `image_assets` table (was implicit before — explicit row per saved asset, with style token)
-- [ ] User-facing "My Visuals" page: filter by article / style token / date
-- [ ] Settings UI: per-user default audience persona (CTO / Marketer / General Business / …)
-- [ ] Default persona threads through to topic creation modal + article-detail Visual Studio
-- [ ] Tests: gallery filter, persona persistence, persona-driven planner output diff
+- [x] DB migration: `image_assets` table (was implicit before — explicit row per saved asset, with style token)
+- [x] User-facing "My Visuals" page: filter by article / style token / date
+- [x] Settings UI: per-user default audience persona (CTO / Marketer / General Business / …)
+- [x] Default persona threads through to topic creation modal + article-detail Visual Studio
+- [x] Tests: gallery filter, persona persistence, persona-driven planner output diff
 - **PR target:** `feature/VISUAL-010-gallery-and-persona-settings`
 
 ### Phase 8 — Per-section content editing (text + AI rewrite)
