@@ -211,3 +211,49 @@ class TestCanonicalArticle:
     def test_missing_provenance_rejected(self):
         with pytest.raises(ValidationError):
             _make_article(provenance=None)
+
+    def test_image_specs_default_empty(self):
+        article = _make_article()
+        assert article.image_specs == []
+
+    def test_page_art_direction_default_none(self):
+        article = _make_article()
+        assert article.page_art_direction is None
+
+    def test_audience_persona_default_none(self):
+        article = _make_article()
+        assert article.audience_persona is None
+
+    def test_image_specs_round_trip(self):
+        from src.models.visual import ImageSpec
+
+        spec = ImageSpec(
+            id="cover",
+            role_style="hero",
+            visual_style="lifestyle_photo",
+            prompt="Founder portrait",
+            aspect_ratio="16:9",
+        )
+        article = _make_article(
+            image_specs=[spec],
+            page_art_direction="warm slate, crisp morning light",
+            audience_persona="cto",
+        )
+        data = article.model_dump(mode="json")
+        rebuilt = CanonicalArticle.model_validate(data)
+        assert len(rebuilt.image_specs) == 1
+        assert rebuilt.image_specs[0].id == "cover"
+        assert rebuilt.page_art_direction == "warm slate, crisp morning light"
+        assert rebuilt.audience_persona == "cto"
+
+    def test_existing_articles_load_without_new_fields(self):
+        """A persisted article from before VISUAL-005 must still validate."""
+        article = _make_article()
+        legacy = article.model_dump(mode="json")
+        legacy.pop("image_specs", None)
+        legacy.pop("page_art_direction", None)
+        legacy.pop("audience_persona", None)
+        rebuilt = CanonicalArticle.model_validate(legacy)
+        assert rebuilt.image_specs == []
+        assert rebuilt.page_art_direction is None
+        assert rebuilt.audience_persona is None

@@ -10,6 +10,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.models.visual import ImageSpec
+
 
 class ContentType(StrEnum):
     """Article content type. Maps to Schema.org @type in platform transformers."""
@@ -71,7 +73,7 @@ class ImageAsset(BaseModel):
     url: str = Field(min_length=1)
     caption: str | None = None
     alt_text: str | None = None
-    metadata: dict[str, str | int | float] = Field(default_factory=dict)
+    metadata: dict[str, str | int | float | None] = Field(default_factory=dict)
 
 
 class Provenance(BaseModel):
@@ -108,3 +110,10 @@ class CanonicalArticle(BaseModel):
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     provenance: Provenance
     ai_generated: bool = True
+
+    # VISUAL-005 / Phase 2 — persona-aware image planner output. Optional
+    # and default-empty so articles persisted before this field was added
+    # still validate (see ADR-005 boundary invariants).
+    image_specs: list[ImageSpec] = Field(default_factory=list)
+    page_art_direction: str | None = None
+    audience_persona: str | None = None

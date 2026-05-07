@@ -119,9 +119,7 @@ def _resolve_and_validate_host(host: str) -> list[str]:
         infos = socket.getaddrinfo(host, None)
     except OSError as exc:
         raise FetchFailed(f"could not resolve host {host}: {exc}") from exc
-    addresses = sorted(
-        {info[4][0] for info in infos if isinstance(info[4][0], str)}
-    )
+    addresses = sorted({info[4][0] for info in infos if isinstance(info[4][0], str)})
     if not addresses:
         raise FetchFailed(f"host {host} resolved to no addresses")
     for addr_str in addresses:

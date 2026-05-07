@@ -59,9 +59,7 @@ async def get_visual_styles() -> StylesResponse:
     this response is owned by `src/services/visuals/`.
     """
     return StylesResponse(
-        styles=[
-            StyleEntry.model_validate(entry) for entry in VISUAL_STYLES.values()
-        ],
+        styles=[StyleEntry.model_validate(entry) for entry in VISUAL_STYLES.values()],
         role_defaults=dict(ROLE_STYLE_DEFAULTS),
         personas=[
             PersonaEntry(key=key, direction=direction)
