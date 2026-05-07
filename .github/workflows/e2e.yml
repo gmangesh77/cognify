@@ -1,0 +1,62 @@
+name: E2E Tests
+
+# Playwright E2E lane shipped alongside DASH-007 humanization panel.
+# Runs the smoke test in `frontend/tests/e2e/`. Triggered on:
+#   - manual workflow_dispatch (cheap to run on demand)
+#   - PRs labelled `e2e` (so contributors opt in when their change
+#     might affect the rendered UI)
+#   - pushes to main (post-merge gate)
+#
+# The deferred Visual Studio + per-section editing flows
+# (VISUAL-008 §11.5, VISUAL-011 §11.8) live next to the smoke test
+# once their fixtures land — see `frontend/tests/e2e/README.md`.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, labeled]
+  push:
+    branches: [main]
+
+jobs:
+  e2e:
+    name: Playwright smoke
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      contains(github.event.pull_request.labels.*.name, 'e2e')
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Run E2E suite
+        run: cd frontend && npm run e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7

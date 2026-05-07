@@ -1,8 +1,12 @@
 from typing import TypedDict
 
 import httpx
+import structlog
 
 from src.services.trends.protocol import TrendSourceError
+from src.utils.safe_url import OutboundUrlError, assert_url_scheme_safe
+
+logger = structlog.get_logger()
 
 
 class HNStoryResponse(TypedDict):
@@ -24,7 +28,18 @@ class HackerNewsAPIError(TrendSourceError):
 
 class HackerNewsClient:
     def __init__(self, base_url: str, timeout: float) -> None:
-        self._base_url = base_url
+        # INFRA-006: scheme/structure validation on the configured base
+        # URL. DNS resolution is left to request time so the
+        # constructor stays offline-friendly.
+        try:
+            self._base_url = assert_url_scheme_safe(base_url)
+        except OutboundUrlError as exc:
+            logger.warning(
+                "trend_source_base_url_unsafe",
+                source="hackernews",
+                error=str(exc),
+            )
+            raise HackerNewsAPIError(f"unsafe base_url: {exc}") from exc
         self._timeout = timeout
 
     async def fetch_stories(

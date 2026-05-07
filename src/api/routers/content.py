@@ -34,6 +34,7 @@ from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above
 from src.api.rate_limiter import limiter
 from src.config.settings import Settings
+from src.services.content.humanize_preview import preview_humanization
 from src.services.content.section_history import (
     AnchorViolationError,
     ArticleNotFoundError,
@@ -403,6 +404,95 @@ async def section_restore(
         section_id=section_id,
         version_id=str(result.version_id),
         persisted_markdown=result.new_section_markdown,
+    )
+
+
+# ---------------------------------------------------------------------------
+# /content/humanize-preview  (DASH-007)
+# ---------------------------------------------------------------------------
+
+
+class HumanizePreviewRequest(BaseModel):
+    section_id: str = Field(min_length=3, max_length=80)
+    title: str = Field(default="Section", max_length=200)
+    current_markdown: str | None = Field(default=None, max_length=20000)
+
+
+class SlopScoreEntry(BaseModel):
+    score: int
+    rating: str
+    violation_count: int
+
+
+class HumanizePreviewResponse(BaseModel):
+    section_id: str
+    original: str
+    rewritten: str
+    diff: list[WordDiffEntry]
+    score_before: SlopScoreEntry
+    score_after: SlopScoreEntry
+    llm_called: bool
+    model_name: str | None = Field(default=None, alias="model")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+@content_router.post("/humanize-preview", response_model=HumanizePreviewResponse)
+@limiter.limit("20/minute")
+async def humanize_preview(
+    request: Request,
+    body: HumanizePreviewRequest,
+    user: TokenPayload = Depends(require_editor_or_above),
+) -> HumanizePreviewResponse:
+    """Run a one-shot humanization pass and return the diff for review.
+
+    The result is preview-only — to persist, the frontend POSTs the
+    `rewritten` markdown through `/content/section-update`, which runs
+    the anchor-preservation validator and appends a version row.
+    """
+    history = _get_history_service(request)
+    article_id, section_index = _parse_or_400(body.section_id)
+    current_md = body.current_markdown
+    if current_md is None:
+        try:
+            _, section = await history.get_section_markdown(article_id, section_index)
+        except ArticleNotFoundError as exc:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail=f"article not found: {exc}",
+            ) from exc
+        except SectionNotFoundError as exc:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail=str(exc),
+            ) from exc
+        current_md = section.text
+
+    settings: Settings = request.app.state.settings
+    llm = _get_content_llm(settings)
+    preview = await preview_humanization(
+        section_index=section_index,
+        title=body.title,
+        markdown=current_md,
+        llm=llm,
+    )
+    return HumanizePreviewResponse(
+        section_id=body.section_id,
+        original=preview.original,
+        rewritten=preview.rewritten,
+        diff=[WordDiffEntry.from_op(op) for op in preview.diff],
+        score_before=SlopScoreEntry(
+            score=preview.score_before.score,
+            rating=preview.score_before.rating,
+            violation_count=len(preview.score_before.violations),
+        ),
+        score_after=SlopScoreEntry(
+            score=preview.score_after.score,
+            rating=preview.score_after.rating,
+            violation_count=len(preview.score_after.violations),
+        ),
+        llm_called=preview.llm_called,
+        model=preview.model,
     )
 
 

@@ -98,3 +98,26 @@ export interface AnchorViolationEntry {
   spec_id: string | null;
   message: string;
 }
+
+export interface SlopScoreEntry {
+  score: number;
+  rating: string;
+  violation_count: number;
+}
+
+export interface HumanizePreviewRequest {
+  section_id: string;
+  title?: string;
+  current_markdown?: string;
+}
+
+export interface HumanizePreviewResponse {
+  section_id: string;
+  original: string;
+  rewritten: string;
+  diff: WordDiffEntry[];
+  score_before: SlopScoreEntry;
+  score_after: SlopScoreEntry;
+  llm_called: boolean;
+  model: string | null;
+}

@@ -19,8 +19,28 @@ _SERVICE_MAP = {
 
 
 @pytest.fixture
-def settings() -> Settings:
+def settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
+    # `uv run` auto-loads .env into the process environment, so a real
+    # COGNIFY_NEWSAPI_API_KEY would leak into the resolver and make
+    # `test_returns_none_when_no_key` flake on developer machines. Strip
+    # every COGNIFY_ var that the test fixture doesn't set explicitly,
+    # then disable .env file loading for good measure.
+    for var in [
+        "COGNIFY_NEWSAPI_API_KEY",
+        "COGNIFY_OPENAI_API_KEY",
+        "COGNIFY_REDDIT_CLIENT_ID",
+        "COGNIFY_REDDIT_CLIENT_SECRET",
+        "COGNIFY_SEMANTIC_SCHOLAR_API_KEY",
+        "COGNIFY_GHOST_ADMIN_API_KEY",
+        "COGNIFY_MEDIUM_API_TOKEN",
+        "COGNIFY_LINKEDIN_ACCESS_TOKEN",
+        "COGNIFY_LINKEDIN_REFRESH_TOKEN",
+        "COGNIFY_LINKEDIN_CLIENT_SECRET",
+        "COGNIFY_LINKEDIN_AUTHOR_URN",
+    ]:
+        monkeypatch.delenv(var, raising=False)
     return Settings(
+        _env_file=None,  # type: ignore[call-arg]
         anthropic_api_key="env-anthropic",
         serpapi_api_key="env-serpapi",
     )
