@@ -128,6 +128,28 @@ Sequence: F1 → (F2, F3 in parallel) → P1 → P2 → P3.
 
 ---
 
+## Design source of truth (when you get to UI work)
+
+**Phase 2 is pure backend** — planner, prompt composer, LangGraph nodes, CanonicalArticle additions. No UI work in this phase, no Pencil traffic.
+
+For every later phase that touches frontend (Phase 4 API consumed by frontend, Phase 5 the Visual Studio panel, Phase 7 saved-asset gallery + Settings UI, Phase 8 per-section context toolbar):
+
+- **The Pencil file is canonical.** All UI structure, spacing, component anatomy, and state variants come from `pencil_designs/cognify.pen`. Don't compose layouts from scratch or improvise component anatomy — read the relevant screen first.
+- **The 9 Visual Studio screens** ship the full anatomy:
+  - Screen 1 (`lZhq7`) — Article Detail with Visual Studio panel (the anchor; all chip rails, bento controls, spec-card states are derived here)
+  - Screen 2 (`pb0Hz`) — Spec Card 6 lifecycle states (idle, planning, generating, done, error, refining)
+  - Screen 3 (`e47sQG`) — Plan-Visuals Modal (planning state + variant picker)
+  - Screen 4 (`a7sfx`) — Edit Drawer (role / style / aspect / placement / alt / prompt / provider override + footer)
+  - Screen 5 (`SL2pb`) — Saved Asset Gallery Modal (filter chips, sidebar facets, masonry grid, hover overlay)
+  - Screen 6 (`g6P48`) — Section HTML Refine Panel (split-view diff + Apply-with-AI textarea)
+  - Screen 7 (`P4R0EO`) — Image Import Modal (Upload tab + Fetch-from-URL with SSRF check feedback)
+  - Screen 8 (`TVcmU`) — UsageBadge (compact, expanded with provider breakdown + sparkline, limit-warning)
+  - Screen 9 (`Eyi7a`) — Per-Section Context Toolbar (toolbar visible / inline edit + AI rewrite popover / diff + history drawer)
+- **All 9 live at `x=3200, y=0..11600`** in the canvas. The Pencil design brief at `docs/superpowers/specs/2026-05-06-visual-studio-pencil-design-brief.md` describes each screen; the file itself is the authoritative reference for pixel-level details.
+- **Read the Pencil file via MCP only** — `mcp__pencil__get_editor_state`, `mcp__pencil__snapshot_layout(parentId=<id>, maxDepth=2-3)`, `mcp__pencil__get_screenshot(nodeId=<id>)`. **Never** use `Read`/`Grep`/`Edit` on `.pen` files (encrypted; only Pencil's MCP tools can read them — see the design brief's "Crucial constraint" note).
+- **Design tokens**: pull from the Pencil document via `mcp__pencil__get_variables()`. Tokens are also documented in `frontend/DESIGN.md` — keep them in sync. Primary `#DC2626`, warm slate neutrals, Space Grotesk + Inter, 4px grid, 12px modal radius. Don't introduce new colours or fonts without updating both `frontend/DESIGN.md` and the `.pen` variables.
+- **Don't redesign**. If a flow looks wrong on the canvas, raise it with the user — don't silently change it in code. The user reviewed and approved all 9 screens (commit `ae0c72a`'s lineage covers the design phase).
+
 ## Gotchas
 
 ### 1. Subagents may be unreachable
