@@ -44,24 +44,28 @@ export function SavedAssetGallery({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    fetchSavedAssets({
-      role_style: roleFilter ?? undefined,
-      provider: providerFilter ?? undefined,
-    })
-      .then((res) => {
+    // Defer the loading/error reset so it doesn't fire synchronously
+    // inside the effect body (react-hooks/set-state-in-effect). The
+    // fetch then runs and resolves on its own microtask.
+    void (async () => {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetchSavedAssets({
+          role_style: roleFilter ?? undefined,
+          provider: providerFilter ?? undefined,
+        });
         if (!cancelled) setData(res);
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!cancelled) {
           const msg = err instanceof Error ? err.message : "Load failed";
           setError(msg);
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };

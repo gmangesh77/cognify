@@ -104,7 +104,8 @@ class Settings(BaseSettings):
     diagram_output_dir: str = "generated_assets/diagrams"
     # Visuals — generation (Epic 10 / VISUAL-004)
     enable_image_planner: bool = True  # flipped at end of Phase 5 / VISUAL-008
-    default_image_provider: str = "gemini_flash"  # gemini_flash|gemini_3_pro|imagen_4|dalle_3
+    # gemini_flash | gemini_3_pro | imagen_4 | dalle_3
+    default_image_provider: str = "gemini_flash"
     image_model_gemini_flash: str = "gemini-2.5-flash-image"
     image_model_gemini_3_pro: str = "gemini-3-pro-image-preview"
     image_model_imagen_4: str = "imagen-4.0-generate-001"
