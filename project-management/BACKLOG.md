@@ -166,7 +166,7 @@ All Infrastructure tickets complete. INFRA-005 (Frontend Status Alignment) merge
 | VISUAL-008  | Phase 5 — Frontend Visual Studio (chip rails, spec cards, HTML refine)         | Must     | 21 | DONE   |
 | VISUAL-009  | Phase 6 — MinIO production rollout + cost dashboard                            | Should   |  5 | DONE   |
 | VISUAL-010  | Phase 7 — Saved-asset gallery + audience-persona Settings UI                   | Should   |  8 | DONE   |
-| VISUAL-011  | Phase 8 — Per-section content editing (text + AI rewrite + history)            | Should   | 13 |        |
+| VISUAL-011  | Phase 8 — Per-section content editing (text + AI rewrite + history)            | Should   | 13 | DONE   |
 
 Per-phase acceptance criteria are documented in the implementation plan (§11). Boundary invariants (ADR-003, ADR-004) are enforced as called out per phase.
 
@@ -188,11 +188,12 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | Dashboard & Config | 5 | 5 | 0 | 0 |
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
-| **Visual Generation Overhaul** | **8** | **7** | **1** | **13** |
-| **Total** | **57** | **55** | **2** | **18** |
+| **Visual Generation Overhaul** | **8** | **8** | **0** | **0** |
+| **Total** | **57** | **56** | **1** | **5** |
 
-**Velocity update (2026-05-07)**: VISUAL-004 through VISUAL-010 shipped on
-branch `claude/vibrant-chatterjee-1115a8` (76 SP). Remaining: VISUAL-011
-(13 SP, per-section content editing) + PUBLISH-002 (5 SP, WordPress).
+**Velocity update (2026-05-07)**: Epic 10 (Visual Generation Overhaul)
+fully shipped on branch `claude/vibrant-chatterjee-1115a8` — VISUAL-004
+through VISUAL-011 (89 SP). The only remaining ticket in the entire
+backlog is PUBLISH-002 (5 SP, WordPress integration).
 
-**Velocity**: 330 SP completed across 10 epics. 18 SP remaining (PUBLISH-002 + VISUAL-011).
+**Velocity**: 343 SP completed across 11 epics. 5 SP remaining (PUBLISH-002).

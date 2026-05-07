@@ -1,13 +1,24 @@
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import type { Citation, ImageAsset } from "@/types/articles";
+import { SectionContextToolbar } from "@/components/article/SectionContextToolbar";
 import { MermaidDiagram } from "./mermaid-diagram";
+
+interface SectionEditingProps {
+  /** Article id for building stable section identifiers. */
+  articleId: string;
+  onEditText: (sectionIndex: number, sectionMarkdown: string) => void;
+  onEditVisual: (sectionIndex: number) => void;
+  onRefineLayout: (sectionIndex: number, sectionMarkdown: string) => void;
+}
 
 interface ArticleContentProps {
   bodyMarkdown: string;
   citations: Citation[];
   visuals: ImageAsset[];
+  /** Optional per-section editing scaffolding (VISUAL-011 / Phase 8). */
+  editing?: SectionEditingProps;
 }
 
 function stripReferencesSection(md: string): string {
@@ -29,11 +40,13 @@ export function ArticleContent({
   bodyMarkdown,
   citations,
   visuals,
+  editing,
 }: ArticleContentProps) {
   const cleanMarkdown = useMemo(
     () => stripReferencesSection(bodyMarkdown),
     [bodyMarkdown],
   );
+  const [hoveredSection, setHoveredSection] = useState<number | null>(null);
 
   const { overviewDiagrams, sectionDiagrams, segments } = useMemo(() => {
     const diagrams = visuals.filter(isDiagramVisual);
@@ -78,9 +91,44 @@ export function ArticleContent({
           const sectionIdx = i - 1;
           const diagramsForSection =
             sectionIdx >= 0 ? (sectionDiagrams.get(sectionIdx) ?? []) : [];
+          const showToolbar =
+            editing !== undefined && sectionIdx >= 0;
+          const sectionId = editing
+            ? `${editing.articleId}:${sectionIdx}`
+            : undefined;
           return (
             <Fragment key={`seg-${i}`}>
-              <Markdown rehypePlugins={[rehypeRaw]}>{segment}</Markdown>
+              <div
+                className="relative"
+                data-section-index={sectionIdx}
+                onMouseEnter={
+                  showToolbar ? () => setHoveredSection(sectionIdx) : undefined
+                }
+                onMouseLeave={
+                  showToolbar
+                    ? () =>
+                        setHoveredSection((cur) =>
+                          cur === sectionIdx ? null : cur,
+                        )
+                    : undefined
+                }
+              >
+                {showToolbar && sectionId ? (
+                  <SectionContextToolbar
+                    sectionId={sectionId}
+                    sectionIndex={sectionIdx}
+                    visible={hoveredSection === sectionIdx}
+                    onEditText={() =>
+                      editing.onEditText(sectionIdx, segment)
+                    }
+                    onEditVisual={() => editing.onEditVisual(sectionIdx)}
+                    onRefineLayout={() =>
+                      editing.onRefineLayout(sectionIdx, segment)
+                    }
+                  />
+                ) : null}
+                <Markdown rehypePlugins={[rehypeRaw]}>{segment}</Markdown>
+              </div>
               {diagramsForSection.map((d) => (
                 <MermaidDiagram
                   key={d.id}

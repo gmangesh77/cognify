@@ -32,6 +32,7 @@ __all__ = [
     "SeoDefaultsRow",
     "GeneralConfigRow",
     "ImageAssetTagRow",
+    "SectionVersionRow",
     "PublicationRow",
 ]
 
@@ -273,6 +274,36 @@ class ImageAssetTagRow(Base, UUIDMixin, TimestampMixin):
             name="uq_image_asset_tag_unique",
         ),
     )
+
+
+class SectionVersionRow(Base, UUIDMixin, TimestampMixin):
+    """Append-only audit log of section-level edits (VISUAL-011 / Phase 8).
+
+    Each row captures one rewrite, manual save, or restore. The active
+    section state still lives on `canonical_articles.body_markdown` —
+    this table is a sidecar for history + restore + auditing only.
+    `section_id` is the f"{article_id}:{section_index}" string the
+    handoff brief specifies.
+    """
+
+    __tablename__ = "section_versions"
+
+    article_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("canonical_articles.id"),
+        nullable=False,
+        index=True,
+    )
+    section_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    section_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    markdown: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(String(20), nullable=False)
+    instruction: Mapped[str | None] = mapped_column(Text, nullable=True)
+    model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    tokens_input: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    tokens_output: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    usd: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
 
 class PublicationRow(Base, UUIDMixin, TimestampMixin):

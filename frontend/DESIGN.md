@@ -194,6 +194,68 @@ The `data-state` attribute on the `<article>` exposes the current state for test
 - Quality tier card: selected = `border-primary bg-primary-light text-primary`; unselected = `border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50`.
 - All radii follow existing tokens: `rounded-md` for cards/buttons, `rounded-full` for chips/badges, `rounded-lg` for the panel container.
 
+### Per-Section Context Toolbar (Phase 8 / VISUAL-011)
+
+> **Pencil source**: `pencil_designs/cognify.pen`, screen 9 (`Eyi7a`). The toolbar
+> floats over the active section in the article column and surfaces three
+> actions; an inline editor + AI rewrite popover anchor below.
+
+#### Toolbar anatomy
+- **Container**: `div role="toolbar"` absolutely positioned at `top-2 right-2` of
+  the section container, `rounded-full border border-neutral-200 bg-white shadow-sm`,
+  `gap-1`, padding `px-1 py-1`.
+- **Visibility**: appears on `mouseenter` of the section's relative-positioned
+  wrapper; disappears on `mouseleave`. Keyboard focus management is the parent
+  page's responsibility.
+- **Three actions** (left → right):
+  - **Edit text** (`Pencil` icon) — opens the `InlineProseEditor` + `AIRewritePopover`
+    pair below the article column.
+  - **Edit visual** (`ImageIcon`) — jumps the parent page to the matching Spec Card
+    in the right-side Visual Studio panel.
+  - **Refine layout** (`LayoutPanelTop`) — opens the existing
+    `SectionHtmlRefinePanel` scoped to this section.
+
+#### AI rewrite popover
+- **Container**: `dialog role="dialog"` fixed-width 460px panel, `rounded-lg border
+  bg-white shadow-lg`, `p-4`, `gap-3`.
+- **Tone preset chips**: rounded-full `bg-neutral-100 text-neutral-700` pills for
+  the four server-side presets (`shorter`, `more_concrete`, `more_conversational`,
+  `more_authoritative`). The frontend posts only the preset *name* — the backend
+  expands it into the full prompt template (no platform leakage).
+- **Diff display**: word-level `WordDiffView` — `equal` neutral, `insert`
+  `bg-success-light text-success` underlined, `delete` `bg-error-light text-error`
+  strikethrough, `replace` shows both. Reused by image refine, HTML refine, and
+  prose rewrite (single source of truth per plan §17.2).
+- **Footer**: `Reject` (neutral) + `Accept` (primary) when a diff is staged,
+  otherwise `Run AI` (primary).
+
+#### Inline prose editor
+- Plain `<textarea>` (intentional v1 — markdown round-trip on contenteditable is
+  out of scope; tracked separately).
+- Save button is disabled until the draft differs from the initial markdown.
+- Anchor violations (HTTP 422 from `/content/section-update`) render in a
+  red-bordered list with the per-violation `message` so the editor can fix and
+  re-save.
+
+#### History drawer
+- `aside role="dialog"` 360px panel pinned bottom-left of the viewport.
+- Each version row shows source label (`AI rewrite` / `Manual edit` / `Tone
+  preset` / `Restored`), timestamp, instruction (italic), and a 220-char
+  preview.
+- Restore button POSTs to `/content/section/{id}/restore`, which re-runs the
+  anchor validator and appends a new version row marked `source = "restore"`.
+
+#### Boundary invariants for prose editing
+- **Tone presets stay server-side**. Frontend ships preset *name* only; never
+  let the editor craft instruction text that bypasses the banned-pattern guard.
+- **Anchor preservation**. The validator runs on every save / restore — the UI
+  surfaces the structured diff back to the editor. Never silently drop a
+  `data-spec-id` marker or rename a heading bound to a `before_heading`
+  placement.
+- **Section identifiers**. Use `makeSectionId(articleId, sectionIndex)` from
+  `frontend/src/lib/api/content.ts` — the format mirrors the backend's
+  `make_section_id` (`f"{article_id}:{section_index}"`).
+
 ### Boundary invariants for Visual Studio
 - **Read-only catalogue**: never mutate the cached `VisualStylesResponse`.
 - **No publishing imports**: components in `frontend/src/components/visuals/` MUST NOT import from `frontend/src/lib/api/publications` or anything publishing-shaped — they live next to the article preview, not the publish flow.

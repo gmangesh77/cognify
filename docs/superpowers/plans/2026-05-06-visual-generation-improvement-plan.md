@@ -692,19 +692,19 @@ Stub provider: `tests/stubs/stub_image_provider.py` returning a 1×1 PNG so we c
 - **Service-Layer pattern** — Route handler → Service → Repository → DB. No direct DB calls from `content.py` routes. Same shape as the existing `section_html_refiner.py`.
 
 
-- [ ] `src/services/content/section_rewriter.py` (Claude-driven section/paragraph prose rewrite, mirrors `section_html_refiner.py`)
-- [ ] `src/services/content/section_history.py` (append-only version log per section)
-- [ ] DB migration: `section_versions` table — `(id, section_id, article_id, markdown, source: "manual" | "ai" | "tone_preset", instruction?, model?, tokens?, usd?, created_at, created_by)`
-- [ ] `src/api/routers/content.py` — endpoints from §5.7.1
-- [ ] Anchor-preservation validator: rejects edits that drop image `spec_id` references or rename heading text bound to `before_heading` placement (preserves Visual Studio integrity)
-- [ ] `frontend/src/components/article/SectionContextToolbar.tsx` — appears on hover/focus over a section in the article column. Three actions: *Edit text* (inline contenteditable + AI popover), *Edit visual* (jumps to that section's Spec Card in Visual Studio), *Refine layout* (opens Section HTML Refine panel scoped to this section).
-- [ ] `frontend/src/components/article/InlineProseEditor.tsx` — contenteditable wrapper with markdown round-trip, paragraph-level selection model, AI rewrite popover anchored to selection.
-- [ ] `frontend/src/components/article/AIRewritePopover.tsx` — instruction textarea + tone preset chips (`shorter`, `more concrete`, `more conversational`, `more authoritative`) + diff view + accept/reject affordance. Wired to `/content/section-rewrite` and `/content/paragraph-tone`.
-- [ ] `frontend/src/components/article/SectionHistoryDrawer.tsx` — list prior versions, restore, with diff vs. current.
-- [ ] Word-level diff renderer reused from §17.2 (humanization diff). Single source of truth for diff visualisation across image refine, HTML refine, and prose rewrite.
-- [ ] Vitest + Testing Library: toolbar visibility on hover, popover open/close, accept/reject diff, anchor-preservation rejection path, history restore.
-- [ ] Playwright E2E: hover section → toolbar appears → click Edit text → select paragraph → AI rewrite "shorter" → accept → verify markdown updated → undo via history → verify original restored.
-- [ ] Update `frontend/DESIGN.md` with SectionContextToolbar pattern.
+- [x] `src/services/content/section_rewriter.py` (Claude-driven section/paragraph prose rewrite, mirrors `section_html_refiner.py`)
+- [x] `src/services/content/section_history.py` (append-only version log per section)
+- [x] DB migration: `section_versions` table — `(id, section_id, article_id, markdown, source: "manual" | "ai" | "tone_preset", instruction?, model?, tokens?, usd?, created_at, created_by)`
+- [x] `src/api/routers/content.py` — endpoints from §5.7.1
+- [x] Anchor-preservation validator: rejects edits that drop image `spec_id` references or rename heading text bound to `before_heading` placement (preserves Visual Studio integrity)
+- [x] `frontend/src/components/article/SectionContextToolbar.tsx` — appears on hover/focus over a section in the article column. Three actions: *Edit text* (inline contenteditable + AI popover), *Edit visual* (jumps to that section's Spec Card in Visual Studio), *Refine layout* (opens Section HTML Refine panel scoped to this section).
+- [x] `frontend/src/components/article/InlineProseEditor.tsx` — contenteditable wrapper with markdown round-trip, paragraph-level selection model, AI rewrite popover anchored to selection. *(v1: textarea + paragraph splitter — contenteditable round-trip deferred per handoff brief.)*
+- [x] `frontend/src/components/article/AIRewritePopover.tsx` — instruction textarea + tone preset chips (`shorter`, `more concrete`, `more conversational`, `more authoritative`) + diff view + accept/reject affordance. Wired to `/content/section-rewrite` and `/content/paragraph-tone`.
+- [x] `frontend/src/components/article/SectionHistoryDrawer.tsx` — list prior versions, restore, with diff vs. current.
+- [x] Word-level diff renderer reused from §17.2 (humanization diff). Single source of truth for diff visualisation across image refine, HTML refine, and prose rewrite.
+- [x] Vitest + Testing Library: toolbar visibility on hover, popover open/close, accept/reject diff, anchor-preservation rejection path, history restore.
+- [ ] Playwright E2E: hover section → toolbar appears → click Edit text → select paragraph → AI rewrite "shorter" → accept → verify markdown updated → undo via history → verify original restored. *(Deferred — Playwright not yet wired into the repo. Covered by Vitest + RTL component / API-mock tests instead, mirroring the Phase 5 decision.)*
+- [x] Update `frontend/DESIGN.md` with SectionContextToolbar pattern.
 - **PR target:** `feature/VISUAL-011-per-section-content-editing`
 
 ---
