@@ -162,6 +162,45 @@ All spacing uses a 4px base grid:
 
 ---
 
+## Visual Studio (Phase 5 / VISUAL-008)
+
+> **Pencil source**: `pencil_designs/cognify.pen`, screens at `x=3200`. Screen 1 (`lZhq7`) is the anchor; component anatomy across SpecCard / StyleChipRail / UsageBadge / SectionHtmlRefinePanel is derived from it.
+
+### Right-side panel anatomy
+- **Container**: `aside` with `rounded-lg border border-neutral-200 bg-white shadow-sm`, `p-6`, `gap-5`, max-width 560px (matches Pencil width).
+- **Header**: panel title (`text-xl font-heading font-semibold`), spec/render counter (`text-xs text-neutral-500`), `UsageBadge` and close button on the right.
+- **Primary actions row**: equal-width `Plan visuals` (primary red) + `Insert into article` (secondary neutral) buttons.
+- **Section labels**: `text-xs font-medium uppercase tracking-wide text-neutral-500` for "Page art direction", "Default visual style", "Render quality", "Spec list".
+
+### SpecCard lifecycle (Pencil Screen 2 `pb0Hz`)
+Six visual treatments share one anatomy. Always render: header (state pill + role + style + aspect), media area with `aspectRatio` style, footer actions.
+- `idle` — dashed-border placeholder, `Plan visual` CTA
+- `planning` / `generating` — `bg-warning-light/50` panel, spinner, status text + checklist or ETA
+- `done` — rendered image (`object-cover`), `Regenerate` + `Edit` actions
+- `error` — `border-error/40` + `bg-error-light` panel, `Retry with Mid` + `Skip` actions
+- `refining` — image with `bg-info/30` overlay, refine input + Apply/Cancel
+The `data-state` attribute on the `<article>` exposes the current state for tests + visual regression.
+
+### Catalogue is fetched, never mirrored
+- **Single source of truth** is the backend response from `GET /api/v1/visuals/styles`.
+- Use `getVisualStylesCached()` from `frontend/src/lib/visuals/visualStyles.ts` — it dedupes inflight calls and serves from memory thereafter.
+- **DO NOT** add a TypeScript copy of the catalogue. If you need a style label or short_desc, read it from the cached response.
+
+### Image rendering — URL-first
+- `RenderResponse` carries either `image_url` (MinIO) or `image_base64` (LocalDisk dev fallback). Always pass the result through `pickGeneratedImageSrc()` from `frontend/src/lib/visuals/imageSrc.ts` — it handles the mode flip.
+
+### Tokens used by Visual Studio
+- Status pills: `bg-success-light text-success` (done), `bg-warning-light text-warning` (planning/generating), `bg-error-light text-error` (error), `bg-info-light text-info` (refining), `bg-neutral-100 text-neutral-600` (idle).
+- Quality tier card: selected = `border-primary bg-primary-light text-primary`; unselected = `border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50`.
+- All radii follow existing tokens: `rounded-md` for cards/buttons, `rounded-full` for chips/badges, `rounded-lg` for the panel container.
+
+### Boundary invariants for Visual Studio
+- **Read-only catalogue**: never mutate the cached `VisualStylesResponse`.
+- **No publishing imports**: components in `frontend/src/components/visuals/` MUST NOT import from `frontend/src/lib/api/publications` or anything publishing-shaped — they live next to the article preview, not the publish flow.
+- **Don't redesign on the canvas**: if a flow looks wrong on Pencil, raise it with the user before changing the implementation.
+
+---
+
 ## Common Anti-Patterns (DO NOT)
 
 - **DO NOT** use black (`#000`) for text — use `neutral-900` (`#0F172A`)
