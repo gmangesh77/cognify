@@ -1,0 +1,140 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 0,
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "description": "Total per-image cost over the last 24 h, broken down by provider. Source data is the `cognify_visual_cost_usd_total` Prometheus counter (planned — see `docs/observability/OBSERVABILITY_PLAN.md` §5).",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "decimals": 4,
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (increase(cognify_visual_cost_usd_total[24h]))",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Visual cost · last 24 h by provider",
+      "type": "barchart"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Visuals rendered per hour, by provider tier. Helps spot premium-tier (imagen_4) abuse early.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (rate(cognify_visual_renders_total[1h]))",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Render rate · 1 h by provider",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "P95 wall-clock latency per provider — surfaces slow-down regressions before they affect users.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5000 },
+              { "color": "red", "value": 15000 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right" }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (provider, le) (rate(cognify_visual_render_duration_ms_bucket[5m])))",
+          "legendFormat": "{{provider}} P95",
+          "refId": "A"
+        }
+      ],
+      "title": "Render latency · P95 by provider",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "MinIO bucket size for `cognify-visuals`. Drives storage-cost forecasting.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "unit": "decbytes"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "expr": "minio_bucket_usage_total_bytes{bucket=\"cognify-visuals\"}",
+          "legendFormat": "cognify-visuals",
+          "refId": "A"
+        }
+      ],
+      "title": "MinIO bucket size · cognify-visuals",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["cognify", "visuals", "phase-6"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Cognify · Visual Generation Cost",
+  "uid": "cognify-visual-cost",
+  "version": 1,
+  "weekStart": ""
+}

@@ -1,0 +1,34 @@
+{
+  "Rules": [
+    {
+      "ID": "archive-cold-after-90-days",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "generated_assets/" },
+      "Transitions": [
+        {
+          "Days": 90,
+          "StorageClass": "GLACIER"
+        }
+      ],
+      "Expiration": {
+        "ExpiredObjectDeleteMarker": true
+      }
+    },
+    {
+      "ID": "purge-orphaned-multipart-uploads",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "" },
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 7
+      }
+    },
+    {
+      "ID": "purge-tmp-uploads-after-30-days",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "tmp/" },
+      "Expiration": {
+        "Days": 30
+      }
+    }
+  ]
+}

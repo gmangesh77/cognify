@@ -484,3 +484,151 @@ class TestSectionHtmlRefineEndpoint:
         data = resp.json()
         assert data["section_id"] == "s1"
         assert data["html_fragment"] == "<p>tighter copy</p>"
+
+
+# ---------------------------------------------------------------------------
+# /visuals/cost  (Phase 6 / VISUAL-009)
+# ---------------------------------------------------------------------------
+
+
+def _build_costed_article(
+    *,
+    article_id: object,
+    visuals: list[object],
+):  # type: ignore[no-untyped-def]
+    """Build a CanonicalArticle stub the cost endpoint can read."""
+    from datetime import UTC, datetime
+    from uuid import uuid4
+
+    from src.models.content import (
+        CanonicalArticle,
+        Citation,
+        ContentType,
+        Provenance,
+        SEOMetadata,
+    )
+
+    return CanonicalArticle(
+        id=article_id,  # type: ignore[arg-type]
+        title="Cost test article",
+        body_markdown="# x\n\nbody",
+        summary="summary",
+        key_claims=["claim"],
+        content_type=ContentType.ARTICLE,
+        seo=SEOMetadata(title="t", description="d"),
+        citations=[Citation(index=1, title="s", url="https://e.test/1")],
+        visuals=visuals,  # type: ignore[arg-type]
+        authors=["Cognify"],
+        domain="engineering",
+        generated_at=datetime.now(UTC),
+        provenance=Provenance(
+            research_session_id=uuid4(),
+            primary_model="claude-opus-4",
+            drafting_model="claude-sonnet-4",
+            embedding_model="all-MiniLM-L6-v2",
+            embedding_version="1.0.0",
+        ),
+    )
+
+
+def _costed_asset(*, provider: str, cost_usd: float):  # type: ignore[no-untyped-def]
+    from src.models.content import ImageAsset
+
+    return ImageAsset(
+        url=f"/visuals/{provider}.png",
+        metadata={
+            "provider": provider,
+            "model": f"{provider}-model",
+            "cost_usd": cost_usd,
+            "generation_ms": 100,
+        },
+    )
+
+
+class _FakeArticleRepo:
+    def __init__(self, articles: dict[str, object]):
+        self._by_id = articles
+
+    async def get(self, article_id: object) -> object | None:
+        return self._by_id.get(str(article_id))
+
+
+class TestCostEndpoint:
+    async def test_requires_auth(self, studio_client: httpx.AsyncClient) -> None:
+        resp = await studio_client.get(
+            "/api/v1/visuals/cost?article_id=123e4567-e89b-12d3-a456-426614174000",
+        )
+        assert resp.status_code in {401, 403}
+
+    async def test_returns_503_when_repo_not_configured(
+        self,
+        studio_app: FastAPI,
+        studio_client: httpx.AsyncClient,
+        studio_settings: Settings,
+    ) -> None:
+        # studio_app fixture does not configure article_repo by default.
+        resp = await studio_client.get(
+            "/api/v1/visuals/cost",
+            params={"article_id": "123e4567-e89b-12d3-a456-426614174000"},
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 503
+
+    async def test_invalid_uuid_returns_400(
+        self,
+        studio_app: FastAPI,
+        studio_client: httpx.AsyncClient,
+        studio_settings: Settings,
+    ) -> None:
+        studio_app.state.article_repo = _FakeArticleRepo({})
+        resp = await studio_client.get(
+            "/api/v1/visuals/cost",
+            params={"article_id": "not-a-uuid"},
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 400
+
+    async def test_404_when_article_missing(
+        self,
+        studio_app: FastAPI,
+        studio_client: httpx.AsyncClient,
+        studio_settings: Settings,
+    ) -> None:
+        studio_app.state.article_repo = _FakeArticleRepo({})
+        resp = await studio_client.get(
+            "/api/v1/visuals/cost",
+            params={"article_id": "123e4567-e89b-12d3-a456-426614174000"},
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 404
+
+    async def test_returns_aggregated_breakdown(
+        self,
+        studio_app: FastAPI,
+        studio_client: httpx.AsyncClient,
+        studio_settings: Settings,
+    ) -> None:
+        from uuid import UUID
+
+        article_id = UUID("123e4567-e89b-12d3-a456-426614174000")
+        article = _build_costed_article(
+            article_id=article_id,
+            visuals=[
+                _costed_asset(provider="gemini_flash", cost_usd=0.001),
+                _costed_asset(provider="gemini_flash", cost_usd=0.001),
+                _costed_asset(provider="imagen_4", cost_usd=0.04),
+            ],
+        )
+        studio_app.state.article_repo = _FakeArticleRepo({str(article_id): article})
+        resp = await studio_client.get(
+            "/api/v1/visuals/cost",
+            params={"article_id": str(article_id)},
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert data["article_id"] == str(article_id)
+        assert data["image_count"] == 3
+        assert data["total_usd"] == 0.042
+        providers = {row["provider"] for row in data["breakdown"]}
+        assert providers == {"gemini_flash", "imagen_4"}

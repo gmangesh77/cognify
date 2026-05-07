@@ -39,6 +39,7 @@ from src.models.research import TopicInput
 from src.models.visual import ImageSpec
 from src.services.visuals import init_registry as init_visual_registry
 from src.services.visuals.banned_cliches import BANNED_CLICHES_BLOCK
+from src.services.visuals.cost import aggregate_cost
 from src.services.visuals.image_planner import (
     plan_article_cover,
     plan_section_images,
@@ -517,6 +518,82 @@ async def section_html_refine(
         html_fragment=result.html_fragment,
         model=result.model,
         prompt_used=result.prompt_used,
+    )
+
+
+# ---------------------------------------------------------------------------
+# /visuals/cost
+# ---------------------------------------------------------------------------
+
+
+class CostBreakdownEntry(BaseModel):
+    """One provider's slice of the article cost roll-up."""
+
+    provider: str
+    model: str
+    count: int
+    total_usd: float
+    avg_latency_ms: int
+
+
+class CostResponse(BaseModel):
+    """Aggregate cost for a single article."""
+
+    article_id: str
+    total_usd: float
+    image_count: int
+    breakdown: list[CostBreakdownEntry]
+
+
+@visuals_router.get("/cost", response_model=CostResponse)
+@limiter.limit("60/minute")
+async def get_article_cost(
+    request: Request,
+    article_id: str,
+    user: TokenPayload = Depends(require_editor_or_above),
+) -> CostResponse:
+    """Per-article cost breakdown, summed from `ImageAsset.metadata.cost_usd`.
+
+    Drives the UsageBadge on the Visual Studio panel. Pure read — no DB
+    writes, no provider calls. Returns 404 when the article does not exist.
+    """
+    repo = getattr(request.app.state, "article_repo", None)
+    if repo is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="article repository is not configured",
+        )
+    from uuid import UUID
+
+    try:
+        parsed_id = UUID(article_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail=f"invalid article_id: {article_id}",
+        ) from exc
+
+    article = await repo.get(parsed_id)
+    if article is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail=f"article {article_id} not found",
+        )
+    breakdown = aggregate_cost(article.visuals)
+    return CostResponse(
+        article_id=article_id,
+        total_usd=breakdown.total_usd,
+        image_count=breakdown.image_count,
+        breakdown=[
+            CostBreakdownEntry(
+                provider=e.provider,
+                model=e.model,
+                count=e.count,
+                total_usd=e.total_usd,
+                avg_latency_ms=e.avg_latency_ms,
+            )
+            for e in breakdown.breakdown
+        ],
     )
 
 
