@@ -114,8 +114,10 @@ class SeoDefaultsResponse(BaseModel):
 class UpdateGeneralConfigRequest(BaseModel):
     article_length_target: str | None = None
     content_tone: str | None = None
+    default_audience_persona: str | None = None
 
 
 class GeneralConfigResponse(BaseModel):
     article_length_target: str
     content_tone: str
+    default_audience_persona: str

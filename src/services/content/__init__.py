@@ -134,6 +134,12 @@ class ContentService:
                 "content_tone": session.content_tone,
                 "preferred_angle": session.preferred_angle,
                 "keywords": session.keywords,
+                # VISUAL-005 / Phase 2 — image planner inputs. Phase 7 will
+                # surface these via the Settings UI; until then they default to
+                # None and the planner falls back to general_business.
+                "audience_persona": None,
+                "page_art_direction": None,
+                "image_specs": [],
             }
         )
         # Only fail if outline generation itself failed

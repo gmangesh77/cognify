@@ -360,7 +360,13 @@ class TestIllustrationNodeInGraph:
 
         llm = AsyncMock()
         retriever = AsyncMock()
-        settings = Settings(openai_api_key="test-key")
+        # Legacy DALL-E path: only active when the new image planner is OFF.
+        # Phase 5 flipped the planner default to True, so this branch now
+        # requires opting back into the legacy path explicitly.
+        settings = Settings(
+            openai_api_key="test-key",
+            enable_image_planner=False,
+        )
         graph = build_content_graph(llm, retriever, settings)
         node_names = list(graph.get_graph().nodes.keys())
         assert "generate_illustrations" in node_names
@@ -374,6 +380,28 @@ class TestIllustrationNodeInGraph:
         retriever = AsyncMock()
         graph = build_content_graph(llm, retriever)
         node_names = list(graph.get_graph().nodes.keys())
+        assert "generate_illustrations" not in node_names
+
+    def test_graph_swaps_legacy_illustration_for_planner_when_flag_on(
+        self,
+    ) -> None:
+        from unittest.mock import AsyncMock
+
+        from src.agents.content.pipeline import build_content_graph
+        from src.config.settings import Settings
+
+        llm = AsyncMock()
+        retriever = AsyncMock()
+        # New default path (Phase 5): planner+render replace the legacy
+        # DALL-E illustration node even when an OpenAI key is configured.
+        settings = Settings(
+            openai_api_key="test-key",
+            enable_image_planner=True,
+        )
+        graph = build_content_graph(llm, retriever, settings)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "image_planner" in node_names
+        assert "image_render" in node_names
         assert "generate_illustrations" not in node_names
 
 

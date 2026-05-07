@@ -17,6 +17,8 @@ from langgraph.graph.state import CompiledStateGraph
 
 from src.agents.content.humanize_node import make_humanize_node
 from src.agents.content.illustration_generator import OpenAIDalleGenerator
+from src.agents.content.image_planner_node import make_image_planner_node
+from src.agents.content.image_render_node import make_image_render_node
 from src.agents.content.nodes import (
     make_chart_node,
     make_citations_node,
@@ -37,7 +39,10 @@ from src.models.content_pipeline import (
     SEOResult,
 )
 from src.models.research import FacetFindings, ResearchPlan, TopicInput
+from src.models.visual import ImageSpec
 from src.services.milvus_retriever import MilvusRetriever
+from src.services.visuals import init_registry as init_visual_registry
+from src.services.visuals.object_storage import select_object_storage
 
 if TYPE_CHECKING:
     from src.services.research import AgentStepRepository
@@ -74,6 +79,10 @@ class ContentState(TypedDict):
     content_tone: NotRequired[str | None]
     preferred_angle: NotRequired[str | None]
     keywords: NotRequired[list[str] | None]
+    # VISUAL-005 / Phase 2 — image planner output and per-article style hints.
+    image_specs: NotRequired[list[ImageSpec]]
+    page_art_direction: NotRequired[str | None]
+    audience_persona: NotRequired[str | None]
 
 
 def _wrap_node(
@@ -125,6 +134,9 @@ def _extract_output(name: str, result: dict) -> dict:  # type: ignore[type-arg]
         if hasattr(title, "title"):
             return {"seo_title": title.title, "seo_generated": True}
         return {"seo_generated": True}
+    if "image_specs" in result:
+        specs = result.get("image_specs") or []
+        return {"image_specs_count": len(specs)}
     if "visuals" in result:
         visuals = result.get("visuals") or []
         return {"visuals_count": len(visuals)}
@@ -161,6 +173,38 @@ def build_content_graph(
     graph.add_node(
         "seo_optimize", _wrap_node("seo", make_seo_node(llm, settings), deps)
     )
+    image_planner_enabled = bool(settings and settings.enable_image_planner)
+    if image_planner_enabled:
+        assert settings is not None  # noqa: S101 — guarded above
+        max_per_section = settings.image_planner_max_images_per_section
+        graph.add_node(
+            "image_planner",
+            _wrap_node(
+                "image_planner",
+                make_image_planner_node(
+                    llm,
+                    enabled=True,
+                    max_images_per_section=max_per_section,
+                ),
+                deps,
+            ),
+        )
+        registry = init_visual_registry(settings)
+        storage = select_object_storage(settings)
+        graph.add_node(
+            "image_render",
+            _wrap_node(
+                "image_render",
+                make_image_render_node(
+                    registry=registry,
+                    storage=storage,
+                    default_provider=settings.default_image_provider,
+                    concurrency=settings.image_render_concurrency,
+                ),
+                deps,
+            ),
+        )
+
     chart_dir = settings.chart_output_dir if settings else "generated_assets/charts"
     graph.add_node(
         "generate_charts", _wrap_node("charts", make_chart_node(llm, chart_dir), deps)
@@ -187,9 +231,16 @@ def build_content_graph(
     graph.add_edge("validate_article", "manage_citations")
     graph.add_edge("manage_citations", "humanize")
     graph.add_edge("humanize", "seo_optimize")
-    graph.add_edge("seo_optimize", "generate_charts")
-    # Illustration node — only if OpenAI key is configured
-    if settings and settings.openai_api_key:
+    if image_planner_enabled:
+        graph.add_edge("seo_optimize", "image_planner")
+        graph.add_edge("image_planner", "image_render")
+        graph.add_edge("image_render", "generate_charts")
+    else:
+        graph.add_edge("seo_optimize", "generate_charts")
+    # Legacy DALL-E illustration node — runs only when the new planner is OFF
+    # and an OpenAI key is configured. Phase 5 flips enable_image_planner=True
+    # and this branch becomes dormant; deletion is a future cleanup ticket.
+    if settings and settings.openai_api_key and not image_planner_enabled:
         generator = OpenAIDalleGenerator(
             api_key=settings.openai_api_key,
             model=settings.dalle_model,

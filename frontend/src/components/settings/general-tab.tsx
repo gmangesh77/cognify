@@ -1,4 +1,4 @@
-import type { GeneralConfig } from "@/types/settings";
+import type { AudiencePersona, GeneralConfig } from "@/types/settings";
 
 interface GeneralTabProps {
   config: GeneralConfig;
@@ -7,6 +7,17 @@ interface GeneralTabProps {
 
 const SELECT_CLASS =
   "mt-1 h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm";
+
+const PERSONA_OPTIONS: Array<{ value: AudiencePersona; label: string }> = [
+  { value: "general_business", label: "General business" },
+  { value: "ceo", label: "CEO / founder" },
+  { value: "cto", label: "CTO / engineering leader" },
+  { value: "marketer", label: "Marketer" },
+  { value: "hr", label: "HR / people leader" },
+  { value: "salesperson", label: "Salesperson" },
+  { value: "finance", label: "Finance" },
+  { value: "operations", label: "Operations" },
+];
 
 export function GeneralTab({ config, onUpdate }: GeneralTabProps) {
   return (
@@ -53,6 +64,35 @@ export function GeneralTab({ config, onUpdate }: GeneralTabProps) {
           </select>
           <p className="mt-1 text-xs text-neutral-500">
             Writing style and tone for all generated content
+          </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor="default-audience-persona"
+            className="block text-sm font-medium text-neutral-700"
+          >
+            Default audience persona
+          </label>
+          <select
+            id="default-audience-persona"
+            value={config.defaultAudiencePersona}
+            onChange={(e) =>
+              onUpdate({
+                defaultAudiencePersona: e.target.value as AudiencePersona,
+              })
+            }
+            className={SELECT_CLASS}
+          >
+            {PERSONA_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-neutral-500">
+            Default visual register for the image planner. Per-article overrides
+            are still possible from the topic-creation modal.
           </p>
         </div>
       </div>

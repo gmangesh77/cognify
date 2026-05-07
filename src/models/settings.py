@@ -42,3 +42,7 @@ class SeoDefaults(BaseModel):
 class GeneralConfig(BaseModel):
     article_length_target: str = "3000-5000"
     content_tone: str = "professional"
+    # VISUAL-010 / Phase 7 — default audience persona used by the image
+    # planner when no per-article override is supplied. Drives the Visual
+    # Studio panel and the topic-creation flow.
+    default_audience_persona: str = "general_business"

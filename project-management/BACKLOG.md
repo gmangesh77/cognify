@@ -149,6 +149,31 @@ All Infrastructure tickets complete. INFRA-005 (Frontend Status Alignment) merge
 
 ---
 
+### Epic 10: Visual Generation Overhaul
+
+**Goal**: Bring image generation up to and past impactai's `feat/content-hub` patterns — per-section image planner, multi-provider stack (gemini_flash / gemini_3_pro / imagen_4 / dalle_3), MinIO/S3 storage, SSRF-guarded URL import, persona-aware planning, banned-cliché prompt guard, section-level HTML refinement, **per-section prose editing**. All while preserving CanonicalArticle (ADR-003) and Transformer/Adapter (ADR-004) boundaries.
+
+**Plan**: [`docs/superpowers/plans/2026-05-06-visual-generation-improvement-plan.md`](../docs/superpowers/plans/2026-05-06-visual-generation-improvement-plan.md)
+**Pencil brief**: [`docs/superpowers/specs/2026-05-06-visual-studio-pencil-design-brief.md`](../docs/superpowers/specs/2026-05-06-visual-studio-pencil-design-brief.md)
+**Architecture review**: [`docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW.md`](../docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW.md)
+
+| Ticket      | Title                                                                          | Priority | SP | Status |
+|-------------|--------------------------------------------------------------------------------|----------|---:|--------|
+| VISUAL-004  | Phase 1 — Style catalogue + provider abstraction + MinIO + SSRF guard          | Must     | 13 | DONE   |
+| VISUAL-005  | Phase 2 — Persona-aware planner + pipeline nodes                               | Must     | 13 | DONE   |
+| VISUAL-006  | Phase 3 — Markdown injection + multi-platform publishing transformers          | Must     |  8 | DONE   |
+| VISUAL-007  | Phase 4 — Studio API (plan/render/refine/upload/fetch-url/section-html-refine) | Must     |  8 | DONE   |
+| VISUAL-008  | Phase 5 — Frontend Visual Studio (chip rails, spec cards, HTML refine)         | Must     | 21 | DONE   |
+| VISUAL-009  | Phase 6 — MinIO production rollout + cost dashboard                            | Should   |  5 | DONE   |
+| VISUAL-010  | Phase 7 — Saved-asset gallery + audience-persona Settings UI                   | Should   |  8 | DONE   |
+| VISUAL-011  | Phase 8 — Per-section content editing (text + AI rewrite + history)            | Should   | 13 | DONE   |
+
+Per-phase acceptance criteria are documented in the implementation plan (§11). Boundary invariants (ADR-003, ADR-004) are enforced as called out per phase.
+
+**Phase 5 (VISUAL-008) note on Playwright E2E**: the plan §11.5 calls for Playwright coverage of the plan → render → refine flow. Playwright is not yet wired into the repo (no browsers, no CI lane, no fixtures). VISUAL-008 ships equivalent coverage via Vitest component + integration tests; the Playwright scaffolding itself is tracked as a follow-up alongside the broader testing-infrastructure work.
+
+---
+
 ## Backlog Summary
 
 | Epic | Total | Done | Remaining | Points (remaining) |
@@ -163,6 +188,12 @@ All Infrastructure tickets complete. INFRA-005 (Frontend Status Alignment) merge
 | Dashboard & Config | 5 | 5 | 0 | 0 |
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
-| **Total** | **49** | **48** | **1** | **5** |
+| **Visual Generation Overhaul** | **8** | **8** | **0** | **0** |
+| **Total** | **57** | **56** | **1** | **5** |
 
-**Velocity**: 254 SP completed across 9 epics. 5 SP remaining (1 ticket: PUBLISH-002).
+**Velocity update (2026-05-07)**: Epic 10 (Visual Generation Overhaul)
+fully shipped on branch `claude/vibrant-chatterjee-1115a8` — VISUAL-004
+through VISUAL-011 (89 SP). The only remaining ticket in the entire
+backlog is PUBLISH-002 (5 SP, WordPress integration).
+
+**Velocity**: 343 SP completed across 11 epics. 5 SP remaining (PUBLISH-002).

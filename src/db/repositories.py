@@ -610,6 +610,26 @@ class PgArticleRepository:
                 return None
             return self._to_model(row)
 
+    async def update_body_markdown(
+        self,
+        article_id: UUID,
+        body_markdown: str,
+    ) -> CanonicalArticle | None:
+        """Persist a new body for the article. Returns the refreshed model."""
+        async with self._sf() as db:
+            row = await db.get(CanonicalArticleRow, article_id)
+            if row is None:
+                return None
+            row.body_markdown = body_markdown
+            await db.commit()
+            await db.refresh(row)
+            logger.info(
+                "article_body_updated",
+                article_id=str(article_id),
+                body_chars=len(body_markdown),
+            )
+            return self._to_model(row)
+
     async def list(
         self,
         page: int = 1,

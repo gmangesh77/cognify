@@ -82,8 +82,14 @@ describe("CreateTopicModal", () => {
     fireEvent.change(input, { target: { value: "Test Topic" } });
     fireEvent.click(screen.getByText("Analyze"));
 
+    // The component renders "Topic analysis failed. Please try again."
+    // via `surface real analyze errors` (commit 5318390 / fix-topic-cards).
+    // Match the rendered text loosely so a future copy tweak doesn't
+    // bring this assertion back as a flake.
     await waitFor(() => {
-      expect(screen.getByText(/failed to analyze/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/topic analysis failed|failed to analyze/i),
+      ).toBeInTheDocument();
     });
   });
 

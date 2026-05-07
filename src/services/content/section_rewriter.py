@@ -1,0 +1,248 @@
+"""Claude-driven section / paragraph prose rewrite (VISUAL-011 / Phase 8).
+
+Lets the editor refine the prose of a single section without re-running
+the full content pipeline. Mirrors `src/services/visuals/section_html_refiner.py`
+in shape: same rate-limit dependency injection at the route layer, same
+return-result dataclass, same logger structure.
+
+Boundary invariants:
+- Pure-content concern. Never imports from `src/services/publishing/` —
+  publishing keeps consuming CanonicalArticle exactly as before.
+- Server-side prompt only. The frontend posts a free-text instruction
+  OR a tone-preset name; the backend expands presets here so the
+  banned-pattern guarantees can be enforced consistently (no platform
+  leakage).
+- Anchor-safe by default. The prompt instructs Claude to preserve
+  `data-spec-id` markers and bound `before_heading` titles; hard
+  validation lives in `section_anchors.validate_anchors` and is invoked
+  by the API layer so 422 with a structured diff is what bubbles up.
+- Persona-aware. Reuses `get_persona_register` from
+  `src/services/visuals/persona_directions.py` (the planner already
+  uses it). Never forks the register.
+- L-002 compliance. Output is plain markdown, not JSON, so no
+  `parse_llm_json` wrap is needed — but the model is told explicitly
+  to omit fences.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Literal
+
+import structlog
+from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import HumanMessage, SystemMessage
+
+from src.services.content.word_diff import WordDiffOp, diff_words
+from src.services.visuals.persona_directions import get_persona_register
+
+logger = structlog.get_logger()
+
+RewriteScope = Literal["paragraph", "section"]
+TonePreset = Literal[
+    "shorter",
+    "more_concrete",
+    "more_conversational",
+    "more_authoritative",
+]
+
+TONE_PRESETS: dict[TonePreset, str] = {
+    "shorter": (
+        "Make this paragraph noticeably shorter without losing any factual "
+        "claim. Cut hedging phrases, drop adverbs, and tighten sentence "
+        "structure. Aim for ~30% fewer words."
+    ),
+    "more_concrete": (
+        "Make this paragraph more concrete. Replace vague phrasing with "
+        "specific examples that are already implied by the surrounding "
+        "context. Do not invent new statistics, names, or quotes."
+    ),
+    "more_conversational": (
+        "Soften this paragraph into a more conversational register. Trim "
+        "jargon to one or two key terms; favour short sentences. Keep "
+        "every factual claim and citation marker exactly as written."
+    ),
+    "more_authoritative": (
+        "Tighten this paragraph into a more authoritative register. Lead "
+        "each sentence with the subject of the claim. Cut hedging "
+        "language. Keep every factual claim and citation marker exactly "
+        "as written."
+    ),
+}
+
+_BANNED_PATTERNS_BLOCK = (
+    "Hard rules — violating any of these makes the output unusable:\n"
+    "- Do NOT add new headings (no `##`, no `<h2>` etc.).\n"
+    "- Do NOT introduce new statistics, percentages, dollar amounts, "
+    "dates, or names that are not in the original markdown.\n"
+    "- Do NOT add quoted citations, blockquotes, or `[N]` reference "
+    "markers that are not in the original markdown.\n"
+    '- Do NOT remove or rename any `data-spec-id="…"` attribute.\n'
+    "- Do NOT introduce code blocks, image markdown, or HTML beyond "
+    "what was already in the original.\n"
+    "- Return PLAIN markdown only — no fenced code blocks around the "
+    "output, no commentary, no preamble."
+)
+
+
+_REWRITER_SYSTEM = (
+    "You are a senior editor refining the prose of one section of an "
+    "article. You receive the section's current markdown and a "
+    "natural-language instruction. Return ONLY the refined markdown — "
+    "no commentary, no fences, no headings the original did not "
+    "already contain. Preserve every existing `[N]` citation marker "
+    "verbatim, every `data-spec-id` attribute verbatim, and every "
+    "second-level heading (`## …`) verbatim."
+)
+
+
+@dataclass(frozen=True)
+class RewriteResult:
+    """Outcome of one Claude rewrite pass."""
+
+    markdown_fragment: str
+    diff: list[WordDiffOp]
+    model: str
+    prompt_used: str
+    instruction: str
+    tokens_input: int | None
+    tokens_output: int | None
+    usd: float | None
+
+
+def expand_tone_preset(preset: TonePreset) -> str:
+    """Return the server-side instruction template for a tone preset.
+
+    The frontend never sees this string — it ships only `{ "preset": ... }`
+    so banned-pattern guards stay server-side.
+    """
+    return TONE_PRESETS[preset]
+
+
+async def rewrite_section_prose(
+    *,
+    section_id: str,
+    instruction: str,
+    current_markdown: str,
+    scope: RewriteScope = "section",
+    paragraph_index: int | None = None,
+    audience_persona: str | None = None,
+    llm: BaseChatModel,
+) -> RewriteResult:
+    """Apply `instruction` to `current_markdown` via Claude.
+
+    Returns the rewritten markdown, a word-level diff for UI display,
+    and usage metadata. Anchor preservation is the API layer's job —
+    this service just emits the rewrite.
+    """
+    persona_register = get_persona_register(audience_persona)
+    user_prompt = _build_user_prompt(
+        section_id=section_id,
+        instruction=instruction,
+        current_markdown=current_markdown,
+        scope=scope,
+        paragraph_index=paragraph_index,
+        persona_register=persona_register,
+    )
+    messages = [
+        SystemMessage(content=_REWRITER_SYSTEM),
+        HumanMessage(content=user_prompt),
+    ]
+    response = await llm.ainvoke(messages)
+    raw = str(response.content).strip()
+    fragment = _strip_fences(raw)
+    diff = diff_words(current_markdown, fragment)
+    usage = _extract_usage(response)
+    model_name = (
+        getattr(llm, "model", None)
+        or getattr(llm, "model_name", "unknown")
+        or "unknown"
+    )
+    logger.info(
+        "section_prose_rewritten",
+        section_id=section_id,
+        scope=scope,
+        instruction_len=len(instruction),
+        before_chars=len(current_markdown),
+        after_chars=len(fragment),
+        diff_ops=len(diff),
+    )
+    return RewriteResult(
+        markdown_fragment=fragment,
+        diff=diff,
+        model=str(model_name),
+        prompt_used=_REWRITER_SYSTEM,
+        instruction=instruction,
+        tokens_input=usage.get("input"),
+        tokens_output=usage.get("output"),
+        usd=None,
+    )
+
+
+def _build_user_prompt(
+    *,
+    section_id: str,
+    instruction: str,
+    current_markdown: str,
+    scope: RewriteScope,
+    paragraph_index: int | None,
+    persona_register: str,
+) -> str:
+    scope_block = _scope_block(scope, paragraph_index)
+    return (
+        f"Section id: {section_id}\n"
+        f"Scope: {scope_block}\n\n"
+        f"Audience register (guidance, not a hard rule):\n"
+        f"{persona_register}\n\n"
+        f"{_BANNED_PATTERNS_BLOCK}\n\n"
+        f"Instruction:\n{instruction}\n\n"
+        f"Current markdown:\n{current_markdown}"
+    )
+
+
+def _scope_block(scope: RewriteScope, paragraph_index: int | None) -> str:
+    if scope == "paragraph" and paragraph_index is not None:
+        return f"paragraph {paragraph_index} of the section"
+    return "the entire section body"
+
+
+def _strip_fences(text: str) -> str:
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        first_newline = stripped.find("\n")
+        if first_newline != -1:
+            stripped = stripped[first_newline + 1 :]
+        if stripped.endswith("```"):
+            stripped = stripped[:-3].rstrip()
+    return stripped
+
+
+def _extract_usage(response: object) -> dict[str, int | None]:
+    """Pull token counts off whatever Claude / FakeLLM returned."""
+    metadata = getattr(response, "usage_metadata", None) or {}
+    if isinstance(metadata, dict):
+        return {
+            "input": metadata.get("input_tokens"),
+            "output": metadata.get("output_tokens"),
+        }
+    response_metadata = getattr(response, "response_metadata", None) or {}
+    if isinstance(response_metadata, dict):
+        usage = response_metadata.get("usage")
+    else:
+        usage = None
+    if isinstance(usage, dict):
+        return {
+            "input": usage.get("input_tokens") or usage.get("prompt_tokens"),
+            "output": usage.get("output_tokens") or usage.get("completion_tokens"),
+        }
+    return {"input": None, "output": None}
+
+
+__all__ = [
+    "RewriteResult",
+    "RewriteScope",
+    "TONE_PRESETS",
+    "TonePreset",
+    "expand_tone_preset",
+    "rewrite_section_prose",
+]

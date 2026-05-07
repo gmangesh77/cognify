@@ -50,6 +50,7 @@ interface ApiSeoDefaults {
 interface ApiGeneralConfig {
   article_length_target: string;
   content_tone: string;
+  default_audience_persona: string;
 }
 
 // ---- Converters: API (snake_case) → Frontend (camelCase) ----
@@ -96,6 +97,9 @@ function toGeneralConfig(api: ApiGeneralConfig): GeneralConfig {
   return {
     articleLengthTarget: api.article_length_target as ArticleLength,
     contentTone: api.content_tone as ContentTone,
+    defaultAudiencePersona:
+      (api.default_audience_persona as GeneralConfig["defaultAudiencePersona"]) ??
+      "general_business",
   };
 }
 
@@ -134,6 +138,8 @@ function fromGeneralConfig(updates: Partial<GeneralConfig>): Record<string, unkn
   const out: Record<string, unknown> = {};
   if (updates.articleLengthTarget !== undefined) out.article_length_target = updates.articleLengthTarget;
   if (updates.contentTone !== undefined) out.content_tone = updates.contentTone;
+  if (updates.defaultAudiencePersona !== undefined)
+    out.default_audience_persona = updates.defaultAudiencePersona;
   return out;
 }
 
@@ -156,6 +162,7 @@ const DEFAULT_SEO_DEFAULTS: SeoDefaults = {
 const DEFAULT_GENERAL_CONFIG: GeneralConfig = {
   articleLengthTarget: "3000-5000",
   contentTone: "professional",
+  defaultAudiencePersona: "general_business",
 };
 
 // ---- Hook ----

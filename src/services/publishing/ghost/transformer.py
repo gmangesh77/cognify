@@ -7,6 +7,11 @@ import markdown
 
 from src.models.content import CanonicalArticle
 from src.models.publishing import PlatformPayload
+from src.services.visuals.inject import (
+    InjectionContext,
+    inject_visuals,
+    pick_cover_visual,
+)
 
 _MD_EXTENSIONS = ["tables", "fenced_code"]
 _DEFAULT_API_BASE = "http://localhost:8000"
@@ -47,12 +52,27 @@ def _build_html_body(article: CanonicalArticle, api_base: str) -> str:
     body = _strip_references_section(article.body_markdown)
     html = markdown.markdown(body, extensions=_MD_EXTENSIONS)
     html = _rewrite_local_asset_urls(html, api_base)
-    html = _inject_visuals(html, article, api_base)
+    html = _inject_planned_visuals(html, article, api_base)
     html += _build_references_html(article)
     json_ld = _build_json_ld(article)
     if json_ld:
         html = json_ld + "\n" + html
     return html
+
+
+def _inject_planned_visuals(html: str, article: CanonicalArticle, api_base: str) -> str:
+    """Run the per-anchor injector against the rendered HTML body.
+
+    `inject_visuals` consumes article.body_markdown, but here we already have
+    HTML — so we wrap the rendered HTML in a synthetic article (sharing
+    `image_specs` and `visuals`) and let inject treat the HTML as already-
+    converted. Pure / idempotent / cover-aware (cover gets hoisted to
+    feature_image by `_build_metadata`, not rendered inline).
+    """
+    if not article.visuals and not article.image_specs:
+        return _legacy_chart_inject(html, article, api_base)
+    synthetic = article.model_copy(update={"body_markdown": html})
+    return inject_visuals(synthetic, InjectionContext(api_base_url=api_base))
 
 
 def _build_json_ld(article: CanonicalArticle) -> str:
@@ -82,59 +102,28 @@ def _build_metadata(
     tags = _build_tags(article)
     if tags:
         meta["tags"] = tags
-    hero = _find_hero_visual(article)
-    if hero:
-        meta["feature_image"] = _asset_url(hero.url, api_base)
-    elif article.visuals:
-        meta["feature_image"] = _asset_url(article.visuals[0].url, api_base)
+    cover = pick_cover_visual(article)
+    if cover is None and article.visuals:
+        cover = article.visuals[0]
+    if cover is not None:
+        meta["feature_image"] = _asset_url(cover.url, api_base)
     return meta
 
 
-def _inject_visuals(html: str, article: CanonicalArticle, api_base: str) -> str:
-    """Inject chart/diagram visuals into the HTML body after relevant sections."""
-    charts = [
-        v
-        for v in article.visuals
-        if getattr(v, "metadata", None) and v.metadata.get("type") != "hero"
-    ]
-    if not charts:
+def _legacy_chart_inject(html: str, article: CanonicalArticle, api_base: str) -> str:
+    """Back-compat: when no image_specs exist, place legacy charts/diagrams.
+
+    Pre-VISUAL-005 charts/diagrams have `metadata.source_section` but no
+    `spec_id`. The new injector handles them via the `legacy` bucket — this
+    helper is the same behaviour but cheaper to invoke when the article has
+    no rendered visuals at all.
+    """
+    if not article.visuals:
         return html
-
-    # Split HTML into sections by <h2> tags
-    sections = re.split(r"(<h2[^>]*>)", html)
-
-    # Insert charts after their target section (or at the end)
-    for chart in charts:
-        source_section = (chart.metadata or {}).get("source_section", -1)
-        url = _asset_url(chart.url, api_base)
-        alt = getattr(chart, "alt_text", "") or ""
-        caption = getattr(chart, "caption", "") or ""
-        img_html = (
-            f"\n<figure>"
-            f'<img src="{url}" alt="{alt}" style="max-width:100%;height:auto;" />'
-            f"<figcaption>{caption}</figcaption>"
-            f"</figure>\n"
-        )
-        # Each <h2> split produces: [before, <h2>, content, <h2>, content, ...]
-        # Section index in the split: section N content is at index 2*N+2
-        if source_section >= 0:
-            target_idx = 2 * source_section + 2
-        else:
-            target_idx = len(sections) - 1
-        if target_idx < len(sections):
-            sections[target_idx] += img_html
-        else:
-            sections[-1] += img_html
-
-    return "".join(sections)
-
-
-def _find_hero_visual(article: CanonicalArticle):  # type: ignore[no-untyped-def]
-    """Find the DALL-E hero illustration, if any."""
-    for v in article.visuals:
-        if getattr(v, "metadata", None) and v.metadata.get("type") == "hero":
-            return v
-    return None
+    return inject_visuals(
+        article.model_copy(update={"body_markdown": html}),
+        InjectionContext(api_base_url=api_base),
+    )
 
 
 def _build_tags(article: CanonicalArticle) -> str:
@@ -179,7 +168,7 @@ def _asset_url(path: str, api_base: str) -> str:
     """Convert a local file path to an HTTP URL served by the API."""
     if path.startswith(("http://", "https://")):
         return path
-    normalized = path.replace("\\", "/")
+    normalized = path.replace("\\", "/").lstrip("/")
     if normalized.startswith("generated_assets/"):
         return f"{api_base}/{normalized}"
     return f"{api_base}/generated_assets/{normalized}"

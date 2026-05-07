@@ -152,8 +152,9 @@ See @docs/LEARNINGS.md for hard-won debugging lessons. **Read before making chan
 See @project-management/PROGRESS.md for full ticket status.
 
 **Epics 0-4, 6-9:** All complete (Design, Trend Discovery, Research, Content Gen, Visual Assets, Dashboard, API & Auth, Architecture, Infrastructure).
-**Epic 5 (Publishing):** Ghost, Medium (PR #43), LinkedIn (PR #48), Publication Tracking done. WordPress in backlog.
+**Epic 5 (Publishing):** Ghost, Medium (PR #43), LinkedIn (PR #48), Publication Tracking done. WordPress (PUBLISH-002) in backlog.
+**Epic 10 (Visual Generation Overhaul):** Phases 1-7 done on branch `claude/vibrant-chatterjee-1115a8` (VISUAL-004..VISUAL-010, 76 SP). Phase 8 (VISUAL-011, per-section content editing, 13 SP) is the only remaining ticket. The new pipeline (`enable_image_planner=True`) is now the default. See `docs/deployment/visual-storage-rollout.md` for the production MinIO + cost-dashboard runbook.
 **INFRA-005 (Frontend Status Alignment):** Done (PR #46).
 **CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml), Makefile, docker-compose with full stack.
-**Test suite:** 953 backend tests + 250 frontend tests.
-**Next action:** PUBLISH-002 (WordPress Integration).
+**Test suite:** ~1300 backend tests + ~320 frontend tests.
+**Next action:** PUBLISH-002 (WordPress Integration) or VISUAL-011 (per-section content editing).

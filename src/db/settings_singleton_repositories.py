@@ -146,6 +146,7 @@ class PgGeneralConfigRepository:
                 row = GeneralConfigRow(
                     article_length_target=defaults.article_length_target,
                     content_tone=defaults.content_tone,
+                    default_audience_persona=defaults.default_audience_persona,
                 )
                 db.add(row)
                 await db.commit()
@@ -163,11 +164,13 @@ class PgGeneralConfigRepository:
                 row = GeneralConfigRow(
                     article_length_target=config.article_length_target,
                     content_tone=config.content_tone,
+                    default_audience_persona=config.default_audience_persona,
                 )
                 db.add(row)
             else:
                 row.article_length_target = config.article_length_target
                 row.content_tone = config.content_tone
+                row.default_audience_persona = config.default_audience_persona
             await db.commit()
             await db.refresh(row)
             logger.debug("general_config_updated")
@@ -178,4 +181,5 @@ class PgGeneralConfigRepository:
         return GeneralConfig(
             article_length_target=row.article_length_target,
             content_tone=row.content_tone,
+            default_audience_persona=row.default_audience_persona,
         )

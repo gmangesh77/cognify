@@ -34,6 +34,7 @@ from src.api.routers.admin import admin_router
 from src.api.routers.articles import articles_router
 from src.api.routers.auth import auth_router
 from src.api.routers.canonical_articles import canonical_articles_router
+from src.api.routers.content import content_router
 from src.api.routers.health import health_router
 from src.api.routers.metrics import metrics_router
 from src.api.routers.oauth import oauth_router
@@ -43,6 +44,7 @@ from src.api.routers.research import research_router
 from src.api.routers.settings import settings_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
+from src.api.routers.visuals import visuals_router
 from src.config.settings import Settings
 from src.db.engine import create_async_engine as create_db_engine
 from src.db.engine import get_session_factory
@@ -229,6 +231,21 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             seo=PgSeoDefaultsRepository(sf),
             general=PgGeneralConfigRepository(sf),
         )
+        # VISUAL-010 / Phase 7 — image-asset-tag repo for the saved gallery's
+        # curation feature. Imported lazily so the API can boot without the
+        # new table existing yet (the migration lands separately).
+        from src.db.image_asset_tag_repository import (
+            PgImageAssetTagRepository,
+        )
+
+        app.state.image_asset_tag_repo = PgImageAssetTagRepository(sf)
+        # VISUAL-011 / Phase 8 — section version sidecar for prose history.
+        # Imported lazily so the API can boot before the migration runs.
+        from src.db.section_version_repository import (
+            PgSectionVersionRepository,
+        )
+
+        app.state.section_version_repo = PgSectionVersionRepository(sf)
         # Resolve API keys: DB overrides .env
         resolver = ApiKeyResolver(api_key_repo, settings)
         resolved = await resolver.resolve_all()
@@ -684,6 +701,16 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         pipeline_debug_router,
         prefix=settings.api_v1_prefix,
         tags=["debug"],
+    )
+    app.include_router(
+        visuals_router,
+        prefix=settings.api_v1_prefix,
+        tags=["visuals"],
+    )
+    app.include_router(
+        content_router,
+        prefix=settings.api_v1_prefix,
+        tags=["content"],
     )
     assets_dir = Path("generated_assets")
     if assets_dir.exists():
