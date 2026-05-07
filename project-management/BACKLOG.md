@@ -149,6 +149,29 @@ All Infrastructure tickets complete. INFRA-005 (Frontend Status Alignment) merge
 
 ---
 
+### Epic 10: Visual Generation Overhaul
+
+**Goal**: Bring image generation up to and past impactai's `feat/content-hub` patterns — per-section image planner, multi-provider stack (gemini_flash / gemini_3_pro / imagen_4 / dalle_3), MinIO/S3 storage, SSRF-guarded URL import, persona-aware planning, banned-cliché prompt guard, section-level HTML refinement, **per-section prose editing**. All while preserving CanonicalArticle (ADR-003) and Transformer/Adapter (ADR-004) boundaries.
+
+**Plan**: [`docs/superpowers/plans/2026-05-06-visual-generation-improvement-plan.md`](../docs/superpowers/plans/2026-05-06-visual-generation-improvement-plan.md)
+**Pencil brief**: [`docs/superpowers/specs/2026-05-06-visual-studio-pencil-design-brief.md`](../docs/superpowers/specs/2026-05-06-visual-studio-pencil-design-brief.md)
+**Architecture review**: [`docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW.md`](../docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW.md)
+
+| Ticket      | Title                                                                          | Priority | SP |
+|-------------|--------------------------------------------------------------------------------|----------|---:|
+| VISUAL-004  | Phase 1 — Style catalogue + provider abstraction + MinIO + SSRF guard          | Must     | 13 |
+| VISUAL-005  | Phase 2 — Persona-aware planner + pipeline nodes                               | Must     | 13 |
+| VISUAL-006  | Phase 3 — Markdown injection + multi-platform publishing transformers          | Must     |  8 |
+| VISUAL-007  | Phase 4 — Studio API (plan/render/refine/upload/fetch-url/section-html-refine) | Must     |  8 |
+| VISUAL-008  | Phase 5 — Frontend Visual Studio (chip rails, spec cards, HTML refine)         | Must     | 21 |
+| VISUAL-009  | Phase 6 — MinIO production rollout + cost dashboard                            | Should   |  5 |
+| VISUAL-010  | Phase 7 — Saved-asset gallery + audience-persona Settings UI                   | Should   |  8 |
+| VISUAL-011  | Phase 8 — Per-section content editing (text + AI rewrite + history)            | Should   | 13 |
+
+Per-phase acceptance criteria are documented in the implementation plan (§11). Boundary invariants (ADR-003, ADR-004) are enforced as called out per phase.
+
+---
+
 ## Backlog Summary
 
 | Epic | Total | Done | Remaining | Points (remaining) |
@@ -163,6 +186,7 @@ All Infrastructure tickets complete. INFRA-005 (Frontend Status Alignment) merge
 | Dashboard & Config | 5 | 5 | 0 | 0 |
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
-| **Total** | **49** | **48** | **1** | **5** |
+| **Visual Generation Overhaul** | **8** | **0** | **8** | **89** |
+| **Total** | **57** | **48** | **9** | **94** |
 
-**Velocity**: 254 SP completed across 9 epics. 5 SP remaining (1 ticket: PUBLISH-002).
+**Velocity**: 254 SP completed across 9 epics. 94 SP remaining (1 publishing + 8 visual-generation tickets).

@@ -102,6 +102,37 @@ class Settings(BaseSettings):
     illustration_timeout: float = 30.0
     # Diagram generation (Mermaid CLI)
     diagram_output_dir: str = "generated_assets/diagrams"
+    # Visuals — generation (Epic 10 / VISUAL-004)
+    enable_image_planner: bool = False  # flips to True at end of Phase 5
+    default_image_provider: str = "gemini_flash"  # gemini_flash|gemini_3_pro|imagen_4|dalle_3
+    image_model_gemini_flash: str = "gemini-2.5-flash-image"
+    image_model_gemini_3_pro: str = "gemini-3-pro-image-preview"
+    image_model_imagen_4: str = "imagen-4.0-generate-001"
+    image_render_concurrency: int = 3
+    image_planner_max_images_per_section: int = 4
+    google_ai_api_key: str = ""
+    imagen_4_enabled: bool = False  # gates Premium tier in UI
+    gemini_3_pro_enabled: bool = True  # gates Mid tier (preview model)
+    visuals_output_dir: str = "generated_assets/visuals"
+    image_provider_timeout: float = 30.0
+    # Visuals — object storage (MinIO / S3)
+    minio_enabled: bool = False
+    minio_endpoint: str = ""  # host:port, no scheme
+    minio_access_key: str = ""
+    minio_secret_key: str = ""
+    minio_bucket: str = "cognify-visuals"
+    minio_public_url: str = ""  # base URL prepended to object keys (CDN or proxy)
+    minio_use_ssl: bool = False
+    minio_region: str = "us-east-1"
+    # Visuals — image-import safety (SSRF guard + upload validation)
+    fetch_image_max_size_mb: int = 10
+    fetch_image_allowed_mime: list[str] = [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+    ]
+    fetch_image_timeout_s: float = 10.0
+    fetch_image_max_redirects: int = 3
     # Publishing — Ghost CMS
     ghost_api_url: str = ""
     ghost_admin_api_key: str = ""  # format: "id:secret"

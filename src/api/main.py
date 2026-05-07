@@ -43,6 +43,7 @@ from src.api.routers.research import research_router
 from src.api.routers.settings import settings_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
+from src.api.routers.visuals import visuals_router
 from src.config.settings import Settings
 from src.db.engine import create_async_engine as create_db_engine
 from src.db.engine import get_session_factory
@@ -684,6 +685,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         pipeline_debug_router,
         prefix=settings.api_v1_prefix,
         tags=["debug"],
+    )
+    app.include_router(
+        visuals_router,
+        prefix=settings.api_v1_prefix,
+        tags=["visuals"],
     )
     assets_dir = Path("generated_assets")
     if assets_dir.exists():
