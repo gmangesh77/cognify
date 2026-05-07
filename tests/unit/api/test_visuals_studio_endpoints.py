@@ -775,3 +775,203 @@ class TestSavedAssetsEndpoint:
         data = resp.json()
         spec_ids = [item["spec_id"] for item in data["items"]]
         assert spec_ids == ["h2"]
+
+
+# ---------------------------------------------------------------------------
+# /visuals/saved/tag  (VISUAL-010 / Phase 7)
+# ---------------------------------------------------------------------------
+
+
+class _FakeTagRepo:
+    """In-memory stand-in for `PgImageAssetTagRepository`."""
+
+    def __init__(self) -> None:
+        self.rows: list[dict[str, object]] = []
+
+    async def add_tag(
+        self,
+        *,
+        article_id: object,
+        spec_id: str,
+        tag: str,
+        note: str | None = None,
+    ) -> object:
+        from dataclasses import dataclass
+        from datetime import UTC, datetime
+        from uuid import uuid4
+
+        @dataclass(frozen=True)
+        class _Row:
+            id: object
+            article_id: object
+            spec_id: str
+            tag: str
+            note: str | None
+            created_at: object
+
+        for r in self.rows:
+            if (
+                r["article_id"] == article_id
+                and r["spec_id"] == spec_id
+                and r["tag"] == tag
+            ):
+                return _Row(
+                    id=r["id"],
+                    article_id=r["article_id"],
+                    spec_id=r["spec_id"],  # type: ignore[arg-type]
+                    tag=r["tag"],  # type: ignore[arg-type]
+                    note=r["note"],  # type: ignore[arg-type]
+                    created_at=r["created_at"],
+                )
+        new_id = uuid4()
+        row_dict = {
+            "id": new_id,
+            "article_id": article_id,
+            "spec_id": spec_id,
+            "tag": tag,
+            "note": note,
+            "created_at": datetime.now(UTC),
+        }
+        self.rows.append(row_dict)
+        return _Row(
+            id=new_id,
+            article_id=article_id,
+            spec_id=spec_id,
+            tag=tag,
+            note=note,
+            created_at=row_dict["created_at"],
+        )
+
+    async def remove_tag(self, *, article_id: object, spec_id: str, tag: str) -> bool:
+        before = len(self.rows)
+        self.rows = [
+            r
+            for r in self.rows
+            if not (
+                r["article_id"] == article_id
+                and r["spec_id"] == spec_id
+                and r["tag"] == tag
+            )
+        ]
+        return len(self.rows) < before
+
+
+class TestSavedAssetTagEndpoints:
+    async def test_post_requires_auth(self, studio_client: httpx.AsyncClient) -> None:
+        resp = await studio_client.post(
+            "/api/v1/visuals/saved/tag",
+            json={
+                "article_id": "123e4567-e89b-12d3-a456-426614174000",
+                "spec_id": "hero1",
+                "tag": "fav",
+            },
+        )
+        assert resp.status_code in {401, 403}
+
+    async def test_post_503_when_repo_missing(
+        self,
+        studio_app: FastAPI,
+        studio_client: httpx.AsyncClient,
+        studio_settings: Settings,
+    ) -> None:
+        resp = await studio_client.post(
+            "/api/v1/visuals/saved/tag",
+            json={
+                "article_id": "123e4567-e89b-12d3-a456-426614174000",
+                "spec_id": "hero1",
+                "tag": "fav",
+            },
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 503
+
+    async def test_post_400_on_invalid_uuid(
+        self,
+        studio_app: FastAPI,
+        studio_client: httpx.AsyncClient,
+        studio_settings: Settings,
+    ) -> None:
+        studio_app.state.image_asset_tag_repo = _FakeTagRepo()
+        resp = await studio_client.post(
+            "/api/v1/visuals/saved/tag",
+            json={
+                "article_id": "not-a-uuid",
+                "spec_id": "hero1",
+                "tag": "fav",
+            },
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 400
+
+    async def test_post_creates_tag_idempotently(
+        self,
+        studio_app: FastAPI,
+        studio_client: httpx.AsyncClient,
+        studio_settings: Settings,
+    ) -> None:
+        repo = _FakeTagRepo()
+        studio_app.state.image_asset_tag_repo = repo
+        body = {
+            "article_id": "123e4567-e89b-12d3-a456-426614174000",
+            "spec_id": "hero1",
+            "tag": "fav",
+            "note": "winner",
+        }
+        first = await studio_client.post(
+            "/api/v1/visuals/saved/tag",
+            json=body,
+            headers=_editor_headers(studio_settings),
+        )
+        second = await studio_client.post(
+            "/api/v1/visuals/saved/tag",
+            json=body,
+            headers=_editor_headers(studio_settings),
+        )
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert first.json()["id"] == second.json()["id"]
+        assert len(repo.rows) == 1
+
+    async def test_delete_removes_tag(
+        self,
+        studio_app: FastAPI,
+        studio_client: httpx.AsyncClient,
+        studio_settings: Settings,
+    ) -> None:
+        repo = _FakeTagRepo()
+        studio_app.state.image_asset_tag_repo = repo
+        body = {
+            "article_id": "123e4567-e89b-12d3-a456-426614174000",
+            "spec_id": "hero1",
+            "tag": "fav",
+        }
+        await studio_client.post(
+            "/api/v1/visuals/saved/tag",
+            json=body,
+            headers=_editor_headers(studio_settings),
+        )
+        resp = await studio_client.delete(
+            "/api/v1/visuals/saved/tag",
+            params=body,
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 204
+        assert repo.rows == []
+
+    async def test_delete_404_when_no_match(
+        self,
+        studio_app: FastAPI,
+        studio_client: httpx.AsyncClient,
+        studio_settings: Settings,
+    ) -> None:
+        studio_app.state.image_asset_tag_repo = _FakeTagRepo()
+        resp = await studio_client.delete(
+            "/api/v1/visuals/saved/tag",
+            params={
+                "article_id": "123e4567-e89b-12d3-a456-426614174000",
+                "spec_id": "hero1",
+                "tag": "missing",
+            },
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 404

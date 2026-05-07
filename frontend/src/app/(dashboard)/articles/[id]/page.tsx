@@ -12,6 +12,7 @@ import { ImageImportModal } from "@/components/visuals/ImageImportModal";
 import { SavedAssetGallery } from "@/components/visuals/SavedAssetGallery";
 import { VisualStudio } from "@/components/visuals/VisualStudio";
 import { useArticle } from "@/hooks/use-article";
+import { useDefaultPersona } from "@/hooks/use-default-persona";
 import { publishArticle } from "@/lib/api/articles";
 
 function NotFound() {
@@ -34,6 +35,7 @@ export default function ArticleDetailPage() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const defaultPersona = useDefaultPersona();
 
   if (!article) return <NotFound />;
 
@@ -118,6 +120,7 @@ export default function ArticleDetailPage() {
                 },
                 summary: article.summary,
               }}
+              audiencePersona={defaultPersona}
               onClose={() => setStudioOpen(false)}
             />
           </div>

@@ -6,6 +6,7 @@ import type { GeneralConfig } from "@/types/settings";
 const mockConfig: GeneralConfig = {
   articleLengthTarget: "3000-5000",
   contentTone: "professional",
+  defaultAudiencePersona: "general_business",
 };
 
 describe("GeneralTab", () => {
@@ -37,5 +38,21 @@ describe("GeneralTab", () => {
       target: { value: "casual" },
     });
     expect(handler).toHaveBeenCalledWith({ contentTone: "casual" });
+  });
+
+  it("renders the default audience persona selector", () => {
+    render(<GeneralTab config={mockConfig} onUpdate={vi.fn()} />);
+    const select = screen.getByLabelText(/Default audience persona/);
+    expect(select).toBeInTheDocument();
+    expect(select).toHaveValue("general_business");
+  });
+
+  it("calls onUpdate when persona changes", () => {
+    const handler = vi.fn();
+    render(<GeneralTab config={mockConfig} onUpdate={handler} />);
+    fireEvent.change(screen.getByLabelText(/Default audience persona/), {
+      target: { value: "cto" },
+    });
+    expect(handler).toHaveBeenCalledWith({ defaultAudiencePersona: "cto" });
   });
 });

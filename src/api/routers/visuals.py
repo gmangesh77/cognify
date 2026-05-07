@@ -706,6 +706,103 @@ async def list_saved_assets(
 
 
 # ---------------------------------------------------------------------------
+# /visuals/saved/tag  (VISUAL-010 Phase 7)
+# ---------------------------------------------------------------------------
+
+
+class TagRequest(BaseModel):
+    """Tag a rendered asset for the saved-asset gallery."""
+
+    article_id: str = Field(min_length=1)
+    spec_id: str = Field(min_length=1, max_length=64)
+    tag: str = Field(min_length=1, max_length=120)
+    note: str | None = None
+
+
+class TagResponse(BaseModel):
+    id: str
+    article_id: str
+    spec_id: str
+    tag: str
+    note: str | None
+
+
+@visuals_router.post("/saved/tag", response_model=TagResponse)
+@limiter.limit("60/minute")
+async def add_asset_tag(
+    request: Request,
+    body: TagRequest,
+    user: TokenPayload = Depends(require_editor_or_above),
+) -> TagResponse:
+    """Attach a curation tag to a rendered image asset.
+
+    Idempotent — repeating the same `(article_id, spec_id, tag)` returns
+    the existing row.
+    """
+    from uuid import UUID
+
+    repo = getattr(request.app.state, "image_asset_tag_repo", None)
+    if repo is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="image_asset_tag repository is not configured",
+        )
+    try:
+        article_uuid = UUID(body.article_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail=f"invalid article_id: {body.article_id}",
+        ) from exc
+    saved = await repo.add_tag(
+        article_id=article_uuid,
+        spec_id=body.spec_id,
+        tag=body.tag,
+        note=body.note,
+    )
+    return TagResponse(
+        id=str(saved.id),
+        article_id=str(saved.article_id),
+        spec_id=saved.spec_id,
+        tag=saved.tag,
+        note=saved.note,
+    )
+
+
+@visuals_router.delete("/saved/tag", status_code=http_status.HTTP_204_NO_CONTENT)
+@limiter.limit("60/minute")
+async def remove_asset_tag(
+    request: Request,
+    article_id: str,
+    spec_id: str,
+    tag: str,
+    user: TokenPayload = Depends(require_editor_or_above),
+) -> None:
+    """Remove a curation tag. 404 when the tuple isn't tagged."""
+    from uuid import UUID
+
+    repo = getattr(request.app.state, "image_asset_tag_repo", None)
+    if repo is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="image_asset_tag repository is not configured",
+        )
+    try:
+        article_uuid = UUID(article_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=http_status.HTTP_400_BAD_REQUEST,
+            detail=f"invalid article_id: {article_id}",
+        ) from exc
+    removed = await repo.remove_tag(article_id=article_uuid, spec_id=spec_id, tag=tag)
+    if not removed:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="tag not found",
+        )
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 

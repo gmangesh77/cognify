@@ -31,6 +31,7 @@ __all__ = [
     "LlmConfigRow",
     "SeoDefaultsRow",
     "GeneralConfigRow",
+    "ImageAssetTagRow",
     "PublicationRow",
 ]
 
@@ -229,6 +230,49 @@ class GeneralConfigRow(Base, UUIDMixin, TimestampMixin):
 
     article_length_target: Mapped[str] = mapped_column(String(50))
     content_tone: Mapped[str] = mapped_column(String(50))
+    # VISUAL-010 / Phase 7 — default audience persona for the image
+    # planner. Backfilled to "general_business" by the migration.
+    default_audience_persona: Mapped[str] = mapped_column(
+        String(60),
+        default="general_business",
+        nullable=False,
+        server_default="general_business",
+    )
+
+
+class ImageAssetTagRow(Base, UUIDMixin, TimestampMixin):
+    """User-curated tags on rendered image assets.
+
+    Phase 7 / VISUAL-010 — lets editors mark a rendered asset as
+    "save for re-use" with one or more style tokens (e.g. `hero_v2`,
+    `cognify_gallery:engineering`). The Saved Asset Gallery merges
+    these rows with the JSONB-derived feed in
+    `services.visuals.saved_gallery`.
+
+    Each (article_id, spec_id, tag) tuple is unique so the same asset
+    can carry multiple tags but never duplicates.
+    """
+
+    __tablename__ = "image_asset_tags"
+
+    article_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("canonical_articles.id"),
+        nullable=False,
+        index=True,
+    )
+    spec_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    tag: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "article_id",
+            "spec_id",
+            "tag",
+            name="uq_image_asset_tag_unique",
+        ),
+    )
 
 
 class PublicationRow(Base, UUIDMixin, TimestampMixin):

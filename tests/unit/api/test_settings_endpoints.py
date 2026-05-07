@@ -378,6 +378,44 @@ class TestGeneralConfigEndpoints:
         assert resp.status_code == 200
         assert resp.json()["content_tone"] == "casual"
 
+    async def test_get_general_config_includes_persona(
+        self,
+        settings_client: httpx.AsyncClient,
+        settings_app,
+        auth_settings: Settings,
+    ) -> None:
+        # VISUAL-010 / Phase 7 — `default_audience_persona` ships in the
+        # response payload. Default value is `general_business`.
+        settings_app.state.settings_repos.general.get_or_create = AsyncMock(
+            return_value=GeneralConfig()
+        )
+        headers = make_auth_header("admin", auth_settings)
+        resp = await settings_client.get("/api/v1/settings/general", headers=headers)
+        assert resp.status_code == 200
+        assert resp.json()["default_audience_persona"] == "general_business"
+
+    async def test_update_general_config_persists_persona(
+        self,
+        settings_client: httpx.AsyncClient,
+        settings_app,
+        auth_settings: Settings,
+    ) -> None:
+        updated = GeneralConfig(default_audience_persona="cto")
+        settings_app.state.settings_repos.general.get_or_create = AsyncMock(
+            return_value=GeneralConfig()
+        )
+        settings_app.state.settings_repos.general.update = AsyncMock(
+            return_value=updated
+        )
+        headers = make_auth_header("admin", auth_settings)
+        resp = await settings_client.put(
+            "/api/v1/settings/general",
+            json={"default_audience_persona": "cto"},
+            headers=headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["default_audience_persona"] == "cto"
+
 
 class TestApiKeyMasking:
     """Tests for the _mask_key helper."""

@@ -230,6 +230,14 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             seo=PgSeoDefaultsRepository(sf),
             general=PgGeneralConfigRepository(sf),
         )
+        # VISUAL-010 / Phase 7 — image-asset-tag repo for the saved gallery's
+        # curation feature. Imported lazily so the API can boot without the
+        # new table existing yet (the migration lands separately).
+        from src.db.image_asset_tag_repository import (
+            PgImageAssetTagRepository,
+        )
+
+        app.state.image_asset_tag_repo = PgImageAssetTagRepository(sf)
         # Resolve API keys: DB overrides .env
         resolver = ApiKeyResolver(api_key_repo, settings)
         resolved = await resolver.resolve_all()

@@ -76,7 +76,23 @@ export interface SeoDefaults {
 export type ArticleLength = "1000-2000" | "3000-5000" | "5000-8000";
 export type ContentTone = "professional" | "casual" | "technical" | "educational";
 
+/**
+ * Audience persona keys mirror `src/services/visuals/persona_directions.py`.
+ * The full list is fetched at boot via `/visuals/styles`; this union is the
+ * subset surfaced in the Settings UI and the Visual Studio panel.
+ */
+export type AudiencePersona =
+  | "general_business"
+  | "ceo"
+  | "cto"
+  | "marketer"
+  | "hr"
+  | "salesperson"
+  | "finance"
+  | "operations";
+
 export interface GeneralConfig {
   articleLengthTarget: ArticleLength;
   contentTone: ContentTone;
+  defaultAudiencePersona: AudiencePersona;
 }
