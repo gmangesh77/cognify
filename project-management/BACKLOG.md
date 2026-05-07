@@ -192,8 +192,11 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | **Total** | **57** | **56** | **1** | **5** |
 
 **Velocity update (2026-05-07)**: Epic 10 (Visual Generation Overhaul)
-fully shipped on branch `claude/vibrant-chatterjee-1115a8` — VISUAL-004
-through VISUAL-011 (89 SP). The only remaining ticket in the entire
-backlog is PUBLISH-002 (5 SP, WordPress integration).
+fully shipped — VISUAL-004 through VISUAL-011 (89 SP) merged to
+`develop` via PR #54 (`feature/EPIC-10-visual-generation`). Five
+follow-ups (INFRA-006, CONTENT-007, DASH-007, Playwright scaffold,
+.env flake fix) merged via PR #55 (`chore/post-epic-10-housekeeping`).
+The only remaining ticket in the entire backlog is PUBLISH-002
+(5 SP, WordPress integration).
 
 **Velocity**: 343 SP completed across 11 epics. 5 SP remaining (PUBLISH-002).

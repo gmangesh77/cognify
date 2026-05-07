@@ -153,8 +153,9 @@ See @project-management/PROGRESS.md for full ticket status.
 
 **Epics 0-4, 6-9:** All complete (Design, Trend Discovery, Research, Content Gen, Visual Assets, Dashboard, API & Auth, Architecture, Infrastructure).
 **Epic 5 (Publishing):** Ghost, Medium (PR #43), LinkedIn (PR #48), Publication Tracking done. WordPress (PUBLISH-002) in backlog.
-**Epic 10 (Visual Generation Overhaul):** Phases 1-7 done on branch `claude/vibrant-chatterjee-1115a8` (VISUAL-004..VISUAL-010, 76 SP). Phase 8 (VISUAL-011, per-section content editing, 13 SP) is the only remaining ticket. The new pipeline (`enable_image_planner=True`) is now the default. See `docs/deployment/visual-storage-rollout.md` for the production MinIO + cost-dashboard runbook.
+**Epic 10 (Visual Generation Overhaul):** All 8 phases shipped (VISUAL-004..VISUAL-011, 89 SP) — merged to `develop` via PR #54. The new pipeline (`enable_image_planner=True`) is the default. Per-section prose editing (toolbar / inline editor / AI rewrite popover / history drawer) is live on the article-detail page. See `docs/deployment/visual-storage-rollout.md` for the production MinIO + cost-dashboard runbook.
+**Post-Epic 10 housekeeping (PR #55):** `.env` flake fix + INFRA-006 (SSRF guard reuse for trend sources) + CONTENT-007 (structure-aware humanization) + DASH-007 (humanization diff panel) + Playwright E2E scaffolding (smoke test + opt-in CI lane).
 **INFRA-005 (Frontend Status Alignment):** Done (PR #46).
-**CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml), Makefile, docker-compose with full stack.
-**Test suite:** ~1300 backend tests + ~320 frontend tests.
-**Next action:** PUBLISH-002 (WordPress Integration) or VISUAL-011 (per-section content editing).
+**CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml, e2e.yml), Makefile, docker-compose with full stack.
+**Test suite:** 1400 backend unit tests (0 failures) + ~355 frontend Vitest tests + 1 Playwright smoke test.
+**Next action:** PUBLISH-002 (WordPress Integration, 5 SP) — last open ticket on the entire backlog.
