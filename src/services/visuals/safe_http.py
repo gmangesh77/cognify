@@ -19,13 +19,32 @@ All log entries use structlog and never include response bodies.
 from __future__ import annotations
 
 import asyncio
-import ipaddress
-import socket
+
+# `socket` is imported here so existing tests that monkeypatch
+# `src.services.visuals.safe_http.socket.getaddrinfo` keep working —
+# Python caches modules, so the patched attribute is observed by
+# `src.utils.safe_url` too (which is what actually calls it).
+import socket  # noqa: F401  (re-exported for monkeypatch compatibility)
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
 import httpx
 import structlog
+
+from src.utils.safe_url import (
+    UrlHostBlocked as _UrlHostBlocked,
+)
+from src.utils.safe_url import (
+    UrlResolutionFailed as _UrlResolutionFailed,
+)
+from src.utils.safe_url import (
+    UrlSchemeRejected as _UrlSchemeRejected,
+)
+from src.utils.safe_url import (
+    assert_address_class_safe,
+    assert_outbound_host_safe,
+    assert_url_scheme_safe,
+)
 
 logger = structlog.get_logger()
 
@@ -44,11 +63,11 @@ class SafeHttpError(Exception):
     """Base class for all SSRF / fetch failures."""
 
 
-class SchemeRejected(SafeHttpError):
+class SchemeRejected(SafeHttpError, _UrlSchemeRejected):
     """URL scheme is not in {http, https} or contains userinfo."""
 
 
-class HostBlocked(SafeHttpError):
+class HostBlocked(SafeHttpError, _UrlHostBlocked):
     """Resolved address falls in a blocked CIDR range."""
 
 
@@ -60,29 +79,9 @@ class SizeExceeded(SafeHttpError):
     """Body length exceeds `max_size_bytes`."""
 
 
-class FetchFailed(SafeHttpError):
+class FetchFailed(SafeHttpError, _UrlResolutionFailed):
     """Network error, timeout, non-2xx, or redirect-chain limit."""
 
-
-_ALLOWED_SCHEMES = frozenset({"http", "https"})
-
-# IPv4 ranges blocked beyond what `ipaddress.is_private` catches by default.
-_BLOCKED_IPV4_NETS = (
-    ipaddress.ip_network("0.0.0.0/8"),
-    ipaddress.ip_network("100.64.0.0/10"),  # CGNAT
-    ipaddress.ip_network("192.0.0.0/24"),
-    ipaddress.ip_network("192.0.2.0/24"),
-    ipaddress.ip_network("192.88.99.0/24"),
-    ipaddress.ip_network("198.18.0.0/15"),
-    ipaddress.ip_network("198.51.100.0/24"),
-    ipaddress.ip_network("203.0.113.0/24"),
-)
-_BLOCKED_IPV6_NETS = (
-    ipaddress.ip_network("64:ff9b::/96"),  # NAT64
-    ipaddress.ip_network("100::/64"),
-    ipaddress.ip_network("2001::/32"),  # Teredo
-    ipaddress.ip_network("2001:db8::/32"),  # docs
-)
 
 _PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 _JPEG_MAGIC = b"\xff\xd8\xff"
@@ -91,56 +90,33 @@ _WEBP_FORMAT = b"WEBP"
 
 
 def _check_address_class(addr_str: str) -> None:
-    """Raise HostBlocked if `addr_str` falls in any blocked CIDR class."""
+    """Raise HostBlocked if `addr_str` falls in any blocked CIDR class.
+
+    Thin shim over `assert_address_class_safe` so existing imports keep
+    raising the same image-fetch-flavoured `HostBlocked` exception.
+    """
     try:
-        addr = ipaddress.ip_address(addr_str)
-    except ValueError as exc:
-        raise HostBlocked(f"could not parse address {addr_str}: {exc}") from exc
-    if (
-        addr.is_private
-        or addr.is_loopback
-        or addr.is_link_local
-        or addr.is_multicast
-        or addr.is_reserved
-        or addr.is_unspecified
-    ):
-        raise HostBlocked(f"address {addr_str} is in a private/reserved CIDR class")
-    extra_blocks = _BLOCKED_IPV4_NETS if addr.version == 4 else _BLOCKED_IPV6_NETS
-    for net in extra_blocks:
-        if addr in net:
-            raise HostBlocked(f"address {addr_str} is in blocked range {net}")
-    if addr.version == 6 and addr.ipv4_mapped is not None:
-        _check_address_class(str(addr.ipv4_mapped))
+        assert_address_class_safe(addr_str)
+    except _UrlHostBlocked as exc:
+        raise HostBlocked(str(exc)) from exc
 
 
 def _resolve_and_validate_host(host: str) -> list[str]:
-    """Resolve `host` via getaddrinfo and reject if any result is in a blocked class."""
+    """Resolve `host` and reject if any result is in a blocked class."""
     try:
-        infos = socket.getaddrinfo(host, None)
-    except OSError as exc:
-        raise FetchFailed(f"could not resolve host {host}: {exc}") from exc
-    addresses = sorted({info[4][0] for info in infos if isinstance(info[4][0], str)})
-    if not addresses:
-        raise FetchFailed(f"host {host} resolved to no addresses")
-    for addr_str in addresses:
-        _check_address_class(addr_str)
-    return addresses
+        return assert_outbound_host_safe(host)
+    except _UrlResolutionFailed as exc:
+        raise FetchFailed(str(exc)) from exc
+    except _UrlHostBlocked as exc:
+        raise HostBlocked(str(exc)) from exc
 
 
 def _validate_url(url: str) -> str:
     """Validate scheme and reject userinfo. Returns the URL with fragment stripped."""
-    parsed = urlsplit(url)
-    if parsed.scheme.lower() not in _ALLOWED_SCHEMES:
-        raise SchemeRejected(
-            f"scheme {parsed.scheme!r} not in {sorted(_ALLOWED_SCHEMES)}"
-        )
-    if "@" in (parsed.netloc or ""):
-        raise SchemeRejected("userinfo in URL authority is not permitted")
-    if not parsed.hostname:
-        raise SchemeRejected("URL has no hostname")
-    # Strip fragment.
-    cleaned: str = parsed._replace(fragment="").geturl()
-    return cleaned
+    try:
+        return assert_url_scheme_safe(url)
+    except _UrlSchemeRejected as exc:
+        raise SchemeRejected(str(exc)) from exc
 
 
 def _sniff_mime(data: bytes) -> str | None:

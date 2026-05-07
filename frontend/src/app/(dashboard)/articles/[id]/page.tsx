@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileText, History } from "lucide-react";
+import { ArrowLeft, FileText, History, Wand2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { AIRewritePopover } from "@/components/article/AIRewritePopover";
+import { HumanizationDiffPanel } from "@/components/article/HumanizationDiffPanel";
 import { InlineProseEditor } from "@/components/article/InlineProseEditor";
 import { SectionHistoryDrawer } from "@/components/article/SectionHistoryDrawer";
 import { ArticleContent } from "@/components/articles/article-content";
@@ -51,6 +52,7 @@ export default function ArticleDetailPage() {
   const [activeSection, setActiveSection] = useState<ActiveSection | null>(null);
   const [historySectionId, setHistorySectionId] = useState<string | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [humanizeOpen, setHumanizeOpen] = useState(false);
 
   if (!article) return <NotFound />;
 
@@ -175,7 +177,23 @@ export default function ArticleDetailPage() {
                 <div className="flex items-center justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => setPopoverOpen((v) => !v)}
+                    onClick={() => {
+                      setHumanizeOpen((v) => !v);
+                      if (!humanizeOpen) setPopoverOpen(false);
+                    }}
+                    aria-pressed={humanizeOpen}
+                    data-testid="open-humanize-panel"
+                    className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
+                  >
+                    <Wand2 className="h-3.5 w-3.5" />
+                    {humanizeOpen ? "Hide humanizer" : "Humanize"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPopoverOpen((v) => !v);
+                      if (!popoverOpen) setHumanizeOpen(false);
+                    }}
                     aria-pressed={popoverOpen}
                     className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
                   >
@@ -189,6 +207,23 @@ export default function ArticleDetailPage() {
                     <History className="h-3.5 w-3.5" /> History
                   </button>
                 </div>
+                {humanizeOpen ? (
+                  <HumanizationDiffPanel
+                    sectionId={activeSection.sectionId}
+                    currentMarkdown={activeSection.markdown}
+                    onAccept={(newMd) => {
+                      setActiveSection((prev) =>
+                        prev ? { ...prev, markdown: newMd } : prev,
+                      );
+                      setHumanizeOpen(false);
+                      setToast(
+                        "Humanizer suggestion staged — review then save.",
+                      );
+                      setTimeout(() => setToast(null), 4000);
+                    }}
+                    onCancel={() => setHumanizeOpen(false)}
+                  />
+                ) : null}
                 {popoverOpen ? (
                   <AIRewritePopover
                     sectionId={activeSection.sectionId}
