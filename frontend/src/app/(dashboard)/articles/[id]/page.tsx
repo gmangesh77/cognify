@@ -8,6 +8,9 @@ import { Header } from "@/components/layout/header";
 import { ArticleContent } from "@/components/articles/article-content";
 import { ArticleSidebar } from "@/components/articles/article-sidebar";
 import { PublishModal } from "@/components/articles/publish-modal";
+import { ImageImportModal } from "@/components/visuals/ImageImportModal";
+import { SavedAssetGallery } from "@/components/visuals/SavedAssetGallery";
+import { VisualStudio } from "@/components/visuals/VisualStudio";
 import { useArticle } from "@/hooks/use-article";
 import { publishArticle } from "@/lib/api/articles";
 
@@ -27,6 +30,9 @@ export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { article } = useArticle(id);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   if (!article) return <NotFound />;
@@ -71,18 +77,64 @@ export default function ArticleDetailPage() {
 
       <div className="flex gap-8">
         <div className="min-w-0 flex-[2]">
+          <div className="mb-4 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setGalleryOpen(true)}
+              className="rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
+            >
+              Saved visuals
+            </button>
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
+            >
+              Import image
+            </button>
+            <button
+              type="button"
+              onClick={() => setStudioOpen((v) => !v)}
+              aria-pressed={studioOpen}
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
+            >
+              {studioOpen ? "Hide Visual Studio" : "Open Visual Studio"}
+            </button>
+          </div>
           <ArticleContent
             bodyMarkdown={article.bodyMarkdown}
             citations={article.citations}
             visuals={article.visuals}
           />
         </div>
-        <div className="w-80 shrink-0">
-          <ArticleSidebar article={article} onPublish={() => setPublishOpen(true)} />
-        </div>
+        {studioOpen ? (
+          <div className="w-[560px] shrink-0">
+            <VisualStudio
+              article={{
+                topic: {
+                  title: article.title,
+                  description: article.subtitle ?? article.summary,
+                  domain: article.domain,
+                },
+                summary: article.summary,
+              }}
+              onClose={() => setStudioOpen(false)}
+            />
+          </div>
+        ) : (
+          <div className="w-80 shrink-0">
+            <ArticleSidebar article={article} onPublish={() => setPublishOpen(true)} />
+          </div>
+        )}
       </div>
 
       <PublishModal open={publishOpen} onClose={() => setPublishOpen(false)} onPublish={handlePublish} />
+      <SavedAssetGallery open={galleryOpen} onClose={() => setGalleryOpen(false)} />
+      <ImageImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => setImportOpen(false)}
+      />
 
       {toast && (
         <div role="status" className="fixed bottom-6 right-6 z-50 rounded-lg bg-neutral-900 px-4 py-3 text-sm text-white shadow-lg">

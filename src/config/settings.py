@@ -103,7 +103,7 @@ class Settings(BaseSettings):
     # Diagram generation (Mermaid CLI)
     diagram_output_dir: str = "generated_assets/diagrams"
     # Visuals — generation (Epic 10 / VISUAL-004)
-    enable_image_planner: bool = False  # flips to True at end of Phase 5
+    enable_image_planner: bool = True  # flipped at end of Phase 5 / VISUAL-008
     default_image_provider: str = "gemini_flash"  # gemini_flash|gemini_3_pro|imagen_4|dalle_3
     image_model_gemini_flash: str = "gemini-2.5-flash-image"
     image_model_gemini_3_pro: str = "gemini-3-pro-image-preview"

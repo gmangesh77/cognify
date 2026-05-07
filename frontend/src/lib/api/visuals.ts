@@ -6,6 +6,8 @@ import type {
   PlanResponse,
   RenderRequest,
   RenderResponse,
+  SavedAssetsQuery,
+  SavedAssetsResponse,
   SectionHtmlRefineRequest,
   SectionHtmlRefineResponse,
   UploadResponse,
@@ -72,5 +74,19 @@ export async function refineSectionHtml(
     "/visuals/section-html-refine",
     body,
   );
+  return data;
+}
+
+export async function fetchSavedAssets(
+  query: SavedAssetsQuery = {},
+): Promise<SavedAssetsResponse> {
+  const params: Record<string, string | number> = {};
+  if (query.role_style) params.role_style = query.role_style;
+  if (query.provider) params.provider = query.provider;
+  if (query.article_id) params.article_id = query.article_id;
+  if (query.limit) params.limit = query.limit;
+  const { data } = await apiClient.get<SavedAssetsResponse>("/visuals/saved", {
+    params,
+  });
   return data;
 }

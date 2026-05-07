@@ -66,6 +66,7 @@ from src.services.visuals.safe_http import (
     SchemeRejected,
     SizeExceeded,
 )
+from src.services.visuals.saved_gallery import aggregate_saved_assets
 from src.services.visuals.section_html_refiner import (
     SectionHtmlRefineResult,
     refine_section_html,
@@ -594,6 +595,113 @@ async def get_article_cost(
             )
             for e in breakdown.breakdown
         ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# /visuals/saved  (VISUAL-008 finish)
+# ---------------------------------------------------------------------------
+
+
+class SavedAssetItem(BaseModel):
+    """One row in the saved-asset gallery."""
+
+    spec_id: str
+    article_id: str
+    article_title: str
+    image_url: str
+    role_style: str
+    visual_style: str | None
+    aspect_ratio: str
+    provider: str
+    cost_usd: float | None
+    generated_at: str
+    alt_text: str | None
+    caption: str | None
+
+
+class SavedAssetFacetsResponse(BaseModel):
+    by_article: dict[str, int]
+    by_provider: dict[str, int]
+    by_role_style: dict[str, int]
+
+
+class SavedAssetsResponse(BaseModel):
+    items: list[SavedAssetItem]
+    facets: SavedAssetFacetsResponse
+    total_count: int
+    total_spend_usd: float
+
+
+@visuals_router.get("/saved", response_model=SavedAssetsResponse)
+@limiter.limit("30/minute")
+async def list_saved_assets(
+    request: Request,
+    role_style: str | None = None,
+    provider: str | None = None,
+    article_id: str | None = None,
+    limit: int = 100,
+    user: TokenPayload = Depends(require_editor_or_above),
+) -> SavedAssetsResponse:
+    """Return the user's saved (previously rendered) image assets.
+
+    Aggregates from `canonical_articles.visuals[]` since no separate
+    `image_assets` table exists yet (Phase 7 / VISUAL-010 introduces
+    one). Supports filtering by role / provider / source article.
+    """
+    from uuid import UUID
+
+    repo = getattr(request.app.state, "article_repo", None)
+    if repo is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="article repository is not configured",
+        )
+
+    parsed_article_id: UUID | None = None
+    if article_id:
+        try:
+            parsed_article_id = UUID(article_id)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail=f"invalid article_id: {article_id}",
+            ) from exc
+
+    bounded_limit = max(1, min(limit, 500))
+    articles, _total = await repo.list(page=1, size=bounded_limit)
+    feed = aggregate_saved_assets(
+        articles,
+        role_style=role_style,
+        provider=provider,
+        article_id=parsed_article_id,
+        limit=bounded_limit,
+    )
+    return SavedAssetsResponse(
+        items=[
+            SavedAssetItem(
+                spec_id=e.spec_id,
+                article_id=e.article_id,
+                article_title=e.article_title,
+                image_url=e.image_url,
+                role_style=e.role_style,
+                visual_style=e.visual_style,
+                aspect_ratio=e.aspect_ratio,
+                provider=e.provider,
+                cost_usd=e.cost_usd,
+                generated_at=e.generated_at.isoformat(),
+                alt_text=e.alt_text,
+                caption=e.caption,
+            )
+            for e in feed.items
+        ],
+        facets=SavedAssetFacetsResponse(
+            by_article=feed.facets.by_article,
+            by_provider=feed.facets.by_provider,
+            by_role_style=feed.facets.by_role_style,
+        ),
+        total_count=feed.total_count,
+        total_spend_usd=feed.total_spend_usd,
     )
 
 

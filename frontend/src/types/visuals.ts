@@ -192,3 +192,38 @@ export const QUALITY_PRICE_USD: Record<RenderQuality, number> = {
   mid: 0.015,
   premium: 0.04,
 };
+
+export interface SavedAssetItem {
+  spec_id: string;
+  article_id: string;
+  article_title: string;
+  image_url: string;
+  role_style: string;
+  visual_style: string | null;
+  aspect_ratio: string;
+  provider: string;
+  cost_usd: number | null;
+  generated_at: string;
+  alt_text: string | null;
+  caption: string | null;
+}
+
+export interface SavedAssetFacets {
+  by_article: Record<string, number>;
+  by_provider: Record<string, number>;
+  by_role_style: Record<string, number>;
+}
+
+export interface SavedAssetsResponse {
+  items: SavedAssetItem[];
+  facets: SavedAssetFacets;
+  total_count: number;
+  total_spend_usd: number;
+}
+
+export interface SavedAssetsQuery {
+  role_style?: string | null;
+  provider?: string | null;
+  article_id?: string | null;
+  limit?: number;
+}
