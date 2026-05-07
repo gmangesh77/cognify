@@ -98,3 +98,53 @@ class TestRewriteSection:
         )
         result = await rewrite_section(section, _make_score(), llm)
         assert result.body_markdown == "Let me explore this innovative concept [1]."
+
+
+class TestStructureAwareRewrite:
+    """CONTENT-007: structure-aware humanization preserves non-prose blocks."""
+
+    @pytest.mark.asyncio
+    async def test_preserves_heading_image_and_code_block(self) -> None:
+        """Headings, images, and code blocks must NOT be sent to the LLM
+        and must appear unchanged in the output."""
+        section = _make_section(
+            "## Inner Heading\n\n"
+            "Some prose to rewrite.\n\n"
+            "![chart](https://example.com/chart.png)\n\n"
+            "```python\nprint('keep me')\n```\n\n"
+            "Another paragraph to refine."
+        )
+        # Two prose blocks → LLM emits two chunks separated by sentinel.
+        llm = FakeListChatModel(
+            responses=[
+                "Rewritten prose body.\n\n<<<BLOCK>>>\n\nRewritten closing paragraph."
+            ]
+        )
+        result = await rewrite_section(section, _make_score(), llm)
+        body = result.body_markdown
+        assert "## Inner Heading" in body
+        assert "![chart](https://example.com/chart.png)" in body
+        assert "print('keep me')" in body
+        assert "Rewritten prose body." in body
+        assert "Rewritten closing paragraph." in body
+
+    @pytest.mark.asyncio
+    async def test_falls_back_when_llm_loses_sentinel(self) -> None:
+        """If the LLM emits the wrong number of blocks, restore originals."""
+        section = _make_section("First prose paragraph.\n\nSecond prose paragraph.")
+        # LLM dropped the sentinel — only one chunk returned.
+        llm = FakeListChatModel(responses=["A single merged response."])
+        result = await rewrite_section(section, _make_score(), llm)
+        # Falls back to the original body to keep structure intact.
+        assert "First prose paragraph." in result.body_markdown
+        assert "Second prose paragraph." in result.body_markdown
+
+    @pytest.mark.asyncio
+    async def test_no_prose_blocks_returns_section_unchanged(self) -> None:
+        """A section that's all structure (heading + image) is left alone."""
+        section = _make_section("## Title\n\n![banner](https://example.com/b.png)")
+        # No LLM call should happen, but FakeListChatModel needs at least
+        # one entry in case our fallback path changes.
+        llm = FakeListChatModel(responses=["unused"])
+        result = await rewrite_section(section, _make_score(), llm)
+        assert result.body_markdown == section.body_markdown

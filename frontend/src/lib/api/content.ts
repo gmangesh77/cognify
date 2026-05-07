@@ -1,5 +1,7 @@
 import { apiClient } from "./client";
 import type {
+  HumanizePreviewRequest,
+  HumanizePreviewResponse,
   ParagraphToneRequest,
   SectionHistoryResponse,
   SectionRestoreRequest,
@@ -53,6 +55,16 @@ export async function fetchSectionHistory(
   const { data } = await apiClient.get<SectionHistoryResponse>(
     `/content/section/${encodeURIComponent(sectionId)}/history`,
     { params: { limit } },
+  );
+  return data;
+}
+
+export async function previewHumanization(
+  body: HumanizePreviewRequest,
+): Promise<HumanizePreviewResponse> {
+  const { data } = await apiClient.post<HumanizePreviewResponse>(
+    "/content/humanize-preview",
+    body,
   );
   return data;
 }

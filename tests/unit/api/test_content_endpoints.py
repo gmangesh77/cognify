@@ -501,6 +501,78 @@ class TestParagraphToneEndpoint:
 # ---------------------------------------------------------------------------
 
 
+class TestHumanizePreviewEndpoint:
+    """DASH-007 humanization preview surface."""
+
+    async def test_returns_diff_and_scores(
+        self,
+        content_client: httpx.AsyncClient,
+        content_settings: Settings,
+        section_id: str,
+    ) -> None:
+        # Drive scoring deterministically so this contract test isn't
+        # brittle to slop-pattern catalogue changes.
+        from src.agents.content import slop_scorer
+        from src.models.content_pipeline import SlopScore
+
+        def _fake_score_text(text: str) -> SlopScore:
+            score = 80 if text.startswith("Tighter") else 30
+            return SlopScore(
+                score=score,
+                rating="LIKELY_AI" if score < 60 else "MOSTLY_HUMAN",
+                violations=[],
+                phrase_deductions=0,
+                pattern_deductions=0,
+            )
+
+        fake_llm = FakeListChatModel(
+            responses=["Tighter rewrite of the section without the slop."]
+        )
+        with (
+            patch("src.api.routers.content._get_content_llm", return_value=fake_llm),
+            patch.object(slop_scorer, "score_text", _fake_score_text),
+        ):
+            resp = await content_client.post(
+                "/api/v1/content/humanize-preview",
+                json={
+                    "section_id": section_id,
+                    "current_markdown": (
+                        "Let me delve into this overly verbose paragraph."
+                    ),
+                },
+                headers=_editor_headers(content_settings),
+            )
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert data["section_id"] == section_id
+        assert data["llm_called"] is True
+        assert data["diff"], "expected non-empty diff"
+        assert data["score_before"]["rating"]
+        assert data["score_after"]["rating"]
+
+    async def test_requires_auth(
+        self, content_client: httpx.AsyncClient, section_id: str
+    ) -> None:
+        resp = await content_client.post(
+            "/api/v1/content/humanize-preview",
+            json={"section_id": section_id, "current_markdown": "hi"},
+        )
+        assert resp.status_code in {401, 403}
+
+    async def test_viewer_role_rejected(
+        self,
+        content_client: httpx.AsyncClient,
+        content_settings: Settings,
+        section_id: str,
+    ) -> None:
+        resp = await content_client.post(
+            "/api/v1/content/humanize-preview",
+            json={"section_id": section_id, "current_markdown": "hi"},
+            headers=make_auth_header("viewer", content_settings),
+        )
+        assert resp.status_code == 403
+
+
 class TestSectionHistoryAndRestore:
     async def test_history_returns_appended_versions_newest_first(
         self,

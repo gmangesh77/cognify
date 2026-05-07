@@ -3,8 +3,12 @@ import xml.etree.ElementTree as ET
 from typing import TypedDict
 
 import httpx
+import structlog
 
 from src.services.trends.protocol import TrendSourceError
+from src.utils.safe_url import OutboundUrlError, assert_url_scheme_safe
+
+logger = structlog.get_logger()
 
 _ATOM_NS = "http://www.w3.org/2005/Atom"
 _ARXIV_NS = "http://arxiv.org/schemas/atom"
@@ -93,7 +97,17 @@ class ArxivClient:
         base_url: str,
         timeout: float,
     ) -> None:
-        self._base_url = base_url
+        # INFRA-006: validate the configured base URL up-front so a
+        # misconfigured `COGNIFY_ARXIV_BASE_URL` (private IP, ftp://,
+        # embedded credentials) fails loudly rather than silently
+        # dialing the wrong place.
+        try:
+            self._base_url = assert_url_scheme_safe(base_url)
+        except OutboundUrlError as exc:
+            logger.warning(
+                "trend_source_base_url_unsafe", source="arxiv", error=str(exc)
+            )
+            raise ArxivAPIError(f"unsafe base_url: {exc}") from exc
         self._timeout = timeout
 
     async def fetch_papers(

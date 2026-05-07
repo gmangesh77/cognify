@@ -1,8 +1,12 @@
 from typing import TypedDict
 
 import httpx
+import structlog
 
 from src.services.trends.protocol import TrendSourceError
+from src.utils.safe_url import OutboundUrlError, assert_url_scheme_safe
+
+logger = structlog.get_logger()
 
 
 class NewsAPISource(TypedDict):
@@ -36,7 +40,7 @@ class NewsAPIClient:
         timeout: float,
     ) -> None:
         self._api_key = api_key
-        self._base_url = base_url
+        self._base_url = _safe_base_url(base_url, "newsapi")
         self._timeout = timeout
 
     async def fetch_top_headlines(
@@ -77,3 +81,19 @@ class NewsAPIClient:
             raise NewsAPIError(f"NewsAPI error: {code}")
         articles: list[NewsAPIArticle] = data.get("articles", [])
         return [a for a in articles if a.get("title") != "[Removed]"]
+
+
+def _safe_base_url(url: str, source: str) -> str:
+    """Validate `url` scheme + structure (INFRA-006 SSRF hardening).
+
+    Configured outbound URLs go through `assert_url_scheme_safe` so a
+    misconfigured `COGNIFY_*_BASE_URL` (e.g. an `ftp://` or a URL with
+    embedded credentials) fails loudly at construction time rather
+    than silently dialing the wrong place. DNS resolution is left to
+    request time so the constructor stays offline-friendly.
+    """
+    try:
+        return assert_url_scheme_safe(url)
+    except OutboundUrlError as exc:
+        logger.warning("trend_source_base_url_unsafe", source=source, error=str(exc))
+        raise TrendSourceError(source, f"unsafe base_url for {source}: {exc}") from exc
