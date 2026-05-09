@@ -50,8 +50,7 @@ async def test_local_disk_returns_hosted_url_when_base_configured(
         content_type="image/png",
     )
     assert result.url == (
-        "http://localhost:8000/generated_assets/visuals/"
-        "visuals/2026/05/spec1-abc.png"
+        "http://localhost:8000/generated_assets/visuals/visuals/2026/05/spec1-abc.png"
     )
 
 
@@ -64,9 +63,7 @@ async def test_local_disk_url_strips_trailing_base_slash(
         api_base_url="http://localhost:8000/",
         public_path_prefix="/generated_assets/visuals/",
     )
-    result = await storage.put(
-        key="hero.png", content=b"x", content_type="image/png"
-    )
+    result = await storage.put(key="hero.png", content=b"x", content_type="image/png")
     assert result.url == "http://localhost:8000/generated_assets/visuals/hero.png"
 
 
