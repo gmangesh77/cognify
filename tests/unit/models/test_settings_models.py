@@ -58,7 +58,10 @@ class TestLlmConfig:
         assert c.primary_model == "claude-opus-4-5"
 
     def test_image_provider_and_model_override(self) -> None:
-        c = LlmConfig(image_provider="gemini_flash", image_model="gemini-2.5-flash-image")
+        c = LlmConfig(
+            image_provider="gemini_flash",
+            image_model="gemini-2.5-flash-image",
+        )
         assert c.image_provider == "gemini_flash"
         assert c.image_model == "gemini-2.5-flash-image"
 
