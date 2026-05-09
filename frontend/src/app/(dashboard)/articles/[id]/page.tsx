@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileText, History, Wand2 } from "lucide-react";
+import { ArrowLeft, FileText, History, LayoutPanelTop, Wand2 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { AIRewritePopover } from "@/components/article/AIRewritePopover";
 import { HumanizationDiffPanel } from "@/components/article/HumanizationDiffPanel";
@@ -14,6 +14,7 @@ import { ArticleSidebar } from "@/components/articles/article-sidebar";
 import { PublishModal } from "@/components/articles/publish-modal";
 import { ImageImportModal } from "@/components/visuals/ImageImportModal";
 import { SavedAssetGallery } from "@/components/visuals/SavedAssetGallery";
+import { SectionHtmlRefinePanel } from "@/components/visuals/SectionHtmlRefinePanel";
 import { VisualStudio } from "@/components/visuals/VisualStudio";
 import { useArticle } from "@/hooks/use-article";
 import { useDefaultPersona } from "@/hooks/use-default-persona";
@@ -54,6 +55,7 @@ export default function ArticleDetailPage() {
   const [historySectionId, setHistorySectionId] = useState<string | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [humanizeOpen, setHumanizeOpen] = useState(false);
+  const [refineLayoutOpen, setRefineLayoutOpen] = useState(false);
   const [focusVisualSection, setFocusVisualSection] = useState<number | null>(null);
 
   const studioSections = useMemo(() => {
@@ -195,13 +197,18 @@ export default function ArticleDetailPage() {
                 setStudioOpen(true);
                 setFocusVisualSection(sectionIndex);
               },
-              onRefineLayout: (sectionIndex) => {
-                // Refine-layout reuses the existing Visual Studio HTML
-                // refine panel — open Studio so the editor lands in the
-                // right place.
-                setStudioOpen(true);
-                setActiveSection(null);
-                void sectionIndex;
+              onRefineLayout: (sectionIndex, sectionMarkdown) => {
+                // Open the section's editor + auto-open the refine panel
+                // so "Refine layout" lands the user directly in the
+                // SectionHtmlRefinePanel scoped to that section.
+                setActiveSection({
+                  index: sectionIndex,
+                  sectionId: makeSectionId(id, sectionIndex),
+                  markdown: sectionMarkdown,
+                });
+                setHumanizeOpen(false);
+                setPopoverOpen(false);
+                setRefineLayoutOpen(true);
               },
             }}
           />
@@ -236,6 +243,21 @@ export default function ArticleDetailPage() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => {
+                    setRefineLayoutOpen((v) => !v);
+                    if (!refineLayoutOpen) {
+                      setHumanizeOpen(false);
+                      setPopoverOpen(false);
+                    }
+                  }}
+                  aria-pressed={refineLayoutOpen}
+                  className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
+                >
+                  <LayoutPanelTop className="h-3.5 w-3.5" />
+                  {refineLayoutOpen ? "Hide refine" : "Refine layout"}
+                </button>
+                <button
+                  type="button"
                   onClick={() => setHistorySectionId(activeSection.sectionId)}
                   className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
                 >
@@ -250,12 +272,16 @@ export default function ArticleDetailPage() {
                 onCancel={() => {
                   setActiveSection(null);
                   setPopoverOpen(false);
+                  setHumanizeOpen(false);
+                  setRefineLayoutOpen(false);
                 }}
                 onPersisted={(_md, vid) => {
                   setToast(`Section saved (version ${vid.slice(0, 8)})`);
                   setTimeout(() => setToast(null), 4000);
                   setActiveSection(null);
                   setPopoverOpen(false);
+                  setHumanizeOpen(false);
+                  setRefineLayoutOpen(false);
                 }}
                 onParagraphFocus={(paragraphIndex, paragraphMarkdown) =>
                   setActiveSection((prev) =>
@@ -309,6 +335,21 @@ export default function ArticleDetailPage() {
                     setTimeout(() => setToast(null), 4000);
                   }}
                   onCancel={() => setPopoverOpen(false)}
+                />
+              ) : null}
+              {refineLayoutOpen ? (
+                <SectionHtmlRefinePanel
+                  sectionId={activeSection.sectionId}
+                  initialHtml={activeSection.markdown}
+                  onApply={(newContent) => {
+                    setActiveSection((prev) =>
+                      prev ? { ...prev, markdown: newContent } : prev,
+                    );
+                    setRefineLayoutOpen(false);
+                    setToast("Refine result staged — review then save.");
+                    setTimeout(() => setToast(null), 4000);
+                  }}
+                  onCancel={() => setRefineLayoutOpen(false)}
                 />
               ) : null}
             </div>

@@ -33,6 +33,44 @@ async def test_local_disk_put_writes_file(tmp_path: pytest.TempPathFactory) -> N
 
 
 @pytest.mark.asyncio
+async def test_local_disk_returns_hosted_url_when_base_configured(
+    tmp_path: pytest.TempPathFactory,
+) -> None:
+    """When given an api_base_url, the URL should point at the api's
+    /generated_assets/ static mount so the dashboard + Insert into
+    article flow can fetch the image without needing MinIO."""
+    storage = LocalDiskObjectStorage(
+        str(tmp_path / "generated_assets" / "visuals"),
+        api_base_url="http://localhost:8000",
+        public_path_prefix="generated_assets/visuals",
+    )
+    result = await storage.put(
+        key="visuals/2026/05/spec1-abc.png",
+        content=b"x",
+        content_type="image/png",
+    )
+    assert result.url == (
+        "http://localhost:8000/generated_assets/visuals/"
+        "visuals/2026/05/spec1-abc.png"
+    )
+
+
+@pytest.mark.asyncio
+async def test_local_disk_url_strips_trailing_base_slash(
+    tmp_path: pytest.TempPathFactory,
+) -> None:
+    storage = LocalDiskObjectStorage(
+        str(tmp_path),
+        api_base_url="http://localhost:8000/",
+        public_path_prefix="/generated_assets/visuals/",
+    )
+    result = await storage.put(
+        key="hero.png", content=b"x", content_type="image/png"
+    )
+    assert result.url == "http://localhost:8000/generated_assets/visuals/hero.png"
+
+
+@pytest.mark.asyncio
 async def test_local_disk_creates_subdirectories(
     tmp_path: pytest.TempPathFactory,
 ) -> None:
