@@ -25,8 +25,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends libpq5 curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN groupadd -r cognify && useradd -r -g cognify -u 1000 cognify
+# Create non-root user with a writable HOME (HF cache, matplotlib config, etc.)
+RUN groupadd -r cognify && useradd -r -g cognify -u 1000 -m -d /home/cognify cognify
 
 # Copy virtualenv and source from builder
 COPY --from=builder /app/.venv /app/.venv
