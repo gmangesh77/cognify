@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { SettingsNav } from "@/components/settings/settings-nav";
@@ -28,7 +28,7 @@ function getOAuthToast(params: URLSearchParams): string | null {
     : OAUTH_MESSAGES[message ?? ""] ?? "OAuth error — please try again";
 }
 
-export default function SettingsPage() {
+function SettingsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -115,5 +115,13 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsContent />
+    </Suspense>
   );
 }
