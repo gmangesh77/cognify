@@ -177,9 +177,7 @@ def _to_citation_response(c: Citation) -> CitationResponse:
     )
 
 
-def _to_image_response(
-    v: ImageAsset, api_base_url: str = ""
-) -> ImageAssetResponse:
+def _to_image_response(v: ImageAsset, api_base_url: str = "") -> ImageAssetResponse:
     """Map an ImageAsset model to its response schema.
 
     Preserves ``metadata`` so diagram clients can read ``mermaid_syntax``,

@@ -66,7 +66,9 @@ class TestToImageResponse:
             alt_text="Chart",
         )
         response = _to_image_response(asset, api_base_url="http://localhost:8000")
-        assert response.url == "http://localhost:8000/generated_assets/charts/abc/img.png"
+        assert (
+            response.url == "http://localhost:8000/generated_assets/charts/abc/img.png"
+        )
 
     def test_already_absolute_url_passes_through(self) -> None:
         asset = ImageAsset(
