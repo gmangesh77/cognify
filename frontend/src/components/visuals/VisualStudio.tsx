@@ -477,13 +477,13 @@ function SpecListSection({
       </h3>
       {specs.map((spec) => {
         const lc = lifecycles[spec.id] ?? { state: "idle", render: null };
+        const specSectionIndex = spec.placement.section_index;
         const isFocused =
-          focusSectionIndex != null &&
-          spec.section_index === focusSectionIndex;
+          focusSectionIndex != null && specSectionIndex === focusSectionIndex;
         return (
           <div
             key={spec.id}
-            data-section-index={spec.section_index}
+            data-section-index={specSectionIndex}
             className={cn(
               "rounded-md transition-shadow",
               isFocused &&
