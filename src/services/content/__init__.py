@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 from src.agents.content.pipeline import ContentGraphDeps, build_content_graph
 from src.api.errors import NotFoundError
-from src.models.content import CanonicalArticle
+from src.models.content import CanonicalArticle, ImageAsset
 from src.models.content_pipeline import (
     ArticleDraft,
     ArticleOutline,
@@ -258,6 +258,27 @@ class ContentService:
     async def get_article(self, article_id: UUID) -> CanonicalArticle:
         """Retrieve a stored CanonicalArticle by ID."""
         return await _get_article(self._repos, article_id)
+
+    async def attach_visual(
+        self,
+        article_id: UUID,
+        visual: ImageAsset,
+    ) -> CanonicalArticle:
+        """Append a rendered visual to a published article and return it.
+
+        Used by the dashboard's Visual Studio "Insert into article" flow
+        to persist a Studio render onto the CanonicalArticle so it shows
+        up on subsequent reads (and downstream publishes).
+        """
+        updated = await self._repos.articles.append_visual(article_id, visual)
+        if updated is None:
+            raise NotFoundError(f"Article {article_id} not found")
+        logger.info(
+            "article_visual_attached",
+            article_id=str(article_id),
+            visual_id=str(visual.id),
+        )
+        return updated
 
     async def get_draft(self, draft_id: UUID) -> ArticleDraft:
         draft = await self._repos.drafts.get(draft_id)

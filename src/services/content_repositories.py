@@ -10,7 +10,7 @@ from uuid import UUID
 from langchain_core.language_models import BaseChatModel
 
 from src.config.settings import Settings
-from src.models.content import CanonicalArticle
+from src.models.content import CanonicalArticle, ImageAsset
 from src.models.content_pipeline import ArticleDraft
 from src.models.research_db import ResearchSession
 from src.services.milvus_retriever import MilvusRetriever
@@ -47,6 +47,11 @@ class InMemoryArticleDraftRepository:
 class ArticleRepository(Protocol):
     async def create(self, article: CanonicalArticle) -> CanonicalArticle: ...
     async def get(self, article_id: UUID) -> CanonicalArticle | None: ...
+    async def append_visual(
+        self,
+        article_id: UUID,
+        visual: ImageAsset,
+    ) -> CanonicalArticle | None: ...
 
 
 class InMemoryArticleRepository:
@@ -59,6 +64,21 @@ class InMemoryArticleRepository:
 
     async def get(self, article_id: UUID) -> CanonicalArticle | None:
         return self._store.get(article_id)
+
+    async def append_visual(
+        self,
+        article_id: UUID,
+        visual: ImageAsset,
+    ) -> CanonicalArticle | None:
+        existing = self._store.get(article_id)
+        if existing is None:
+            return None
+        # CanonicalArticle is frozen — rebuild with the appended visual.
+        updated = existing.model_copy(
+            update={"visuals": [*existing.visuals, visual]}
+        )
+        self._store[article_id] = updated
+        return updated
 
 
 @dataclass(frozen=True)

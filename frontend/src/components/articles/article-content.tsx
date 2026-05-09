@@ -48,8 +48,15 @@ export function ArticleContent({
   );
   const [hoveredSection, setHoveredSection] = useState<number | null>(null);
 
-  const { overviewDiagrams, sectionDiagrams, segments } = useMemo(() => {
+  const {
+    overviewDiagrams,
+    sectionDiagrams,
+    coverImages,
+    sectionImages,
+    segments,
+  } = useMemo(() => {
     const diagrams = visuals.filter(isDiagramVisual);
+    const images = visuals.filter((v) => !isDiagramVisual(v));
     const overview = diagrams.filter((d) => d.metadata?.source_section === -1);
     const perSection = new Map<number, ImageAsset[]>();
     for (const d of diagrams) {
@@ -60,15 +67,41 @@ export function ArticleContent({
         perSection.set(idx, bucket);
       }
     }
+    // Bucket non-diagram images: source_section = -1 (or missing) → cover.
+    // Other indices anchor to the section that owns them.
+    const cover: ImageAsset[] = [];
+    const perSectionImg = new Map<number, ImageAsset[]>();
+    for (const img of images) {
+      const idx = img.metadata?.source_section;
+      if (idx === undefined || idx === null || idx === -1) {
+        cover.push(img);
+      } else if (typeof idx === "number" && idx >= 0) {
+        const bucket = perSectionImg.get(idx) ?? [];
+        bucket.push(img);
+        perSectionImg.set(idx, bucket);
+      } else {
+        cover.push(img);
+      }
+    }
     return {
       overviewDiagrams: overview,
       sectionDiagrams: perSection,
+      coverImages: cover,
+      sectionImages: perSectionImg,
       segments: splitBySections(cleanMarkdown),
     };
   }, [cleanMarkdown, visuals]);
 
   return (
     <div>
+      {coverImages.length > 0 ? (
+        <div className="mb-8 flex flex-col gap-4">
+          {coverImages.map((img) => (
+            <ArticleImage key={img.id} asset={img} />
+          ))}
+        </div>
+      ) : null}
+
       {overviewDiagrams.length > 0 ? (
         <div className="mb-8">
           {overviewDiagrams.map((d) => (
@@ -91,6 +124,8 @@ export function ArticleContent({
           const sectionIdx = i - 1;
           const diagramsForSection =
             sectionIdx >= 0 ? (sectionDiagrams.get(sectionIdx) ?? []) : [];
+          const imagesForSection =
+            sectionIdx >= 0 ? (sectionImages.get(sectionIdx) ?? []) : [];
           const showToolbar =
             editing !== undefined && sectionIdx >= 0;
           const sectionId = editing
@@ -147,6 +182,9 @@ export function ArticleContent({
                   fallbackUrl={d.url}
                 />
               ))}
+              {imagesForSection.map((img) => (
+                <ArticleImage key={img.id} asset={img} />
+              ))}
             </Fragment>
           );
         })}
@@ -178,5 +216,31 @@ export function ArticleContent({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Renders a non-diagram visual (chart, photo, illustration) inline.
+ * Uses native <img> rather than next/image so MinIO/external URLs work
+ * without a Next image-loader allowlist. The asset URL has already been
+ * absolutified by the backend (see _to_image_response).
+ */
+function ArticleImage({ asset }: { asset: ImageAsset }) {
+  if (!asset.url) return null;
+  return (
+    <figure className="my-6">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={asset.url}
+        alt={asset.altText ?? asset.caption ?? "Article visual"}
+        className="w-full rounded-lg border border-neutral-200 shadow-sm"
+        loading="lazy"
+      />
+      {asset.caption ? (
+        <figcaption className="mt-2 text-center text-sm italic text-neutral-500">
+          {asset.caption}
+        </figcaption>
+      ) : null}
+    </figure>
   );
 }

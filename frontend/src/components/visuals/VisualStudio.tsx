@@ -50,10 +50,21 @@ export interface VisualStudioArticleContext {
   }>;
 }
 
+export interface InsertedVisual {
+  spec: ImageSpec;
+  render: RenderResponse;
+}
+
 export interface VisualStudioProps {
   article: VisualStudioArticleContext;
   audiencePersona?: string | null;
-  onInsertIntoArticle?: (specs: ImageSpec[]) => void;
+  /**
+   * Fires when the user clicks "Insert into article". Receives the
+   * spec + the corresponding render result (image url, dimensions,
+   * provider, cost). Caller is responsible for persisting them on
+   * the article (e.g., POST /articles/{id}/visuals).
+   */
+  onInsertIntoArticle?: (visuals: InsertedVisual[]) => void;
   onClose?: () => void;
   /**
    * When set, the studio shows a breadcrumb naming the section and
@@ -214,9 +225,13 @@ export function VisualStudio({
   }
 
   function handleInsert() {
-    const ready = specs.filter(
-      (s) => lifecycles[s.id]?.state === "done",
-    );
+    const ready: InsertedVisual[] = [];
+    for (const spec of specs) {
+      const lc = lifecycles[spec.id];
+      if (lc?.state === "done" && lc.render) {
+        ready.push({ spec, render: lc.render });
+      }
+    }
     if (ready.length > 0) onInsertIntoArticle?.(ready);
   }
 

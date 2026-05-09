@@ -99,6 +99,20 @@ class ImageAssetResponse(BaseModel):
     metadata: dict[str, str | int | float] | None = None
 
 
+class AttachVisualRequest(BaseModel):
+    """Payload for POST /articles/{id}/visuals (Insert into article).
+
+    Source URL is the rendered image URL (already absolutified or hosted).
+    Caption + alt_text are optional but should be supplied for accessibility
+    and downstream publishing transformers.
+    """
+
+    url: str
+    caption: str | None = None
+    alt_text: str | None = None
+    metadata: dict[str, str | int | float] | None = None
+
+
 class SEOMetadataResponse(BaseModel):
     title: str
     description: str

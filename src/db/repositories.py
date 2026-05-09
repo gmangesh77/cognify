@@ -630,6 +630,30 @@ class PgArticleRepository:
             )
             return self._to_model(row)
 
+    async def append_visual(
+        self,
+        article_id: UUID,
+        visual: ImageAsset,
+    ) -> CanonicalArticle | None:
+        """Append an ImageAsset to the article's visuals JSONB array."""
+        async with self._sf() as db:
+            row = await db.get(CanonicalArticleRow, article_id)
+            if row is None:
+                return None
+            existing = list(row.visuals or [])
+            existing.append(visual.model_dump(mode="json"))
+            # Reassign so SQLAlchemy detects the JSONB mutation.
+            row.visuals = existing
+            await db.commit()
+            await db.refresh(row)
+            logger.info(
+                "article_visual_appended",
+                article_id=str(article_id),
+                visual_id=str(visual.id),
+                total_visuals=len(existing),
+            )
+            return self._to_model(row)
+
     async def list(
         self,
         page: int = 1,

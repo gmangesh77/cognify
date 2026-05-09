@@ -630,3 +630,73 @@ class TestGetArticle:
             headers=headers,
         )
         assert resp.status_code == 404
+
+
+class TestAttachVisualToArticle:
+    async def test_appends_visual_and_returns_updated(
+        self,
+        finalize_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        finalized_draft_id: str,
+    ) -> None:
+        editor_headers = make_auth_header("editor", auth_settings)
+        finalize_resp = await finalize_client.post(
+            f"/api/v1/articles/drafts/{finalized_draft_id}/finalize",
+            headers=editor_headers,
+        )
+        article_id = finalize_resp.json()["id"]
+        before_count = len(finalize_resp.json()["visuals"])
+
+        body = {
+            "url": "https://example.com/img/hero.png",
+            "caption": "Hero image",
+            "alt_text": "An illustration",
+            "metadata": {"provider": "dalle_3", "spec_id": "spec_1"},
+        }
+        resp = await finalize_client.post(
+            f"/api/v1/articles/{article_id}/visuals",
+            headers=editor_headers,
+            json=body,
+        )
+        assert resp.status_code == 201, resp.text
+        data = resp.json()
+        assert data["id"] == article_id
+        assert len(data["visuals"]) == before_count + 1
+        appended = data["visuals"][-1]
+        assert appended["url"] == "https://example.com/img/hero.png"
+        assert appended["caption"] == "Hero image"
+        assert appended["alt_text"] == "An illustration"
+        assert appended["metadata"]["provider"] == "dalle_3"
+
+    async def test_viewer_cannot_attach(
+        self,
+        finalize_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        finalized_draft_id: str,
+    ) -> None:
+        editor_headers = make_auth_header("editor", auth_settings)
+        finalize_resp = await finalize_client.post(
+            f"/api/v1/articles/drafts/{finalized_draft_id}/finalize",
+            headers=editor_headers,
+        )
+        article_id = finalize_resp.json()["id"]
+        viewer_headers = make_auth_header("viewer", auth_settings)
+        resp = await finalize_client.post(
+            f"/api/v1/articles/{article_id}/visuals",
+            headers=viewer_headers,
+            json={"url": "https://example.com/x.png"},
+        )
+        assert resp.status_code == 403
+
+    async def test_unknown_article_returns_404(
+        self,
+        finalize_client: httpx.AsyncClient,
+        auth_settings: Settings,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        resp = await finalize_client.post(
+            f"/api/v1/articles/{uuid4()}/visuals",
+            headers=headers,
+            json={"url": "https://example.com/x.png"},
+        )
+        assert resp.status_code == 404

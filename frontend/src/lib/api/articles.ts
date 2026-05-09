@@ -96,3 +96,25 @@ export async function publishArticle(
   );
   return data;
 }
+
+export interface AttachVisualPayload {
+  url: string;
+  caption?: string | null;
+  alt_text?: string | null;
+  metadata?: Record<string, string | number | null> | null;
+}
+
+/**
+ * Persist a Visual Studio render onto an existing article so it appears
+ * on subsequent fetches and is included in publishes.
+ */
+export async function attachVisualToArticle(
+  articleId: string,
+  payload: AttachVisualPayload,
+): Promise<ArticleResponse> {
+  const { data } = await apiClient.post<ArticleResponse>(
+    `/articles/${articleId}/visuals`,
+    payload,
+  );
+  return data;
+}
