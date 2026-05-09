@@ -47,8 +47,53 @@ async def update_llm_config(
         update={k: v for k, v in body.model_dump().items() if v is not None}
     )
     saved = await repos.llm.update(updated)
-    logger.info("llm_config_updated")
+    # Reflect provider/model changes in the live Settings + provider
+    # registry so the next render call honors them without a restart.
+    _refresh_visual_settings_overlay(request, saved)
+    logger.info(
+        "llm_config_updated",
+        image_provider=saved.image_provider,
+        image_model=saved.image_model,
+    )
     return LlmConfigResponse(**saved.model_dump())
+
+
+def _refresh_visual_settings_overlay(request: Request, llm_cfg) -> None:  # type: ignore[no-untyped-def]
+    """Apply persisted LlmConfig values to live Settings + rebuild registry.
+
+    Mirrors the boot-time overlay in `src/api/main.py` so changes made via
+    the Settings UI take effect immediately for subsequent /visuals/render
+    calls. Falls back silently if state is missing (e.g., in tests that
+    spin up a minimal app).
+    """
+    settings = getattr(request.app.state, "settings", None)
+    if settings is None:
+        return
+    updates: dict[str, str | None] = {}
+    if llm_cfg.image_provider:
+        updates["default_image_provider"] = llm_cfg.image_provider
+    if llm_cfg.image_model:
+        provider_model_field = {
+            "dalle_3": "dalle_model",
+            "gemini_flash": "image_model_gemini_flash",
+            "gemini_3_pro": "image_model_gemini_3_pro",
+            "imagen_4": "image_model_imagen_4",
+        }.get(llm_cfg.image_provider)
+        if provider_model_field and hasattr(settings, provider_model_field):
+            updates[provider_model_field] = llm_cfg.image_model
+    if not updates:
+        return
+    request.app.state.settings = settings.model_copy(update=updates)
+    # Rebuild the visuals provider registry so the new model takes
+    # effect on the very next render. Lazy import keeps test env light.
+    try:
+        from src.services.visuals import init_registry as _init_visual_registry
+
+        request.app.state.visual_provider_registry = _init_visual_registry(
+            request.app.state.settings
+        )
+    except Exception as exc:  # pragma: no cover — non-fatal
+        logger.warning("visual_registry_rebuild_skipped", error=str(exc))
 
 
 @limiter.limit("30/minute")

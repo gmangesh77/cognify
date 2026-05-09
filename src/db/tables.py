@@ -214,6 +214,13 @@ class LlmConfigRow(Base, UUIDMixin, TimestampMixin):
     primary_model: Mapped[str] = mapped_column(String(100))
     drafting_model: Mapped[str] = mapped_column(String(100))
     image_generation: Mapped[str] = mapped_column(String(100))
+    # Phase 2 visuals UX — provider key (e.g. "dalle_3", "gemini_flash")
+    # honored by image_render_node at render time. `image_model` is
+    # optional; null means "use the provider's default model".
+    image_provider: Mapped[str] = mapped_column(
+        String(60), default="dalle_3", server_default="dalle_3", nullable=False
+    )
+    image_model: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
 
 class SeoDefaultsRow(Base, UUIDMixin, TimestampMixin):

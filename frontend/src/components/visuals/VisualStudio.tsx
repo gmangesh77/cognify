@@ -55,6 +55,13 @@ export interface VisualStudioProps {
   audiencePersona?: string | null;
   onInsertIntoArticle?: (specs: ImageSpec[]) => void;
   onClose?: () => void;
+  /**
+   * When set, the studio shows a breadcrumb naming the section and
+   * scrolls the first matching spec card into view. Lets the article
+   * page's "Edit visual" toolbar action focus the user on the right
+   * section instead of dumping them into the full spec list.
+   */
+  focusSectionIndex?: number | null;
   className?: string;
 }
 
@@ -69,6 +76,7 @@ export function VisualStudio({
   audiencePersona,
   onInsertIntoArticle,
   onClose,
+  focusSectionIndex,
   className,
 }: VisualStudioProps) {
   const [styles, setStyles] = useState<VisualStylesResponse | null>(null);
@@ -102,6 +110,29 @@ export function VisualStudio({
       0,
     );
   }, [lifecycles]);
+
+  const focusedSectionTitle = useMemo(() => {
+    if (focusSectionIndex == null) return null;
+    const match = article.sections?.find(
+      (s) => s.section_index === focusSectionIndex,
+    );
+    return match?.title ?? `Section ${focusSectionIndex + 1}`;
+  }, [focusSectionIndex, article.sections]);
+
+  // Scroll the first spec card matching the focused section into view
+  // whenever the focus changes or the spec list updates.
+  useEffect(() => {
+    if (focusSectionIndex == null) return;
+    const node = document.querySelector(
+      `[data-section-index="${focusSectionIndex}"]`,
+    );
+    if (node && "scrollIntoView" in node) {
+      (node as HTMLElement).scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [focusSectionIndex, specs]);
 
   const breakdown = useMemo(() => {
     const map = new Map<string, { count: number; usd: number }>();
@@ -205,6 +236,16 @@ export function VisualStudio({
         onClose={onClose}
       />
 
+      {focusedSectionTitle ? (
+        <div
+          data-testid="visual-studio-focus-banner"
+          className="rounded-md border border-primary/30 bg-primary-light px-3 py-2 text-xs font-medium text-primary"
+        >
+          Editing visual for:{" "}
+          <span className="font-semibold">{focusedSectionTitle}</span>
+        </div>
+      ) : null}
+
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -253,6 +294,7 @@ export function VisualStudio({
         onSkip={(id) =>
           setSpecs((prev) => prev.filter((s) => s.id !== id))
         }
+        focusSectionIndex={focusSectionIndex ?? null}
       />
     </aside>
   );
@@ -406,11 +448,13 @@ function SpecListSection({
   lifecycles,
   onRender,
   onSkip,
+  focusSectionIndex,
 }: {
   specs: ImageSpec[];
   lifecycles: Record<string, SpecLifecycle>;
   onRender: (spec: ImageSpec) => void;
   onSkip: (id: string) => void;
+  focusSectionIndex?: number | null;
 }) {
   if (specs.length === 0) {
     return (
@@ -430,18 +474,30 @@ function SpecListSection({
       </h3>
       {specs.map((spec) => {
         const lc = lifecycles[spec.id] ?? { state: "idle", render: null };
+        const isFocused =
+          focusSectionIndex != null &&
+          spec.section_index === focusSectionIndex;
         return (
-          <SpecCard
+          <div
             key={spec.id}
-            spec={spec}
-            state={lc.state}
-            render={lc.render}
-            errorMessage={lc.error}
-            onPlan={() => onRender(spec)}
-            onRegenerate={() => onRender(spec)}
-            onRetryCheaper={() => onRender(spec)}
-            onSkip={() => onSkip(spec.id)}
-          />
+            data-section-index={spec.section_index}
+            className={cn(
+              "rounded-md transition-shadow",
+              isFocused &&
+                "ring-2 ring-primary ring-offset-2 ring-offset-white",
+            )}
+          >
+            <SpecCard
+              spec={spec}
+              state={lc.state}
+              render={lc.render}
+              errorMessage={lc.error}
+              onPlan={() => onRender(spec)}
+              onRegenerate={() => onRender(spec)}
+              onRetryCheaper={() => onRender(spec)}
+              onSkip={() => onSkip(spec.id)}
+            />
+          </div>
         );
       })}
     </div>

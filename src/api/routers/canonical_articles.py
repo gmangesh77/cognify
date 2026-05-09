@@ -39,6 +39,18 @@ def _get_content_service(request: Request) -> ContentService:
     return request.app.state.content_service  # type: ignore[no-any-return]
 
 
+def _get_api_base_url(request: Request) -> str:
+    """Return the configured public API base URL.
+
+    Used to absolutify relative `generated_assets/...` URLs in responses
+    so the dashboard frontend (different origin) can render them.
+    """
+    settings = getattr(request.app.state, "settings", None)
+    if settings is None:
+        return ""
+    return getattr(settings, "api_base_url", "") or ""
+
+
 @limiter.limit("30/minute")
 @canonical_articles_router.get(
     "/articles",
@@ -54,8 +66,9 @@ async def list_articles(
     """Return a paginated list of canonical articles."""
     repo = request.app.state.article_repo
     items, total = await repo.list(page, size)
+    api_base = _get_api_base_url(request)
     return PaginatedArticlesResponse(
-        items=[_to_canonical_response(a) for a in items],
+        items=[_to_canonical_response(a, api_base) for a in items],
         total=total,
         page=page,
         size=size,
@@ -79,7 +92,7 @@ async def finalize_article(
         article = await svc.finalize_article(UUID(draft_id))
     except ValueError as exc:
         raise BadRequestError(str(exc)) from exc
-    return _to_canonical_response(article)
+    return _to_canonical_response(article, _get_api_base_url(request))
 
 
 @limiter.limit("30/minute")
@@ -95,13 +108,19 @@ async def get_article(
     """Retrieve a stored CanonicalArticle by ID."""
     svc = _get_content_service(request)
     article = await svc.get_article(UUID(article_id))
-    return _to_canonical_response(article)
+    return _to_canonical_response(article, _get_api_base_url(request))
 
 
 def _to_canonical_response(
     article: CanonicalArticle,
+    api_base_url: str = "",
 ) -> CanonicalArticleResponse:
-    """Map a CanonicalArticle domain model to its API response."""
+    """Map a CanonicalArticle domain model to its API response.
+
+    ``api_base_url`` is forwarded to image-asset serialization to
+    absolutify ``generated_assets/...`` URLs for the dashboard. Pass
+    ``""`` to preserve raw URLs (used by tests and historical callers).
+    """
     return CanonicalArticleResponse(
         id=article.id,
         title=article.title,
@@ -112,7 +131,7 @@ def _to_canonical_response(
         content_type=article.content_type.value,
         seo=_to_seo_metadata_response(article),
         citations=[_to_citation_response(c) for c in article.citations],
-        visuals=[_to_image_response(v) for v in article.visuals],
+        visuals=[_to_image_response(v, api_base_url) for v in article.visuals],
         authors=list(article.authors),
         domain=article.domain,
         generated_at=article.generated_at,
@@ -158,19 +177,40 @@ def _to_citation_response(c: Citation) -> CitationResponse:
     )
 
 
-def _to_image_response(v: ImageAsset) -> ImageAssetResponse:
+def _to_image_response(
+    v: ImageAsset, api_base_url: str = ""
+) -> ImageAssetResponse:
     """Map an ImageAsset model to its response schema.
 
     Preserves ``metadata`` so diagram clients can read ``mermaid_syntax``,
     ``diagram_type``, and ``source_section`` for inline rendering.
+
+    When ``api_base_url`` is supplied, relative ``generated_assets/...``
+    paths are rewritten to absolute URLs so the dashboard frontend (served
+    on a different origin from the API) can fetch them. Already-absolute
+    URLs and empty strings pass through unchanged. The CanonicalArticle
+    domain model and DB rows remain platform-neutral (relative paths) —
+    publishing transformers do their own absolutification.
     """
     return ImageAssetResponse(
         id=v.id,
-        url=v.url,
+        url=_absolutify_asset_url(v.url, api_base_url),
         caption=v.caption,
         alt_text=v.alt_text,
         metadata=v.metadata or None,
     )
+
+
+def _absolutify_asset_url(url: str, api_base_url: str) -> str:
+    if not url or not api_base_url:
+        return url
+    if url.startswith(("http://", "https://")):
+        return url
+    base = api_base_url.rstrip("/")
+    normalized = url.lstrip("/")
+    if normalized.startswith("generated_assets/"):
+        return f"{base}/{normalized}"
+    return url
 
 
 def _to_provenance_response(

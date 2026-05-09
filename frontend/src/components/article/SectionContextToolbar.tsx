@@ -38,7 +38,9 @@ export function SectionContextToolbar({
   onRefineLayout,
   className,
 }: SectionContextToolbarProps) {
-  if (!visible) return null;
+  // Always render — opacity flips on hover. This makes section
+  // editability discoverable (a faint toolbar is visible at rest)
+  // instead of relying on users guessing they should hover.
   return (
     <div
       role="toolbar"
@@ -46,7 +48,8 @@ export function SectionContextToolbar({
       data-testid={`section-context-toolbar-${sectionIndex}`}
       data-section-id={sectionId}
       className={cn(
-        "absolute right-2 top-2 z-20 flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-1 py-1 shadow-sm",
+        "absolute right-2 top-2 z-20 flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-1 py-1 shadow-sm transition-opacity",
+        visible ? "opacity-100" : "opacity-30 hover:opacity-100",
         className,
       )}
     >

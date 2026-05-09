@@ -43,6 +43,7 @@ class DomainListResponse(BaseModel):
 ApiKeyServiceType = Literal[
     "anthropic",
     "openai",
+    "google_ai",
     "serpapi",
     "ghost",
     "newsapi",
@@ -81,12 +82,16 @@ class UpdateLlmConfigRequest(BaseModel):
     primary_model: str | None = None
     drafting_model: str | None = None
     image_generation: str | None = None
+    image_provider: str | None = None
+    image_model: str | None = None
 
 
 class LlmConfigResponse(BaseModel):
     primary_model: str
     drafting_model: str
     image_generation: str
+    image_provider: str
+    image_model: str | None = None
 
 
 # --- SEO defaults schemas ---

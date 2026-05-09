@@ -291,6 +291,38 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         app.state.trend_registry = init_registry(settings)
         logger.info("trend_registry_rebuilt_with_resolved_keys")
 
+        # Overlay persisted LlmConfig on Settings so user-selected image
+        # provider/model from the Settings UI takes effect at render time.
+        # Without this, settings.default_image_provider always reflects the
+        # static .env default. Mirrors the api_keys overlay above.
+        try:
+            llm_repo = app.state.settings_repos.llm
+            llm_cfg = await llm_repo.get_or_create()
+            settings_updates: dict[str, str | None] = {}
+            if llm_cfg.image_provider:
+                settings_updates["default_image_provider"] = llm_cfg.image_provider
+            if llm_cfg.image_model:
+                # Map the provider's user-chosen model into the per-provider
+                # settings field that the provider registry consumes at boot.
+                provider_model_field = {
+                    "dalle_3": "dalle_model",
+                    "gemini_flash": "image_model_gemini_flash",
+                    "gemini_3_pro": "image_model_gemini_3_pro",
+                    "imagen_4": "image_model_imagen_4",
+                }.get(llm_cfg.image_provider)
+                if provider_model_field and hasattr(settings, provider_model_field):
+                    settings_updates[provider_model_field] = llm_cfg.image_model
+            if settings_updates:
+                settings = settings.model_copy(update=settings_updates)
+                app.state.settings = settings
+                logger.info(
+                    "llm_config_overlay_applied",
+                    image_provider=llm_cfg.image_provider,
+                    image_model=llm_cfg.image_model,
+                )
+        except Exception as exc:
+            logger.warning("llm_config_overlay_skipped", error=str(exc))
+
         # Publishing service (requires article_repo)
         from src.db.repositories import PgPublicationRepository
 
@@ -719,3 +751,6 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
             StaticFiles(directory=str(assets_dir)),
             name="generated_assets",
         )
+
+
+app = create_app()

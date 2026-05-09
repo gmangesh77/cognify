@@ -29,6 +29,14 @@ class LlmConfig(BaseModel):
     primary_model: str = "claude-opus-4"
     drafting_model: str = "claude-sonnet-4"
     image_generation: str = "stable-diffusion-xl"
+    # Phase 2 visuals UX — user-selectable provider + model for image
+    # rendering. `image_provider` is one of the keys registered in
+    # `src/services/visuals/providers/` ("dalle_3", "gemini_flash",
+    # "gemini_3_pro", "imagen_4"). `image_model` is optional — null
+    # means "use the provider's built-in default" (resolved from
+    # COGNIFY_IMAGE_MODEL_* settings).
+    image_provider: str = "dalle_3"
+    image_model: str | None = None
 
 
 class SeoDefaults(BaseModel):

@@ -20,9 +20,11 @@ describe("SectionContextToolbar", () => {
     return { onEditText, onEditVisual, onRefineLayout };
   }
 
-  it("renders nothing when not visible", () => {
+  it("renders dimmed-but-present when not hovered (affordance)", () => {
     setup({ visible: false });
-    expect(screen.queryByRole("toolbar")).toBeNull();
+    const toolbar = screen.getByRole("toolbar");
+    expect(toolbar).toBeInTheDocument();
+    expect(toolbar.className).toMatch(/opacity-30/);
   });
 
   it("renders all three actions when visible", () => {
@@ -30,6 +32,7 @@ describe("SectionContextToolbar", () => {
     expect(screen.getByTestId("toolbar-edit-text-1")).toBeInTheDocument();
     expect(screen.getByTestId("toolbar-edit-visual-1")).toBeInTheDocument();
     expect(screen.getByTestId("toolbar-refine-layout-1")).toBeInTheDocument();
+    expect(screen.getByRole("toolbar").className).toMatch(/opacity-100/);
   });
 
   it("fires the right callback when each button is clicked", () => {

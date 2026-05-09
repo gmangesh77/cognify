@@ -103,9 +103,12 @@ def studio_app(studio_settings: Settings) -> FastAPI:
 
     app.include_router(visuals_router, prefix=studio_settings.api_v1_prefix)
 
-    # Pre-populate the studio registry with a stub provider + temp storage so
-    # /render and /upload don't hit external APIs.
+    # Pre-populate the studio registry with stub providers (one per provider
+    # key the system knows about) + temp storage so /render and /upload don't
+    # hit external APIs. The default-image-provider setting controls which
+    # one /render picks when no explicit override is supplied.
     registry = ImageProviderRegistry()
+    registry.register(StubImageProvider(name="dalle_3", model="stub"))
     registry.register(StubImageProvider(name="gemini_flash", model="stub"))
     app.state.visual_provider_registry = registry
 
@@ -284,7 +287,8 @@ class TestRenderEndpoint:
         assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["spec_id"] == "spec_1"
-        assert data["provider"] == "gemini_flash"
+        # Default image provider is dalle_3 (see Settings.default_image_provider).
+        assert data["provider"] == "dalle_3"
         # LocalDisk storage emits no URL → falls back to base64.
         assert data["image_base64"] is not None
         assert data["image_url"] is None

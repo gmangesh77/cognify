@@ -96,10 +96,19 @@ export function ArticleContent({
           const sectionId = editing
             ? `${editing.articleId}:${sectionIdx}`
             : undefined;
+          const isHovered = hoveredSection === sectionIdx;
           return (
             <Fragment key={`seg-${i}`}>
               <div
-                className="relative"
+                className={
+                  showToolbar
+                    ? `relative -ml-3 rounded-md border-l-2 px-3 py-1 transition-colors ${
+                        isHovered
+                          ? "border-primary/60 bg-primary-light/30"
+                          : "border-neutral-100 hover:border-neutral-300"
+                      }`
+                    : "relative"
+                }
                 data-section-index={sectionIdx}
                 onMouseEnter={
                   showToolbar ? () => setHoveredSection(sectionIdx) : undefined

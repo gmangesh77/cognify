@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/header";
 import { SettingsNav } from "@/components/settings/settings-nav";
 import { DomainsTab } from "@/components/settings/domains-tab";
 import { LlmConfigTab } from "@/components/settings/llm-config-tab";
+import { VisualsTab } from "@/components/settings/visuals-tab";
 import { ApiKeysTab } from "@/components/settings/api-keys-tab";
 import { SeoDefaultsTab } from "@/components/settings/seo-defaults-tab";
 import { GeneralTab } from "@/components/settings/general-tab";
@@ -76,6 +77,13 @@ function SettingsContent() {
             <LlmConfigTab
               config={settings.llmConfig}
               onUpdate={(u) => { settings.updateLlmConfig(u); showToast("LLM config updated"); }}
+            />
+          )}
+
+          {activeTab === "visuals" && (
+            <VisualsTab
+              config={settings.llmConfig}
+              onUpdate={(u) => { settings.updateLlmConfig(u); showToast("Image settings updated"); }}
             />
           )}
 
