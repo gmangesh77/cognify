@@ -25,26 +25,28 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends libpq5 curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Create non-root user with a writable HOME (HF cache, matplotlib config, etc.)
+# Create non-root user BEFORE the COPYs so --chown can apply ownership at
+# copy time (avoids a slow recursive `chown -R /app` over the .venv on
+# every src change). Writable HOME for HF cache, matplotlib config, etc.
 RUN groupadd -r cognify && useradd -r -g cognify -u 1000 -m -d /home/cognify cognify
 
-# Copy virtualenv and source from builder
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/src /app/src
-COPY --from=builder /app/alembic /app/alembic
-COPY --from=builder /app/alembic.ini /app/alembic.ini
-COPY --from=builder /app/pyproject.toml /app/pyproject.toml
+# Copy virtualenv and source from builder, owned by cognify at copy time
+COPY --from=builder --chown=cognify:cognify /app/.venv /app/.venv
+COPY --from=builder --chown=cognify:cognify /app/src /app/src
+COPY --from=builder --chown=cognify:cognify /app/alembic /app/alembic
+COPY --from=builder --chown=cognify:cognify /app/alembic.ini /app/alembic.ini
+COPY --from=builder --chown=cognify:cognify /app/pyproject.toml /app/pyproject.toml
 
 # Ensure venv binaries are on PATH
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app"
 
-# Create directories for generated assets (charts, illustrations, diagrams)
+# Create generated_assets dirs (already owned by cognify thanks to USER below + WORKDIR perms).
 RUN mkdir -p generated_assets/charts generated_assets/illustrations generated_assets/diagrams && \
-    chown -R cognify:cognify /app
+    chown cognify:cognify generated_assets generated_assets/charts generated_assets/illustrations generated_assets/diagrams
 
 # Copy entrypoint script
-COPY docker-entrypoint.sh .
+COPY --chown=cognify:cognify docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 8000
