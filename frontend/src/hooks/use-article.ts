@@ -77,5 +77,8 @@ export function useArticle(id: string) {
     },
     staleTime: 5 * 60 * 1000,
   });
-  return { article: query.data?.article ?? null };
+  return {
+    article: query.data?.article ?? null,
+    refetch: query.refetch,
+  };
 }

@@ -14,6 +14,7 @@ from src.api.dependencies import (
 from src.api.errors import BadRequestError
 from src.api.rate_limiter import limiter
 from src.api.schemas.articles import (
+    AttachVisualRequest,
     CanonicalArticleResponse,
     CitationResponse,
     ImageAssetResponse,
@@ -108,6 +109,36 @@ async def get_article(
     """Retrieve a stored CanonicalArticle by ID."""
     svc = _get_content_service(request)
     article = await svc.get_article(UUID(article_id))
+    return _to_canonical_response(article, _get_api_base_url(request))
+
+
+@limiter.limit("30/minute")
+@canonical_articles_router.post(
+    "/articles/{article_id}/visuals",
+    response_model=CanonicalArticleResponse,
+    status_code=HTTP_201_CREATED,
+    summary="Attach a rendered visual to an article",
+)
+async def attach_visual_to_article(
+    request: Request,
+    article_id: str,
+    body: AttachVisualRequest,
+    user: TokenPayload = Depends(require_editor_or_above),
+) -> CanonicalArticleResponse:
+    """Persist a Visual Studio-rendered image onto an existing article.
+
+    Used by the dashboard's "Insert into article" flow so generated
+    images become part of the CanonicalArticle (and thus visible on
+    re-fetch + on subsequent publishes).
+    """
+    svc = _get_content_service(request)
+    visual = ImageAsset(
+        url=body.url,
+        caption=body.caption,
+        alt_text=body.alt_text,
+        metadata=body.metadata or {},
+    )
+    article = await svc.attach_visual(UUID(article_id), visual)
     return _to_canonical_response(article, _get_api_base_url(request))
 
 

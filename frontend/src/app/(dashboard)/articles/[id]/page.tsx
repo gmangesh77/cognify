@@ -17,7 +17,8 @@ import { SavedAssetGallery } from "@/components/visuals/SavedAssetGallery";
 import { VisualStudio } from "@/components/visuals/VisualStudio";
 import { useArticle } from "@/hooks/use-article";
 import { useDefaultPersona } from "@/hooks/use-default-persona";
-import { publishArticle } from "@/lib/api/articles";
+import { attachVisualToArticle, publishArticle } from "@/lib/api/articles";
+import type { ImageSpec, RenderResponse } from "@/types/visuals";
 import { makeSectionId } from "@/lib/api/content";
 
 interface ActiveSection {
@@ -42,7 +43,7 @@ function NotFound() {
 
 export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { article } = useArticle(id);
+  const { article, refetch } = useArticle(id);
   const [publishOpen, setPublishOpen] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -70,6 +71,47 @@ export default function ArticleDetailPage() {
   }, [article]);
 
   if (!article) return <NotFound />;
+
+  async function handleInsertVisuals(
+    visuals: Array<{ spec: ImageSpec; render: RenderResponse }>,
+  ) {
+    let attached = 0;
+    let failed = 0;
+    for (const v of visuals) {
+      const url = v.render.image_url;
+      // We can only persist hosted URLs (MinIO/CDN). Base64 fallback
+      // can't be re-served from the article endpoint without first
+      // uploading to object storage — surface a clear error in that
+      // case instead of writing an unusable data: URL to the DB.
+      if (!url) {
+        failed += 1;
+        continue;
+      }
+      try {
+        await attachVisualToArticle(id, {
+          url,
+          alt_text: v.spec.alt_text,
+          caption: v.spec.rationale ?? null,
+          metadata: {
+            spec_id: v.spec.id,
+            provider: v.render.provider,
+            model: v.render.model,
+            section_index: v.spec.placement.section_index,
+            role_style: v.spec.role_style,
+          },
+        });
+        attached += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    await refetch();
+    const parts: string[] = [];
+    if (attached > 0) parts.push(`${attached} inserted`);
+    if (failed > 0) parts.push(`${failed} failed (no hosted URL)`);
+    setToast(parts.join(" · ") || "Nothing to insert");
+    setTimeout(() => setToast(null), 6000);
+  }
 
   async function handlePublish(platforms: string[]) {
     setPublishOpen(false);
@@ -164,7 +206,43 @@ export default function ArticleDetailPage() {
             }}
           />
           {activeSection ? (
-            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_minmax(0,460px)]">
+            <div className="mt-4 flex flex-col gap-3">
+              {/* Action row sits above the editor — buttons no longer
+                  steal column width from the textarea. */}
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHumanizeOpen((v) => !v);
+                    if (!humanizeOpen) setPopoverOpen(false);
+                  }}
+                  aria-pressed={humanizeOpen}
+                  data-testid="open-humanize-panel"
+                  className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  {humanizeOpen ? "Hide humanizer" : "Humanize"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPopoverOpen((v) => !v);
+                    if (!popoverOpen) setHumanizeOpen(false);
+                  }}
+                  aria-pressed={popoverOpen}
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
+                >
+                  {popoverOpen ? "Hide AI rewrite" : "Rewrite with AI"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistorySectionId(activeSection.sectionId)}
+                  className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
+                >
+                  <History className="h-3.5 w-3.5" /> History
+                </button>
+              </div>
+
               <InlineProseEditor
                 key={activeSection.sectionId}
                 sectionId={activeSection.sectionId}
@@ -191,84 +269,48 @@ export default function ArticleDetailPage() {
                   )
                 }
               />
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHumanizeOpen((v) => !v);
-                      if (!humanizeOpen) setPopoverOpen(false);
-                    }}
-                    aria-pressed={humanizeOpen}
-                    data-testid="open-humanize-panel"
-                    className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
-                  >
-                    <Wand2 className="h-3.5 w-3.5" />
-                    {humanizeOpen ? "Hide humanizer" : "Humanize"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPopoverOpen((v) => !v);
-                      if (!popoverOpen) setHumanizeOpen(false);
-                    }}
-                    aria-pressed={popoverOpen}
-                    className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90"
-                  >
-                    {popoverOpen ? "Hide AI rewrite" : "Rewrite with AI"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setHistorySectionId(activeSection.sectionId)}
-                    className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
-                  >
-                    <History className="h-3.5 w-3.5" /> History
-                  </button>
-                </div>
-                {humanizeOpen ? (
-                  <HumanizationDiffPanel
-                    sectionId={activeSection.sectionId}
-                    currentMarkdown={activeSection.markdown}
-                    onAccept={(newMd) => {
-                      setActiveSection((prev) =>
-                        prev ? { ...prev, markdown: newMd } : prev,
-                      );
-                      setHumanizeOpen(false);
-                      setToast(
-                        "Humanizer suggestion staged — review then save.",
-                      );
-                      setTimeout(() => setToast(null), 4000);
-                    }}
-                    onCancel={() => setHumanizeOpen(false)}
-                  />
-                ) : null}
-                {popoverOpen ? (
-                  <AIRewritePopover
-                    sectionId={activeSection.sectionId}
-                    scope={
-                      activeSection.paragraphIndex !== undefined
-                        ? "paragraph"
-                        : "section"
-                    }
-                    paragraphIndex={activeSection.paragraphIndex}
-                    currentMarkdown={
-                      activeSection.paragraphMarkdown ?? activeSection.markdown
-                    }
-                    audiencePersona={defaultPersona}
-                    onAccept={(newMd, instr) => {
-                      setActiveSection((prev) =>
-                        prev
-                          ? { ...prev, markdown: newMd }
-                          : prev,
-                      );
-                      setPopoverOpen(false);
-                      setToast(`Rewrite ready — review then save (${instr.slice(0, 40)})`);
-                      setTimeout(() => setToast(null), 4000);
-                    }}
-                    onCancel={() => setPopoverOpen(false)}
-                  />
-                ) : null}
-              </div>
+
+              {humanizeOpen ? (
+                <HumanizationDiffPanel
+                  sectionId={activeSection.sectionId}
+                  currentMarkdown={activeSection.markdown}
+                  onAccept={(newMd) => {
+                    setActiveSection((prev) =>
+                      prev ? { ...prev, markdown: newMd } : prev,
+                    );
+                    setHumanizeOpen(false);
+                    setToast(
+                      "Humanizer suggestion staged — review then save.",
+                    );
+                    setTimeout(() => setToast(null), 4000);
+                  }}
+                  onCancel={() => setHumanizeOpen(false)}
+                />
+              ) : null}
+              {popoverOpen ? (
+                <AIRewritePopover
+                  sectionId={activeSection.sectionId}
+                  scope={
+                    activeSection.paragraphIndex !== undefined
+                      ? "paragraph"
+                      : "section"
+                  }
+                  paragraphIndex={activeSection.paragraphIndex}
+                  currentMarkdown={
+                    activeSection.paragraphMarkdown ?? activeSection.markdown
+                  }
+                  audiencePersona={defaultPersona}
+                  onAccept={(newMd, instr) => {
+                    setActiveSection((prev) =>
+                      prev ? { ...prev, markdown: newMd } : prev,
+                    );
+                    setPopoverOpen(false);
+                    setToast(`Rewrite ready — review then save (${instr.slice(0, 40)})`);
+                    setTimeout(() => setToast(null), 4000);
+                  }}
+                  onCancel={() => setPopoverOpen(false)}
+                />
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -286,6 +328,9 @@ export default function ArticleDetailPage() {
               }}
               audiencePersona={defaultPersona}
               focusSectionIndex={focusVisualSection}
+              onInsertIntoArticle={(visuals) => {
+                void handleInsertVisuals(visuals);
+              }}
               onClose={() => {
                 setStudioOpen(false);
                 setFocusVisualSection(null);
