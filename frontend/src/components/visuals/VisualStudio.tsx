@@ -82,7 +82,10 @@ export function VisualStudio({
   const [styles, setStyles] = useState<VisualStylesResponse | null>(null);
   const [pageDirection, setPageDirection] = useState("");
   const [defaultStyleKey, setDefaultStyleKey] = useState<string | null>(null);
-  const [quality, setQuality] = useState<RenderQuality>("fast");
+  // Default to "standard" (DALL·E 3) so the picker's first selection
+  // matches the app-wide default_image_provider and doesn't force a
+  // Google provider that may lack a configured API key.
+  const [quality, setQuality] = useState<RenderQuality>("standard");
   const [specs, setSpecs] = useState<ImageSpec[]>([]);
   const [lifecycles, setLifecycles] = useState<Record<string, SpecLifecycle>>(
     {},
@@ -404,13 +407,13 @@ function RenderQualitySection({
   quality: RenderQuality;
   onChange: (q: RenderQuality) => void;
 }) {
-  const tiers: RenderQuality[] = ["fast", "mid", "premium"];
+  const tiers: RenderQuality[] = ["standard", "fast", "mid", "premium"];
   return (
     <div className="flex flex-col gap-2">
       <label className="text-xs font-medium uppercase tracking-wide text-neutral-500">
         Render quality
       </label>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {tiers.map((tier) => {
           const isSelected = tier === quality;
           return (

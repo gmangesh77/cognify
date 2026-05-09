@@ -167,16 +167,22 @@ export type SpecCardState =
 /**
  * Render-quality tier (Pencil Screen 1 — "Render quality" sub-section).
  * Drives the chosen provider for /visuals/render calls.
+ *
+ * `standard` (DALL·E 3) is the OpenAI tier and matches the app-wide
+ * `default_image_provider`. Listed first so the picker default doesn't
+ * silently force a Google provider when no Google AI key is configured.
  */
-export type RenderQuality = "fast" | "mid" | "premium";
+export type RenderQuality = "standard" | "fast" | "mid" | "premium";
 
 export const QUALITY_TO_PROVIDER: Record<RenderQuality, ImageProviderKey> = {
+  standard: "dalle_3",
   fast: "gemini_flash",
   mid: "gemini_3_pro",
   premium: "imagen_4",
 };
 
 export const QUALITY_LABELS: Record<RenderQuality, string> = {
+  standard: "Standard",
   fast: "Fast",
   mid: "Mid",
   premium: "Premium",
@@ -184,10 +190,12 @@ export const QUALITY_LABELS: Record<RenderQuality, string> = {
 
 /**
  * Approximate per-image cost shown on the quality tier picker. Pulled from
- * the implementation plan §5.2 cost table; the live cost-tracking endpoint
- * (`GET /visuals/cost`) is the authoritative source for actual usage.
+ * the implementation plan §5.2 cost table + OpenAI pricing for DALL·E 3
+ * standard 1024×1024; the live cost-tracking endpoint (`GET /visuals/cost`)
+ * is the authoritative source for actual usage.
  */
 export const QUALITY_PRICE_USD: Record<RenderQuality, number> = {
+  standard: 0.04,
   fast: 0.001,
   mid: 0.015,
   premium: 0.04,
