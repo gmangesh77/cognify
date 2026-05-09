@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileText, History, Wand2 } from "lucide-react";
@@ -53,6 +53,21 @@ export default function ArticleDetailPage() {
   const [historySectionId, setHistorySectionId] = useState<string | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [humanizeOpen, setHumanizeOpen] = useState(false);
+  const [focusVisualSection, setFocusVisualSection] = useState<number | null>(null);
+
+  const studioSections = useMemo(() => {
+    if (!article) return [];
+    const segments = article.bodyMarkdown.split(/\n(?=##\s)/);
+    // segments[0] is preamble; sections start at index 1, so section_index 0 = segments[1]
+    return segments.slice(1).map((segment, i) => {
+      const titleMatch = segment.match(/^##\s+(.+)/);
+      return {
+        section_index: i,
+        title: titleMatch ? titleMatch[1].trim() : `Section ${i + 1}`,
+        body_markdown: segment,
+      };
+    });
+  }, [article]);
 
   if (!article) return <NotFound />;
 
@@ -134,7 +149,10 @@ export default function ArticleDetailPage() {
                 });
                 setPopoverOpen(false);
               },
-              onEditVisual: () => setStudioOpen(true),
+              onEditVisual: (sectionIndex) => {
+                setStudioOpen(true);
+                setFocusVisualSection(sectionIndex);
+              },
               onRefineLayout: (sectionIndex) => {
                 // Refine-layout reuses the existing Visual Studio HTML
                 // refine panel — open Studio so the editor lands in the
@@ -264,9 +282,14 @@ export default function ArticleDetailPage() {
                   domain: article.domain,
                 },
                 summary: article.summary,
+                sections: studioSections,
               }}
               audiencePersona={defaultPersona}
-              onClose={() => setStudioOpen(false)}
+              focusSectionIndex={focusVisualSection}
+              onClose={() => {
+                setStudioOpen(false);
+                setFocusVisualSection(null);
+              }}
             />
           </div>
         ) : (

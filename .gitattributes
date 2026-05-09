@@ -1,0 +1,6 @@
+# Enforce LF for shell scripts so Linux containers can exec them even
+# when checked out on Windows with core.autocrlf=true. Without this,
+# docker-entrypoint.sh gets CRLF line endings and the container fails
+# with "exec ./docker-entrypoint.sh: no such file or directory".
+*.sh text eol=lf
+docker-entrypoint*.sh text eol=lf

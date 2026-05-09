@@ -31,6 +31,8 @@ class PgLlmConfigRepository:
                     primary_model=defaults.primary_model,
                     drafting_model=defaults.drafting_model,
                     image_generation=defaults.image_generation,
+                    image_provider=defaults.image_provider,
+                    image_model=defaults.image_model,
                 )
                 db.add(row)
                 await db.commit()
@@ -49,12 +51,16 @@ class PgLlmConfigRepository:
                     primary_model=config.primary_model,
                     drafting_model=config.drafting_model,
                     image_generation=config.image_generation,
+                    image_provider=config.image_provider,
+                    image_model=config.image_model,
                 )
                 db.add(row)
             else:
                 row.primary_model = config.primary_model
                 row.drafting_model = config.drafting_model
                 row.image_generation = config.image_generation
+                row.image_provider = config.image_provider
+                row.image_model = config.image_model
             await db.commit()
             await db.refresh(row)
             logger.debug("llm_config_updated")
@@ -66,6 +72,8 @@ class PgLlmConfigRepository:
             primary_model=row.primary_model,
             drafting_model=row.drafting_model,
             image_generation=row.image_generation,
+            image_provider=row.image_provider,
+            image_model=row.image_model,
         )
 
 

@@ -1,6 +1,12 @@
 import type { SourceName } from "./sources";
 
-export type SettingsTab = "domains" | "llm" | "api-keys" | "seo" | "general";
+export type SettingsTab =
+  | "domains"
+  | "llm"
+  | "visuals"
+  | "api-keys"
+  | "seo"
+  | "general";
 
 // --- Domain ---
 
@@ -18,6 +24,7 @@ export interface DomainConfig {
 export type ApiKeyService =
   | "anthropic"
   | "openai"
+  | "google_ai"
   | "serpapi"
   | "ghost"
   | "newsapi"
@@ -31,6 +38,7 @@ export type ApiKeyService =
 export const API_KEY_SERVICES: { value: ApiKeyService; label: string }[] = [
   { value: "anthropic", label: "Anthropic API" },
   { value: "openai", label: "OpenAI" },
+  { value: "google_ai", label: "Google AI (Gemini / Imagen)" },
   { value: "serpapi", label: "SerpAPI" },
   { value: "ghost", label: "Ghost Admin" },
   { value: "newsapi", label: "NewsAPI" },
@@ -55,10 +63,64 @@ export type PrimaryModel = "claude-opus-4" | "claude-sonnet-4" | "gpt-4o";
 export type DraftingModel = "claude-sonnet-4" | "claude-opus-4" | "gpt-4o-mini";
 export type ImageModel = "stable-diffusion-xl" | "dall-e-3" | "midjourney";
 
+// Phase 2 visuals UX — provider/model selector for image generation.
+// Provider keys must match backend `src/services/visuals/providers/*`.
+export type ImageProvider =
+  | "dalle_3"
+  | "gemini_flash"
+  | "gemini_3_pro"
+  | "imagen_4";
+
+export const IMAGE_PROVIDER_OPTIONS: ReadonlyArray<{
+  value: ImageProvider;
+  label: string;
+  vendor: "openai" | "google";
+  models: ReadonlyArray<{ value: string; label: string }>;
+}> = [
+  {
+    value: "dalle_3",
+    label: "OpenAI · DALL·E 3",
+    vendor: "openai",
+    models: [{ value: "dall-e-3", label: "dall-e-3 (default)" }],
+  },
+  {
+    value: "gemini_flash",
+    label: "Google · Gemini Flash",
+    vendor: "google",
+    models: [
+      {
+        value: "gemini-2.5-flash-image",
+        label: "gemini-2.5-flash-image (default)",
+      },
+    ],
+  },
+  {
+    value: "gemini_3_pro",
+    label: "Google · Gemini 3 Pro (preview)",
+    vendor: "google",
+    models: [
+      {
+        value: "gemini-3-pro-image-preview",
+        label: "gemini-3-pro-image-preview (default)",
+      },
+    ],
+  },
+  {
+    value: "imagen_4",
+    label: "Google · Imagen 4",
+    vendor: "google",
+    models: [
+      { value: "imagen-4.0-generate-001", label: "imagen-4.0-generate-001 (default)" },
+    ],
+  },
+];
+
 export interface LlmConfig {
   primaryModel: PrimaryModel;
   draftingModel: DraftingModel;
   imageGeneration: ImageModel;
+  imageProvider: ImageProvider;
+  imageModel: string | null;
 }
 
 // --- SEO ---

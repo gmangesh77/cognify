@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     cors_allowed_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     rate_limit_default: str = "100/minute"
     api_v1_prefix: str = "/api/v1"
+    # Public-facing base URL of this API. Used to absolutify relative
+    # `generated_assets/...` URLs when serving the dashboard, and as a
+    # default for publishing transformers when no per-call override is
+    # given. Override via COGNIFY_API_BASE_URL.
+    api_base_url: str = "http://localhost:8000"
     jwt_private_key: str = ""
     jwt_public_key: str = ""
     jwt_algorithm: str = "RS256"
@@ -104,8 +109,10 @@ class Settings(BaseSettings):
     diagram_output_dir: str = "generated_assets/diagrams"
     # Visuals — generation (Epic 10 / VISUAL-004)
     enable_image_planner: bool = True  # flipped at end of Phase 5 / VISUAL-008
-    # gemini_flash | gemini_3_pro | imagen_4 | dalle_3
-    default_image_provider: str = "gemini_flash"
+    # dalle_3 | gemini_flash | gemini_3_pro | imagen_4
+    # Default to dalle_3 because OpenAI keys are commonly available;
+    # Google providers require COGNIFY_GOOGLE_AI_API_KEY.
+    default_image_provider: str = "dalle_3"
     image_model_gemini_flash: str = "gemini-2.5-flash-image"
     image_model_gemini_3_pro: str = "gemini-3-pro-image-preview"
     image_model_imagen_4: str = "imagen-4.0-generate-001"

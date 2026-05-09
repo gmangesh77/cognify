@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { persistSectionUpdate } from "@/lib/api/content";
 import type {
@@ -61,6 +61,30 @@ export function InlineProseEditor({
   const [draft, setDraft] = useState(initialMarkdown);
   const [state, setState] = useState<EditorState>(INITIAL_STATE);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const containerRef = useRef<HTMLElement | null>(null);
+
+  // On mount (which happens when sectionId changes thanks to the
+  // parent's `key={sectionId}`), scroll the editor into view and
+  // focus the textarea. Solves the "Edit text did nothing" UX where
+  // the editor mounts off-screen below a long article.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (el && typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    // requestAnimationFrame so focus runs after the scroll repaint;
+    // avoids the browser yanking the page back when focus() runs.
+    const raf =
+      typeof requestAnimationFrame === "function" ? requestAnimationFrame : null;
+    if (raf) {
+      const handle = raf(() => {
+        textareaRef.current?.focus();
+      });
+      return () => cancelAnimationFrame(handle);
+    }
+    textareaRef.current?.focus();
+    return undefined;
+  }, []);
 
   function handleSelect() {
     const ta = textareaRef.current;
@@ -101,6 +125,7 @@ export function InlineProseEditor({
 
   return (
     <section
+      ref={containerRef}
       role="group"
       aria-label="Inline prose editor"
       data-testid="inline-prose-editor"

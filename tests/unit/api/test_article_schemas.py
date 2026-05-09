@@ -58,3 +58,33 @@ class TestToImageResponse:
         response = _to_image_response(asset)
         assert response.metadata is not None
         assert response.metadata["source_section"] == -1
+
+    def test_relative_url_absolutified_when_api_base_given(self) -> None:
+        asset = ImageAsset(
+            url="generated_assets/charts/abc/img.png",
+            caption="Chart",
+            alt_text="Chart",
+        )
+        response = _to_image_response(asset, api_base_url="http://localhost:8000")
+        assert (
+            response.url == "http://localhost:8000/generated_assets/charts/abc/img.png"
+        )
+
+    def test_already_absolute_url_passes_through(self) -> None:
+        asset = ImageAsset(
+            url="https://cdn.example.com/img.png",
+            caption="Hosted",
+            alt_text="Hosted",
+        )
+        response = _to_image_response(asset, api_base_url="http://localhost:8000")
+        assert response.url == "https://cdn.example.com/img.png"
+
+    def test_omitting_api_base_preserves_url(self) -> None:
+        """Backwards-compat: callers that don't pass api_base_url get raw URL."""
+        asset = ImageAsset(
+            url="generated_assets/charts/abc/img.png",
+            caption="Chart",
+            alt_text="Chart",
+        )
+        response = _to_image_response(asset)
+        assert response.url == "generated_assets/charts/abc/img.png"

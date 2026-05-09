@@ -17,6 +17,7 @@ logger = structlog.get_logger()
 _SERVICE_TO_SETTING: dict[str, str] = {
     "anthropic": "anthropic_api_key",
     "openai": "openai_api_key",
+    "google_ai": "google_ai_api_key",
     "serpapi": "serpapi_api_key",
     "newsapi": "newsapi_api_key",
     "reddit_client_id": "reddit_client_id",

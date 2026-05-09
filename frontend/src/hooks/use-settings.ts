@@ -37,6 +37,8 @@ interface ApiLlmConfig {
   primary_model: string;
   drafting_model: string;
   image_generation: string;
+  image_provider: string;
+  image_model: string | null;
 }
 
 interface ApiSeoDefaults {
@@ -80,6 +82,8 @@ function toLlmConfig(api: ApiLlmConfig): LlmConfig {
     primaryModel: api.primary_model as PrimaryModel,
     draftingModel: api.drafting_model as DraftingModel,
     imageGeneration: api.image_generation as ImageModel,
+    imageProvider: (api.image_provider ?? "dalle_3") as LlmConfig["imageProvider"],
+    imageModel: api.image_model ?? null,
   };
 }
 
@@ -121,6 +125,8 @@ function fromLlmConfig(updates: Partial<LlmConfig>): Record<string, unknown> {
   if (updates.primaryModel !== undefined) out.primary_model = updates.primaryModel;
   if (updates.draftingModel !== undefined) out.drafting_model = updates.draftingModel;
   if (updates.imageGeneration !== undefined) out.image_generation = updates.imageGeneration;
+  if (updates.imageProvider !== undefined) out.image_provider = updates.imageProvider;
+  if (updates.imageModel !== undefined) out.image_model = updates.imageModel;
   return out;
 }
 
@@ -149,6 +155,8 @@ const DEFAULT_LLM_CONFIG: LlmConfig = {
   primaryModel: "claude-opus-4",
   draftingModel: "claude-sonnet-4",
   imageGeneration: "stable-diffusion-xl",
+  imageProvider: "dalle_3",
+  imageModel: null,
 };
 
 const DEFAULT_SEO_DEFAULTS: SeoDefaults = {
