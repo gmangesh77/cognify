@@ -74,9 +74,7 @@ class InMemoryArticleRepository:
         if existing is None:
             return None
         # CanonicalArticle is frozen — rebuild with the appended visual.
-        updated = existing.model_copy(
-            update={"visuals": [*existing.visuals, visual]}
-        )
+        updated = existing.model_copy(update={"visuals": [*existing.visuals, visual]})
         self._store[article_id] = updated
         return updated
 
