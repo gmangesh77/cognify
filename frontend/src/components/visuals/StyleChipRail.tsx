@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { StyleCatalogueEntry } from "@/types/visuals";
 
@@ -10,6 +11,9 @@ import type { StyleCatalogueEntry } from "@/types/visuals";
  * The selected chip is filled red; unselected chips are neutral pills.
  * Clicking a chip emits the catalogue key. Stays presentation-only —
  * the parent owns the selected key and the dispatch.
+ *
+ * The "+N more" affordance was previously a non-interactive span; it's
+ * now a button that expands the rail to show every catalogue entry.
  */
 export interface StyleChipRailProps {
   styles: StyleCatalogueEntry[];
@@ -27,8 +31,9 @@ export function StyleChipRail({
   visibleLimit = 6,
   className,
 }: StyleChipRailProps) {
-  const visible = styles.slice(0, visibleLimit);
-  const overflow = Math.max(0, styles.length - visible.length);
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? styles : styles.slice(0, visibleLimit);
+  const overflow = Math.max(0, styles.length - visibleLimit);
 
   return (
     <div
@@ -58,9 +63,15 @@ export function StyleChipRail({
         );
       })}
       {overflow > 0 ? (
-        <span className="text-xs font-medium text-neutral-500">
-          +{overflow} more
-        </span>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          data-testid="style-chip-rail-toggle"
+          className="rounded-full bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800"
+        >
+          {expanded ? "Show fewer" : `+${overflow} more`}
+        </button>
       ) : null}
     </div>
   );
