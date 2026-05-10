@@ -70,11 +70,26 @@ class ObjectStorage(Protocol):
 
 
 class LocalDiskObjectStorage:
-    """Writes bytes to disk under `visuals_output_dir`. Returns a relative path."""
+    """Writes bytes to disk under `output_dir`.
 
-    def __init__(self, output_dir: str) -> None:
+    When `api_base_url` + `public_path_prefix` are supplied, the
+    returned `StoredObject.url` is `${api_base_url}/${public_path_prefix}/${key}`,
+    pointing at the api's static `/generated_assets/` mount so the
+    dashboard's "Insert into article" flow can persist a hosted URL
+    without needing MinIO. Otherwise `url=None` (legacy behavior; the
+    render endpoint then falls back to base64).
+    """
+
+    def __init__(
+        self,
+        output_dir: str,
+        api_base_url: str = "",
+        public_path_prefix: str = "",
+    ) -> None:
         self._dir = Path(output_dir)
         self._dir.mkdir(parents=True, exist_ok=True)
+        self._api_base = api_base_url.rstrip("/")
+        self._prefix = public_path_prefix.strip("/")
 
     @property
     def name(self) -> str:
@@ -91,13 +106,17 @@ class LocalDiskObjectStorage:
         target = self._dir / sanitized
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(content)
+        url = self._build_url(sanitized) if self._api_base and self._prefix else None
         return StoredObject(
             key=sanitized,
-            url=None,
+            url=url,
             local_path=str(target),
             size_bytes=len(content),
             content_type=content_type,
         )
+
+    def _build_url(self, key: str) -> str:
+        return f"{self._api_base}/{self._prefix}/{key}"
 
 
 class MinioObjectStorage:
@@ -245,7 +264,17 @@ def select_object_storage(settings: Settings) -> ObjectStorage:
             "minio_misconfigured_falling_back_to_local",
             missing=_minio_missing_fields(settings),
         )
-    return LocalDiskObjectStorage(settings.visuals_output_dir)
+    # Derive a public URL prefix from visuals_output_dir relative to the
+    # api's static-assets root (`generated_assets/`), so the dashboard can
+    # fetch the rendered image and the Insert into article flow can persist
+    # a hosted URL even without MinIO.
+    out_dir = settings.visuals_output_dir.replace("\\", "/").lstrip("/")
+    public_prefix = out_dir if out_dir.startswith("generated_assets/") else ""
+    return LocalDiskObjectStorage(
+        settings.visuals_output_dir,
+        api_base_url=settings.api_base_url,
+        public_path_prefix=public_prefix,
+    )
 
 
 def _minio_config_complete(settings: Settings) -> bool:
