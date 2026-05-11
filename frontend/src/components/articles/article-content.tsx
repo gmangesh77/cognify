@@ -33,6 +33,14 @@ function splitBySections(md: string): string[] {
   return md.split(/\n(?=##\s)/);
 }
 
+// `splitBySections` uses a lookahead, so when the markdown starts directly
+// with `## Heading` (the common case), segments[0] IS the first section, not
+// a preamble. Backend `source_section_index` is 0-indexed into section_drafts,
+// so we must align frontend `sectionIdx` to the same origin.
+function hasPreamble(segments: string[]): boolean {
+  return !(segments[0]?.trimStart().startsWith("##") ?? false);
+}
+
 const PROSE_CLASS =
   "prose prose-neutral max-w-none prose-headings:font-heading prose-h2:mt-8 prose-h2:border-b prose-h2:border-neutral-200 prose-h2:pb-2 prose-h3:mt-6 prose-p:leading-7 prose-li:leading-7 prose-a:text-primary prose-a:no-underline hover:prose-a:underline";
 
@@ -54,6 +62,7 @@ export function ArticleContent({
     coverImages,
     sectionImages,
     segments,
+    sectionIdxOffset,
   } = useMemo(() => {
     const diagrams = visuals.filter(isDiagramVisual);
     const images = visuals.filter((v) => !isDiagramVisual(v));
@@ -83,12 +92,14 @@ export function ArticleContent({
         cover.push(img);
       }
     }
+    const segs = splitBySections(cleanMarkdown);
     return {
       overviewDiagrams: overview,
       sectionDiagrams: perSection,
       coverImages: cover,
       sectionImages: perSectionImg,
-      segments: splitBySections(cleanMarkdown),
+      segments: segs,
+      sectionIdxOffset: hasPreamble(segs) ? 1 : 0,
     };
   }, [cleanMarkdown, visuals]);
 
@@ -118,10 +129,12 @@ export function ArticleContent({
 
       <div className={PROSE_CLASS}>
         {segments.map((segment, i) => {
-          // segments[0] = preamble (before any ##); segments[1..] each start
-          // with an `##` heading. Section index within section_drafts is i-1
-          // for i >= 1. Overview diagrams render above this block.
-          const sectionIdx = i - 1;
+          // When the markdown has a preamble before the first `##` heading,
+          // segments[0] is the preamble (sectionIdx = -1) and segments[1..]
+          // map to section_drafts indices 0..N-1. When it starts directly
+          // with `##` (the common case), segments[0..] map to indices 0..N-1.
+          // `sectionIdxOffset` captures which case we're in.
+          const sectionIdx = i - sectionIdxOffset;
           const diagramsForSection =
             sectionIdx >= 0 ? (sectionDiagrams.get(sectionIdx) ?? []) : [];
           const imagesForSection =
