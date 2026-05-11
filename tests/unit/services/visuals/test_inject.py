@@ -162,6 +162,28 @@ class TestPickCoverVisual:
         picked = pick_cover_visual(article)
         assert picked is legacy
 
+    def test_recognises_role_style_hero_from_visual_studio_render(self) -> None:
+        # Visual Studio renders emit `role_style: "hero"` (not `type: "hero"`)
+        # and `section_index: -1`. They are not in `image_specs` because the
+        # spec id is a generated `fallback_*` rather than a planned id, so the
+        # spec_id lookup misses. The cover picker must still hoist them.
+        chart = ImageAsset(
+            url="/visuals/chart.png",
+            metadata={"chart_type": "bar", "source_section": 5},
+        )
+        studio_hero = ImageAsset(
+            url="/visuals/hero.png",
+            metadata={
+                "spec_id": "fallback_abc123",
+                "role_style": "hero",
+                "section_index": -1,
+                "provider": "dalle_3",
+            },
+        )
+        article = _article(image_specs=[], visuals=[chart, studio_hero])
+        picked = pick_cover_visual(article)
+        assert picked is studio_hero
+
     def test_returns_none_when_no_cover(self) -> None:
         section_spec = _spec("body", anchor="top", section_index=0)
         section_visual = ImageAsset(

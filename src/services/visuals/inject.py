@@ -44,13 +44,18 @@ def pick_cover_visual(article: CanonicalArticle) -> ImageAsset | None:
 
     Order of preference:
     1. A rendered visual whose `metadata.placement_anchor == "cover"`.
-    2. A rendered visual whose legacy `metadata.type == "hero"` (DALL-E
+    2. A rendered visual whose `metadata.role_style == "hero"` (Visual
+       Studio attach-visual flow + planned hero specs).
+    3. A rendered visual whose legacy `metadata.type == "hero"` (DALL-E
        hero from CONTENT-002 / VISUAL-002).
-    3. None — let the caller decide whether to fall back to article.visuals[0].
+    4. None — let the caller decide whether to fall back to article.visuals[0].
     """
     for asset in article.visuals:
         anchor = (asset.metadata or {}).get("placement_anchor")
         if anchor == "cover":
+            return asset
+    for asset in article.visuals:
+        if (asset.metadata or {}).get("role_style") == "hero":
             return asset
     for asset in article.visuals:
         if (asset.metadata or {}).get("type") == "hero":
@@ -72,22 +77,18 @@ def inject_visuals(article: CanonicalArticle, ctx: InjectionContext) -> str:
     spec_by_id: dict[str, ImageSpec] = {s.id: s for s in article.image_specs}
 
     cover_visual = pick_cover_visual(article)
-    cover_spec_id_raw = (
-        (cover_visual.metadata or {}).get("spec_id") if cover_visual else None
-    )
-    cover_spec_id_str: str | None = (
-        cover_spec_id_raw if isinstance(cover_spec_id_raw, str) else None
-    )
 
     # Bucket every rendered visual under the right section, skipping the
-    # cover (the transformer hoists that out separately).
+    # cover (the transformer hoists that out separately). Match by object
+    # identity so heroes without a `spec_id` (legacy DALL-E heroes) are
+    # also skipped, not just spec-id-tagged ones.
     planned: dict[int, list[ImageAsset]] = {}
     legacy: dict[int, list[ImageAsset]] = {}
     for asset in article.visuals:
+        if cover_visual is not None and asset is cover_visual:
+            continue
         meta = asset.metadata or {}
         spec_id = meta.get("spec_id")
-        if isinstance(spec_id, str) and spec_id == cover_spec_id_str:
-            continue
         if isinstance(spec_id, str) and spec_id in spec_by_id:
             section_index = spec_by_id[spec_id].placement.section_index
             planned.setdefault(section_index, []).append(asset)
