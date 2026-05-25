@@ -314,9 +314,7 @@ class TestVisualStudioHeroHoisting:
     def test_hero_lifted_to_feature_image(
         self, legacy_chart_plus_studio_hero_article: CanonicalArticle
     ) -> None:
-        result = GhostTransformer().transform(
-            legacy_chart_plus_studio_hero_article
-        )
+        result = GhostTransformer().transform(legacy_chart_plus_studio_hero_article)
         assert "feature_image" in result.metadata
         assert "hero.png" in str(result.metadata["feature_image"])
         assert "charts/run/abc.png" not in str(result.metadata["feature_image"])
@@ -324,18 +322,14 @@ class TestVisualStudioHeroHoisting:
     def test_hero_not_duplicated_in_body(
         self, legacy_chart_plus_studio_hero_article: CanonicalArticle
     ) -> None:
-        result = GhostTransformer().transform(
-            legacy_chart_plus_studio_hero_article
-        )
+        result = GhostTransformer().transform(legacy_chart_plus_studio_hero_article)
         # The hero is hoisted as feature_image; it must NOT appear in the body.
         assert "hero.png" not in result.content
 
     def test_chart_still_renders_inline(
         self, legacy_chart_plus_studio_hero_article: CanonicalArticle
     ) -> None:
-        result = GhostTransformer().transform(
-            legacy_chart_plus_studio_hero_article
-        )
+        result = GhostTransformer().transform(legacy_chart_plus_studio_hero_article)
         # The chart legacy figure is anchored to section 1, so it must remain
         # in the body even when a hero exists.
         assert "charts/run/abc.png" in result.content
