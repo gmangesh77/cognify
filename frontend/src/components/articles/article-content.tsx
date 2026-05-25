@@ -59,7 +59,7 @@ export function ArticleContent({
   const {
     overviewDiagrams,
     sectionDiagrams,
-    coverImages,
+    coverImage,
     sectionImages,
     segments,
     sectionIdxOffset,
@@ -76,27 +76,44 @@ export function ArticleContent({
         perSection.set(idx, bucket);
       }
     }
-    // Bucket non-diagram images: source_section = -1 (or missing) → cover.
-    // Other indices anchor to the section that owns them.
-    const cover: ImageAsset[] = [];
+    // Bucket non-diagram images.
+    //   * placement_anchor === "cover"  → article cover (rendered once at top)
+    //   * else use section_index (new planner) OR source_section (legacy)
+    //   * sections < 0 fall back to the cover slot
+    // Only the FIRST cover-candidate wins — multiple heroes are not stacked.
+    let cover: ImageAsset | null = null;
     const perSectionImg = new Map<number, ImageAsset[]>();
+    const sectionIndexOf = (img: ImageAsset): number | null => {
+      const meta = img.metadata ?? {};
+      const raw = meta.section_index ?? meta.source_section;
+      if (raw === undefined || raw === null) return null;
+      const n = typeof raw === "number" ? raw : Number.parseInt(String(raw), 10);
+      return Number.isFinite(n) ? n : null;
+    };
     for (const img of images) {
-      const idx = img.metadata?.source_section;
-      if (idx === undefined || idx === null || idx === -1) {
-        cover.push(img);
-      } else if (typeof idx === "number" && idx >= 0) {
+      const anchor = img.metadata?.placement_anchor;
+      const role = img.metadata?.role_style;
+      const idx = sectionIndexOf(img);
+      const isCoverCandidate =
+        anchor === "cover" || (anchor == null && idx == null && role === "hero");
+      if (isCoverCandidate) {
+        if (cover == null) cover = img; // first cover wins; ignore extra heroes
+        continue;
+      }
+      if (idx !== null && idx >= 0) {
         const bucket = perSectionImg.get(idx) ?? [];
         bucket.push(img);
         perSectionImg.set(idx, bucket);
-      } else {
-        cover.push(img);
+      } else if (cover == null) {
+        // Unanchored non-hero with no section — last-resort cover.
+        cover = img;
       }
     }
     const segs = splitBySections(cleanMarkdown);
     return {
       overviewDiagrams: overview,
       sectionDiagrams: perSection,
-      coverImages: cover,
+      coverImage: cover,
       sectionImages: perSectionImg,
       segments: segs,
       sectionIdxOffset: hasPreamble(segs) ? 1 : 0,
@@ -105,11 +122,9 @@ export function ArticleContent({
 
   return (
     <div>
-      {coverImages.length > 0 ? (
-        <div className="mb-8 flex flex-col gap-4">
-          {coverImages.map((img) => (
-            <ArticleImage key={img.id} asset={img} />
-          ))}
+      {coverImage ? (
+        <div className="mb-8">
+          <ArticleImage asset={coverImage} />
         </div>
       ) : null}
 
