@@ -145,4 +145,115 @@ describe("ArticleContent", () => {
       expect(screen.queryByTestId("mermaid-stub")).not.toBeInTheDocument();
     });
   });
+
+  describe("section indexing for non-diagram visuals", () => {
+    const makeChart = (
+      sourceSection: number | undefined,
+      id = "chart-1",
+    ): ImageAsset => ({
+      id,
+      url: `/assets/${id}.png`,
+      caption: `Caption ${id}`,
+      altText: `Alt ${id}`,
+      metadata:
+        sourceSection === undefined ? null : { source_section: sourceSection },
+    });
+
+    // Visuals (charts/images) render as Fragment siblings AFTER the section
+    // div, so to find the section the visual is anchored to, walk backward
+    // through siblings until we find a node with `data-section-index`.
+    function findAnchoringSection(node: Element): string | null {
+      let el: Element | null =
+        node.closest("figure")?.previousElementSibling ?? null;
+      while (el && !el.hasAttribute("data-section-index")) {
+        el = el.previousElementSibling;
+      }
+      return el?.getAttribute("data-section-index") ?? null;
+    }
+
+    it("renders a chart anchored to the last section when markdown starts with ##", () => {
+      // mockMarkdown has 2 sections (indices 0,1); chart anchored to last section.
+      render(
+        <ArticleContent
+          bodyMarkdown={mockMarkdown}
+          citations={[]}
+          visuals={[makeChart(1)]}
+        />,
+      );
+      const img = screen.getByRole("img", { name: "Alt chart-1" });
+      expect(findAnchoringSection(img)).toBe("1");
+    });
+
+    it("renders a chart anchored to section 0 when markdown starts with ##", () => {
+      render(
+        <ArticleContent
+          bodyMarkdown={mockMarkdown}
+          citations={[]}
+          visuals={[makeChart(0)]}
+        />,
+      );
+      const img = screen.getByRole("img", { name: "Alt chart-1" });
+      expect(findAnchoringSection(img)).toBe("0");
+    });
+
+    it("renders a chart anchored to section 0 when markdown starts with a preamble", () => {
+      const preambleMarkdown =
+        "Preamble paragraph.\n\n## First Section\n\nBody.\n\n## Second Section\n\nMore body.";
+      render(
+        <ArticleContent
+          bodyMarkdown={preambleMarkdown}
+          citations={[]}
+          visuals={[makeChart(0)]}
+        />,
+      );
+      const img = screen.getByRole("img", { name: "Alt chart-1" });
+      expect(findAnchoringSection(img)).toBe("0");
+    });
+
+    it("renders a cover image when source_section is missing", () => {
+      render(
+        <ArticleContent
+          bodyMarkdown={mockMarkdown}
+          citations={[]}
+          visuals={[makeChart(undefined)]}
+        />,
+      );
+      expect(
+        screen.getByRole("img", { name: "Alt chart-1" }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe("section indexing for diagram visuals", () => {
+    it("renders a section diagram under the correct section when markdown starts with ##", async () => {
+      const diagram: ImageAsset = {
+        id: "d-last",
+        url: "/assets/d-last.png",
+        caption: "Last section diagram",
+        altText: "Last",
+        metadata: {
+          diagram_type: "flowchart",
+          source_section: 1,
+          mermaid_syntax: "graph TD\n  X --> Y",
+        },
+      };
+      render(
+        <ArticleContent
+          bodyMarkdown={mockMarkdown}
+          citations={[]}
+          visuals={[diagram]}
+        />,
+      );
+      await waitFor(() => {
+        const stub = screen.getByTestId("mermaid-stub");
+        // Diagrams render as Fragment siblings AFTER the section div, so the
+        // previous sibling should be the section div with the matching index.
+        let el: Element | null = stub.previousElementSibling;
+        while (el && !el.hasAttribute("data-section-index")) {
+          el = el.previousElementSibling;
+        }
+        expect(el?.getAttribute("data-section-index")).toBe("1");
+      });
+    });
+  });
 });

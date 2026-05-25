@@ -235,6 +235,106 @@ class TestLinkedInMultiAnchor:
         assert "data-spec-id" not in result.content
 
 
+@pytest.fixture
+def legacy_chart_plus_studio_hero_article() -> CanonicalArticle:
+    """Article with a legacy chart and a Visual Studio-rendered hero.
+
+    Mirrors the production state where:
+      - the content pipeline produced a chart (no `spec_id`, `source_section=1`)
+      - the user later attached a hero via Visual Studio's `attach_visual`
+        endpoint (`spec_id = "fallback_*"`, `role_style = "hero"`,
+        `section_index = -1`).
+    Neither asset has a matching entry in `image_specs`.
+    """
+    now = datetime.now(UTC).isoformat()
+    chart = ImageAsset(
+        url="generated_assets/charts/run/abc.png",
+        caption="Workflow chart caption.",
+        alt_text="Workflow chart",
+        metadata={"chart_type": "bar", "source_section": 1},
+    )
+    studio_hero = ImageAsset(
+        url="http://localhost:8000/generated_assets/visuals/renders/hero.png",
+        caption="Hero cover.",
+        alt_text="",
+        metadata={
+            "spec_id": "fallback_abc123",
+            "role_style": "hero",
+            "section_index": -1,
+            "provider": "dalle_3",
+            "model": "dall-e-3",
+        },
+    )
+    return CanonicalArticle(
+        title="Hero plus chart",
+        body_markdown=(
+            "## Intro\n\n"
+            "First paragraph.\n\n"
+            "## Outlook\n\n"
+            "Closing paragraph with the chart anchor.\n"
+        ),
+        summary="Article with a Visual Studio hero attached after the fact.",
+        key_claims=["The hero is the cover."],
+        content_type=ContentType.ANALYSIS,
+        seo=SEOMetadata(
+            title="Hero plus chart",
+            description="Tests hero/chart hoisting.",
+            keywords=["hero", "chart"],
+            canonical_url="https://cognify.app/articles/hero-plus-chart",
+            structured_data=StructuredDataLD(
+                headline="Hero plus chart",
+                description="Tests hero/chart hoisting.",
+                keywords=["hero"],
+                author=SchemaOrgAuthor(),
+                datePublished=now,
+                dateModified=now,
+            ),
+        ),
+        citations=[Citation(index=1, title="S", url="https://e.test/1")],
+        authors=["Cognify"],
+        domain="engineering",
+        provenance=_provenance(),
+        image_specs=[],
+        visuals=[chart, studio_hero],
+    )
+
+
+class TestVisualStudioHeroHoisting:
+    """Regression suite for the user-reported duplicate-hero bug.
+
+    Before the fix:
+      - `pick_cover_visual` only recognised `metadata.type == "hero"`, so the
+        Visual Studio hero (which uses `role_style: "hero"`) was missed.
+      - The cover fell back to `visuals[0]` (the chart), and the actual hero
+        — having no matching `image_spec` — was injected into the body as an
+        article-level legacy figure (prepended).
+      - Result on Ghost: chart used as `feature_image`, hero duplicated in body.
+    """
+
+    def test_hero_lifted_to_feature_image(
+        self, legacy_chart_plus_studio_hero_article: CanonicalArticle
+    ) -> None:
+        result = GhostTransformer().transform(legacy_chart_plus_studio_hero_article)
+        assert "feature_image" in result.metadata
+        assert "hero.png" in str(result.metadata["feature_image"])
+        assert "charts/run/abc.png" not in str(result.metadata["feature_image"])
+
+    def test_hero_not_duplicated_in_body(
+        self, legacy_chart_plus_studio_hero_article: CanonicalArticle
+    ) -> None:
+        result = GhostTransformer().transform(legacy_chart_plus_studio_hero_article)
+        # The hero is hoisted as feature_image; it must NOT appear in the body.
+        assert "hero.png" not in result.content
+
+    def test_chart_still_renders_inline(
+        self, legacy_chart_plus_studio_hero_article: CanonicalArticle
+    ) -> None:
+        result = GhostTransformer().transform(legacy_chart_plus_studio_hero_article)
+        # The chart legacy figure is anchored to section 1, so it must remain
+        # in the body even when a hero exists.
+        assert "charts/run/abc.png" in result.content
+
+
 class TestGhostIdempotence:
     def test_double_transform_does_not_duplicate_spec_renders(
         self, multi_anchor_article: CanonicalArticle
