@@ -67,6 +67,31 @@ class TestChartNode:
         assert result["visuals"] == []
 
     @pytest.mark.asyncio
+    async def test_preserves_existing_visuals(self, tmp_path) -> None:
+        """chart_node must merge with prior visuals (e.g. image_planner output),
+        not overwrite them — overwriting caused planner heroes to be lost."""
+        from src.models.content import ImageAsset
+
+        planner_asset = ImageAsset(
+            url="generated_assets/visuals/hero.png",
+            caption="Hero rendered by image_planner",
+            alt_text="hero",
+            metadata={"spec_id": "intro_hero", "role_style": "hero"},
+        )
+        llm = AsyncMock()
+        llm.ainvoke.return_value = AsyncMock(content=json.dumps([VALID_SPEC]))
+        node = make_chart_node(llm, str(tmp_path))
+        state = {
+            "session_id": uuid4(),
+            "section_drafts": [_make_section(0, "Attacks: A=10, B=20.")],
+            "visuals": [planner_asset],
+        }
+        result = await node(state)
+        assert len(result["visuals"]) == 2
+        assert result["visuals"][0] is planner_asset
+        assert result["visuals"][1].caption == "A test chart."
+
+    @pytest.mark.asyncio
     async def test_skips_failed_renders(self, tmp_path) -> None:
         bad_spec = {
             **VALID_SPEC,

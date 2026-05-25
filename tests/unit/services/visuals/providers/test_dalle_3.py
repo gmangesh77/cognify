@@ -30,7 +30,9 @@ async def test_render_returns_image_render_result() -> None:
     assert result.provider == "dalle_3"
     assert result.image_bytes == b"\x89PNG\r\n\x1a\n"
     assert result.cost_usd == 0.04
-    assert result.width == 1792
+    # gpt-image-1 landscape size (the new default after OpenAI deprecated
+    # dall-e-3's 1792x1024 dimensions on newer accounts).
+    assert result.width == 1536
     assert result.height == 1024
 
 
@@ -51,7 +53,8 @@ async def test_render_maps_aspect_to_size() -> None:
     gen = _StubGenerator()
     provider = DalleThreeProvider(api_key="sk-test", generator=gen)  # type: ignore[arg-type]
     await provider.render(prompt="x", aspect_ratio="3:4")
-    assert gen.calls[0][1] == (1024, 1792)
+    # Portrait gpt-image-1 size (replaces dall-e-3's 1024x1792).
+    assert gen.calls[0][1] == (1024, 1536)
 
 
 @pytest.mark.asyncio

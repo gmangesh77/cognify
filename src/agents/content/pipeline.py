@@ -205,18 +205,6 @@ def build_content_graph(
             ),
         )
 
-    chart_dir = settings.chart_output_dir if settings else "generated_assets/charts"
-    graph.add_node(
-        "generate_charts", _wrap_node("charts", make_chart_node(llm, chart_dir), deps)
-    )
-    diagram_dir = (
-        settings.diagram_output_dir if settings else "generated_assets/diagrams"
-    )
-    graph.add_node(
-        "generate_diagrams",
-        _wrap_node("diagrams", make_diagram_node(llm, diagram_dir), deps),
-    )
-
     graph.add_conditional_edges(
         "generate_outline",
         _should_draft,
@@ -231,37 +219,52 @@ def build_content_graph(
     graph.add_edge("validate_article", "manage_citations")
     graph.add_edge("manage_citations", "humanize")
     graph.add_edge("humanize", "seo_optimize")
+
     if image_planner_enabled:
+        # New visual pipeline owns all imagery: hero + per-section
+        # role-aware illustrations rendered by the configured providers.
+        # Legacy chart/diagram/illustration nodes are bypassed because
+        # they emit a separate generator surface (matplotlib bar charts,
+        # Mermaid PNGs, a single DALL-E hero) that confuses the article
+        # with conflicting visual styles.
         graph.add_edge("seo_optimize", "image_planner")
         graph.add_edge("image_planner", "image_render")
-        graph.add_edge("image_render", "generate_charts")
+        graph.add_edge("image_render", END)
     else:
-        graph.add_edge("seo_optimize", "generate_charts")
-    # Legacy DALL-E illustration node — runs only when the new planner is OFF
-    # and an OpenAI key is configured. Phase 5 flips enable_image_planner=True
-    # and this branch becomes dormant; deletion is a future cleanup ticket.
-    if settings and settings.openai_api_key and not image_planner_enabled:
-        generator = OpenAIDalleGenerator(
-            api_key=settings.openai_api_key,
-            model=settings.dalle_model,
-            timeout=settings.illustration_timeout,
+        chart_dir = settings.chart_output_dir if settings else "generated_assets/charts"
+        graph.add_node(
+            "generate_charts",
+            _wrap_node("charts", make_chart_node(llm, chart_dir), deps),
+        )
+        diagram_dir = (
+            settings.diagram_output_dir if settings else "generated_assets/diagrams"
         )
         graph.add_node(
-            "generate_illustrations",
-            _wrap_node(
-                "illustrations",
-                make_illustration_node(
-                    llm, generator, settings.illustration_output_dir
-                ),
-                deps,
-            ),
+            "generate_diagrams",
+            _wrap_node("diagrams", make_diagram_node(llm, diagram_dir), deps),
         )
-        graph.add_edge("generate_charts", "generate_illustrations")
-        graph.add_edge("generate_illustrations", "generate_diagrams")
-    else:
-        graph.add_edge("generate_charts", "generate_diagrams")
-
-    graph.add_edge("generate_diagrams", END)
+        graph.add_edge("seo_optimize", "generate_charts")
+        if settings and settings.openai_api_key:
+            generator = OpenAIDalleGenerator(
+                api_key=settings.openai_api_key,
+                model=settings.dalle_model,
+                timeout=settings.illustration_timeout,
+            )
+            graph.add_node(
+                "generate_illustrations",
+                _wrap_node(
+                    "illustrations",
+                    make_illustration_node(
+                        llm, generator, settings.illustration_output_dir
+                    ),
+                    deps,
+                ),
+            )
+            graph.add_edge("generate_charts", "generate_illustrations")
+            graph.add_edge("generate_illustrations", "generate_diagrams")
+        else:
+            graph.add_edge("generate_charts", "generate_diagrams")
+        graph.add_edge("generate_diagrams", END)
 
     return graph.compile()
 

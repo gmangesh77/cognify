@@ -50,24 +50,38 @@ class OpenAIDalleGenerator:
         self._model = model
 
     async def generate(self, prompt: str, size: tuple[int, int]) -> bytes | None:
-        """Generate an image. Returns bytes on success, None on failure."""
+        """Generate an image. Returns bytes on success, None on failure.
+
+        The OpenAI Images API no longer accepts `response_format` on the
+        unified surface (gpt-image-1 returns base64 by default; the param
+        triggers 400 "Unknown parameter" even for legacy dall-e-3 accounts).
+        Handle both b64_json (gpt-image-1) and url (dall-e-3) response shapes.
+        """
         size_str = f"{size[0]}x{size[1]}"
         try:
             response = await self._client.images.generate(
                 model=self._model,
                 prompt=prompt,
                 size=size_str,
-                response_format="b64_json",
                 n=1,
             )
             if not response.data:
                 logger.warning("dalle_empty_response")
                 return None
-            b64_data = response.data[0].b64_json
-            if not b64_data:
-                logger.warning("dalle_no_b64_data")
-                return None
-            return base64.b64decode(b64_data)
+            datum = response.data[0]
+            b64_data = getattr(datum, "b64_json", None)
+            if b64_data:
+                return base64.b64decode(b64_data)
+            url = getattr(datum, "url", None)
+            if url:
+                import httpx
+
+                async with httpx.AsyncClient(timeout=30) as http:
+                    resp = await http.get(url)
+                    resp.raise_for_status()
+                    return resp.content
+            logger.warning("dalle_no_image_data")
+            return None
         except Exception as exc:
             logger.warning("dalle_generation_failed", error=str(exc))
             return None

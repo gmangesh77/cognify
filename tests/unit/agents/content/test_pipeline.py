@@ -404,6 +404,26 @@ class TestIllustrationNodeInGraph:
         assert "image_render" in node_names
         assert "generate_illustrations" not in node_names
 
+    def test_graph_excludes_charts_and_diagrams_when_planner_enabled(self) -> None:
+        """When the new visual pipeline is active, legacy matplotlib/Mermaid
+        nodes must not run — they emit a separate generator surface that
+        produces bar charts the planner is already responsible for."""
+        from unittest.mock import AsyncMock
+
+        from src.agents.content.pipeline import build_content_graph
+        from src.config.settings import Settings
+
+        llm = AsyncMock()
+        retriever = AsyncMock()
+        settings = Settings(
+            openai_api_key="test-key",
+            enable_image_planner=True,
+        )
+        graph = build_content_graph(llm, retriever, settings)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "generate_charts" not in node_names
+        assert "generate_diagrams" not in node_names
+
 
 class TestDiagramNodeInGraph:
     def test_graph_includes_diagram_node(self) -> None:
