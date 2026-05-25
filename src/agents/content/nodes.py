@@ -161,18 +161,19 @@ def make_chart_node(llm: BaseChatModel, output_dir: str) -> Any:  # noqa: ANN401
     """Factory for the chart generation node."""
 
     async def chart_node(state: ContentState) -> dict[str, object]:
+        existing = list(state.get("visuals", []))
         section_drafts = state.get("section_drafts", [])
         session_id: UUID = state["session_id"]
         if not section_drafts:
-            return {"visuals": []}
+            return {"visuals": existing}
         specs = await propose_charts(section_drafts, llm)
-        visuals = []
+        new_visuals: list[ImageAsset] = []
         for spec in specs:
             asset = await asyncio.to_thread(render_chart, spec, output_dir, session_id)
             if asset is not None:
-                visuals.append(asset)
-        logger.info("chart_generation_complete", chart_count=len(visuals))
-        return {"visuals": visuals}
+                new_visuals.append(asset)
+        logger.info("chart_generation_complete", chart_count=len(new_visuals))
+        return {"visuals": existing + new_visuals}
 
     return chart_node
 

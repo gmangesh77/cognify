@@ -103,7 +103,10 @@ class Settings(BaseSettings):
     # AI illustration generation (OpenAI DALL-E)
     openai_api_key: str = ""
     illustration_output_dir: str = "generated_assets/illustrations"
-    dalle_model: str = "dall-e-3"
+    # OpenAI deprecated dall-e-3 for newer accounts; gpt-image-1 is the
+    # current default. Legacy accounts that still have dall-e-3 can override
+    # via COGNIFY_DALLE_MODEL.
+    dalle_model: str = "gpt-image-1"
     illustration_timeout: float = 30.0
     # Diagram generation (Mermaid CLI)
     diagram_output_dir: str = "generated_assets/diagrams"

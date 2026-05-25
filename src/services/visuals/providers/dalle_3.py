@@ -15,13 +15,17 @@ from src.services.visuals.providers.base import (
     ImageRenderResult,
 )
 
-_DALLE_PRICE_USD_PER_IMAGE = 0.04  # standard quality
+_DALLE_PRICE_USD_PER_IMAGE = 0.04  # standard quality (approx; gpt-image-1 varies by quality tier)
+# gpt-image-1 sizes: 1024x1024 | 1536x1024 | 1024x1536 (or "auto").
+# dall-e-3 sizes (legacy): 1024x1024 | 1792x1024 | 1024x1792.
+# We pick gpt-image-1 dimensions by default; dall-e-3 accepts the 1024
+# square but not the 1536 dimensions, so legacy accounts should override.
 _ASPECT_TO_SIZE: dict[str, tuple[int, int]] = {
-    "16:9": (1792, 1024),
-    "4:3": (1792, 1024),  # closest landscape
+    "16:9": (1536, 1024),
+    "4:3": (1536, 1024),  # closest landscape
     "1:1": (1024, 1024),
-    "3:4": (1024, 1792),  # closest portrait
-    "4:5": (1024, 1792),
+    "3:4": (1024, 1536),  # closest portrait
+    "4:5": (1024, 1536),
 }
 
 
