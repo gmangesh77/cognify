@@ -15,7 +15,8 @@ from src.services.visuals.providers.base import (
     ImageRenderResult,
 )
 
-_DALLE_PRICE_USD_PER_IMAGE = 0.04  # standard quality (approx; gpt-image-1 varies by quality tier)
+# Approximate per-image cost — gpt-image-1 varies by quality tier.
+_DALLE_PRICE_USD_PER_IMAGE = 0.04
 # gpt-image-1 sizes: 1024x1024 | 1536x1024 | 1024x1536 (or "auto").
 # dall-e-3 sizes (legacy): 1024x1024 | 1792x1024 | 1024x1792.
 # We pick gpt-image-1 dimensions by default; dall-e-3 accepts the 1024

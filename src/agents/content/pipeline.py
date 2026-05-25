@@ -231,9 +231,7 @@ def build_content_graph(
         graph.add_edge("image_planner", "image_render")
         graph.add_edge("image_render", END)
     else:
-        chart_dir = (
-            settings.chart_output_dir if settings else "generated_assets/charts"
-        )
+        chart_dir = settings.chart_output_dir if settings else "generated_assets/charts"
         graph.add_node(
             "generate_charts",
             _wrap_node("charts", make_chart_node(llm, chart_dir), deps),
