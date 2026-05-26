@@ -192,9 +192,13 @@ def _build_asset(
         "width": result.width,
         "height": result.height,
     }
+    # Reader-facing caption is the planner's short title (spec.caption).
+    # Hero / background visuals are decorative and get no caption. We never
+    # use spec.rationale here — that is internal planning meta-commentary.
+    caption = None if spec.role_style in ("hero", "background") else spec.caption
     return ImageAsset(
         url=url,
-        caption=spec.rationale,
+        caption=caption,
         alt_text=spec.alt_text or None,
         metadata=metadata,
     )

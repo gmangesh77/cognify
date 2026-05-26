@@ -152,6 +152,57 @@ class TestImageRenderNode:
             assert len(visuals) == 1
             assert visuals[0].metadata.get("provider") == "gemini_flash"
 
+    async def test_caption_uses_spec_caption_for_non_hero(self) -> None:
+        reg, _ = _build_registry()
+        specs = [
+            _spec(
+                spec_id="diag",
+                role_style="concept",
+                placement=ImagePlacement(anchor="top", section_index=1),
+                caption="Pod DNS Query Flow",
+                rationale="internal: gives readers a mental model of resolution",
+            )
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            asset = (await node(_state(image_specs=specs)))["visuals"][0]
+            assert asset.caption == "Pod DNS Query Flow"
+            # The internal rationale must never leak into the caption.
+            assert "readers" not in (asset.caption or "")
+
+    async def test_hero_gets_no_caption(self) -> None:
+        reg, _ = _build_registry()
+        specs = [_spec(spec_id="cover", role_style="hero", caption="Some Title")]
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            asset = (await node(_state(image_specs=specs)))["visuals"][0]
+            assert asset.caption is None
+
+    async def test_caption_never_falls_back_to_rationale(self) -> None:
+        reg, _ = _build_registry()
+        specs = [
+            _spec(
+                spec_id="diag",
+                role_style="concept",
+                placement=ImagePlacement(anchor="top", section_index=1),
+                caption=None,
+                rationale="Fallback synthesised when LLM did not return a plan.",
+            )
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            asset = (await node(_state(image_specs=specs)))["visuals"][0]
+            assert asset.caption is None
+
     async def test_provider_failure_skips_spec(self) -> None:
         class ExplodingProvider:
             @property
