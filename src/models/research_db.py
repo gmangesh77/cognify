@@ -29,6 +29,7 @@ class ResearchSession(BaseModel):
     preferred_angle: str | None = None
     keywords: list[str] | None = None
     topic_description_override: str | None = None
+    structural_diagram_mode: str = "illustration"
     duration_seconds: float | None = None
     started_at: datetime
     completed_at: datetime | None = None

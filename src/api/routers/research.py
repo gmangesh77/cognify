@@ -94,6 +94,7 @@ async def create_research_session(
         preferred_angle=body.preferred_angle,
         keywords=body.keywords,
         topic_description_override=body.topic_description_override,
+        structural_diagram_mode=body.structural_diagram_mode,
     )
     topic = await svc.get_topic(body.topic_id)
     # Enrich topic with session context so the research planner can use

@@ -203,6 +203,34 @@ class TestImageRenderNode:
             asset = (await node(_state(image_specs=specs)))["visuals"][0]
             assert asset.caption is None
 
+    async def test_mermaid_spec_renders_diagram_metadata(self) -> None:
+        """A spec carrying mermaid_syntax skips the provider and emits a
+        diagram ImageAsset (mermaid_syntax + diagram_type in metadata)."""
+        reg, stub = _build_registry()
+        specs = [
+            _spec(
+                spec_id="diag",
+                role_style="concept",
+                placement=ImagePlacement(anchor="top", section_index=1),
+                caption="Sharding Flow",
+                mermaid_syntax="flowchart TD; A-->B",
+                diagram_type="flowchart",
+            )
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            asset = (await node(_state(image_specs=specs)))["visuals"][0]
+            assert asset.metadata.get("mermaid_syntax") == "flowchart TD; A-->B"
+            assert asset.metadata.get("diagram_type") == "flowchart"
+            assert asset.metadata.get("provider") == "mermaid"
+            assert asset.metadata.get("section_index") == 1
+            assert asset.caption == "Sharding Flow"
+            # The diffusion provider must NOT be called for a mermaid spec.
+            assert len(stub.calls) == 0
+
     async def test_provider_failure_skips_spec(self) -> None:
         class ExplodingProvider:
             @property

@@ -21,6 +21,8 @@ from typing import Any
 import structlog
 from langchain_core.language_models import BaseChatModel
 
+from src.agents.content.diagram_generator import generate_mermaid_for_spec
+from src.models.content_pipeline import SectionDraft
 from src.models.research import TopicInput
 from src.models.visual import ImageSpec
 from src.services.visuals.image_planner import (
@@ -29,6 +31,43 @@ from src.services.visuals.image_planner import (
 )
 
 logger = structlog.get_logger()
+
+# Structural roles that become Mermaid diagrams when the article opts into
+# `structural_diagram_mode == "mermaid"`. Other roles always stay diffusion.
+_MERMAID_ROLE_STYLES: frozenset[str] = frozenset(
+    {"concept", "process_step", "comparison_split"}
+)
+
+
+async def _attach_mermaid(
+    specs: list[ImageSpec],
+    section_drafts: list[SectionDraft],
+    llm: BaseChatModel,
+) -> None:
+    """Fill `mermaid_syntax` on structural specs (mutates in place).
+
+    Specs that fail generation are left untouched and fall back to a
+    diffusion render in the render node.
+    """
+    by_index = {d.section_index: d for d in section_drafts}
+    for spec in specs:
+        if spec.role_style not in _MERMAID_ROLE_STYLES:
+            continue
+        section = by_index.get(spec.placement.section_index)
+        if section is None:
+            continue
+        try:
+            result = await generate_mermaid_for_spec(
+                subject=spec.caption or spec.alt_text or spec.prompt,
+                section_title=section.title,
+                section_body=section.body_markdown,
+                llm=llm,
+            )
+        except Exception as exc:  # noqa: BLE001 — never crash the pipeline
+            logger.warning("spec_mermaid_failed", spec_id=spec.id, error=str(exc))
+            continue
+        if result is not None:
+            spec.mermaid_syntax, spec.diagram_type = result
 
 
 _ROLE_PRIORITY: dict[str, int] = {
@@ -154,12 +193,19 @@ def make_image_planner_node(
                 )
 
         kept = _truncate_to_total(all_specs, max_total_images)
+
+        diagram_mode = state.get("structural_diagram_mode") or "illustration"
+        if diagram_mode == "mermaid":
+            await _attach_mermaid(kept, section_drafts, llm)
+
         logger.info(
             "image_planner_complete",
             planned=len(all_specs),
             kept=len(kept),
             section_count=len(section_drafts),
             max_total=max_total_images,
+            diagram_mode=diagram_mode,
+            mermaid_specs=sum(1 for s in kept if s.mermaid_syntax),
         )
         return {"image_specs": kept}
 

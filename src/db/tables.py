@@ -82,6 +82,9 @@ class ResearchSessionRow(Base, UUIDMixin, TimestampMixin):
     preferred_angle: Mapped[str | None] = mapped_column(String(500), nullable=True)
     keywords: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     topic_description_override: Mapped[str | None] = mapped_column(Text, nullable=True)
+    structural_diagram_mode: Mapped[str] = mapped_column(
+        String(20), default="illustration", server_default="illustration"
+    )
 
     steps: Mapped[list["AgentStepRow"]] = relationship(
         back_populates="session",

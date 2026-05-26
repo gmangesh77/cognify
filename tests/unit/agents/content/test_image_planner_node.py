@@ -123,6 +123,38 @@ class TestImagePlannerNode:
         # The section spec carries section_index 0.
         assert specs[1].placement.section_index == 0
 
+    async def test_illustration_mode_leaves_specs_without_mermaid(self) -> None:
+        llm = FakeListChatModel(
+            responses=[COVER_HERO_GENERAL_JSON, GENERAL_BUSINESS_INTRO_CONCEPT_JSON]
+        )
+        node = make_image_planner_node(llm, enabled=True)
+        result = await node(_state(structural_diagram_mode="illustration"))
+        specs = result["image_specs"]
+        assert all(s.mermaid_syntax is None for s in specs)
+
+    async def test_mermaid_mode_attaches_syntax_to_structural_spec(self) -> None:
+        # 3 responses: cover plan, section plan (a concept spec), mermaid gen.
+        mermaid_json = (
+            '{"diagram_type": "flowchart", '
+            '"mermaid_syntax": "flowchart TD; A[Start] --> B[End]"}'
+        )
+        llm = FakeListChatModel(
+            responses=[
+                COVER_HERO_GENERAL_JSON,
+                GENERAL_BUSINESS_INTRO_CONCEPT_JSON,
+                mermaid_json,
+            ]
+        )
+        node = make_image_planner_node(llm, enabled=True)
+        result = await node(_state(structural_diagram_mode="mermaid"))
+        specs = result["image_specs"]
+        concept = next(s for s in specs if s.role_style == "concept")
+        assert concept.mermaid_syntax == "flowchart TD; A[Start] --> B[End]"
+        assert concept.diagram_type == "flowchart"
+        # The hero cover is NOT structural — it stays a diffusion spec.
+        cover = next(s for s in specs if s.placement.anchor == "cover")
+        assert cover.mermaid_syntax is None
+
     async def test_drops_per_section_heroes(self) -> None:
         """Only the article cover may be a hero. Section-level hero specs
         from the planner are silently dropped during truncation."""

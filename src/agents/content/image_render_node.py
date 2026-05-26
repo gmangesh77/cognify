@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
@@ -56,6 +57,12 @@ def make_image_render_node(
         page_direction: str | None,
         session_id: UUID | None,
     ) -> ImageAsset | None:
+        # VISUAL-012 — Mermaid path: when the planner attached mermaid_syntax
+        # (structural role + mermaid mode), render it deterministically via
+        # mermaid-cli instead of calling a diffusion provider.
+        if spec.mermaid_syntax:
+            return await _render_mermaid_asset(spec, storage, session_id)
+
         provider = _resolve_provider(spec, registry, default_provider)
         if provider is None:
             logger.warning(
@@ -165,6 +172,61 @@ async def _persist(
         key=key,
         content=result.image_bytes,
         content_type=result.mime_type,
+    )
+
+
+async def _render_mermaid_asset(
+    spec: ImageSpec,
+    storage: ObjectStorage,
+    session_id: UUID | None,
+) -> ImageAsset | None:
+    """Render a planner Mermaid spec to a PNG and emit a diagram ImageAsset.
+
+    If the mermaid-cli render fails (e.g. mmdc not installed) the asset is
+    still emitted — the dashboard `MermaidDiagram` component renders
+    client-side from `mermaid_syntax` and ignores the URL. The URL falls
+    back to the object key so the (publishing) consumer has a stable path
+    once a PNG is produced. The syntax travels in metadata either way.
+    """
+    import tempfile
+
+    from src.agents.content.diagram_generator import render_mermaid
+
+    syntax = spec.mermaid_syntax or ""
+    base_key = make_object_key(spec_id=spec.id, ext="png")
+    key = f"sessions/{session_id}/{base_key}" if session_id else base_key
+    # Non-empty fallback so ImageAsset.url validates even when mmdc is
+    # unavailable; the dashboard renders from mermaid_syntax regardless.
+    url = key
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            png = Path(tmp) / "diagram.png"
+            if await render_mermaid(syntax, png) and png.exists():
+                stored = await storage.put(
+                    key=key,
+                    content=png.read_bytes(),
+                    content_type="image/png",
+                )
+                url = stored.url or stored.local_path or stored.key
+    except Exception as exc:  # noqa: BLE001 — never crash the pipeline
+        logger.warning("mermaid_asset_render_failed", spec_id=spec.id, error=str(exc))
+
+    caption = None if spec.role_style in ("hero", "background") else spec.caption
+    metadata: dict[str, str | int | float | None] = {
+        "spec_id": spec.id,
+        "role_style": spec.role_style,
+        "section_index": spec.placement.section_index,
+        "placement_anchor": spec.placement.anchor,
+        "diagram_type": spec.diagram_type or "flowchart",
+        "mermaid_syntax": syntax,
+        "provider": "mermaid",
+    }
+    logger.info("mermaid_asset_complete", spec_id=spec.id, rendered=bool(url))
+    return ImageAsset(
+        url=url,
+        caption=caption,
+        alt_text=spec.alt_text or None,
+        metadata=metadata,
     )
 
 

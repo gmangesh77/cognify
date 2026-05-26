@@ -134,6 +134,7 @@ class ContentService:
                 "content_tone": session.content_tone,
                 "preferred_angle": session.preferred_angle,
                 "keywords": session.keywords,
+                "structural_diagram_mode": session.structural_diagram_mode,
                 # VISUAL-005 / Phase 2 — image planner inputs. Phase 7 will
                 # surface these via the Settings UI; until then they default to
                 # None and the planner falls back to general_business.

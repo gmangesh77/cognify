@@ -1,6 +1,7 @@
 """Request/response schemas for the research sessions API."""
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -13,6 +14,9 @@ class CreateResearchSessionRequest(BaseModel):
     preferred_angle: str | None = None
     keywords: list[str] | None = None
     topic_description_override: str | None = None
+    # How structural diagrams (concept / process_step / comparison_split)
+    # are rendered: "illustration" (gpt-image-1) or "mermaid".
+    structural_diagram_mode: Literal["illustration", "mermaid"] = "illustration"
 
 
 class CreateResearchSessionResponse(BaseModel):
