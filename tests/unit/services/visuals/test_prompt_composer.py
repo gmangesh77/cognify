@@ -16,9 +16,12 @@ from __future__ import annotations
 
 from src.models.visual import ImagePlacement, ImageSpec
 from src.services.visuals.prompt_composer import (
+    LABELED_DIAGRAM_CLAUSE,
+    LABELED_ROLE_STYLES,
     NO_TEXT_CLAUSE,
     aspect_instruction,
     build_prompt,
+    rendering_clause_for_role,
 )
 
 
@@ -43,6 +46,54 @@ class TestNoTextClause:
 
     def test_clause_capped_under_800_chars(self) -> None:
         assert len(NO_TEXT_CLAUSE) <= 800
+
+
+class TestRoleAwareRenderingClause:
+    """Diagrammatic roles require labels; illustrative roles ban text."""
+
+    def test_labeled_roles_cover_the_explanatory_set(self) -> None:
+        assert sorted(LABELED_ROLE_STYLES) == [
+            "comparison_split",
+            "concept",
+            "process_step",
+            "screenshot_mock",
+            "stat_card",
+        ]
+
+    def test_hero_role_gets_no_text_clause(self) -> None:
+        assert rendering_clause_for_role("hero") is NO_TEXT_CLAUSE
+
+    def test_editorial_role_gets_no_text_clause(self) -> None:
+        assert rendering_clause_for_role("editorial") is NO_TEXT_CLAUSE
+
+    def test_diagram_roles_get_labeling_clause(self) -> None:
+        for role in LABELED_ROLE_STYLES:
+            assert rendering_clause_for_role(role) is LABELED_DIAGRAM_CLAUSE
+
+    def test_concept_prompt_requires_labels_not_text_ban(self) -> None:
+        prompt = build_prompt(spec=_spec(role_style="concept"))
+        assert "label" in prompt.lower()
+        # The hard no-text ban must NOT be present for a diagrammatic role.
+        assert NO_TEXT_CLAUSE not in prompt
+
+    def test_process_step_prompt_overrides_style_no_text(self) -> None:
+        # isometric_3d (process_step default) says "No baked-in text" — the
+        # labeling clause must explicitly override that.
+        prompt = build_prompt(
+            spec=_spec(role_style="process_step", visual_style="isometric_3d")
+        )
+        assert "override" in prompt.lower()
+        assert "label" in prompt.lower()
+
+    def test_hero_prompt_still_bans_text(self) -> None:
+        prompt = build_prompt(spec=_spec(role_style="hero"))
+        assert NO_TEXT_CLAUSE in prompt
+
+
+class TestLabeledDiagramClause:
+    def test_clause_is_substantial_and_capped(self) -> None:
+        assert 200 <= len(LABELED_DIAGRAM_CLAUSE) <= 900
+        assert "label" in LABELED_DIAGRAM_CLAUSE.lower()
 
 
 class TestAspectInstruction:
