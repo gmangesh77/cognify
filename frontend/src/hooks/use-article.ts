@@ -44,6 +44,12 @@ function toDetail(a: ArticleResponse): ArticleDetail {
             diagram_type: v.metadata.diagram_type,
             source_section: v.metadata.source_section,
             mermaid_syntax: v.metadata.mermaid_syntax,
+            // Image-planner (Epic 10) placement fields — required so
+            // ArticleContent can interleave planned visuals into their
+            // sections instead of dumping them all into the cover slot.
+            section_index: v.metadata.section_index,
+            placement_anchor: v.metadata.placement_anchor,
+            role_style: v.metadata.role_style,
           }
         : null,
     })),

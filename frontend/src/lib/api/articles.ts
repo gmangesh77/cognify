@@ -40,6 +40,9 @@ export interface ArticleResponse {
       diagram_type?: string;
       source_section?: number;
       mermaid_syntax?: string;
+      section_index?: number;
+      placement_anchor?: string;
+      role_style?: string;
     } | null;
   }[];
   provenance: {
