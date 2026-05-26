@@ -15,10 +15,14 @@ Decision tree (mirrors `apps/api/routers/generate.py:2988` in impactai):
 | unset           | set          | spec subject + style fragment                   |
 | unset           | unset        | spec subject only                               |
 
-Every branch ends with the no-text clause. For Gemini Flash (which
-ignores the aspect API parameter) we additionally append an
-`aspect_instruction` sentence so the model composes for the requested
-ratio.
+Every branch ends with a role-aware rendering clause: illustrative roles
+(hero/editorial/feature_card/quote_card/background) get the strict
+no-text clause, while explanatory roles (concept/process_step/
+comparison_split/stat_card/screenshot_mock) get a labeling clause that
+REQUIRES legible in-image labels — an unlabeled diagram conveys nothing.
+For Gemini Flash (which ignores the aspect API parameter) we additionally
+append an `aspect_instruction` sentence so the model composes for the
+requested ratio.
 """
 
 from __future__ import annotations
@@ -40,6 +44,47 @@ NO_TEXT_CLAUSE: str = (
     "wording, billboards, signage, computer screens with code or copy, "
     "or any other text-bearing surface."
 )
+
+# Explanatory roles (diagrams, flows, comparisons, stat cards, UI mocks)
+# are useless without labels — an unlabeled box conveys nothing. For these
+# the diagram must be self-explanatory, so we REQUIRE short legible labels
+# instead of banning text. Illustrative roles (hero/editorial/etc.) keep
+# NO_TEXT_CLAUSE so they stay clean, title-free art.
+LABELED_DIAGRAM_CLAUSE: str = (
+    "Labeling rules (these OVERRIDE any earlier 'no text', 'no labels', or "
+    "'implied callouts' instruction above — for this diagram, in-image text "
+    "is required): this is an explanatory diagram and must be "
+    "self-explanatory at a glance. Place a concise, correctly-spelled text "
+    "label on every meaningful element — each box, node, lane, column, "
+    "axis, step, or arrow that carries distinct meaning gets its own label "
+    "of 1 to 4 words in a clean sans-serif. Add one short title (max 6 "
+    "words) if it aids comprehension. Spelling must be correct and every "
+    "label legible at normal viewing size. Keep typography strictly "
+    "functional: short labels and the single title only — no paragraphs, "
+    "no body copy, no decorative lettering, no logos, no watermarks, no "
+    "fake UI chrome. A reader must understand what each shape represents "
+    "from its label alone."
+)
+
+# role_style values whose whole purpose is to explain structure and
+# therefore require in-image labels (see ImageRoleStyle in models/visual.py).
+LABELED_ROLE_STYLES: frozenset[str] = frozenset(
+    {
+        "concept",
+        "process_step",
+        "comparison_split",
+        "stat_card",
+        "screenshot_mock",
+    }
+)
+
+
+def rendering_clause_for_role(role_style: str) -> str:
+    """Pick the label-requiring or text-banning clause for a role_style."""
+    if role_style in LABELED_ROLE_STYLES:
+        return LABELED_DIAGRAM_CLAUSE
+    return NO_TEXT_CLAUSE
+
 
 _ASPECT_INSTRUCTIONS: dict[str, str] = {
     "16:9": (
@@ -112,7 +157,7 @@ def build_prompt(
         # Branch 4: subject alone.
         body = spec.prompt.strip()
 
-    parts: list[str] = [body, NO_TEXT_CLAUSE]
+    parts: list[str] = [body, rendering_clause_for_role(spec.role_style)]
 
     # Gemini Flash ignores its aspect parameter — embed it in the prompt.
     if spec.provider == "gemini_flash":

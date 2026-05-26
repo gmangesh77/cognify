@@ -81,11 +81,12 @@ _STYLE_ENTRIES: tuple[dict[str, str], ...] = (
         "label": "Blueprint",
         "category": "technical",
         "default_aspect": "16:9",
-        "short_desc": "White technical line drawing on slate background",
+        "short_desc": "White technical line drawing on slate, with labels",
         "prompt_fragment": (
             "Render as a technical blueprint: white line drawing on a slate "
-            "background. Schematic, geometric, no decoration. No baked-in "
-            "labels or callout text — leave space for typographic overlay."
+            "background. Schematic, geometric, minimal decoration. Add short, "
+            "legible, correctly-spelled labels on the key components so the "
+            "schematic is self-explanatory."
         ),
     },
     {
@@ -153,11 +154,12 @@ _STYLE_ENTRIES: tuple[dict[str, str], ...] = (
         "label": "Technical Diagram",
         "category": "technical",
         "default_aspect": "4:3",
-        "short_desc": "Minimal technical diagram with implied callouts",
+        "short_desc": "Minimal labelled technical diagram",
         "prompt_fragment": (
-            "Render as a minimal technical diagram. Geometric shapes with "
-            "implied callouts (no actual text), neutral slate palette with a "
-            "single warm coral accent. Leave room for typographic labels."
+            "Render as a minimal technical diagram. Clean geometric shapes "
+            "(boxes, nodes, arrows) with short, legible, correctly-spelled "
+            "labels on each element so the structure reads at a glance. "
+            "Neutral slate palette with a single warm coral accent."
         ),
     },
 )
