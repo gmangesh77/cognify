@@ -46,6 +46,12 @@ export interface ImageAssetMetadata {
   diagram_type?: string;
   source_section?: number;
   mermaid_syntax?: string;
+  // Image-planner (Epic 10) fields. The planner stamps `section_index`
+  // (not the legacy `source_section`), plus the placement anchor and the
+  // role_style used to decide cover vs inline rendering.
+  section_index?: number;
+  placement_anchor?: string;
+  role_style?: string;
 }
 
 export interface ImageAsset {
