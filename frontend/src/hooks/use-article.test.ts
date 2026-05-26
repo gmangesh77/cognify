@@ -85,4 +85,38 @@ describe("useArticle", () => {
     expect(a.citations.length).toBeGreaterThanOrEqual(5);
     expect(a.keyClaims.length).toBeGreaterThanOrEqual(3);
   });
+
+  it("preserves image-planner placement metadata for interleaving", async () => {
+    // Regression: toDetail() used to rebuild metadata with only the legacy
+    // diagram fields, dropping section_index / placement_anchor / role_style.
+    // That silently routed every planner visual into the cover slot.
+    mockFetchArticle.mockResolvedValue({
+      ...mockArticle,
+      visuals: [
+        {
+          id: "v-cover",
+          url: "/img/cover.png",
+          caption: "Hero",
+          alt_text: "hero",
+          metadata: { role_style: "hero", placement_anchor: "cover", section_index: -1 },
+        },
+        {
+          id: "v-1",
+          url: "/img/concept.png",
+          caption: "Concept",
+          alt_text: "concept",
+          metadata: { role_style: "concept", placement_anchor: "between_paragraphs", section_index: 1 },
+        },
+      ],
+    });
+    const { result } = renderHook(() => useArticle("art-001"), { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(result.current.article).not.toBeNull();
+    });
+    const visuals = result.current.article!.visuals;
+    expect(visuals[0].metadata?.placement_anchor).toBe("cover");
+    expect(visuals[1].metadata?.section_index).toBe(1);
+    expect(visuals[1].metadata?.placement_anchor).toBe("between_paragraphs");
+    expect(visuals[1].metadata?.role_style).toBe("concept");
+  });
 });

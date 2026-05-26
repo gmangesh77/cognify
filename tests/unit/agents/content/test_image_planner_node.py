@@ -18,6 +18,7 @@ from src.models.content_pipeline import (
 from src.models.research import TopicInput
 from tests.fixtures.visual_planner.planner_responses import (
     COVER_HERO_GENERAL_JSON,
+    GENERAL_BUSINESS_INTRO_CONCEPT_JSON,
     GENERAL_BUSINESS_INTRO_JSON,
 )
 
@@ -104,7 +105,10 @@ class TestImagePlannerNode:
 
     async def test_plans_cover_and_section_specs_when_enabled(self) -> None:
         llm = FakeListChatModel(
-            responses=[COVER_HERO_GENERAL_JSON, GENERAL_BUSINESS_INTRO_JSON]
+            responses=[
+                COVER_HERO_GENERAL_JSON,
+                GENERAL_BUSINESS_INTRO_CONCEPT_JSON,
+            ]
         )
         node = make_image_planner_node(llm, enabled=True)
         result = await node(_state())
@@ -119,9 +123,40 @@ class TestImagePlannerNode:
         # The section spec carries section_index 0.
         assert specs[1].placement.section_index == 0
 
-    async def test_threads_audience_persona_from_state(self) -> None:
+    async def test_drops_per_section_heroes(self) -> None:
+        """Only the article cover may be a hero. Section-level hero specs
+        from the planner are silently dropped during truncation."""
         llm = FakeListChatModel(
             responses=[COVER_HERO_GENERAL_JSON, GENERAL_BUSINESS_INTRO_JSON]
+        )
+        node = make_image_planner_node(llm, enabled=True)
+        result = await node(_state())
+        specs = result["image_specs"]
+        assert len(specs) == 1
+        assert specs[0].placement.anchor == "cover"
+        assert specs[0].role_style == "hero"
+
+    async def test_enforces_max_total_cap(self) -> None:
+        """`max_total_images` is a hard ceiling across cover + inline."""
+        llm = FakeListChatModel(
+            responses=[
+                COVER_HERO_GENERAL_JSON,
+                GENERAL_BUSINESS_INTRO_CONCEPT_JSON,
+            ]
+        )
+        node = make_image_planner_node(llm, enabled=True, max_total_images=1)
+        result = await node(_state())
+        specs = result["image_specs"]
+        assert len(specs) == 1
+        # The cover wins when only 1 slot is available.
+        assert specs[0].placement.anchor == "cover"
+
+    async def test_threads_audience_persona_from_state(self) -> None:
+        llm = FakeListChatModel(
+            responses=[
+                COVER_HERO_GENERAL_JSON,
+                GENERAL_BUSINESS_INTRO_CONCEPT_JSON,
+            ]
         )
         node = make_image_planner_node(llm, enabled=True)
         # audience_persona on the state replaces the default.

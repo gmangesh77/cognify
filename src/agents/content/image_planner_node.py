@@ -31,11 +31,71 @@ from src.services.visuals.image_planner import (
 logger = structlog.get_logger()
 
 
+_ROLE_PRIORITY: dict[str, int] = {
+    # Lower number = higher priority when truncating to the global cap.
+    "concept": 0,
+    "diagram": 1,
+    "process_step": 2,
+    "comparison_split": 3,
+    "stat_card": 4,
+    "editorial": 5,
+}
+
+
+def _truncate_to_total(specs: list[ImageSpec], max_total: int) -> list[ImageSpec]:
+    """Trim `specs` to at most `max_total` while keeping cover + variety.
+
+    Strategy:
+      1. Always keep the article cover (anchor == "cover") if present.
+      2. Drop per-section heroes — the article cover is the only hero.
+      3. From the remaining specs, keep one per section before allowing
+         a second image in any single section (prefer section variety).
+      4. Within a section's queue, prefer information-bearing roles
+         (concept/diagram/process_step) over editorial/stat.
+    """
+    if max_total <= 0:
+        return []
+
+    cover = next(
+        (s for s in specs if s.placement.anchor == "cover"),
+        None,
+    )
+    kept: list[ImageSpec] = []
+    if cover is not None:
+        kept.append(cover)
+
+    # Drop per-section heroes — only the article cover may be a hero.
+    inline = [s for s in specs if s is not cover and s.role_style != "hero"]
+    # Sort inline candidates: section_index then role priority then spec id.
+    inline.sort(
+        key=lambda s: (
+            s.placement.section_index,
+            _ROLE_PRIORITY.get(s.role_style, 99),
+            s.id,
+        )
+    )
+    # Round-robin one per section first, then second pass for any leftovers.
+    by_section: dict[int, list[ImageSpec]] = {}
+    for spec in inline:
+        by_section.setdefault(spec.placement.section_index, []).append(spec)
+    rounds: list[ImageSpec] = []
+    while by_section and len(kept) + len(rounds) < max_total:
+        for idx in sorted(by_section.keys()):
+            if not by_section[idx]:
+                continue
+            rounds.append(by_section[idx].pop(0))
+            if len(kept) + len(rounds) >= max_total:
+                break
+        by_section = {k: v for k, v in by_section.items() if v}
+    return kept + rounds
+
+
 def make_image_planner_node(
     llm: BaseChatModel,
     *,
     enabled: bool = False,
-    max_images_per_section: int = 4,
+    max_images_per_section: int = 1,
+    max_total_images: int = 3,
 ) -> Any:  # noqa: ANN401
     """Factory returning a LangGraph node fn for image planning."""
 
@@ -93,11 +153,14 @@ def make_image_planner_node(
                     error=str(exc),
                 )
 
+        kept = _truncate_to_total(all_specs, max_total_images)
         logger.info(
             "image_planner_complete",
-            spec_count=len(all_specs),
+            planned=len(all_specs),
+            kept=len(kept),
             section_count=len(section_drafts),
+            max_total=max_total_images,
         )
-        return {"image_specs": all_specs}
+        return {"image_specs": kept}
 
     return image_planner_node

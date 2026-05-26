@@ -116,6 +116,28 @@ COVER_HERO_CTO_JSON = """
 }
 """
 
+# Per-section: general_business / intro — non-hero variant used by the
+# node-level tests after the visual-cap policy stopped keeping per-section
+# heroes (only the article cover may be a hero).
+GENERAL_BUSINESS_INTRO_CONCEPT_JSON = """
+[
+  {
+    "id": "intro_concept",
+    "role_style": "concept",
+    "visual_style": "isometric_3d",
+    "prompt": "An isometric illustration of stacked planning tiles.",
+    "alt_text": "Stacked planning tiles",
+    "aspect_ratio": "16:9",
+    "placement": {
+      "anchor": "between_paragraphs",
+      "paragraph_index": 1,
+      "section_index": 0
+    },
+    "rationale": "Adds a quiet structural visual to the section intro."
+  }
+]
+"""
+
 # Garbage response → forces fallback
 GARBAGE_RESPONSE = "this is not JSON, just chatter"
 

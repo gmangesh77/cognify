@@ -120,7 +120,13 @@ class Settings(BaseSettings):
     image_model_gemini_3_pro: str = "gemini-3-pro-image-preview"
     image_model_imagen_4: str = "imagen-4.0-generate-001"
     image_render_concurrency: int = 3
-    image_planner_max_images_per_section: int = 4
+    # Per-section max — kept low because most sections do not benefit from
+    # a visual. The planner is prompted to return 0 when nothing fits.
+    image_planner_max_images_per_section: int = 1
+    # Hard cap across the whole article (cover + inline). One hero plus at
+    # most a couple of inline visuals reads cleanly and keeps render cost
+    # bounded. Enforced post-planning in image_planner_node._truncate_total.
+    image_planner_max_total_images: int = 3
     google_ai_api_key: str = ""
     imagen_4_enabled: bool = False  # gates Premium tier in UI
     gemini_3_pro_enabled: bool = True  # gates Mid tier (preview model)

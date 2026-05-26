@@ -177,6 +177,7 @@ def build_content_graph(
     if image_planner_enabled:
         assert settings is not None  # noqa: S101 — guarded above
         max_per_section = settings.image_planner_max_images_per_section
+        max_total = settings.image_planner_max_total_images
         graph.add_node(
             "image_planner",
             _wrap_node(
@@ -185,6 +186,7 @@ def build_content_graph(
                     llm,
                     enabled=True,
                     max_images_per_section=max_per_section,
+                    max_total_images=max_total,
                 ),
                 deps,
             ),
