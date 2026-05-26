@@ -82,6 +82,7 @@ class PgResearchSessionRepository:
                 preferred_angle=session.preferred_angle,
                 keywords=session.keywords,
                 topic_description_override=session.topic_description_override,
+                structural_diagram_mode=session.structural_diagram_mode,
             )
             db.add(row)
             await db.commit()
@@ -123,6 +124,7 @@ class PgResearchSessionRepository:
             row.preferred_angle = session.preferred_angle
             row.keywords = session.keywords
             row.topic_description_override = session.topic_description_override
+            row.structural_diagram_mode = session.structural_diagram_mode
             await db.commit()
             await db.refresh(row)
             updated = self._to_model(row)
@@ -193,6 +195,7 @@ class PgResearchSessionRepository:
             preferred_angle=row.preferred_angle,
             keywords=row.keywords,
             topic_description_override=row.topic_description_override,
+            structural_diagram_mode=row.structural_diagram_mode or "illustration",
         )
 
 

@@ -127,3 +127,8 @@ class ImageSpec(BaseModel):
     placement: ImagePlacement = Field(default_factory=ImagePlacement)
     rationale: str | None = None
     provider: ImageProviderKey | None = None
+    # VISUAL-012 — set when structural_diagram_mode == "mermaid" for a
+    # structural role. When present, the render node renders Mermaid to PNG
+    # (via mermaid-cli) instead of calling an image provider.
+    mermaid_syntax: str | None = None
+    diagram_type: str | None = None

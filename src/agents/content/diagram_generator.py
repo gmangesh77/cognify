@@ -103,6 +103,56 @@ async def render_mermaid(syntax: str, output_path: Path) -> bool:
         return False
 
 
+_SPEC_MERMAID_TEMPLATE = (
+    "You are a technical diagram expert. The article section below needs a "
+    "single Mermaid diagram that visualises this idea:\n"
+    '  "{subject}"\n\n'
+    "Choose the Mermaid type that best fits (flowchart | sequence | class | "
+    "state | er | journey) and write valid, renderable Mermaid code. Use "
+    "concise, correctly-spelled node labels drawn from the section so the "
+    "diagram is self-explanatory. Do NOT include a title line inside the "
+    "diagram (the article shows a caption separately).\n\n"
+    "Return ONLY a JSON object with keys:\n"
+    '  - "diagram_type": one of the types above\n'
+    '  - "mermaid_syntax": valid Mermaid code\n'
+    "No prose, no markdown fences.\n\n"
+    "## Section: {section_title}\n{section_body}"
+)
+
+
+async def generate_mermaid_for_spec(
+    *,
+    subject: str,
+    section_title: str,
+    section_body: str,
+    llm: BaseChatModel,
+) -> tuple[str, str] | None:
+    """Generate one Mermaid diagram for a planned structural spec.
+
+    Returns ``(mermaid_syntax, diagram_type)`` or ``None`` on failure.
+    Best-effort — the caller falls back to a diffusion render when this
+    returns None.
+    """
+    prompt = _SPEC_MERMAID_TEMPLATE.format(
+        subject=subject,
+        section_title=section_title,
+        section_body=section_body,
+    )
+    try:
+        response = await llm.ainvoke(prompt)
+        raw = parse_llm_json(response.content)
+    except (json.JSONDecodeError, AttributeError, TypeError) as exc:
+        logger.warning("spec_mermaid_parse_failed", error=str(exc))
+        return None
+    if not isinstance(raw, dict):
+        return None
+    syntax = raw.get("mermaid_syntax")
+    diagram_type = raw.get("diagram_type") or "flowchart"
+    if not isinstance(syntax, str) or not syntax.strip():
+        return None
+    return syntax.strip(), str(diagram_type)
+
+
 async def propose_diagrams(
     section_drafts: list[SectionDraft],
     llm: BaseChatModel,

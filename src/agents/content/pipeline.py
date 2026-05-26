@@ -83,6 +83,8 @@ class ContentState(TypedDict):
     image_specs: NotRequired[list[ImageSpec]]
     page_art_direction: NotRequired[str | None]
     audience_persona: NotRequired[str | None]
+    # VISUAL-012 — "illustration" (diffusion) or "mermaid" for structural diagrams.
+    structural_diagram_mode: NotRequired[str]
 
 
 def _wrap_node(

@@ -112,10 +112,14 @@ export type ContentTone =
   | "analytical"
   | "news-reporting";
 
+export type StructuralDiagramMode = "illustration" | "mermaid";
+
 export interface ArticleParams {
   target_audience?: string;
   content_tone?: ContentTone;
   preferred_angle?: string;
   keywords?: string[];
   topic_description_override?: string;
+  /** How structural diagrams are rendered: AI illustration vs Mermaid. */
+  structural_diagram_mode?: StructuralDiagramMode;
 }

@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendBadge } from "@/components/common/trend-badge";
 import { DomainBadge } from "@/components/common/domain-badge";
 import { FieldWithRegenerate } from "@/components/topics/field-with-regenerate";
 import { useTopicAnalysis } from "@/hooks/use-topic-analysis";
-import type { RankedTopic, ContentTone, ArticleParams } from "@/types/api";
+import type {
+  RankedTopic,
+  ContentTone,
+  ArticleParams,
+  StructuralDiagramMode,
+} from "@/types/api";
+
+const DIAGRAM_MODE_OPTIONS: { value: StructuralDiagramMode; label: string }[] = [
+  { value: "illustration", label: "AI illustration (gpt-image-1)" },
+  { value: "mermaid", label: "Mermaid (crisp labeled diagrams)" },
+];
 
 const TONE_OPTIONS: { value: ContentTone; label: string }[] = [
   { value: "technical-authoritative", label: "Technical & Authoritative" },
@@ -42,6 +52,10 @@ export function GenerateArticleModal({
   // detect if the user edited it before submit). A ref avoids the
   // setState-in-effect lint rule.
   const originalDescriptionRef = useRef("");
+  // UI-only choice (not part of the LLM analysis): how structural diagrams
+  // are rendered. Defaults to AI illustration.
+  const [diagramMode, setDiagramMode] =
+    useState<StructuralDiagramMode>("illustration");
 
   // On topic change, reset hook state and auto-analyze seeded with
   // the topic's existing description/domain/keywords so the user sees
@@ -73,6 +87,7 @@ export function GenerateArticleModal({
           ? analysis.keywords
           : undefined,
       topic_description_override: edited ? analysis.description : undefined,
+      structural_diagram_mode: diagramMode,
     };
     onConfirm(topic, params);
   }
@@ -214,6 +229,33 @@ export function GenerateArticleModal({
                 className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
             </FieldWithRegenerate>
+
+            <div>
+              <label
+                htmlFor="diagram-mode"
+                className="mb-1 block text-sm font-medium text-neutral-700"
+              >
+                Diagram style
+              </label>
+              <select
+                id="diagram-mode"
+                value={diagramMode}
+                onChange={(e) =>
+                  setDiagramMode(e.target.value as StructuralDiagramMode)
+                }
+                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >
+                {DIAGRAM_MODE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-neutral-500">
+                Applies to structural diagrams (concept, process, comparison).
+                Hero and editorial visuals always use AI illustration.
+              </p>
+            </div>
           </div>
         )}
 

@@ -64,13 +64,23 @@ export function ArticleContent({
     segments,
     sectionIdxOffset,
   } = useMemo(() => {
+    // Section index for any visual: the planner stamps `section_index`,
+    // legacy charts/diagrams use `source_section`. Read both.
+    const sectionIndexOf = (v: ImageAsset): number | null => {
+      const meta = v.metadata ?? {};
+      const raw = meta.section_index ?? meta.source_section;
+      if (raw === undefined || raw === null) return null;
+      const n = typeof raw === "number" ? raw : Number.parseInt(String(raw), 10);
+      return Number.isFinite(n) ? n : null;
+    };
+
     const diagrams = visuals.filter(isDiagramVisual);
     const images = visuals.filter((v) => !isDiagramVisual(v));
-    const overview = diagrams.filter((d) => d.metadata?.source_section === -1);
+    const overview = diagrams.filter((d) => sectionIndexOf(d) === -1);
     const perSection = new Map<number, ImageAsset[]>();
     for (const d of diagrams) {
-      const idx = d.metadata?.source_section ?? -1;
-      if (idx >= 0) {
+      const idx = sectionIndexOf(d);
+      if (idx !== null && idx >= 0) {
         const bucket = perSection.get(idx) ?? [];
         bucket.push(d);
         perSection.set(idx, bucket);
@@ -83,13 +93,6 @@ export function ArticleContent({
     // Only the FIRST cover-candidate wins — multiple heroes are not stacked.
     let cover: ImageAsset | null = null;
     const perSectionImg = new Map<number, ImageAsset[]>();
-    const sectionIndexOf = (img: ImageAsset): number | null => {
-      const meta = img.metadata ?? {};
-      const raw = meta.section_index ?? meta.source_section;
-      if (raw === undefined || raw === null) return null;
-      const n = typeof raw === "number" ? raw : Number.parseInt(String(raw), 10);
-      return Number.isFinite(n) ? n : null;
-    };
     for (const img of images) {
       const anchor = img.metadata?.placement_anchor;
       const role = img.metadata?.role_style;
