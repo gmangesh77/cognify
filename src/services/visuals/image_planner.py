@@ -66,12 +66,19 @@ _PLANNER_OUTPUT_SHAPE: str = (
     '  - "prompt": subject-only sentence describing what to render. NO style '
     "verbiage, NO text-on-image instructions.\n"
     '  - "alt_text": short accessible alt text\n'
+    '  - "caption": a SHORT plain title for the figure, max 8 words, e.g. '
+    '"Pod DNS Query Flow" or "RPA vs Agentic Automation". This is shown to '
+    "readers as the figure caption. Write it as a neutral title ONLY — do "
+    "NOT describe the reader, the prose, the article, or why the image was "
+    'chosen, and do not start with phrases like "A diagram showing". For '
+    "purely decorative hero/background images, use null.\n"
     '  - "aspect_ratio": one of 16:9 | 1:1 | 4:3 | 3:4 | 4:5\n'
     '  - "placement": object with "anchor" (top | before_heading | '
     "between_paragraphs | bottom_grid | background | column_split), "
     'optional "heading_text", optional "paragraph_index", and "section_index" '
     "(integer; pass the supplied section index)\n"
-    '  - "rationale": one sentence on why this spec belongs here (optional)'
+    '  - "rationale": one internal sentence on why this spec belongs here '
+    "(optional; NOT shown to readers — never put reader-facing text here)"
 )
 
 _COVER_OUTPUT_SHAPE: str = (

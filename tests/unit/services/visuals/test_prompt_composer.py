@@ -92,7 +92,7 @@ class TestRoleAwareRenderingClause:
 
 class TestLabeledDiagramClause:
     def test_clause_is_substantial_and_capped(self) -> None:
-        assert 200 <= len(LABELED_DIAGRAM_CLAUSE) <= 900
+        assert 200 <= len(LABELED_DIAGRAM_CLAUSE) <= 1000
         assert "label" in LABELED_DIAGRAM_CLAUSE.lower()
 
 

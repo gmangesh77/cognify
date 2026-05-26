@@ -57,13 +57,14 @@ LABELED_DIAGRAM_CLAUSE: str = (
     "self-explanatory at a glance. Place a concise, correctly-spelled text "
     "label on every meaningful element — each box, node, lane, column, "
     "axis, step, or arrow that carries distinct meaning gets its own label "
-    "of 1 to 4 words in a clean sans-serif. Add one short title (max 6 "
-    "words) if it aids comprehension. Spelling must be correct and every "
-    "label legible at normal viewing size. Keep typography strictly "
-    "functional: short labels and the single title only — no paragraphs, "
-    "no body copy, no decorative lettering, no logos, no watermarks, no "
-    "fake UI chrome. A reader must understand what each shape represents "
-    "from its label alone."
+    "of 1 to 4 words in a clean sans-serif. Do NOT draw a title or heading "
+    "inside the image — the figure title is shown as a caption below the "
+    "image, so the diagram itself should contain element labels only. "
+    "Spelling must be correct and every label legible at normal viewing "
+    "size. Keep typography strictly functional: short element labels only "
+    "— no title, no paragraphs, no body copy, no decorative lettering, no "
+    "logos, no watermarks, no fake UI chrome. A reader must understand "
+    "what each shape represents from its label alone."
 )
 
 # role_style values whose whole purpose is to explain structure and

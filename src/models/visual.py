@@ -119,6 +119,10 @@ class ImageSpec(BaseModel):
     visual_style: str | None = None
     prompt: str = Field(min_length=1, max_length=2000)
     alt_text: str = ""
+    # Reader-facing figure caption — a short plain title (e.g. "Pod DNS
+    # Query Flow"). Rendered as the article <figcaption>. Must NOT contain
+    # planning meta-commentary; `rationale` is the internal field for that.
+    caption: str | None = Field(default=None, max_length=120)
     aspect_ratio: ImageAspectRatio = "16:9"
     placement: ImagePlacement = Field(default_factory=ImagePlacement)
     rationale: str | None = None

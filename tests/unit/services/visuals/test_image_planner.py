@@ -124,6 +124,21 @@ class TestBuildPlannerMessages:
         flat = "\n".join(m.content for m in messages if isinstance(m.content, str))
         assert "4" in flat
 
+    def test_output_shape_requests_caption_title_not_reader_meta(self) -> None:
+        messages = build_planner_messages(
+            section=_section(),
+            article_topic=_topic(),
+            page_art_direction=None,
+            brand_context=None,
+            audience_persona="cto",
+            target_audience=None,
+            max_images=2,
+        )
+        flat = "\n".join(m.content for m in messages if isinstance(m.content, str))
+        assert '"caption"' in flat
+        # The planner must be told captions are plain titles, not reader meta.
+        assert "do NOT describe the reader" in flat
+
 
 @pytest.mark.asyncio
 class TestPlanSectionImages:
