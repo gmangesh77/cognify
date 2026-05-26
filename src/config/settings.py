@@ -107,7 +107,10 @@ class Settings(BaseSettings):
     # current default. Legacy accounts that still have dall-e-3 can override
     # via COGNIFY_DALLE_MODEL.
     dalle_model: str = "gpt-image-1"
-    illustration_timeout: float = 30.0
+    # gpt-image-1 renders (especially labeled diagrams) routinely take
+    # 40-90s; 30s caused frequent "Request timed out" failures that
+    # dropped section visuals. 120s gives headroom.
+    illustration_timeout: float = 120.0
     # Diagram generation (Mermaid CLI)
     diagram_output_dir: str = "generated_assets/diagrams"
     # Visuals — generation (Epic 10 / VISUAL-004)
@@ -131,7 +134,8 @@ class Settings(BaseSettings):
     imagen_4_enabled: bool = False  # gates Premium tier in UI
     gemini_3_pro_enabled: bool = True  # gates Mid tier (preview model)
     visuals_output_dir: str = "generated_assets/visuals"
-    image_provider_timeout: float = 30.0
+    # Gemini/Imagen providers — same rationale as illustration_timeout.
+    image_provider_timeout: float = 120.0
     # Visuals — object storage (MinIO / S3)
     minio_enabled: bool = False
     minio_endpoint: str = ""  # host:port, no scheme
