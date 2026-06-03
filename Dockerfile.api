@@ -41,6 +41,23 @@ RUN groupadd -r cognify && useradd -r -g cognify -u 1000 -m -d /home/cognify cog
 
 # Copy virtualenv and source from builder, owned by cognify at copy time
 COPY --from=builder --chown=cognify:cognify /app/.venv /app/.venv
+
+# Pre-bake the sentence-transformers embedding model into the image so the
+# in-process RAG embedding step (src/services/embeddings.py) NEVER downloads at
+# request time. A stalled unauthenticated HF Hub download otherwise blocks the
+# single API event loop indefinitely (generation runs in-process — Celery worker
+# is still a placeholder). Placed right after the venv copy so this ~90MB layer
+# caches independently of source changes. HF_HOME is a shared, root-readable
+# cache; runtime loads from it fully offline (flags set below).
+ENV HF_HOME=/opt/hf-cache
+RUN mkdir -p /opt/hf-cache && \
+    /app/.venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" && \
+    chown -R cognify:cognify /opt/hf-cache
+# Load the baked model without any network round-trip (no HF etag check / no
+# download attempt) so embedding can never stall on the Hub at runtime.
+ENV HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1
+
 COPY --from=builder --chown=cognify:cognify /app/src /app/src
 COPY --from=builder --chown=cognify:cognify /app/alembic /app/alembic
 COPY --from=builder --chown=cognify:cognify /app/alembic.ini /app/alembic.ini
