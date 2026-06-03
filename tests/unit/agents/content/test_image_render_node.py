@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
+import structlog
 
 from src.agents.content.image_render_node import make_image_render_node
 from src.models.content import ImageAsset
@@ -230,6 +232,77 @@ class TestImageRenderNode:
             assert asset.caption == "Sharding Flow"
             # The diffusion provider must NOT be called for a mermaid spec.
             assert len(stub.calls) == 0
+
+    async def test_mermaid_render_failure_logs_rendered_false(self) -> None:
+        """When mmdc fails the asset still ships (client-side syntax
+        fallback), but mermaid_asset_complete must report rendered=False —
+        the URL fallback key must not be conflated with a real PNG."""
+        reg, _ = _build_registry()
+        specs = [
+            _spec(
+                spec_id="diag",
+                role_style="concept",
+                placement=ImagePlacement(anchor="top", section_index=1),
+                mermaid_syntax="flowchart TD; A-->B",
+                diagram_type="flowchart",
+            )
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            with (
+                patch(
+                    "src.agents.content.diagram_generator.render_mermaid",
+                    new=AsyncMock(return_value=False),
+                ),
+                structlog.testing.capture_logs() as logs,
+            ):
+                asset = (await node(_state(image_specs=specs)))["visuals"][0]
+
+        completion = [e for e in logs if e["event"] == "mermaid_asset_complete"]
+        assert len(completion) == 1
+        assert completion[0]["rendered"] is False
+        # The asset is still emitted with the fallback URL for client render.
+        assert asset.url
+        assert asset.metadata.get("mermaid_syntax") == "flowchart TD; A-->B"
+
+    async def test_mermaid_render_success_logs_rendered_true(self) -> None:
+        """When mmdc produces a PNG, mermaid_asset_complete reports
+        rendered=True."""
+        reg, _ = _build_registry()
+        specs = [
+            _spec(
+                spec_id="diag",
+                role_style="concept",
+                placement=ImagePlacement(anchor="top", section_index=1),
+                mermaid_syntax="flowchart TD; A-->B",
+                diagram_type="flowchart",
+            )
+        ]
+
+        async def _fake_render(syntax: str, output_path: Path) -> bool:
+            Path(output_path).write_bytes(b"PNGDATA")
+            return True
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            with (
+                patch(
+                    "src.agents.content.diagram_generator.render_mermaid",
+                    new=_fake_render,
+                ),
+                structlog.testing.capture_logs() as logs,
+            ):
+                await node(_state(image_specs=specs))
+
+        completion = [e for e in logs if e["event"] == "mermaid_asset_complete"]
+        assert len(completion) == 1
+        assert completion[0]["rendered"] is True
 
     async def test_provider_failure_skips_spec(self) -> None:
         class ExplodingProvider:
