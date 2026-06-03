@@ -26,6 +26,11 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 _MMDC_PATH = Path(__file__).parents[3] / "node_modules" / ".bin" / "mmdc"
+# Puppeteer launch args for mmdc. Chromium cannot use its setuid sandbox when
+# run as a non-root user inside a container, so we pass `--no-sandbox` via this
+# config file (see docs/mermaid-cli linux-sandbox-issue). Shipped next to this
+# module; absent in environments where mmdc isn't installed (no-op there).
+_PUPPETEER_CONFIG = Path(__file__).parent / "puppeteer-config.json"
 
 _PROMPT_TEMPLATE = (
     "You are a technical diagram expert. Read the article sections below and "
@@ -66,14 +71,11 @@ async def render_mermaid(syntax: str, output_path: Path) -> bool:
             tmp_path = Path(tmp.name)
 
         mmdc = str(_MMDC_PATH)
+        args = [mmdc, "-i", str(tmp_path), "-o", str(output_path), "-b", "transparent"]
+        if _PUPPETEER_CONFIG.exists():
+            args += ["-p", str(_PUPPETEER_CONFIG)]
         process = await asyncio.create_subprocess_exec(
-            mmdc,
-            "-i",
-            str(tmp_path),
-            "-o",
-            str(output_path),
-            "-b",
-            "transparent",
+            *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )

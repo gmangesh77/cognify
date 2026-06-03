@@ -198,6 +198,10 @@ async def _render_mermaid_asset(
     # Non-empty fallback so ImageAsset.url validates even when mmdc is
     # unavailable; the dashboard renders from mermaid_syntax regardless.
     url = key
+    # Tracks whether a real PNG was produced and stored — distinct from the
+    # URL (which always falls back to `key`). Drives the completion log so it
+    # reports actual render success, not mere URL presence.
+    png_rendered = False
     try:
         with tempfile.TemporaryDirectory() as tmp:
             png = Path(tmp) / "diagram.png"
@@ -208,6 +212,7 @@ async def _render_mermaid_asset(
                     content_type="image/png",
                 )
                 url = stored.url or stored.local_path or stored.key
+                png_rendered = True
     except Exception as exc:  # noqa: BLE001 — never crash the pipeline
         logger.warning("mermaid_asset_render_failed", spec_id=spec.id, error=str(exc))
 
@@ -221,7 +226,12 @@ async def _render_mermaid_asset(
         "mermaid_syntax": syntax,
         "provider": "mermaid",
     }
-    logger.info("mermaid_asset_complete", spec_id=spec.id, rendered=bool(url))
+    logger.info(
+        "mermaid_asset_complete",
+        spec_id=spec.id,
+        rendered=png_rendered,
+        fallback=not png_rendered,
+    )
     return ImageAsset(
         url=url,
         caption=caption,
