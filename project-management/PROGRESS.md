@@ -164,6 +164,30 @@
 | VISUAL-011  | Phase 8 — Per-section content editing (text + AI rewrite + history)                                  | Done        | `feature/EPIC-10-visual-generation` (PR #54)        | [plan](../docs/superpowers/plans/2026-05-06-visual-generation-improvement-plan.md) §11.8 | [brief Screen 9](../docs/superpowers/specs/2026-05-06-visual-studio-pencil-design-brief.md) — `section_rewriter.py` (Claude prose rewrite + persona register + banned-pattern block), append-only `section_versions` table + repo, `/content/section-rewrite|section-update|paragraph-tone|history|restore` endpoints with anchor validator (422 on dropped `data-spec-id` / renamed `before_heading` titles), word-level diff helper reused across image/HTML/prose refine, `SectionContextToolbar` + `InlineProseEditor` + `AIRewritePopover` + `SectionHistoryDrawer` mounted on article-detail. Playwright deferred — covered by Vitest + Testing Library. |
 
 
+## Epic 11: Supervised Authoring
+
+> Planned 2026-08-19 from the August Cognify-vs-ImpactAI review. Program plan: [`2026-08-19-epic-11-supervised-authoring-plan.md`](../docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md); rationale: [`COGNIFY_VS_IMPACTAI_REVIEW_2026-08.md`](../docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW_2026-08.md). Each ticket gets its own TDD plan when started. Sign-off checklist (plan §12) must be completed before Phase A code.
+
+| Ticket | Title | Status | Branch | Plan | Spec |
+| ------ | ----- | ------ | ------ | ---- | ---- |
+| ADR-005/006 | ADRs: supervised pipeline; Brief contract | Planned | — | [program plan](../docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md) | [review](../docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW_2026-08.md) |
+| AUTHOR-001 | Event bus + SSE progress + session route | Planned | — | program plan §5.1–5.2, §6 | review §6 #1 |
+| AUTHOR-002 | Outline approval gate + cancel | Planned | — | program plan §5.3 | review §6 #2 |
+| AUTHOR-003 | Brief model + Generate modal rework | Planned | — | program plan §4.1, §5.4 | review §6 #3 |
+| AUTHOR-004 | Per-section regenerate | Planned | — | program plan §5.5 | review §6 #4 |
+| AUTHOR-005 | Usage/cost badge | Planned | — | program plan §5.6 | review §6 #5 |
+| INFRA-007 | CeleryDispatcher + worker | Planned | — | program plan §9 Phase A | review §5 |
+| AUTHOR-006 | Article metadata editor + autosave | Planned | — | program plan §5.7, §6 | review §6 #6/#7 |
+| AUTHOR-007 | Article status + filters + Resume | Planned | — | program plan §4.4 | review §6 #10 |
+| AUTHOR-008 | Length + content type budgets | Planned | — | program plan §9 Phase B | review §6 #8 |
+| AUTHOR-009 | Humanize per-pass streaming | Planned | — | program plan §9 Phase B | review §6 #9 |
+| AUTHOR-010 | Model tiering per step | Planned | — | program plan §5.8 | review §6 #14 |
+| INFRA-008 | Warm-up, role re-check, toaster, file splits | Planned | — | program plan §5.9–5.10 | review §6 #15/#16 |
+| AUTHOR-011 | Persona voice engine v1 | Planned | — | program plan §5.11 | review §6 #12 |
+| AUTHOR-012 | Prompt registry + overrides | Planned | — | program plan §5.11 | review §6 #13 |
+| AUTHOR-013 | LinkedIn repurpose | Planned | — | program plan §5.11 | review §6 #20 |
+| AUTHOR-014 | Playwright create-article flow | Planned | — | program plan §7 | — |
+
 ## Cross-Cutting Work (non-ticket)
 
 | Item | Status | Date | Description |
