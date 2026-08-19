@@ -228,6 +228,16 @@ class TestGenerateOutline:
         with pytest.raises(ValueError, match="not complete"):
             await svc.generate_outline(session.id)
 
+    async def test_accepts_awaiting_outline_review_session(self) -> None:
+        # AUTHOR-002: sessions paused for outline approval must still be
+        # loadable (e.g. to regenerate/finalize the outline).
+        session = _make_complete_session().model_copy(
+            update={"status": "awaiting_outline_review"}
+        )
+        svc, _ = await _make_service(session)
+        draft = await svc.generate_outline(session.id)
+        assert draft.session_id == session.id
+
 
 class TestGetDraft:
     async def test_returns_draft(self) -> None:

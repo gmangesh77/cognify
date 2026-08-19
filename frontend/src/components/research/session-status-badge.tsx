@@ -13,6 +13,8 @@ const STATUS_CONFIG: Record<string, { label: string; dotClass: string }> = {
   article_complete: { label: "Article Ready", dotClass: "bg-green-500" },
   article_failed: { label: "Article Failed", dotClass: "bg-red-500" },
   failed: { label: "Failed", dotClass: "bg-red-500" },
+  awaiting_outline_review: { label: "Outline review", dotClass: "bg-info" },
+  cancelled: { label: "Cancelled", dotClass: "bg-neutral-400" },
 };
 
 const DEFAULT_STATUS = { label: "Unknown", dotClass: "bg-neutral-400" };

@@ -142,6 +142,7 @@ class ResearchService:
         keywords: list[str] | None = None,
         topic_description_override: str | None = None,
         structural_diagram_mode: str = "illustration",
+        require_outline_approval: bool = False,
     ) -> ResearchSession:
         if not await self._repos.topics.exists(topic_id):
             raise NotFoundError(f"Topic {topic_id} not found")
@@ -154,6 +155,7 @@ class ResearchService:
             keywords=keywords,
             topic_description_override=topic_description_override,
             structural_diagram_mode=structural_diagram_mode,
+            require_outline_approval=require_outline_approval,
         )
         return await self._repos.sessions.create(session)
 

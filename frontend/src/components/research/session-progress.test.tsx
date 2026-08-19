@@ -20,6 +20,23 @@ vi.mock("@/hooks/use-research-sessions", () => ({
 
 vi.mock("@/lib/api/research", () => ({ fetchSessionArticle: vi.fn(async () => ({ article_id: "art-1" })) }));
 
+vi.mock("./outline-review-step", () => ({
+  OutlineReviewStep: ({ sessionId }: { sessionId: string }) => (
+    <div data-testid="outline-review-step">Outline review for {sessionId}</div>
+  ),
+}));
+
+const cancelMutate = vi.fn();
+const cancelSessionHook = vi.fn(
+  (_id: string): { mutate: typeof cancelMutate; isPending: boolean; cancelError?: string | null } => ({
+    mutate: cancelMutate,
+    isPending: false,
+  }),
+);
+vi.mock("@/hooks/use-outline-review", () => ({
+  useCancelSession: (id: string) => cancelSessionHook(id),
+}));
+
 import { SessionProgress } from "./session-progress";
 
 const base = {
@@ -58,6 +75,9 @@ describe("SessionProgress", () => {
         started_at: new Date().toISOString(),
       },
     });
+    cancelMutate.mockClear();
+    cancelSessionHook.mockClear();
+    cancelSessionHook.mockReturnValue({ mutate: cancelMutate, isPending: false });
   });
 
   afterEach(() => {
@@ -230,5 +250,91 @@ describe("SessionProgress", () => {
     events.mockReturnValue({ ...base, status: "article_complete", connection: "closed" });
     render(<SessionProgress sessionId="s1" />);
     expect(screen.getByText("Duration: 1h 5m 9s")).toBeInTheDocument();
+  });
+
+  it("renders the OutlineReviewStep when the session is awaiting outline review", () => {
+    researchSession.mockReturnValue({
+      data: {
+        topic_title: "OAuth 2.1",
+        status: "awaiting_outline_review",
+        started_at: new Date().toISOString(),
+      },
+    });
+    events.mockReturnValue({ ...base, status: "awaiting_outline_review" });
+    render(<SessionProgress sessionId="s1" />);
+    expect(screen.getByTestId("outline-review-step")).toHaveTextContent("s1");
+  });
+
+  it("does not render the OutlineReviewStep for other statuses", () => {
+    events.mockReturnValue(base);
+    render(<SessionProgress sessionId="s1" />);
+    expect(screen.queryByTestId("outline-review-step")).not.toBeInTheDocument();
+  });
+
+  it("shows a Cancel button while the session is active and calls cancelSession on click", () => {
+    events.mockReturnValue(base);
+    render(<SessionProgress sessionId="s1" />);
+    const cancelBtn = screen.getByRole("button", { name: /cancel generation/i });
+    fireEvent.click(cancelBtn);
+    expect(cancelMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides the Cancel button once the session is terminal", () => {
+    researchSession.mockReturnValue({
+      data: {
+        topic_title: "OAuth 2.1",
+        status: "article_complete",
+        started_at: new Date().toISOString(),
+      },
+    });
+    events.mockReturnValue({ ...base, status: "article_complete", connection: "closed" });
+    render(<SessionProgress sessionId="s1" />);
+    expect(screen.queryByRole("button", { name: /cancel generation/i })).not.toBeInTheDocument();
+  });
+
+  it("disables the Cancel button while the cancel mutation is pending", () => {
+    cancelSessionHook.mockReturnValue({ mutate: cancelMutate, isPending: true });
+    events.mockReturnValue(base);
+    render(<SessionProgress sessionId="s1" />);
+    expect(screen.getByRole("button", { name: /cancel generation/i })).toBeDisabled();
+  });
+
+  it("shows a cancel error message when the cancel mutation fails", () => {
+    cancelSessionHook.mockReturnValue({
+      mutate: cancelMutate,
+      isPending: false,
+      cancelError: "Session is no longer awaiting review",
+    });
+    events.mockReturnValue(base);
+    render(<SessionProgress sessionId="s1" />);
+    expect(
+      screen.getByText(/session is no longer awaiting review/i),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show the Cancel button while status is still loading (null)", () => {
+    researchSession.mockReturnValue({ data: undefined });
+    events.mockReturnValue({ ...base, status: null });
+    render(<SessionProgress sessionId="s1" />);
+    expect(
+      screen.queryByRole("button", { name: /cancel generation/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows a cancelled panel with a Back to research link when the session was cancelled", () => {
+    researchSession.mockReturnValue({
+      data: {
+        topic_title: "OAuth 2.1",
+        status: "cancelled",
+        started_at: new Date().toISOString(),
+      },
+    });
+    events.mockReturnValue({ ...base, status: "cancelled", connection: "closed" });
+    render(<SessionProgress sessionId="s1" />);
+    expect(screen.getByText(/generation cancelled/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /back to research/i })).toHaveAttribute(
+      "href",
+      "/research",
+    );
   });
 });

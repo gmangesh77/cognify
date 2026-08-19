@@ -3,13 +3,14 @@
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from starlette.status import HTTP_201_CREATED
 
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above, require_viewer_or_above
 from src.api.errors import ServiceUnavailableError
 from src.api.rate_limiter import limiter
+from src.api.routers.research_pipeline import PipelineDeps, _run_full_pipeline
 from src.api.schemas.research import (
     AgentStepResponse,
     CreateResearchSessionRequest,
@@ -18,7 +19,10 @@ from src.api.schemas.research import (
     ResearchSessionResponse,
     ResearchSessionSummary,
 )
+from src.models.research import TopicInput
+from src.models.research_db import ResearchSession
 from src.services.research import ResearchService
+from src.services.session_tasks import SessionTaskRegistry
 
 logger = structlog.get_logger()
 
@@ -83,10 +87,15 @@ def _get_research_service(request: Request) -> ResearchService:
 async def create_research_session(
     request: Request,
     body: CreateResearchSessionRequest,
-    background_tasks: BackgroundTasks,
     user: TokenPayload = Depends(require_editor_or_above),
 ) -> CreateResearchSessionResponse:
     svc = _get_research_service(request)
+    settings = request.app.state.settings
+    require_outline_approval = (
+        body.require_outline_approval
+        if body.require_outline_approval is not None
+        else settings.require_outline_approval
+    )
     session = await svc.start_session(
         body.topic_id,
         target_audience=body.target_audience,
@@ -95,12 +104,25 @@ async def create_research_session(
         keywords=body.keywords,
         topic_description_override=body.topic_description_override,
         structural_diagram_mode=body.structural_diagram_mode,
+        require_outline_approval=require_outline_approval,
     )
+    topic = await _enrich_topic(svc, body)
+    _spawn_pipeline(request, session, topic)
+    return CreateResearchSessionResponse(
+        session_id=session.id,
+        status=session.status,
+        started_at=session.started_at,
+    )
+
+
+async def _enrich_topic(
+    svc: ResearchService, body: CreateResearchSessionRequest
+) -> TopicInput:
+    """Overlay per-session context so the research planner can tailor
+    its search queries to the requested audience/tone/angle/keywords."""
     topic = await svc.get_topic(body.topic_id)
-    # Enrich topic with session context so the research planner can use
-    # audience/tone/angle/keywords to tailor search queries.
     description = body.topic_description_override or topic.description
-    topic = topic.model_copy(
+    return topic.model_copy(
         update={
             "description": description,
             "target_audience": body.target_audience,
@@ -109,56 +131,30 @@ async def create_research_session(
             "keywords": tuple(body.keywords) if body.keywords else None,
         }
     )
-    content_svc = getattr(request.app.state, "content_service", None)
-    background_tasks.add_task(
-        _run_full_pipeline,
-        svc,
-        content_svc,
-        session.id,
-        topic,
-    )
-    return CreateResearchSessionResponse(
-        session_id=session.id,
-        status=session.status,
-        started_at=session.started_at,
-    )
 
 
-async def _run_full_pipeline(
-    research_svc: ResearchService,
-    content_svc: object | None,
-    session_id: "UUID",
-    topic: object,
+def _get_session_tasks(request: Request) -> SessionTaskRegistry:
+    """Fetch (or lazily create) the app's SessionTaskRegistry.
+
+    Lazy fallback so app instances built before this ticket (tests that
+    construct their own FastAPI app without wiring `session_tasks`) keep
+    working.
+    """
+    if not hasattr(request.app.state, "session_tasks"):
+        request.app.state.session_tasks = SessionTaskRegistry()
+    return request.app.state.session_tasks  # type: ignore[no-any-return]
+
+
+def _spawn_pipeline(
+    request: Request, session: ResearchSession, topic: TopicInput
 ) -> None:
-    """Research → Content generation pipeline."""
-    await research_svc.run_and_finalize(session_id, topic)
-    detail = await research_svc.get_session(session_id)
-    if detail.session.status != "complete":
-        logger.warning(
-            "skipping_content_pipeline",
-            session_id=str(session_id),
-            reason=f"research status={detail.session.status}",
-        )
-        return
-    if content_svc is None or not hasattr(content_svc, "generate_full_article"):
-        logger.warning(
-            "skipping_content_pipeline",
-            session_id=str(session_id),
-            reason="content_service not available",
-        )
-        return
-    await research_svc.update_session_status(session_id, "generating_article")
-    try:
-        await content_svc.generate_full_article(session_id)  # type: ignore[union-attr]
-        await research_svc.update_session_status(session_id, "article_complete")
-    except Exception as exc:
-        logger.error(
-            "content_pipeline_failed",
-            session_id=str(session_id),
-            error=str(exc),
-            exc_info=True,
-        )
-        await research_svc.update_session_status(session_id, "article_failed")
+    deps = PipelineDeps(
+        research_svc=request.app.state.research_service,
+        content_svc=getattr(request.app.state, "content_service", None),
+        outline_gate=getattr(request.app.state, "outline_gate", None),
+    )
+    registry = _get_session_tasks(request)
+    registry.spawn(session.id, _run_full_pipeline(deps, session.id, topic))
 
 
 @limiter.limit("30/minute")
@@ -198,6 +194,7 @@ async def get_research_session(
         started_at=s.started_at,
         completed_at=s.completed_at,
         steps=steps,
+        require_outline_approval=s.require_outline_approval,
     )
 
 

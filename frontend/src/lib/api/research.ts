@@ -1,8 +1,11 @@
 import axios from "axios";
 import { apiClient } from "@/lib/api/client";
 import type {
+  ArticleOutline,
+  OutlineResponse,
   PaginatedResearchSessions,
   ResearchSessionDetail,
+  SessionActionResponse,
   SessionStatus,
 } from "@/types/research";
 
@@ -34,6 +37,49 @@ export async function fetchSessionDetail(
 
 export function sessionEventsUrl(sessionId: string): string {
   return `${apiClient.defaults.baseURL}/research/sessions/${sessionId}/events`;
+}
+
+export async function fetchOutline(sessionId: string): Promise<OutlineResponse> {
+  const { data } = await apiClient.get<OutlineResponse>(
+    `/research/sessions/${sessionId}/outline`,
+  );
+  return data;
+}
+
+export async function updateOutline(
+  sessionId: string,
+  outline: ArticleOutline,
+): Promise<OutlineResponse> {
+  const { data } = await apiClient.put<OutlineResponse>(
+    `/research/sessions/${sessionId}/outline`,
+    outline,
+  );
+  return data;
+}
+
+export async function regenerateOutline(
+  sessionId: string,
+  instruction?: string,
+): Promise<OutlineResponse> {
+  const { data } = await apiClient.post<OutlineResponse>(
+    `/research/sessions/${sessionId}/outline/regenerate`,
+    { instruction: instruction ?? null },
+  );
+  return data;
+}
+
+export async function approveOutline(sessionId: string): Promise<SessionActionResponse> {
+  const { data } = await apiClient.post<SessionActionResponse>(
+    `/research/sessions/${sessionId}/outline/approve`,
+  );
+  return data;
+}
+
+export async function cancelSession(sessionId: string): Promise<SessionActionResponse> {
+  const { data } = await apiClient.post<SessionActionResponse>(
+    `/research/sessions/${sessionId}/cancel`,
+  );
+  return data;
 }
 
 export async function fetchSessionArticle(

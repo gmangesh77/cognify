@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -84,6 +85,9 @@ class ResearchSessionRow(Base, UUIDMixin, TimestampMixin):
     topic_description_override: Mapped[str | None] = mapped_column(Text, nullable=True)
     structural_diagram_mode: Mapped[str] = mapped_column(
         String(20), default="illustration", server_default="illustration"
+    )
+    require_outline_approval: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false()
     )
 
     steps: Mapped[list["AgentStepRow"]] = relationship(

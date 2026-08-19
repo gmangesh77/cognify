@@ -52,11 +52,12 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class ContentGraphDeps:
-    """Optional step-tracking deps for the content pipeline."""
+    """Step-tracking deps + graph span options for the content pipeline."""
 
     step_repo: AgentStepRepository | None = field(default=None)
     session_id: UUID | None = field(default=None)
     llm_call_repo: LlmCallRepository | None = field(default=None)
+    stop_after_outline: bool = False
 
 
 class ContentState(TypedDict):
@@ -80,6 +81,7 @@ class ContentState(TypedDict):
     content_tone: NotRequired[str | None]
     preferred_angle: NotRequired[str | None]
     keywords: NotRequired[list[str] | None]
+    outline_instruction: NotRequired[str | None]
     # VISUAL-005 / Phase 2 — image planner output and per-article style hints.
     image_specs: NotRequired[list[ImageSpec]]
     page_art_direction: NotRequired[str | None]
@@ -221,7 +223,7 @@ def build_content_graph(
     )
     graph.add_conditional_edges(
         "generate_queries",
-        _check_not_failed,
+        _make_after_queries_router(bool(deps and deps.stop_after_outline)),
         {"draft_sections": "draft_sections", END: END},
     )
     graph.add_edge("draft_sections", "validate_article")
@@ -290,3 +292,14 @@ def _check_not_failed(state: ContentState) -> str:
     if state.get("status") == "failed":
         return END
     return "draft_sections"
+
+
+def _make_after_queries_router(stop_after_outline: bool):  # type: ignore[no-untyped-def]
+    """Build the post-queries router, honoring the outline-approval gate."""
+
+    def _route(state: ContentState) -> str:
+        if stop_after_outline:
+            return END
+        return _check_not_failed(state)
+
+    return _route

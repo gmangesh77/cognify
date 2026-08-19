@@ -42,6 +42,11 @@ Chosen option: **C**. It adds three thin, independently testable pieces, keeps n
 
 **Transport (v1, AUTHOR-001):** the SSE endpoint *tails the persisted `agent_steps` rows* (1 s poll, configurable via `COGNIFY_SESSION_EVENTS_*`) rather than subscribing to Redis pub/sub — the API has no Redis client today, DB-tailing is worker-safe by construction, and replay-on-connect falls out naturally. Nodes publish sub-step progress by merging into their running step's `output_data` via `report_progress()` (`src/utils/step_progress.py`). Redis pub/sub remains the documented upgrade path if sub-second latency is ever required; the `SessionEvent` contract and the frontend consumer stay unchanged.
 
+**Implementation note (AUTHOR-002):** the outline gate as shipped diverges from the Option C sketch in three small ways:
+- There is no separate `start_from_draft=True` entry point. Both graph runs share the same entry point, `generate_outline` — `OutlineGateService.generate_from_outline()` seeds `state["outline"]` (and `state["status"] = "outline_complete"`) from the persisted `ArticleDraft` before calling `graph.ainvoke()`, and the `outline_node` factory (`src/agents/content/nodes.py::make_outline_node`) short-circuits (no LLM call) whenever `state["outline"]` is already present. Section-drafting queries are regenerated from the (possibly editor-edited) outline on resume — this is intentional, not a gap: it keeps `generate_queries` as the single source of section queries so an edited outline never drafts against stale queries.
+- The draft status used for the outline-only stop is the existing `DraftStatus.OUTLINE_COMPLETE`, not a new `outline_ready` value — no new enum member was needed since the session-level status (`awaiting_outline_review`) is what the frontend and status consumers key off, and the draft's own status already had a suitable value.
+- The per-brief override is `ResearchSession.require_outline_approval` (`src/models/research_db.py`), set from the `POST /research/sessions` request body at session-creation time and read by `_run_full_pipeline`. It is a per-session flag, not yet a reusable per-brief default — a standalone per-brief override (settable independent of session creation) is deferred to AUTHOR-003.
+
 ### Consequences
 
 - Good: real progress and cancel for everyone; outline approval for those who opt in; SSE works unchanged after Celery offload; replay-on-connect survives refresh/restart.
@@ -55,7 +60,7 @@ Chosen option: **C**. It adds three thin, independently testable pieces, keeps n
 - Nodes surface progress only via `report_progress()` (or a future event bus); they never import HTTP modules.
 - Events are additive telemetry; the database remains the source of truth. If publish fails, the node still completes.
 - The SSE endpoint is read-only, idempotent, and rate-limited.
-- The outline gate never mutates research findings; approving re-enters the graph with the stored outline and queries.
+- The outline gate never mutates research findings; approving re-enters the graph at `generate_outline` with the stored (possibly editor-edited) outline seeded into state — the node no-ops on that outline, and `generate_queries` re-derives section queries from it.
 
 ## References
 

@@ -171,3 +171,8 @@ class Settings(BaseSettings):
     session_events_keepalive_seconds: float = 15.0
     session_events_complete_grace_seconds: float = 30.0
     session_events_max_seconds: float = 1800.0
+    # Outline approval gate (AUTHOR-002) — when true, sessions pause in
+    # "awaiting_outline_review" after research completes instead of
+    # auto-continuing into article generation. Per-session override via
+    # CreateResearchSessionRequest.require_outline_approval.
+    require_outline_approval: bool = False

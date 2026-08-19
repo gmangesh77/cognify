@@ -116,6 +116,8 @@ DELETE FROM research_sessions WHERE topic_title LIKE 'Test%';
 
 **Rule**: Use `generate_full_article()` for the complete flow. The separate `generate_outline()` / `draft_article()` / `finalize_article()` methods exist for the REST API but each invokes the full graph from different starting points.
 
+See L-011 for the supported half-graph entry points (AUTHOR-002).
+
 ---
 
 ## L-007: FakeLLM Response Count Must Match Full Pipeline
@@ -191,3 +193,19 @@ lexical = json.dumps({
 1. **Always set `COGNIFY_ENCRYPTION_KEY`** in `.env` — generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
 2. **Key resolver must catch decryption failures** and fall back to `.env` values (fixed in `src/utils/key_resolver.py`)
 3. After changing the encryption key, all DB-stored API keys must be re-saved through the Settings UI
+
+---
+
+## L-011: Content Graph Re-entry — Outline Gate Semantics
+
+**Issue**: The legacy split-step methods (`ContentService.generate_outline()` / `draft_article()`) both enter the graph at `generate_outline`, so "outline only" used to run the whole pipeline (see L-006). AUTHOR-002 added real half-graph support; use it instead of re-inventing it.
+
+**How the gate works** (`src/services/content/outline_gate.py`, ADR-006):
+- **Stop after planning**: `ContentGraphDeps(stop_after_outline=True)` routes `generate_queries → END`. The result has `outline` + `section_queries` and no drafts.
+- **Resume from an approved outline**: seed the initial state with `outline=<ArticleOutline>` and `status="outline_complete"` and run the normal full graph — `outline_node` no-ops when an outline is already present, so drafting starts from the stored outline (queries are regenerated, which is what you want after the user edited headings).
+- `OutlineContext.instruction` (from `state["outline_instruction"]`) is appended to the outline prompt for "regenerate with instruction".
+- Session statuses: research `complete` → (gate on) `awaiting_outline_review` → approve → `generating_article` → `article_complete|article_failed`; `cancelled` is terminal. Both new statuses are L-003 consumers — grep before touching.
+
+**TRAP**: `ContentService._graph_deps()` must ALWAYS return a `ContentGraphDeps` (even with `step_repo=None`) — returning `None` silently drops `stop_after_outline` and the "outline-only" run executes the entire pipeline (caught in review of AUTHOR-002 Task 4; regression test `TestGraphDepsWithoutStepRepo`).
+
+**Rule**: Persisted `ArticleDraft.status == outline_complete` is the durable checkpoint; `OutlineGateService.generate_from_outline()` is the only supported way to resume. Do not call the legacy `draft_article()` for new flows.

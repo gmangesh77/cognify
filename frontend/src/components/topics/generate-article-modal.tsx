@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TrendBadge } from "@/components/common/trend-badge";
 import { DomainBadge } from "@/components/common/domain-badge";
 import { FieldWithRegenerate } from "@/components/topics/field-with-regenerate";
+import { ReviewOutlineCheckbox } from "@/components/topics/review-outline-checkbox";
 import { useTopicAnalysis } from "@/hooks/use-topic-analysis";
 import type {
   RankedTopic,
@@ -56,6 +57,10 @@ export function GenerateArticleModal({
   // are rendered. Defaults to AI illustration.
   const [diagramMode, setDiagramMode] =
     useState<StructuralDiagramMode>("illustration");
+  // Opt in to reviewing the LLM-generated outline before section drafting
+  // runs. Unchecked by default so the field is omitted and the server's
+  // configured default applies.
+  const [requireOutlineApproval, setRequireOutlineApproval] = useState(false);
 
   // On topic change, reset hook state and auto-analyze seeded with
   // the topic's existing description/domain/keywords so the user sees
@@ -88,6 +93,7 @@ export function GenerateArticleModal({
           : undefined,
       topic_description_override: edited ? analysis.description : undefined,
       structural_diagram_mode: diagramMode,
+      require_outline_approval: requireOutlineApproval || undefined,
     };
     onConfirm(topic, params);
   }
@@ -256,6 +262,11 @@ export function GenerateArticleModal({
                 Hero and editorial visuals always use AI illustration.
               </p>
             </div>
+
+            <ReviewOutlineCheckbox
+              checked={requireOutlineApproval}
+              onChange={setRequireOutlineApproval}
+            />
           </div>
         )}
 

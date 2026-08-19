@@ -50,6 +50,20 @@ const failedSession: ResearchSessionSummary = {
   topic_title: "Failed Article",
 };
 
+const awaitingReviewSession: ResearchSessionSummary = {
+  ...completeSession,
+  session_id: "sess-005",
+  status: "awaiting_outline_review",
+  topic_title: "Outline Pending",
+};
+
+const cancelledSession: ResearchSessionSummary = {
+  ...completeSession,
+  session_id: "sess-006",
+  status: "cancelled",
+  topic_title: "Cancelled Session",
+};
+
 describe("SessionCard", () => {
   beforeEach(() => {
     push.mockClear();
@@ -146,5 +160,28 @@ describe("SessionCard", () => {
   it("does not show a View article button for non-article_complete terminal sessions", () => {
     render(<SessionCard session={failedSession} isExpanded={false} onToggle={() => {}} />);
     expect(screen.queryByRole("button", { name: /view article/i })).not.toBeInTheDocument();
+  });
+
+  it("shows a Review outline link (not View progress) for awaiting_outline_review sessions", () => {
+    render(<SessionCard session={awaitingReviewSession} isExpanded={false} onToggle={() => {}} />);
+    const link = screen.getByRole("link", { name: /review outline/i });
+    expect(link).toHaveAttribute("href", "/research/sess-005");
+    expect(screen.queryByRole("link", { name: /view progress/i })).not.toBeInTheDocument();
+  });
+
+  it("shows the info border color for awaiting_outline_review sessions", () => {
+    const { container } = render(
+      <SessionCard session={awaitingReviewSession} isExpanded={false} onToggle={() => {}} />,
+    );
+    expect((container.firstChild as HTMLElement)?.className).toContain("border-l-info");
+  });
+
+  it("shows a neutral border and progress bar for cancelled sessions", () => {
+    const { container } = render(
+      <SessionCard session={cancelledSession} isExpanded={false} onToggle={() => {}} />,
+    );
+    expect((container.firstChild as HTMLElement)?.className).toContain("border-l-neutral-300");
+    const bar = container.querySelector("[data-testid='progress-bar']") as HTMLElement;
+    expect(bar.className).toContain("bg-neutral-300");
   });
 });

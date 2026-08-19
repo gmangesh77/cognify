@@ -203,7 +203,7 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 |---|---|---:|---|
 | ADR-006/007 | ADRs: supervised pipeline; Brief contract | 1 | — |
 | AUTHOR-001 | Session events (DB-tailing) + SSE endpoint + `useSessionEvents` + `SessionProgress` + session detail route + auto-navigate — **DONE (merged `06439e9`)** | 8 | ADRs |
-| AUTHOR-002 | Outline gate: half-graphs, `awaiting_outline_review`, outline endpoints, cancel, `OutlineReviewStep` (flagged) | 8 | AUTHOR-001 |
+| AUTHOR-002 | Outline gate: half-graphs, `awaiting_outline_review`, outline endpoints, cancel, `OutlineReviewStep` (flagged) — **DONE (branch `feature/AUTHOR-002-outline-gate`)** | 8 | AUTHOR-001 |
 | AUTHOR-003 | Brief model/table/CRUD + Generate modal rework (picker, length, content type, save-as-brief) + topic-analyze `suggested_brief` | 5 | ADRs |
 | AUTHOR-004 | Section regenerate endpoint + toolbar action + diff accept | 3 | — |
 | AUTHOR-005 | Session/article usage endpoint + pricing settings + `UsageBadge` in progress header & article sidebar | 3 | AUTHOR-001 |

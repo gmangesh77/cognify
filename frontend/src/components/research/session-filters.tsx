@@ -7,9 +7,11 @@ const FILTERS: { value: FilterValue; label: string }[] = [
   { value: "all", label: "All" },
   { value: "planning", label: "Planning" },
   { value: "in_progress", label: "In Progress" },
+  { value: "awaiting_outline_review", label: "Outline review" },
   { value: "generating_article", label: "Generating" },
   { value: "article_complete", label: "Complete" },
   { value: "failed", label: "Failed" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 interface SessionFiltersProps {

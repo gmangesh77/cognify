@@ -5,6 +5,18 @@ import type {
 } from "@/types/research";
 import { fetchSessions, fetchSessionDetail } from "@/lib/api/research";
 
+/** Statuses that still poll the session detail endpoint for updates. */
+export const ACTIVE_POLL_STATUSES: readonly string[] = [
+  "planning",
+  "in_progress",
+  "researching",
+  "evaluating",
+  "running",
+  "complete",
+  "awaiting_outline_review",
+  "generating_article",
+];
+
 export function useResearchSessions(
   status?: SessionStatus,
   page = 1,
@@ -25,11 +37,7 @@ export function useResearchSession(sessionId: string | null) {
     refetchInterval: (query) => {
       const status = (query.state.data as ResearchSessionDetail | undefined)
         ?.status;
-      const active = [
-        "planning", "in_progress", "researching", "evaluating",
-        "running", "complete", "generating_article",
-      ];
-      if (status && active.includes(status)) return 5_000;
+      if (status && ACTIVE_POLL_STATUSES.includes(status)) return 5_000;
       return false;
     },
   });

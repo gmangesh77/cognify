@@ -129,6 +129,26 @@ class TestGetSession:
         assert resp.status_code == 200
         assert resp.json()["session_id"] == session_id
 
+    async def test_require_outline_approval_echoed(
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        create_resp = await research_client.post(
+            "/api/v1/research/sessions",
+            json={"topic_id": test_topic_id, "require_outline_approval": True},
+            headers=headers,
+        )
+        session_id = create_resp.json()["session_id"]
+        resp = await research_client.get(
+            f"/api/v1/research/sessions/{session_id}",
+            headers=make_auth_header("viewer", auth_settings),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["require_outline_approval"] is True
+
     async def test_not_found(
         self, research_client: httpx.AsyncClient, auth_settings: Settings
     ) -> None:

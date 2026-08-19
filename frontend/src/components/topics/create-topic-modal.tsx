@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FieldWithRegenerate } from "@/components/topics/field-with-regenerate";
+import { ReviewOutlineCheckbox } from "@/components/topics/review-outline-checkbox";
 import { useTopicAnalysis } from "@/hooks/use-topic-analysis";
 import type { ContentTone } from "@/types/api";
 
@@ -31,6 +32,7 @@ export interface CreateTopicData {
   target_audience: string;
   content_tone: ContentTone;
   preferred_angle: string;
+  require_outline_approval?: boolean;
 }
 
 export function CreateTopicModal({
@@ -40,6 +42,9 @@ export function CreateTopicModal({
   onCreateAndGenerate,
 }: CreateTopicModalProps) {
   const [title, setTitle] = useState("");
+  // Opt in to reviewing the LLM-generated outline before section drafting
+  // runs (only meaningful for the "Create & Generate Article" path).
+  const [requireOutlineApproval, setRequireOutlineApproval] = useState(false);
   const {
     analysis,
     isAnalyzing,
@@ -55,6 +60,7 @@ export function CreateTopicModal({
 
   function handleClose() {
     setTitle("");
+    setRequireOutlineApproval(false);
     reset();
     onClose();
   }
@@ -68,6 +74,7 @@ export function CreateTopicModal({
       target_audience: analysis!.target_audience,
       content_tone: analysis!.content_tone as ContentTone,
       preferred_angle: analysis!.preferred_angle,
+      require_outline_approval: requireOutlineApproval || undefined,
     };
   }
 
@@ -219,6 +226,11 @@ export function CreateTopicModal({
                 className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
             </FieldWithRegenerate>
+
+            <ReviewOutlineCheckbox
+              checked={requireOutlineApproval}
+              onChange={setRequireOutlineApproval}
+            />
           </div>
         )}
 

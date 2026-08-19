@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useResearchSessions, useResearchSession } from "./use-research-sessions";
+import {
+  useResearchSessions,
+  useResearchSession,
+  ACTIVE_POLL_STATUSES,
+} from "./use-research-sessions";
 import type {
   PaginatedResearchSessions,
   ResearchSessionDetail,
@@ -135,5 +139,11 @@ describe("useResearchSession", () => {
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data!.steps.length).toBe(5);
     expect(result.current.data!.session_id).toBe("sess-001");
+  });
+});
+
+describe("ACTIVE_POLL_STATUSES", () => {
+  it("includes awaiting_outline_review so the outline review step polls for updates", () => {
+    expect(ACTIVE_POLL_STATUSES).toContain("awaiting_outline_review");
   });
 });

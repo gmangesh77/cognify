@@ -83,6 +83,7 @@ class PgResearchSessionRepository:
                 keywords=session.keywords,
                 topic_description_override=session.topic_description_override,
                 structural_diagram_mode=session.structural_diagram_mode,
+                require_outline_approval=session.require_outline_approval,
             )
             db.add(row)
             await db.commit()
@@ -125,6 +126,7 @@ class PgResearchSessionRepository:
             row.keywords = session.keywords
             row.topic_description_override = session.topic_description_override
             row.structural_diagram_mode = session.structural_diagram_mode
+            row.require_outline_approval = session.require_outline_approval
             await db.commit()
             await db.refresh(row)
             updated = self._to_model(row)
@@ -148,6 +150,8 @@ class PgResearchSessionRepository:
                     "failed": ["failed", "article_failed"],
                     "generating_article": ["generating_article"],
                     "in_progress": ["in_progress", "researching", "evaluating"],
+                    "awaiting_outline_review": ["awaiting_outline_review"],
+                    "cancelled": ["cancelled"],
                 }
                 statuses = status_groups.get(status, [status])
                 query = query.where(ResearchSessionRow.status.in_(statuses))
@@ -196,6 +200,7 @@ class PgResearchSessionRepository:
             keywords=row.keywords,
             topic_description_override=row.topic_description_override,
             structural_diagram_mode=row.structural_diagram_mode or "illustration",
+            require_outline_approval=row.require_outline_approval,
         )
 
 
@@ -501,6 +506,19 @@ class PgArticleDraftRepository:
     async def get(self, draft_id: UUID) -> ArticleDraft | None:
         async with self._sf() as db:
             row = await db.get(ArticleDraftRow, draft_id)
+            if row is None:
+                return None
+            return self._to_model(row)
+
+    async def find_latest_by_session(self, session_id: UUID) -> ArticleDraft | None:
+        async with self._sf() as db:
+            stmt = (
+                select(ArticleDraftRow)
+                .where(ArticleDraftRow.session_id == session_id)
+                .order_by(ArticleDraftRow.created_at.desc())
+                .limit(1)
+            )
+            row = (await db.execute(stmt)).scalar_one_or_none()
             if row is None:
                 return None
             return self._to_model(row)

@@ -122,4 +122,6 @@ export interface ArticleParams {
   topic_description_override?: string;
   /** How structural diagrams are rendered: AI illustration vs Mermaid. */
   structural_diagram_mode?: StructuralDiagramMode;
+  /** Opt in to reviewing the LLM-generated outline before section drafting runs. */
+  require_outline_approval?: boolean;
 }

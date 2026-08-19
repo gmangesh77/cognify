@@ -6,9 +6,11 @@ export type SessionStatus =
   | "running"
   | "complete"
   | "completed"
+  | "awaiting_outline_review"
   | "generating_article"
   | "article_complete"
   | "article_failed"
+  | "cancelled"
   | "failed";
 
 export interface AgentStep {
@@ -36,6 +38,37 @@ export interface ResearchSessionSummary {
 export interface ResearchSessionDetail extends ResearchSessionSummary {
   completed_at: string | null;
   steps: AgentStep[];
+  require_outline_approval?: boolean;
+}
+
+export interface OutlineSection {
+  index: number;
+  title: string;
+  description: string;
+  key_points: string[];
+  target_word_count: number;
+  relevant_facets: number[];
+}
+
+export interface ArticleOutline {
+  title: string;
+  subtitle: string | null;
+  content_type: string;
+  sections: OutlineSection[];
+  total_target_words: number;
+  reasoning: string;
+}
+
+export interface OutlineResponse {
+  draft_id: string;
+  session_id: string;
+  status: string;
+  outline: ArticleOutline;
+}
+
+export interface SessionActionResponse {
+  session_id: string;
+  status: string;
 }
 
 export interface PaginatedResearchSessions {
