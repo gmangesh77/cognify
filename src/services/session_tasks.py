@@ -41,8 +41,22 @@ class SessionTaskRegistry:
             raise RuntimeError(msg)
         task = asyncio.create_task(coro)
         self._tasks[session_id] = task
-        task.add_done_callback(lambda _t: self._tasks.pop(session_id, None))
+        task.add_done_callback(lambda t: self._discard_if_current(session_id, t))
         return task
+
+    def _discard_if_current(self, session_id: UUID, task: asyncio.Task[None]) -> None:
+        """Remove `task` from the registry only if it is still the tracked
+        task for `session_id`.
+
+        Without this guard, a done-callback firing after a *newer* task has
+        already been spawned for the same session (e.g. task A finishes,
+        then `spawn()` is called again before A's callback runs) would pop
+        the newer task B out of the registry, silently making `is_running`
+        report False and `cancel` a no-op for a task that is, in fact,
+        still running.
+        """
+        if self._tasks.get(session_id) is task:
+            del self._tasks[session_id]
 
     def cancel(self, session_id: UUID) -> bool:
         """Cancel the running task for `session_id`, if any.

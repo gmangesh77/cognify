@@ -95,3 +95,44 @@ class TestSpawnWhileRunning:
 
         event.set()
         await first
+
+
+class TestStaleDoneCallbackRace:
+    """A finishing task's done-callback must not evict a *newer* task
+    spawned for the same session before that callback gets to run.
+
+    The race: task A finishes, its done-callback (which pops the registry
+    entry) is scheduled via `call_soon` but hasn't executed yet, and a
+    fresh task B is spawned for the same session in that window. Without
+    the `is` identity guard in `_discard_if_current`, A's stale callback
+    would blow away B's registry entry once it finally runs.
+    """
+
+    async def test_late_done_callback_does_not_evict_newer_task(self) -> None:
+        registry = SessionTaskRegistry()
+        session_id = uuid4()
+
+        # An already-set Event's `.wait()` returns synchronously (no
+        # suspension), so this task completes inside its very first
+        # `__step` -- `task_a.done()` becomes True before our own
+        # `await asyncio.sleep(0)` regains control, but the done-callback
+        # that pops the registry is only *scheduled* (call_soon), not yet
+        # invoked.
+        already_set = asyncio.Event()
+        already_set.set()
+        task_a = registry.spawn(session_id, _wait_forever(already_set))
+        await asyncio.sleep(0)
+        assert task_a.done() is True
+
+        # Spawn B for the same session before A's done-callback has run.
+        event_b = asyncio.Event()
+        task_b = registry.spawn(session_id, _wait_forever(event_b))
+
+        # Let A's (now-stale) done-callback -- and B's first step -- run.
+        await asyncio.sleep(0)
+
+        # B must still be tracked as the running task for this session.
+        assert registry.is_running(session_id) is True
+        assert registry.cancel(session_id) is True
+        with pytest.raises(asyncio.CancelledError):
+            await task_b

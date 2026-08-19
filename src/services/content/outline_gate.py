@@ -147,8 +147,9 @@ def validate_outline(outline: ArticleOutline) -> ArticleOutline:
     """Validate editor-supplied outline shape; renumber section indices.
 
     Raises `ValueError` (message = "; ".join of all violations found) if
-    the outline has no sections, an empty title, or duplicate titles
-    (case-insensitive, whitespace-stripped).
+    the outline itself has an empty title, has no sections, has a section
+    with an empty title, or has duplicate section titles (case-insensitive,
+    whitespace-stripped).
     """
     messages = _outline_validation_messages(outline)
     if messages:
@@ -158,6 +159,8 @@ def validate_outline(outline: ArticleOutline) -> ArticleOutline:
 
 def _outline_validation_messages(outline: ArticleOutline) -> list[str]:
     messages: list[str] = []
+    if not outline.title.strip():
+        messages.append("Outline title must not be empty")
     if not outline.sections:
         messages.append("Outline must have at least one section")
         return messages

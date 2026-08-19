@@ -48,9 +48,19 @@ async def _run_full_pipeline(
         detail = await deps.research_svc.get_session(session_id)
         if not _content_ready(detail, deps):
             return
-        if detail.session.require_outline_approval and deps.outline_gate is not None:
-            await _run_outline_gate(deps, session_id)
-            return
+        if detail.session.require_outline_approval:
+            if deps.outline_gate is not None:
+                await _run_outline_gate(deps, session_id)
+                return
+            logger.warning(
+                "outline_gate_not_configured",
+                session_id=str(session_id),
+                reason=(
+                    "require_outline_approval is set but no outline_gate is "
+                    "configured for this deployment -- falling through to "
+                    "the full pipeline without an outline review stop."
+                ),
+            )
         await _drive_to_completion(
             deps.research_svc,
             session_id,

@@ -78,10 +78,10 @@ def _make_outline_app(
         research=session_repo,
         articles=InMemoryArticleRepository(),
     )
-    # A step_repo is required for ContentService._graph_deps() to build a
-    # real ContentGraphDeps — without one, `stop_after_outline` is silently
-    # ignored and the full pipeline graph runs regardless (matches the PG
-    # wiring in main.py; only the no-DB dev fallback omits it).
+    # step_repo is optional here: ContentService._graph_deps() always
+    # builds a real ContentGraphDeps and honors `stop_after_outline`
+    # regardless of whether a step_repo was supplied (fixed in df76c2f).
+    # Passed anyway to match the PG wiring in main.py.
     content_svc = ContentService(
         content_repos,
         ContentDeps(llm=llm, retriever=_make_retriever_mock()),
@@ -310,6 +310,57 @@ class TestApproveNotAwaiting:
                 headers=editor_headers,
             )
             assert resp.status_code == 409
+
+
+class TestCancelDuringDrafting:
+    async def test_cancel_during_slow_drafting_marks_session_cancelled(
+        self, auth_settings: Settings, test_topic_id: UUID
+    ) -> None:
+        """Approve, then cancel immediately while `generate_from_outline`
+        is still in flight -- exercises the `except asyncio.CancelledError`
+        branch in `_run_drafting_pipeline` (research_pipeline.py), not just
+        the endpoint's own synchronous status write."""
+        app = _make_outline_app(auth_settings, test_topic_id, _outline_only_pair() * 3)
+        session_repo = app.state.research_service._repos.sessions
+        editor_headers = make_auth_header("editor", auth_settings)
+
+        async def _slow_generate_from_outline(session_id: UUID) -> None:
+            await asyncio.sleep(10)
+
+        # A task blocked on asyncio.sleep(10) raises CancelledError almost
+        # immediately once cancelled -- this does not actually wait 10s.
+        app.state.outline_gate.generate_from_outline = _slow_generate_from_outline
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            session_id = await _create_session(
+                client, editor_headers, test_topic_id, gate=True
+            )
+            await _wait_for_status(session_repo, session_id, "awaiting_outline_review")
+
+            resp = await client.post(
+                f"/api/v1/research/sessions/{session_id}/outline/approve",
+                headers=editor_headers,
+            )
+            assert resp.status_code == 202, resp.text
+
+            resp = await client.post(
+                f"/api/v1/research/sessions/{session_id}/cancel",
+                headers=editor_headers,
+            )
+            assert resp.status_code == 200, resp.text
+            assert resp.json()["status"] == "cancelled"
+
+            registry = app.state.session_tasks
+            for _ in range(200):
+                if not registry.is_running(UUID(session_id)):
+                    break
+                await asyncio.sleep(0.01)
+            assert registry.is_running(UUID(session_id)) is False
+
+            final_status = await _wait_for_status(session_repo, session_id, "cancelled")
+            assert final_status == "cancelled"
 
 
 class TestNoGateRegression:

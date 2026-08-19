@@ -25,16 +25,13 @@ from src.api.schemas.outline import (
     SessionActionResponse,
 )
 from src.models.content_pipeline import ArticleDraft, ArticleOutline
+from src.models.session_events import TERMINAL_STATUSES
 from src.services.content.outline_gate import OutlineGateService
 from src.services.research import SessionDetail
 
 logger = structlog.get_logger()
 
 outline_router = APIRouter()
-
-_TERMINAL_STATUSES = frozenset(
-    {"article_complete", "article_failed", "failed", "cancelled", "completed"}
-)
 
 
 def _parse_uuid(value: str) -> UUID:
@@ -183,7 +180,7 @@ async def cancel_session(
     sid = _parse_uuid(session_id)
     svc = _get_research_service_readonly(request)
     detail = await svc.get_session(sid)
-    if detail.session.status in _TERMINAL_STATUSES:
+    if detail.session.status in TERMINAL_STATUSES:
         raise HTTPException(status_code=409, detail="Session is already terminal")
     registry = _get_session_tasks(request)
     registry.cancel(sid)

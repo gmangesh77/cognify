@@ -182,6 +182,13 @@ class TestValidateOutline:
         with pytest.raises(ValueError, match="empty title"):
             validate_outline(outline)
 
+    def test_rejects_empty_outline_title(self) -> None:
+        outline = _outline_with_sections([_section(0, "Intro")]).model_copy(
+            update={"title": "   "}
+        )
+        with pytest.raises(ValueError, match="Outline title must not be empty"):
+            validate_outline(outline)
+
     def test_renumbers_indices(self) -> None:
         outline = _outline_with_sections([_section(5, "First"), _section(9, "Second")])
         validated = validate_outline(outline)
