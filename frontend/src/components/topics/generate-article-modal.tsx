@@ -56,6 +56,10 @@ export function GenerateArticleModal({
   // are rendered. Defaults to AI illustration.
   const [diagramMode, setDiagramMode] =
     useState<StructuralDiagramMode>("illustration");
+  // Opt in to reviewing the LLM-generated outline before section drafting
+  // runs. Unchecked by default so the field is omitted and the server's
+  // configured default applies.
+  const [requireOutlineApproval, setRequireOutlineApproval] = useState(false);
 
   // On topic change, reset hook state and auto-analyze seeded with
   // the topic's existing description/domain/keywords so the user sees
@@ -88,6 +92,7 @@ export function GenerateArticleModal({
           : undefined,
       topic_description_override: edited ? analysis.description : undefined,
       structural_diagram_mode: diagramMode,
+      require_outline_approval: requireOutlineApproval || undefined,
     };
     onConfirm(topic, params);
   }
@@ -256,6 +261,16 @@ export function GenerateArticleModal({
                 Hero and editorial visuals always use AI illustration.
               </p>
             </div>
+
+            <label className="flex items-center gap-2 text-sm text-neutral-700">
+              <input
+                type="checkbox"
+                checked={requireOutlineApproval}
+                onChange={(e) => setRequireOutlineApproval(e.target.checked)}
+                className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+              />
+              Review outline before drafting
+            </label>
           </div>
         )}
 

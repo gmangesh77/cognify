@@ -9,6 +9,8 @@ const cases: { status: SessionStatus; label: string; dotClass: string }[] = [
   { status: "complete", label: "Research Complete", dotClass: "bg-blue-500" },
   { status: "article_complete", label: "Article Ready", dotClass: "bg-green-500" },
   { status: "failed", label: "Failed", dotClass: "bg-red-500" },
+  { status: "awaiting_outline_review", label: "Outline review", dotClass: "bg-info" },
+  { status: "cancelled", label: "Cancelled", dotClass: "bg-neutral-400" },
 ];
 
 describe("SessionStatusBadge", () => {

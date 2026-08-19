@@ -15,10 +15,12 @@ const BORDER_COLORS: Record<string, string> = {
   running: "border-l-amber-500",
   complete: "border-l-blue-500",
   completed: "border-l-blue-500",
+  awaiting_outline_review: "border-l-info",
   generating_article: "border-l-purple-500",
   article_complete: "border-l-green-500",
   article_failed: "border-l-red-500",
   failed: "border-l-red-500",
+  cancelled: "border-l-neutral-300",
 };
 
 const ACTIVE_BAR_COLORS: Record<string, string> = {
@@ -28,10 +30,16 @@ const ACTIVE_BAR_COLORS: Record<string, string> = {
   evaluating: "bg-amber-500",
   running: "bg-amber-500",
   complete: "bg-blue-500",
+  awaiting_outline_review: "bg-info",
   generating_article: "bg-purple-500",
 };
 
-const ERROR_TERMINAL_STATUSES = new Set(["article_failed", "failed", "cancelled"]);
+const ERROR_TERMINAL_STATUSES = new Set(["article_failed", "failed"]);
+
+function progressBarColor(status: string, isError: boolean): string {
+  if (status === "cancelled") return "bg-neutral-300";
+  return isError ? "bg-error" : "bg-success";
+}
 
 function formatDuration(seconds: number | null | undefined): string {
   if (seconds == null) return "";
@@ -79,7 +87,10 @@ export function SessionCard({ session, isExpanded, onToggle, children }: Session
             {isTerminal ? (
               <div
                 data-testid="progress-bar"
-                className={cn("h-full w-full rounded-full transition-all", isError ? "bg-error" : "bg-success")}
+                className={cn(
+                  "h-full w-full rounded-full transition-all",
+                  progressBarColor(session.status, isError),
+                )}
               />
             ) : (
               <div
@@ -106,7 +117,9 @@ export function SessionCard({ session, isExpanded, onToggle, children }: Session
             href={`/research/${session.session_id}`}
             className="text-xs font-medium text-primary hover:underline"
           >
-            View progress →
+            {session.status === "awaiting_outline_review"
+              ? "Review outline →"
+              : "View progress →"}
           </Link>
         </div>
       )}

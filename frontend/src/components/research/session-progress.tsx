@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { useSessionEvents } from "@/hooks/use-session-events";
 import type { SessionConnectionState } from "@/hooks/session-events-reducer";
 import { useResearchSession } from "@/hooks/use-research-sessions";
+import { useCancelSession } from "@/hooks/use-outline-review";
 import { isTerminalSessionStatus } from "@/lib/research/session-status";
+import { Button } from "@/components/ui/button";
 import { SessionStatusBadge } from "./session-status-badge";
 import { SessionStepList } from "./session-step-list";
 import { SessionProgressFooter } from "./session-progress-footer";
+import { OutlineReviewStep } from "./outline-review-step";
 
 function formatDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
@@ -99,6 +102,7 @@ export function SessionProgress({ sessionId }: SessionProgressProps) {
       : (events.status ?? sessionQuery.data?.status ?? null);
 
   const isTerminal = isTerminalSessionStatus(status);
+  const cancelMutation = useCancelSession(sessionId);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -122,9 +126,24 @@ export function SessionProgress({ sessionId }: SessionProgressProps) {
             {elapsed && <span className="text-xs text-neutral-500">{elapsed}</span>}
           </div>
         </div>
-        <ConnectionChip connection={events.connection} onRetry={events.reconnect} />
+        <div className="flex items-center gap-3">
+          <ConnectionChip connection={events.connection} onRetry={events.reconnect} />
+          {!isTerminal && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label="Cancel generation"
+              onClick={() => cancelMutation.mutate()}
+              disabled={cancelMutation.isPending}
+            >
+              Cancel
+            </Button>
+          )}
+        </div>
       </header>
       <SessionStepList steps={events.steps} />
+      {status === "awaiting_outline_review" && <OutlineReviewStep sessionId={sessionId} />}
       <SessionProgressFooter
         sessionId={sessionId}
         status={status}

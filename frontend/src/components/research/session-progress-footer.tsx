@@ -44,6 +44,17 @@ function ErrorPanel({ error }: { error: string | null }) {
   );
 }
 
+function CancelledPanel() {
+  return (
+    <div className="space-y-3 rounded-md border border-neutral-200 bg-neutral-50 p-4">
+      <p className="text-sm text-neutral-600">Generation cancelled.</p>
+      <Link href="/research" className="text-sm font-medium text-primary hover:underline">
+        Back to research
+      </Link>
+    </div>
+  );
+}
+
 export function SessionProgressFooter({
   sessionId,
   status,
@@ -56,6 +67,7 @@ export function SessionProgressFooter({
       {sections && <SectionsBar sections={sections} />}
       {status === "article_complete" && <ViewArticleButton sessionId={sessionId} />}
       {isFailed && <ErrorPanel error={findFailedStepError(steps)} />}
+      {status === "cancelled" && <CancelledPanel />}
     </div>
   );
 }

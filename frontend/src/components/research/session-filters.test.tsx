@@ -3,13 +3,15 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SessionFilters } from "./session-filters";
 
 describe("SessionFilters", () => {
-  it("renders all 5 filter tabs", () => {
+  it("renders all 7 filter tabs", () => {
     render(<SessionFilters activeFilter="all" onFilterChange={() => {}} totalCount={8} />);
     expect(screen.getByText("All")).toBeInTheDocument();
     expect(screen.getByText("Planning")).toBeInTheDocument();
     expect(screen.getByText("In Progress")).toBeInTheDocument();
+    expect(screen.getByText("Outline review")).toBeInTheDocument();
     expect(screen.getByText("Complete")).toBeInTheDocument();
     expect(screen.getByText("Failed")).toBeInTheDocument();
+    expect(screen.getByText("Cancelled")).toBeInTheDocument();
   });
 
   it("shows total count", () => {

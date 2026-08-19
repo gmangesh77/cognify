@@ -31,6 +31,7 @@ export interface CreateTopicData {
   target_audience: string;
   content_tone: ContentTone;
   preferred_angle: string;
+  require_outline_approval?: boolean;
 }
 
 export function CreateTopicModal({
@@ -40,6 +41,9 @@ export function CreateTopicModal({
   onCreateAndGenerate,
 }: CreateTopicModalProps) {
   const [title, setTitle] = useState("");
+  // Opt in to reviewing the LLM-generated outline before section drafting
+  // runs (only meaningful for the "Create & Generate Article" path).
+  const [requireOutlineApproval, setRequireOutlineApproval] = useState(false);
   const {
     analysis,
     isAnalyzing,
@@ -55,6 +59,7 @@ export function CreateTopicModal({
 
   function handleClose() {
     setTitle("");
+    setRequireOutlineApproval(false);
     reset();
     onClose();
   }
@@ -68,6 +73,7 @@ export function CreateTopicModal({
       target_audience: analysis!.target_audience,
       content_tone: analysis!.content_tone as ContentTone,
       preferred_angle: analysis!.preferred_angle,
+      require_outline_approval: requireOutlineApproval || undefined,
     };
   }
 
@@ -219,6 +225,16 @@ export function CreateTopicModal({
                 className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               />
             </FieldWithRegenerate>
+
+            <label className="flex items-center gap-2 text-sm text-neutral-700">
+              <input
+                type="checkbox"
+                checked={requireOutlineApproval}
+                onChange={(e) => setRequireOutlineApproval(e.target.checked)}
+                className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+              />
+              Review outline before drafting
+            </label>
           </div>
         )}
 

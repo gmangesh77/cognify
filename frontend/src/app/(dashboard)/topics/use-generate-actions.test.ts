@@ -217,6 +217,33 @@ describe("useGenerateActions", () => {
       expect(push).toHaveBeenCalledWith("/research/s10");
     });
 
+    it("forwards require_outline_approval to createResearchSession when set", async () => {
+      mockCreateManualTopic.mockResolvedValue({
+        topic: { id: "t1", title: "AI Regulation" } as unknown as trendsApi.PersistedTopic,
+        is_duplicate: false,
+        duplicate_of: null,
+      });
+      mockCreateResearchSession.mockResolvedValue({
+        session_id: "s9",
+        status: "planning",
+        started_at: "",
+      });
+      const setToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ setToast }));
+
+      await act(async () => {
+        await result.current.handleCreateAndGenerate({
+          ...createTopicData,
+          require_outline_approval: true,
+        });
+      });
+
+      expect(mockCreateResearchSession).toHaveBeenCalledWith(
+        "t1",
+        expect.objectContaining({ require_outline_approval: true }),
+      );
+    });
+
     it("shows a failure toast and does not navigate when the request fails", async () => {
       mockCreateManualTopic.mockRejectedValue(new Error("boom"));
       const setToast = vi.fn();

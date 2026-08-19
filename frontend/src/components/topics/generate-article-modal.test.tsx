@@ -189,6 +189,31 @@ describe("GenerateArticleModal", () => {
     expect(params.topic_description_override).toBe("My edited version");
   });
 
+  it("omits require_outline_approval when the checkbox is left unchecked", async () => {
+    const onConfirm = vi.fn();
+    render(
+      <GenerateArticleModal topic={mockTopic} onClose={vi.fn()} onConfirm={onConfirm} />,
+    );
+    await screen.findByDisplayValue("security engineers");
+    fireEvent.click(screen.getByText("Generate"));
+    await waitFor(() => expect(onConfirm).toHaveBeenCalled());
+    const [, params] = onConfirm.mock.calls[0];
+    expect(params.require_outline_approval).toBeUndefined();
+  });
+
+  it("sets require_outline_approval when 'Review outline before drafting' is checked", async () => {
+    const onConfirm = vi.fn();
+    render(
+      <GenerateArticleModal topic={mockTopic} onClose={vi.fn()} onConfirm={onConfirm} />,
+    );
+    await screen.findByDisplayValue("security engineers");
+    fireEvent.click(screen.getByLabelText(/review outline before drafting/i));
+    fireEvent.click(screen.getByText("Generate"));
+    await waitFor(() => expect(onConfirm).toHaveBeenCalled());
+    const [, params] = onConfirm.mock.calls[0];
+    expect(params.require_outline_approval).toBe(true);
+  });
+
   it("Generate button is disabled while analyzing", () => {
     render(
       <GenerateArticleModal

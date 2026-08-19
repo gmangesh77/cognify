@@ -157,6 +157,34 @@ describe("CreateTopicModal", () => {
     );
   });
 
+  it("forwards require_outline_approval on Create & Generate Article when checked", async () => {
+    mockAnalyze.mockResolvedValue({
+      description: "An exploration of zero trust",
+      domain: "cybersecurity",
+      keywords: ["zero trust", "cloud"],
+      target_audience: "Security engineers",
+      content_tone: "technical-authoritative",
+      preferred_angle: "Implementation guide",
+    });
+
+    render(<CreateTopicModal {...defaultProps} />);
+    const input = screen.getByPlaceholderText(/zero trust/i);
+    fireEvent.change(input, { target: { value: "Zero Trust Architecture" } });
+    fireEvent.click(screen.getByText("Analyze"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Create & Generate Article" }),
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText(/review outline before drafting/i));
+    fireEvent.click(screen.getByRole("button", { name: "Create & Generate Article" }));
+    expect(defaultProps.onCreateAndGenerate).toHaveBeenCalledWith(
+      expect.objectContaining({ require_outline_approval: true }),
+    );
+  });
+
   it("shows analyzing state while request is pending", async () => {
     let resolveAnalyze!: (value: unknown) => void;
     mockAnalyze.mockReturnValue(
