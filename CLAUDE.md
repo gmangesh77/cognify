@@ -146,6 +146,7 @@ See @docs/LEARNINGS.md for hard-won debugging lessons. **Read before making chan
 - **L-008**: Azure DevOps work item terminal states: User Story/Bug/Epic → `Closed`, Task → `Completed`
 - **L-009**: Ghost 5+ requires Lexical format — raw `html` field is silently ignored
 - **L-010**: `COGNIFY_ENCRYPTION_KEY` must be stable in `.env` — ephemeral keys make DB-stored API keys unrecoverable
+- **L-011**: Outline gate: `ContentGraphDeps(stop_after_outline=True)` to stop after planning; seed `outline` + `status=outline_complete` to resume; `_graph_deps()` must never return `None`
 
 ## Current Status
 
@@ -159,4 +160,4 @@ See @project-management/PROGRESS.md for full ticket status.
 **CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml, e2e.yml), Makefile, docker-compose with full stack.
 **Test suite:** 1400 backend unit tests (0 failures) + ~355 frontend Vitest tests + 1 Playwright smoke test.
 **Epic 11 (Supervised Authoring, planned 2026-08-19):** program plan `docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md`; ADR-006/007 accepted; AUTHOR-001 (live SSE session progress + `/research/[id]` page) merged to `develop` (`06439e9`).
-**Next action:** AUTHOR-002 (outline gate) / AUTHOR-003 (Brief). PUBLISH-002 (WordPress, 5 SP) still open.
+**Next action:** merge AUTHOR-002 (outline gate — implemented on `feature/AUTHOR-002-outline-gate`), then AUTHOR-003 (Brief). PUBLISH-002 (WordPress, 5 SP) still open.

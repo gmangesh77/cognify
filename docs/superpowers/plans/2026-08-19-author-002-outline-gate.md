@@ -34,7 +34,7 @@
 - `ContentState.outline_instruction: NotRequired[str | None]`.
 - `@dataclass(frozen=True) OutlineContext(target_audience=None, preferred_angle=None, content_tone=None, keywords=None, instruction=None)`; `generate_outline(topic, findings, llm, ctx: OutlineContext | None = None)`. When `ctx.instruction` is set, the prompt gains the line `Editor instructions for this revision: {instruction}` in the context block. Grep all callers of `generate_outline(` (nodes.py, tests, services) and update them.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 ```python
 # tests/unit/agents/content/test_pipeline_outline_gate.py
@@ -96,9 +96,9 @@ async def test_node_sets_identical_across_spans() -> None:
 
 Check `_make_findings`/`_outline_json` exist with those names in `test_pipeline.py` (they do per the current file); check the queries JSON shape expected by `generate_section_queries` (`src/agents/content/query_generator.py`) and adjust `_queries_json` accordingly.
 
-- [ ] **Step 2: Run → FAIL** (`ContentGraphDeps` has no `stop_after_outline`)
+- [x] **Step 2: Run → FAIL** (`ContentGraphDeps` has no `stop_after_outline`)
 
-- [ ] **Step 3: Implement** — in `pipeline.py`:
+- [x] **Step 3: Implement** — in `pipeline.py`:
 
 ```python
 @dataclass
@@ -121,9 +121,9 @@ and replace the `generate_queries` conditional edge's router with `_make_after_q
 
 In `outline_generator.py` add `OutlineContext` and refactor `generate_outline` to take it (keep behaviour identical; add the instruction line). In `nodes.py` `outline_node` builds `OutlineContext(target_audience=state.get(...), preferred_angle=..., content_tone=..., keywords=..., instruction=state.get("outline_instruction"))`. Update every caller found by `rg "generate_outline\("`.
 
-- [ ] **Step 4: Run new tests + `tests/unit/agents/content` → PASS; ruff; mypy on the 3 files (only fix errors you introduce)**
+- [x] **Step 4: Run new tests + `tests/unit/agents/content` → PASS; ruff; mypy on the 3 files (only fix errors you introduce)**
 
-- [ ] **Step 5: Commit** — `feat(pipeline): stop_after_outline graph span + OutlineContext with editor instruction (AUTHOR-002)`
+- [x] **Step 5: Commit** — `feat(pipeline): stop_after_outline graph span + OutlineContext with editor instruction (AUTHOR-002)`
 
 ---
 
@@ -138,11 +138,11 @@ In `outline_generator.py` add `OutlineContext` and refactor `generate_outline` t
 - Modify: `src/services/content/__init__.py:300-308` (`_load_session` valid += `"awaiting_outline_review"`)
 - Test: `tests/unit/services/test_research_outline_flag.py`, `tests/unit/api/test_research_endpoints.py` (extend: POST with `require_outline_approval: true` echoes on GET), `tests/unit/db/...` only if a mapping test pattern exists (check `tests/unit/db`)
 
-- [ ] **Step 1: Failing tests** — (a) `start_session(..., require_outline_approval=True)` persists the flag on the returned/stored session; (b) POST `/research/sessions` with the flag → session detail shows `require_outline_approval: true`; (c) `_load_session` accepts `awaiting_outline_review` (unit test via `ContentService` with an in-memory research repo double — see existing content service tests for the pattern, e.g. `tests/unit/services/test_content_service*.py`).
-- [ ] **Step 2: Run → FAIL**
-- [ ] **Step 3: Implement** (settings, model, table, migration, repo mapping, schema, service, router, whitelist). Check `PgResearchSessionRepository._to_model/_to_row` (or equivalent) in `src/db/repositories.py` and add the field in both directions.
-- [ ] **Step 4: Run `tests/unit/services tests/unit/api tests/unit/db -q` → PASS; ruff; mypy touched files**
-- [ ] **Step 5: Commit** — `feat(research): require_outline_approval flag (setting + session column + request) and awaiting_outline_review status (AUTHOR-002)`
+- [x] **Step 1: Failing tests** — (a) `start_session(..., require_outline_approval=True)` persists the flag on the returned/stored session; (b) POST `/research/sessions` with the flag → session detail shows `require_outline_approval: true`; (c) `_load_session` accepts `awaiting_outline_review` (unit test via `ContentService` with an in-memory research repo double — see existing content service tests for the pattern, e.g. `tests/unit/services/test_content_service*.py`).
+- [x] **Step 2: Run → FAIL**
+- [x] **Step 3: Implement** (settings, model, table, migration, repo mapping, schema, service, router, whitelist). Check `PgResearchSessionRepository._to_model/_to_row` (or equivalent) in `src/db/repositories.py` and add the field in both directions.
+- [x] **Step 4: Run `tests/unit/services tests/unit/api tests/unit/db -q` → PASS; ruff; mypy touched files**
+- [x] **Step 5: Commit** — `feat(research): require_outline_approval flag (setting + session column + request) and awaiting_outline_review status (AUTHOR-002)`
 
 ---
 
@@ -170,11 +170,11 @@ class OutlineGateService:
 def validate_outline(outline: ArticleOutline) -> ArticleOutline  # pure; raises ValueError with a list of messages
 ```
 
-- [ ] **Step 1: Failing tests** using `FakeListChatModel` + in-memory repos (mirror the fixtures in the existing content-service tests; L-007: give the fake LLM enough responses — outline-only needs 2 (outline, queries); generate_from_outline needs the full-pipeline count minus the outline response). Cases: outline-only stores a draft with `OUTLINE_COMPLETE` and no section drafts; `update_outline` rejects empty sections / duplicate titles (ValueError) and renumbers indices; `regenerate_outline` passes the instruction into the prompt (assert the fake LLM received a HumanMessage containing the instruction — `FakeListChatModel` doesn't record inputs; wrap it in a tiny recording subclass or use `AsyncMock` side_effect returning `AIMessage`s); `generate_from_outline` produces a `CanonicalArticle` whose section headings match the stored outline titles and does not call the outline prompt (first fake response is consumed by the queries node).
-- [ ] **Step 2: Run → FAIL**
-- [ ] **Step 3: Implement** (new module + the two extracted helpers + repo method). Keep every function < 20 lines; use small helpers.
-- [ ] **Step 4: Run `tests/unit/services -q` + `tests/unit/agents/content -q` → PASS (existing `generate_full_article` tests must still pass); ruff; mypy**
-- [ ] **Step 5: Commit** — `feat(content): OutlineGateService — outline-only run, validate/update/regenerate, generate_from_outline (AUTHOR-002)`
+- [x] **Step 1: Failing tests** using `FakeListChatModel` + in-memory repos (mirror the fixtures in the existing content-service tests; L-007: give the fake LLM enough responses — outline-only needs 2 (outline, queries); generate_from_outline needs the full-pipeline count minus the outline response). Cases: outline-only stores a draft with `OUTLINE_COMPLETE` and no section drafts; `update_outline` rejects empty sections / duplicate titles (ValueError) and renumbers indices; `regenerate_outline` passes the instruction into the prompt (assert the fake LLM received a HumanMessage containing the instruction — `FakeListChatModel` doesn't record inputs; wrap it in a tiny recording subclass or use `AsyncMock` side_effect returning `AIMessage`s); `generate_from_outline` produces a `CanonicalArticle` whose section headings match the stored outline titles and does not call the outline prompt (first fake response is consumed by the queries node).
+- [x] **Step 2: Run → FAIL**
+- [x] **Step 3: Implement** (new module + the two extracted helpers + repo method). Keep every function < 20 lines; use small helpers.
+- [x] **Step 4: Run `tests/unit/services -q` + `tests/unit/agents/content -q` → PASS (existing `generate_full_article` tests must still pass); ruff; mypy**
+- [x] **Step 5: Commit** — `feat(content): OutlineGateService — outline-only run, validate/update/regenerate, generate_from_outline (AUTHOR-002)`
 
 ---
 
@@ -192,7 +192,7 @@ def validate_outline(outline: ArticleOutline) -> ArticleOutline  # pure; raises 
 - Modify: `src/api/main.py` — `app.state.session_tasks = SessionTaskRegistry()`; `app.state.outline_gate = OutlineGateService(app.state.content_service)` wherever `content_service` is created (both PG and in-memory branches); include `outline_router` (tags `research`).
 - Test: `tests/unit/services/test_session_tasks.py`, `tests/unit/api/test_outline_endpoints.py` (reuse `research_app` fixture pattern; install an in-memory `ContentService` + `OutlineGateService` with a FakeLLM on `app.state`; cases: flow create(with flag) → session reaches `awaiting_outline_review` (poll `GET /research/sessions/{id}` a few times with `asyncio.sleep(0)`), GET outline, PUT invalid → 422, PUT valid → 200, regenerate → 200, approve → 202 then session eventually `article_complete`; cancel active → 200 + status cancelled; cancel terminal → 409; approve when not awaiting → 409; flag off → session goes straight to `article_complete` (regression)).
 
-- [ ] **Step 1: Failing tests** → **Step 2: Run → FAIL** → **Step 3: Implement** → **Step 4: `tests/unit/api tests/unit/services -q` PASS; ruff; mypy** → **Step 5: Commit** — `feat(api): outline review endpoints, cancel, SessionTaskRegistry; gated research pipeline (AUTHOR-002)`
+- [x] **Step 1: Failing tests** → **Step 2: Run → FAIL** → **Step 3: Implement** → **Step 4: `tests/unit/api tests/unit/services -q` PASS; ruff; mypy** → **Step 5: Commit** — `feat(api): outline review endpoints, cancel, SessionTaskRegistry; gated research pipeline (AUTHOR-002)`
 
 Notes: the `FakeOrchestrator` in `test_research_endpoints.py` completes research immediately — good for these flows. Keep the router thin: all logic in `OutlineGateService`/`ResearchService`. Responses are Pydantic models (`src/api/schemas/outline.py`, new).
 
@@ -209,8 +209,8 @@ Notes: the `FakeOrchestrator` in `test_research_endpoints.py` completes research
 
 **OutlineReviewStep behaviour:** loads outline; editable title + subtitle; per section: title input, key points textarea (one per line), ↑/↓ reorder, delete, "Add section" (appends `{index, title:"New section", description:"", key_points:[], target_word_count: 300, relevant_facets:[]}`); "Regenerate outline" with an optional instruction input; **Approve & write** primary button (disabled while a mutation is pending; after success the parent `useSessionEvents` stream carries on — no navigation needed). Validation errors from 422 are shown in a red list. Dirty-state: Approve uses the server copy — if local edits are unsaved, **Approve** first PUTs then approves (one handler: save-if-dirty → approve).
 
-- [ ] **Step 1: Failing tests** (component: renders sections from `fetchOutline` mock; reorder/delete/add mutate local state; Approve with dirty state calls `updateOutline` then `approveOutline`; 422 messages render; Regenerate calls `regenerateOutline` with the instruction. Badge/filter tests extended for the two new statuses; `use-generate-actions.test.ts` asserts `require_outline_approval` forwarded; session-card test for the Review outline link.)
-- [ ] **Step 2: Run → FAIL** → **Step 3: Implement** → **Step 4: `npx vitest run` (full), `npx eslint` changed files, `npx tsc --noEmit` (only pre-existing errors)** → **Step 5: Commit** — `feat(frontend): outline review step, cancel, new session statuses, review-outline opt-in (AUTHOR-002)`
+- [x] **Step 1: Failing tests** (component: renders sections from `fetchOutline` mock; reorder/delete/add mutate local state; Approve with dirty state calls `updateOutline` then `approveOutline`; 422 messages render; Regenerate calls `regenerateOutline` with the instruction. Badge/filter tests extended for the two new statuses; `use-generate-actions.test.ts` asserts `require_outline_approval` forwarded; session-card test for the Review outline link.)
+- [x] **Step 2: Run → FAIL** → **Step 3: Implement** → **Step 4: `npx vitest run` (full), `npx eslint` changed files, `npx tsc --noEmit` (only pre-existing errors)** → **Step 5: Commit** — `feat(frontend): outline review step, cancel, new session statuses, review-outline opt-in (AUTHOR-002)`
 
 ---
 
