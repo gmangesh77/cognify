@@ -40,6 +40,7 @@ export function OutlineReviewStep({ sessionId }: OutlineReviewStepProps) {
     isRegenerating,
     isApproving,
     validationErrors,
+    actionError,
   } = useOutlineReview(sessionId);
 
   const [syncedOutline, setSyncedOutline] = useState<ArticleOutline | null>(null);
@@ -162,6 +163,8 @@ export function OutlineReviewStep({ sessionId }: OutlineReviewStepProps) {
           ))}
         </ul>
       )}
+
+      {actionError && <p className="text-sm text-error">{actionError}</p>}
 
       <OutlineRegeneratePanel
         dirty={dirty}

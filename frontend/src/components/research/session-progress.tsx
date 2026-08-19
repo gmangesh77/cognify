@@ -128,7 +128,7 @@ export function SessionProgress({ sessionId }: SessionProgressProps) {
         </div>
         <div className="flex items-center gap-3">
           <ConnectionChip connection={events.connection} onRetry={events.reconnect} />
-          {!isTerminal && (
+          {status !== null && !isTerminal && (
             <Button
               type="button"
               variant="ghost"
@@ -139,6 +139,9 @@ export function SessionProgress({ sessionId }: SessionProgressProps) {
             >
               Cancel
             </Button>
+          )}
+          {cancelMutation.cancelError && (
+            <span className="text-xs text-error">{cancelMutation.cancelError}</span>
           )}
         </div>
       </header>

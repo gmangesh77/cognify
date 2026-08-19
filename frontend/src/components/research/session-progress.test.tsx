@@ -27,7 +27,12 @@ vi.mock("./outline-review-step", () => ({
 }));
 
 const cancelMutate = vi.fn();
-const cancelSessionHook = vi.fn((_id: string) => ({ mutate: cancelMutate, isPending: false }));
+const cancelSessionHook = vi.fn(
+  (_id: string): { mutate: typeof cancelMutate; isPending: boolean; cancelError?: string | null } => ({
+    mutate: cancelMutate,
+    isPending: false,
+  }),
+);
 vi.mock("@/hooks/use-outline-review", () => ({
   useCancelSession: (id: string) => cancelSessionHook(id),
 }));
@@ -292,6 +297,28 @@ describe("SessionProgress", () => {
     events.mockReturnValue(base);
     render(<SessionProgress sessionId="s1" />);
     expect(screen.getByRole("button", { name: /cancel generation/i })).toBeDisabled();
+  });
+
+  it("shows a cancel error message when the cancel mutation fails", () => {
+    cancelSessionHook.mockReturnValue({
+      mutate: cancelMutate,
+      isPending: false,
+      cancelError: "Session is no longer awaiting review",
+    });
+    events.mockReturnValue(base);
+    render(<SessionProgress sessionId="s1" />);
+    expect(
+      screen.getByText(/session is no longer awaiting review/i),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show the Cancel button while status is still loading (null)", () => {
+    researchSession.mockReturnValue({ data: undefined });
+    events.mockReturnValue({ ...base, status: null });
+    render(<SessionProgress sessionId="s1" />);
+    expect(
+      screen.queryByRole("button", { name: /cancel generation/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a cancelled panel with a Back to research link when the session was cancelled", () => {

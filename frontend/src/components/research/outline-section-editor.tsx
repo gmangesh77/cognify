@@ -68,7 +68,13 @@ export function OutlineSectionEditor({
         aria-label={`Section ${index + 1} key points`}
         value={section.key_points.join("\n")}
         onChange={(e) =>
-          onChange({ ...section, key_points: e.target.value.split("\n") })
+          onChange({
+            ...section,
+            key_points: e.target.value
+              .split("\n")
+              .map((line) => line.trim())
+              .filter((line) => line.length > 0),
+          })
         }
         rows={3}
         placeholder="One key point per line"

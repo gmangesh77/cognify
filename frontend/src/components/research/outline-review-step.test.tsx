@@ -158,6 +158,34 @@ describe("OutlineReviewStep", () => {
     expect(mockApproveOutline).not.toHaveBeenCalled();
   });
 
+  it("shows a friendly message when approve fails with 409", async () => {
+    mockApproveOutline.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409, data: {} },
+    });
+    renderStep();
+    await screen.findByDisplayValue("Introduction");
+    fireEvent.click(screen.getByRole("button", { name: /approve & write/i }));
+
+    expect(
+      await screen.findByText(/session is no longer awaiting review/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a friendly message when regenerate fails with 429", async () => {
+    mockRegenerateOutline.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 429, data: {} },
+    });
+    renderStep();
+    await screen.findByDisplayValue("Introduction");
+    fireEvent.click(screen.getByRole("button", { name: /regenerate outline/i }));
+
+    expect(
+      await screen.findByText(/too many regenerate requests/i),
+    ).toBeInTheDocument();
+  });
+
   it("calls regenerateOutline with the typed instruction when the outline is clean", async () => {
     renderStep();
     await screen.findByDisplayValue("Introduction");
