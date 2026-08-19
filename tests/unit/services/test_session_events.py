@@ -137,6 +137,15 @@ async def test_tail_treats_complete_as_terminal_after_grace() -> None:
 
 
 @pytest.mark.asyncio
+async def test_tail_emits_timeout_reason_when_max_seconds_exceeded() -> None:
+    svc = _Svc([("researching", [])])
+    opts = TailOptions(poll_seconds=0, max_seconds=0)
+    events = [e async for e in tail_session(svc, SID, opts)]
+    assert events[-1].type == "done"
+    assert events[-1].data["reason"] == "timeout"
+
+
+@pytest.mark.asyncio
 async def test_tail_stops_on_error_when_session_missing() -> None:
     class Missing:
         async def get_session(self, session_id):  # type: ignore[no-untyped-def]

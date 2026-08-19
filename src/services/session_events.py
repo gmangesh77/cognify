@@ -12,10 +12,14 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from uuid import UUID
 
+import structlog
+
 from src.api.errors import NotFoundError
 from src.models.research_db import AgentStep
 from src.models.session_events import TERMINAL_STATUSES, EventType, SessionEvent
 from src.services.research import ResearchService
+
+logger = structlog.get_logger()
 
 
 @dataclass(frozen=True)
@@ -138,6 +142,35 @@ def _should_stop(state: _State, opts: TailOptions, started: float) -> bool:
     )
 
 
+def _timed_out(state: _State, opts: TailOptions, started: float) -> bool:
+    """True when the loop stopped because ``max_seconds`` elapsed.
+
+    Excludes terminal statuses and the "complete + grace expired" path,
+    which are expected stops, not safety-valve timeouts.
+    """
+    if is_terminal(state.status) or state.status == "complete":
+        return False
+    return time.monotonic() - started >= opts.max_seconds
+
+
+def _final_done(
+    session_id: UUID, state: _State, opts: TailOptions, started: float
+) -> SessionEvent:
+    if not _timed_out(state, opts, started):
+        return SessionEvent(type="done", session_id=session_id, status=state.status)
+    logger.warning(
+        "session_events_timeout",
+        session_id=str(session_id),
+        max_seconds=opts.max_seconds,
+    )
+    return SessionEvent(
+        type="done",
+        session_id=session_id,
+        status=state.status,
+        data={"reason": "timeout"},
+    )
+
+
 async def tail_session(
     svc: ResearchService, session_id: UUID, opts: TailOptions
 ) -> AsyncIterator[SessionEvent]:
@@ -157,4 +190,4 @@ async def tail_session(
         events, state = await _poll_once(ctx, state)
         for e in events:
             yield e
-    yield SessionEvent(type="done", session_id=session_id, status=state.status)
+    yield _final_done(session_id, state, opts, started)
