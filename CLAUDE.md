@@ -159,5 +159,5 @@ See @project-management/PROGRESS.md for full ticket status.
 **INFRA-005 (Frontend Status Alignment):** Done (PR #46).
 **CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml, e2e.yml), Makefile, docker-compose with full stack.
 **Test suite:** 1505 backend unit tests (0 failures) + 478 frontend Vitest tests + 1 Playwright smoke test.
-**Epic 11 (Supervised Authoring, planned 2026-08-19):** program plan `docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md`; ADR-006/007 accepted; AUTHOR-001 (live SSE session progress + `/research/[id]` page) merged to `develop` (`06439e9`).
-**Next action:** merge AUTHOR-002 (outline gate — implemented on `feature/AUTHOR-002-outline-gate`), then AUTHOR-003 (Brief). PUBLISH-002 (WordPress, 5 SP) still open.
+**Epic 11 (Supervised Authoring, started 2026-08-19):** program plan `docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md`; ADR-006/007 accepted. **Done:** AUTHOR-001 live SSE session progress + `/research/[id]` page (`06439e9`); AUTHOR-002 opt-in outline approval gate + cancel (PR #73, `30f1a36`, migration `a9d4e2f7c1b8`, gate off by default via `COGNIFY_REQUIRE_OUTLINE_APPROVAL`). See L-011 before touching the content graph.
+**Next action:** AUTHOR-003 (Brief — program plan §4.1/§5.4, ADR-007), then AUTHOR-004/005. Open env item: refresh the stack's Anthropic key (401) and run the deferred live smoke of the outline gate. PUBLISH-002 (WordPress, 5 SP) still open.

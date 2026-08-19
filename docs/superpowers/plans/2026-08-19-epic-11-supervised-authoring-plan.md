@@ -203,16 +203,16 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 |---|---|---:|---|
 | ADR-006/007 | ADRs: supervised pipeline; Brief contract | 1 | — |
 | AUTHOR-001 | Session events (DB-tailing) + SSE endpoint + `useSessionEvents` + `SessionProgress` + session detail route + auto-navigate — **DONE (merged `06439e9`)** | 8 | ADRs |
-| AUTHOR-002 | Outline gate: half-graphs, `awaiting_outline_review`, outline endpoints, cancel, `OutlineReviewStep` (flagged) — **DONE (branch `feature/AUTHOR-002-outline-gate`)** | 8 | AUTHOR-001 |
+| AUTHOR-002 | Outline gate: half-graphs, `awaiting_outline_review`, outline endpoints, cancel, `OutlineReviewStep` (flagged) — **DONE (PR #73, `30f1a36`)** | 8 | AUTHOR-001 |
 | AUTHOR-003 | Brief model/table/CRUD + Generate modal rework (picker, length, content type, save-as-brief) + topic-analyze `suggested_brief` | 5 | ADRs |
 | AUTHOR-004 | Section regenerate endpoint + toolbar action + diff accept | 3 | — |
 | AUTHOR-005 | Session/article usage endpoint + pricing settings + `UsageBadge` in progress header & article sidebar | 3 | AUTHOR-001 |
 | INFRA-007 | `CeleryDispatcher` + worker wiring for `_run_full_pipeline`; DB-tailing works unchanged from a worker | 5 | AUTHOR-001 |
 
 **Phase A acceptance criteria**
-- [ ] Clicking Generate navigates to `/research/{id}` and shows live step + section progress within 2 s of each event; no fake percentages remain in `session-card.tsx`.
-- [ ] With `require_outline_approval=true`, the run stops at `awaiting_outline_review`; the user can edit/reorder/add/delete/regenerate sections and approve; the final article reflects the edited outline (headings match). With the flag false, behaviour is byte-identical to today except progress/usage/cancel.
-- [ ] Cancel moves any active session to `cancelled` within 5 s and no further steps are recorded.
+- [x] Clicking Generate navigates to `/research/{id}` and shows live step + section progress within 2 s of each event; no fake percentages remain in `session-card.tsx`. *(AUTHOR-001; verified live)*
+- [x] With `require_outline_approval=true`, the run stops at `awaiting_outline_review`; the user can edit/reorder/add/delete/regenerate sections and approve; the final article reflects the edited outline (headings match). With the flag false, behaviour is byte-identical to today except progress/usage/cancel. *(AUTHOR-002; covered by endpoint flow tests — live smoke deferred until the stack's Anthropic key is refreshed)*
+- [x] Cancel moves any active session to `cancelled` within 5 s and no further steps are recorded. *(AUTHOR-002; tested incl. cancel during running drafting)*
 - [ ] A Brief can be created from topic analysis, reused on a second topic, and its fields appear on the session and article; "Create & Generate" from the topic modal forwards keywords + diagram mode (fixes the current drop).
 - [ ] Regenerate on a section returns a diff, preserves all `data-spec-id` anchors, appends a `section_versions` row with `source=regenerate`.
 - [ ] Usage badge shows `$ · tokens · images` matching a hand-computed value from `llm_calls` for a FakeLLM run with configured pricing.
@@ -273,10 +273,10 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 
 ## 12. Sign-off checklist (before Phase A code)
 
-- [ ] ADR-006 and ADR-007 written and reviewed
+- [x] ADR-006 and ADR-007 written and reviewed
 - [ ] Azure Boards: Epic 11 + AUTHOR-001…014 + INFRA-007/008 created; PROGRESS.md/BACKLOG.md rows added (done in this PR)
 - [ ] Decision confirmed: outline gate default **off**
-- [ ] Decision confirmed: v1 streaming granularity = step + section (token streaming = follow-up)
+- [x] Decision confirmed: v1 streaming granularity = step + section (token streaming = follow-up)
 - [ ] In-memory `ResearchService` double (done) approved as the unit-test strategy for the event bus
 
 ## 13. Follow-ups recorded (out of scope)
