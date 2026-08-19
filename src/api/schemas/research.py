@@ -17,6 +17,9 @@ class CreateResearchSessionRequest(BaseModel):
     # How structural diagrams (concept / process_step / comparison_split)
     # are rendered: "illustration" (gpt-image-1) or "mermaid".
     structural_diagram_mode: Literal["illustration", "mermaid"] = "illustration"
+    # Outline approval gate (AUTHOR-002). None = fall back to
+    # settings.require_outline_approval (resolved by the router).
+    require_outline_approval: bool | None = None
 
 
 class CreateResearchSessionResponse(BaseModel):
@@ -47,6 +50,7 @@ class ResearchSessionResponse(BaseModel):
     started_at: datetime
     completed_at: datetime | None
     steps: list[AgentStepResponse]
+    require_outline_approval: bool = False
 
 
 class ResearchSessionSummary(BaseModel):

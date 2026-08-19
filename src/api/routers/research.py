@@ -87,6 +87,12 @@ async def create_research_session(
     user: TokenPayload = Depends(require_editor_or_above),
 ) -> CreateResearchSessionResponse:
     svc = _get_research_service(request)
+    settings = request.app.state.settings
+    require_outline_approval = (
+        body.require_outline_approval
+        if body.require_outline_approval is not None
+        else settings.require_outline_approval
+    )
     session = await svc.start_session(
         body.topic_id,
         target_audience=body.target_audience,
@@ -95,6 +101,7 @@ async def create_research_session(
         keywords=body.keywords,
         topic_description_override=body.topic_description_override,
         structural_diagram_mode=body.structural_diagram_mode,
+        require_outline_approval=require_outline_approval,
     )
     topic = await svc.get_topic(body.topic_id)
     # Enrich topic with session context so the research planner can use
@@ -198,6 +205,7 @@ async def get_research_session(
         started_at=s.started_at,
         completed_at=s.completed_at,
         steps=steps,
+        require_outline_approval=s.require_outline_approval,
     )
 
 

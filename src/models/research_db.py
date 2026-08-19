@@ -30,6 +30,7 @@ class ResearchSession(BaseModel):
     keywords: list[str] | None = None
     topic_description_override: str | None = None
     structural_diagram_mode: str = "illustration"
+    require_outline_approval: bool = False
     duration_seconds: float | None = None
     started_at: datetime
     completed_at: datetime | None = None
