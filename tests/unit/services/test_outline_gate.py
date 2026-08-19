@@ -296,3 +296,36 @@ class TestGenerateFromOutline:
         )
         with pytest.raises(NotFoundError):
             await gate.generate_from_outline(uuid4())
+
+
+class TestGraphDepsWithoutStepRepo:
+    """Regression (AUTHOR-002 review fix): `ContentService._graph_deps()`
+    used to return None whenever `step_repo` was unset, silently
+    discarding `stop_after_outline` and running the full pipeline graph
+    regardless -- which would have made the outline-review gate a no-op
+    for any ContentService without a step repo (e.g. the in-memory
+    `main.py` fallback branch)."""
+
+    async def test_generate_outline_only_stops_after_queries(self) -> None:
+        session = _make_complete_session()
+        session_repo = InMemoryResearchSessionRepository()
+        await session_repo.create(session)
+        queries_json = json.dumps([{"section_index": 0, "queries": ["q1"]}])
+        llm = _RecordingLLM(responses=[_outline_json(), queries_json])
+        repos = ContentRepositories(
+            drafts=InMemoryArticleDraftRepository(),
+            research=session_repo,
+            articles=InMemoryArticleRepository(),
+        )
+        deps = ContentDeps(llm=llm, retriever=_make_retriever_mock())
+        content = ContentService(repos, deps)  # no step_repo, on purpose
+        gate = OutlineGateService(content)
+
+        draft = await gate.generate_outline_only(session.id)
+
+        # Exactly outline + queries -- no drafting/SEO/chart/diagram calls.
+        assert len(llm.recorded_messages) == 2
+        assert draft.status == DraftStatus.OUTLINE_COMPLETE
+        assert draft.section_drafts == []
+        stored_article = await repos.articles.find_by_session(session.id)
+        assert stored_article is None

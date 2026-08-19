@@ -259,6 +259,38 @@ class TestCancel:
             assert resp.json()["status"] == "cancelled"
 
 
+class TestDoubleApprove:
+    async def test_second_approve_without_yield_returns_409(
+        self, auth_settings: Settings, test_topic_id: UUID
+    ) -> None:
+        """Review fix: approve flips status to generating_article
+        synchronously (before spawning), so a second approve call fired
+        right behind the first sees a non-awaiting status and 409s --
+        it never even reaches the registry."""
+        app = _make_outline_app(auth_settings, test_topic_id, _outline_only_pair() * 3)
+        session_repo = app.state.research_service._repos.sessions
+        editor_headers = make_auth_header("editor", auth_settings)
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            session_id = await _create_session(
+                client, editor_headers, test_topic_id, gate=True
+            )
+            await _wait_for_status(session_repo, session_id, "awaiting_outline_review")
+
+            resp1 = await client.post(
+                f"/api/v1/research/sessions/{session_id}/outline/approve",
+                headers=editor_headers,
+            )
+            resp2 = await client.post(
+                f"/api/v1/research/sessions/{session_id}/outline/approve",
+                headers=editor_headers,
+            )
+            assert resp1.status_code == 202, resp1.text
+            assert resp2.status_code == 409, resp2.text
+
+
 class TestApproveNotAwaiting:
     async def test_approve_before_awaiting_review_returns_409(
         self, auth_settings: Settings, test_topic_id: UUID

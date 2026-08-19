@@ -193,9 +193,17 @@ class ContentService:
 
     def _graph_deps(
         self, session_id: UUID, *, stop_after_outline: bool = False
-    ) -> ContentGraphDeps | None:
-        if self._step_repo is None:
-            return None
+    ) -> ContentGraphDeps:
+        """Build graph deps for this run.
+
+        Always returns a real `ContentGraphDeps` — `step_repo` may be
+        None (step-tracking is then skipped by `_wrap_node`), but
+        `stop_after_outline` must still reach the graph even when no
+        step repo is configured (AUTHOR-002 review fix: this used to
+        return None whenever step_repo was None, silently disabling
+        the outline-review gate for any ContentService without one,
+        e.g. the in-memory `main.py` fallback).
+        """
         return ContentGraphDeps(
             step_repo=self._step_repo,  # type: ignore[arg-type]
             session_id=session_id,

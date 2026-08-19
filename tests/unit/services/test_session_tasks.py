@@ -61,3 +61,37 @@ class TestCancel:
         await task
         await asyncio.sleep(0)
         assert registry.cancel(session_id) is False
+
+
+class TestSpawnWhileRunning:
+    async def test_spawn_raises_when_task_already_running(self) -> None:
+        registry = SessionTaskRegistry()
+        session_id = uuid4()
+        event = asyncio.Event()
+        first = registry.spawn(session_id, _wait_forever(event))
+        assert registry.is_running(session_id) is True
+
+        with pytest.raises(RuntimeError):
+            registry.spawn(session_id, _noop())
+
+        # The original task is unaffected -- still tracked and running.
+        assert registry.is_running(session_id) is True
+        event.set()
+        await first
+
+    async def test_spawn_raises_closes_the_unused_coroutine(self) -> None:
+        registry = SessionTaskRegistry()
+        session_id = uuid4()
+        event = asyncio.Event()
+        first = registry.spawn(session_id, _wait_forever(event))
+
+        second = _noop()
+        with pytest.raises(RuntimeError):
+            registry.spawn(session_id, second)
+        # The coroutine was closed by spawn(), not scheduled -- awaiting a
+        # closed coroutine raises, proving it was never left dangling.
+        with pytest.raises(RuntimeError, match="cannot reuse"):
+            await second
+
+        event.set()
+        await first

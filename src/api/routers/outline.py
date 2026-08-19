@@ -145,13 +145,27 @@ async def approve_outline(
 ) -> SessionActionResponse:
     sid = _parse_uuid(session_id)
     await _require_awaiting_review(request, sid)
+    svc = _get_research_service_readonly(request)
+    # Flip the status synchronously (not inside the background task) so a
+    # second approve request racing right behind this one sees
+    # "generating_article" (not "awaiting_outline_review") and 409s at the
+    # _require_awaiting_review check above. _run_drafting_pipeline sets the
+    # same status again once it starts, which is harmless.
+    await svc.update_session_status(sid, "generating_article")
     deps = PipelineDeps(
-        research_svc=_get_research_service_readonly(request),
+        research_svc=svc,
         content_svc=getattr(request.app.state, "content_service", None),
         outline_gate=_get_outline_gate(request),
     )
     registry = _get_session_tasks(request)
-    registry.spawn(sid, _run_drafting_pipeline(deps, sid))
+    try:
+        registry.spawn(sid, _run_drafting_pipeline(deps, sid))
+    except RuntimeError as exc:
+        # Belt-and-suspenders: a true concurrent race (both requests pass
+        # the awaiting-review check before either writes the status
+        # change) is still closed here, since the registry only ever
+        # tracks one running task per session.
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     logger.info("outline_approved", session_id=str(sid))
     return SessionActionResponse(session_id=sid, status="generating_article")
 
