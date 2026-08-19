@@ -7,7 +7,7 @@ from uuid import uuid4
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
-from src.agents.content.outline_generator import generate_outline
+from src.agents.content.outline_generator import OutlineContext, generate_outline
 from src.models.content_pipeline import ArticleOutline
 from src.models.research import FacetFindings, SourceDocument, TopicInput
 
@@ -90,3 +90,45 @@ class TestGenerateOutline:
         llm = FakeListChatModel(responses=["bad1", "bad2"])
         with pytest.raises(ValueError, match="Failed to generate"):
             await generate_outline(_make_topic(), _make_findings(), llm)
+
+
+class TestOutlineContext:
+    async def test_context_kwargs_still_accepted_via_ctx(self) -> None:
+        llm = FakeListChatModel(responses=[_outline_json(3)])
+        ctx = OutlineContext(
+            target_audience="engineers",
+            preferred_angle="practical",
+            content_tone="direct",
+            keywords=["zero trust"],
+        )
+        outline = await generate_outline(_make_topic(), _make_findings(), llm, ctx)
+        assert isinstance(outline, ArticleOutline)
+
+    async def test_instruction_appears_in_prompt(self) -> None:
+        captured: list[str] = []
+
+        class _CapturingLLM(FakeListChatModel):
+            async def ainvoke(self, messages, *args, **kwargs):  # type: ignore[no-untyped-def]
+                captured.append(str(messages[-1].content))
+                return await super().ainvoke(messages, *args, **kwargs)
+
+        llm = _CapturingLLM(responses=[_outline_json(3)])
+        ctx = OutlineContext(instruction="Make it punchier and cut the jargon.")
+        await generate_outline(_make_topic(), _make_findings(), llm, ctx)
+        assert any(
+            "Editor instructions for this revision: "
+            "Make it punchier and cut the jargon." in msg
+            for msg in captured
+        )
+
+    async def test_no_ctx_omits_instruction_line(self) -> None:
+        captured: list[str] = []
+
+        class _CapturingLLM(FakeListChatModel):
+            async def ainvoke(self, messages, *args, **kwargs):  # type: ignore[no-untyped-def]
+                captured.append(str(messages[-1].content))
+                return await super().ainvoke(messages, *args, **kwargs)
+
+        llm = _CapturingLLM(responses=[_outline_json(3)])
+        await generate_outline(_make_topic(), _make_findings(), llm)
+        assert all("Editor instructions" not in msg for msg in captured)

@@ -25,7 +25,7 @@ from src.agents.content.illustration_generator import (
     ImageGenerator,
     generate_illustration_prompt,
 )
-from src.agents.content.outline_generator import generate_outline
+from src.agents.content.outline_generator import OutlineContext, generate_outline
 from src.agents.content.query_generator import generate_section_queries
 from src.agents.content.section_drafter import DraftingContext, draft_section
 from src.agents.content.validate import replace_section, validate_drafts
@@ -59,16 +59,15 @@ def make_outline_node(llm: BaseChatModel) -> Any:  # noqa: ANN401
             f if isinstance(f, FacetFindings) else FacetFindings.model_validate(f)
             for f in state["findings"]
         ]
+        ctx = OutlineContext(
+            target_audience=state.get("target_audience"),
+            preferred_angle=state.get("preferred_angle"),
+            content_tone=state.get("content_tone"),
+            keywords=state.get("keywords"),
+            instruction=state.get("outline_instruction"),
+        )
         try:
-            outline = await generate_outline(
-                topic,
-                findings,
-                llm,
-                target_audience=state.get("target_audience"),
-                preferred_angle=state.get("preferred_angle"),
-                content_tone=state.get("content_tone"),
-                keywords=state.get("keywords"),
-            )
+            outline = await generate_outline(topic, findings, llm, ctx)
             logger.info(
                 "outline_generation_complete",
                 section_count=len(outline.sections),

@@ -6,6 +6,7 @@ Follows the same pattern as planner.py.
 """
 
 import json
+from dataclasses import dataclass
 
 import structlog
 from langchain_core.language_models import BaseChatModel
@@ -17,6 +18,23 @@ from src.models.research import FacetFindings, TopicInput
 from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
+
+
+@dataclass(frozen=True)
+class OutlineContext:
+    """Optional editorial steering for outline generation.
+
+    `instruction` carries a free-text editor note used when regenerating
+    an outline (e.g. "make it punchier"); it is rendered as an extra
+    context line in the outline prompt.
+    """
+
+    target_audience: str | None = None
+    preferred_angle: str | None = None
+    content_tone: str | None = None
+    keywords: list[str] | None = None
+    instruction: str | None = None
+
 
 _SYSTEM_PROMPT = (
     "You are an expert content strategist. Generate a structured "
@@ -66,14 +84,31 @@ def _summarize_findings(findings: list[FacetFindings]) -> str:
     return "\n".join(lines)
 
 
+def _build_context_lines(ctx: OutlineContext) -> list[str]:
+    """Render optional editorial context as prompt lines."""
+    context_lines = []
+    if ctx.target_audience:
+        context_lines.append(f"Target audience: {ctx.target_audience}")
+    if ctx.content_tone:
+        context_lines.append(f"Tone: {ctx.content_tone}")
+    if ctx.preferred_angle:
+        context_lines.append(f"Editorial angle: {ctx.preferred_angle}")
+    if ctx.keywords:
+        context_lines.append(
+            f"Key topics that must be covered: {', '.join(ctx.keywords)}"
+        )
+    if ctx.instruction:
+        context_lines.append(
+            f"Editor instructions for this revision: {ctx.instruction}"
+        )
+    return context_lines
+
+
 async def generate_outline(
     topic: TopicInput,
     findings: list[FacetFindings],
     llm: BaseChatModel,
-    target_audience: str | None = None,
-    preferred_angle: str | None = None,
-    content_tone: str | None = None,
-    keywords: list[str] | None = None,
+    ctx: OutlineContext | None = None,
 ) -> ArticleOutline:
     """Generate an article outline from topic and findings."""
     logger.info("outline_generation_started", topic_title=topic.title)
@@ -84,15 +119,7 @@ async def generate_outline(
         findings_summary=_summarize_findings(findings),
         schema_hint=_SCHEMA_HINT,
     )
-    context_lines = []
-    if target_audience:
-        context_lines.append(f"Target audience: {target_audience}")
-    if content_tone:
-        context_lines.append(f"Tone: {content_tone}")
-    if preferred_angle:
-        context_lines.append(f"Editorial angle: {preferred_angle}")
-    if keywords:
-        context_lines.append(f"Key topics that must be covered: {', '.join(keywords)}")
+    context_lines = _build_context_lines(ctx) if ctx is not None else []
     if context_lines:
         user_msg = user_msg.replace(
             "Requirements:\n",
