@@ -158,5 +158,5 @@ See @project-management/PROGRESS.md for full ticket status.
 **INFRA-005 (Frontend Status Alignment):** Done (PR #46).
 **CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml, e2e.yml), Makefile, docker-compose with full stack.
 **Test suite:** 1400 backend unit tests (0 failures) + ~355 frontend Vitest tests + 1 Playwright smoke test.
-**Epic 11 (Supervised Authoring, planned 2026-08-19):** program plan `docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md`; ADR-006/007 accepted; AUTHOR-001 (live SSE session progress + `/research/[id]` page) implemented on `feature/AUTHOR-001-pipeline-events`.
-**Next action:** merge AUTHOR-001, then AUTHOR-002 (outline gate) / AUTHOR-003 (Brief). PUBLISH-002 (WordPress, 5 SP) still open.
+**Epic 11 (Supervised Authoring, planned 2026-08-19):** program plan `docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md`; ADR-006/007 accepted; AUTHOR-001 (live SSE session progress + `/research/[id]` page) merged to `develop` (`06439e9`).
+**Next action:** AUTHOR-002 (outline gate) / AUTHOR-003 (Brief). PUBLISH-002 (WordPress, 5 SP) still open.
