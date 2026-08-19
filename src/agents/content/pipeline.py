@@ -95,22 +95,30 @@ def _wrap_node(
     """Wrap a node function with step recording if deps are configured."""
     if deps is None or deps.step_repo is None:
         return node_fn
+    step_repo = deps.step_repo
 
     async def wrapped(state: ContentState) -> dict:  # type: ignore[type-arg]
         from src.agents.research.orchestrator import _complete_step, _record_step
+        from src.utils.step_progress import (
+            current_progress_reporter,
+            make_step_reporter,
+        )
 
         sid = deps.session_id or state.get("session_id")
-        step = await _record_step(deps.step_repo, sid, f"content_{name}")
+        step = await _record_step(step_repo, sid, f"content_{name}")
+        token = current_progress_reporter.set(
+            make_step_reporter(step_repo, step) if step is not None else None
+        )
         try:
             result = await node_fn(state)  # type: ignore[misc]
             output = _extract_output(name, result)
-            await _complete_step(deps.step_repo, step, output)
+            await _complete_step(step_repo, step, output)
             return result
         except Exception as exc:
-            await _complete_step(
-                deps.step_repo, step, {"error": str(exc)}, status="failed"
-            )
+            await _complete_step(step_repo, step, {"error": str(exc)}, status="failed")
             raise
+        finally:
+            current_progress_reporter.reset(token)
 
     return wrapped
 

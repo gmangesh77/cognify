@@ -36,6 +36,7 @@ from src.models.content_pipeline import (
 )
 from src.models.research import FacetFindings, TopicInput
 from src.services.milvus_retriever import MilvusRetriever
+from src.utils.step_progress import report_progress
 
 if TYPE_CHECKING:
     from src.agents.content.pipeline import ContentState
@@ -104,24 +105,43 @@ def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> An
         outline = _coerce_outline(state)
         queries_list = state.get("section_queries", [])
         drafts: list[SectionDraft] = []
-        for section in outline.sections:
+        total = len(outline.sections)
+        for i, section in enumerate(outline.sections, start=1):
             sq = _find_queries(queries_list, section.index)
-            ctx = DraftingContext(
-                retriever=retriever,
-                topic_id=str(topic.id),
-                llm=llm,
-                prior_drafts=list(drafts),
-                target_audience=state.get("target_audience"),
-                content_tone=state.get("content_tone"),
-                preferred_angle=state.get("preferred_angle"),
-                keywords=state.get("keywords"),
-            )
+            ctx = _make_draft_ctx(state, retriever, llm, drafts, topic)
             draft = await draft_section(section, sq, ctx)
             drafts.append(draft)
+            await report_progress(
+                {
+                    "sections_done": i,
+                    "sections_total": total,
+                    "current_section": section.title,
+                }
+            )
         logger.info("draft_sections_complete", count=len(drafts))
         return {"section_drafts": drafts, "status": "draft_complete"}
 
     return draft_node
+
+
+def _make_draft_ctx(
+    state: ContentState,
+    retriever: MilvusRetriever | None,
+    llm: BaseChatModel,
+    drafts: list[SectionDraft],
+    topic: TopicInput,
+) -> DraftingContext:
+    """Build the per-section drafting context from pipeline state."""
+    return DraftingContext(
+        retriever=retriever,
+        topic_id=str(topic.id),
+        llm=llm,
+        prior_drafts=list(drafts),
+        target_audience=state.get("target_audience"),
+        content_tone=state.get("content_tone"),
+        preferred_angle=state.get("preferred_angle"),
+        keywords=state.get("keywords"),
+    )
 
 
 def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> Any:  # noqa: ANN401
