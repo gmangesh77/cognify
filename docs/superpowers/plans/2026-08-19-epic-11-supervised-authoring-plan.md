@@ -107,7 +107,11 @@ No new table: `llm_calls` already has model + tokens per call per session; image
 
 ## 5. Backend changes
 
-### 5.1 `src/services/pipeline_events.py` (new, <200 l.)
+### 5.1 Session events (as built in AUTHOR-001 — supersedes the Redis design below)
+
+> **Built:** `src/utils/step_progress.py` (`report_progress()` contextvar bound by `_wrap_node`; draft node reports `sections_done/total/current_section`), `src/models/session_events.py` (`SessionEvent`, `TERMINAL_STATUSES`), `src/services/session_events.py` (`diff_steps`, `tail_session`, `TailOptions`), `src/api/routers/session_events.py` (`GET /research/sessions/{id}/events` SSE + `GET …/article`), settings `COGNIFY_SESSION_EVENTS_{POLL,KEEPALIVE,COMPLETE_GRACE,MAX}_SECONDS`, `ArticleRepository.find_by_session`. Transport is **DB tailing** (no Redis); see ADR-006 "Transport (v1)". The original Redis-bus sketch is kept below for the optional latency upgrade.
+
+### 5.1a `src/services/pipeline_events.py` (optional future upgrade)
 ```python
 class SessionEvent(BaseModel):
     session_id: UUID
@@ -198,7 +202,7 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 | Ticket | Title | SP | Depends on |
 |---|---|---:|---|
 | ADR-006/007 | ADRs: supervised pipeline; Brief contract | 1 | — |
-| AUTHOR-001 | PipelineEventBus + node publishing + SSE endpoint + `useSessionEvents` + `SessionProgress` + session detail route + auto-navigate | 8 | ADRs |
+| AUTHOR-001 | Session events (DB-tailing) + SSE endpoint + `useSessionEvents` + `SessionProgress` + session detail route + auto-navigate — **DONE (PR pending)** | 8 | ADRs |
 | AUTHOR-002 | Outline gate: half-graphs, `awaiting_outline_review`, outline endpoints, cancel, `OutlineReviewStep` (flagged) | 8 | AUTHOR-001 |
 | AUTHOR-003 | Brief model/table/CRUD + Generate modal rework (picker, length, content type, save-as-brief) + topic-analyze `suggested_brief` | 5 | ADRs |
 | AUTHOR-004 | Section regenerate endpoint + toolbar action + diff accept | 3 | — |

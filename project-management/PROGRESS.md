@@ -171,7 +171,7 @@
 | Ticket | Title | Status | Branch | Plan | Spec |
 | ------ | ----- | ------ | ------ | ---- | ---- |
 | ADR-006/007 | ADRs: supervised pipeline; Brief contract | Done | `feature/AUTHOR-001-pipeline-events` | [program plan](../docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md) | [review](../docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW_2026-08.md) |
-| AUTHOR-001 | Event bus + SSE progress + session route | In Progress | `feature/AUTHOR-001-pipeline-events` | program plan §5.1–5.2, §6 | review §6 #1 |
+| AUTHOR-001 | Live session progress (SSE) + session route + auto-navigate | In Progress (PR pending) | `feature/AUTHOR-001-pipeline-events` | [plan](../docs/superpowers/plans/2026-08-19-author-001-session-events-sse.md) | review §6 #1 |
 | AUTHOR-002 | Outline approval gate + cancel | Planned | — | program plan §5.3 | review §6 #2 |
 | AUTHOR-003 | Brief model + Generate modal rework | Planned | — | program plan §4.1, §5.4 | review §6 #3 |
 | AUTHOR-004 | Per-section regenerate | Planned | — | program plan §5.5 | review §6 #4 |

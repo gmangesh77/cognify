@@ -31,7 +31,7 @@ Idiomatic LangGraph. **Rejected for v1**: the only checkpointer wired today is `
 Browser calls outline → section → section … **Rejected**: moves orchestration and state to the client, duplicates the graph, breaks observability (`llm_calls`, steps) and worker offload.
 
 ### Option C: Event bus + SSE + two graph runs around `ArticleDraft` (Selected)
-1. A `PipelineEventBus` (Redis pub/sub, channel `cognify:session:{id}`; `NullEventBus` when Redis is absent) receives typed `SessionEvent`s published from the existing node wrapper (`_wrap_node`) and from the draft/render nodes.
+1. Typed `SessionEvent`s are derived from the persisted `agent_steps` + session status (`diff_steps` / `tail_session` in `src/services/session_events.py`); the existing node wrapper (`_wrap_node`) binds a `report_progress()` reporter so nodes can surface sub-step progress (e.g. per-section drafting). A Redis pub/sub bus is the optional low-latency upgrade.
 2. `GET /research/sessions/{id}/events` streams SSE: first a `replay` of persisted `agent_steps` + status, then live events until `done|error`. Polling remains as fallback.
 3. Outline gate: `build_content_graph(stop_after_outline=True)` ends after `generate_queries` and persists the outline to `ArticleDraft(status=outline_ready)`; session → `awaiting_outline_review`; the user edits/approves via `GET/PUT/POST …/outline*`; `build_content_graph(start_from_draft=True)` enters at `draft_sections` seeded from the stored outline. Feature flag `COGNIFY_REQUIRE_OUTLINE_APPROVAL` (default `false`) + per-brief override.
 4. Cancel: `POST …/cancel` sets `cancelled` and best-effort cancels the in-process task via a `SessionTaskRegistry`.
@@ -39,6 +39,8 @@ Browser calls outline → section → section … **Rejected**: moves orchestrat
 ## Decision Outcome
 
 Chosen option: **C**. It adds three thin, independently testable pieces, keeps nodes pure, and makes the producer location (API process vs worker) irrelevant to the consumer.
+
+**Transport (v1, AUTHOR-001):** the SSE endpoint *tails the persisted `agent_steps` rows* (1 s poll, configurable via `COGNIFY_SESSION_EVENTS_*`) rather than subscribing to Redis pub/sub — the API has no Redis client today, DB-tailing is worker-safe by construction, and replay-on-connect falls out naturally. Nodes publish sub-step progress by merging into their running step's `output_data` via `report_progress()` (`src/utils/step_progress.py`). Redis pub/sub remains the documented upgrade path if sub-second latency is ever required; the `SessionEvent` contract and the frontend consumer stay unchanged.
 
 ### Consequences
 
@@ -50,7 +52,7 @@ Chosen option: **C**. It adds three thin, independently testable pieces, keeps n
 
 ### Invariants
 
-- Nodes publish via `deps.event_bus.publish(SessionEvent)` only; they never import HTTP modules.
+- Nodes surface progress only via `report_progress()` (or a future event bus); they never import HTTP modules.
 - Events are additive telemetry; the database remains the source of truth. If publish fails, the node still completes.
 - The SSE endpoint is read-only, idempotent, and rate-limited.
 - The outline gate never mutates research findings; approving re-enters the graph with the stored outline and queries.
