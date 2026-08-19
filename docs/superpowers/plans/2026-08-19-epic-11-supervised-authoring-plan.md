@@ -4,9 +4,9 @@
 
 **Goal:** Turn Cognify's blind 2–5 minute article pipeline into a supervised, streaming, resumable authoring flow (brief → outline gate → streamed sections → per-section regenerate → cost visibility → drafts/resume), importing the *authoring model* of ImpactAI without importing its architecture.
 
-**Architecture:** Keep the LangGraph pipeline as the single source of truth and add three thin layers around it: (1) a Redis-backed **PipelineEventBus** that nodes publish typed events to and an SSE endpoint streams from; (2) an **outline gate** implemented as two graph runs around the existing `ArticleDraft` (no checkpointer needed), feature-flagged so the autonomous default is unchanged; (3) a first-class **Brief** table that the Generate modal reads/writes and the session references. Frontend gets an `useSessionEvents` SSE hook, an `OutlineReviewStep`, a Brief picker, and a cost badge — all reusing existing components (`UsageBadge`, `SectionContextToolbar`, `WordDiffView`).
+**Architecture:** Keep the LangGraph pipeline as the single source of truth and add three thin layers around it: (1) DB-tailing of `agent_steps` (SSE) that nodes' persisted step rows are diffed against and an SSE endpoint streams from — Redis pub/sub optional later for lower latency; (2) an **outline gate** implemented as two graph runs around the existing `ArticleDraft` (no checkpointer needed), feature-flagged so the autonomous default is unchanged; (3) a first-class **Brief** table that the Generate modal reads/writes and the session references. Frontend gets an `useSessionEvents` SSE hook, an `OutlineReviewStep`, a Brief picker, and a cost badge — all reusing existing components (`UsageBadge`, `SectionContextToolbar`, `WordDiffView`).
 
-**Tech Stack:** Python 3.12, FastAPI `StreamingResponse` (SSE), Redis pub/sub via `redis.asyncio`, LangGraph, SQLAlchemy async + Alembic, pydantic-settings; Next.js 16 / React 19 / TanStack Query 5, `fetch` + `ReadableStream` SSE consumer, Vitest + Testing Library, Playwright.
+**Tech Stack:** Python 3.12, FastAPI `StreamingResponse` (SSE), DB-tailing of `agent_steps` (SSE); Redis pub/sub optional later, LangGraph, SQLAlchemy async + Alembic, pydantic-settings; Next.js 16 / React 19 / TanStack Query 5, `fetch` + `ReadableStream` SSE consumer, Vitest + Testing Library, Playwright.
 
 **Spec:** [`docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW_2026-08.md`](../../architecture/COGNIFY_VS_IMPACTAI_REVIEW_2026-08.md) §4 (UX gap analysis) and §6 (ranked adoptions). This plan implements §6 Tier 1 fully, Tier 2 items 7/8/9/10/14/15/16, and Tier 3 items 12/13/20 as a final phase.
 
@@ -45,7 +45,7 @@ The August 2026 review found Cognify architecturally superior but decisively beh
                  └───────────────┬────────────────────────────────────────────┘
                                  │ publishes
    research nodes ──┐            ▼
-   content nodes  ──┼──► PipelineEventBus (Redis pub/sub  cognify:session:{id})
+   content nodes  ──┼──► tail_session over agent_steps (DB polling + diff, no bus)
    (via _wrap_node) │            │  step_started / step_done / section_done /
                     │            │  visual_rendered / awaiting_outline_review /
                     │            │  done / error / usage
@@ -63,9 +63,9 @@ The August 2026 review found Cognify architecturally superior but decisively beh
 ```
 
 Key invariants:
-- Nodes never know about SSE; they call `bus.publish(SessionEvent)`; the bus is injected through `ContentGraphDeps` (already exists for step recording).
-- The SSE endpoint is read-only and idempotent: on connect it replays the current step list from `agent_steps` (so a page refresh shows state), then tails Redis.
-- If Redis is unavailable, `NullEventBus` is used; polling still works (no regression).
+- Nodes never know about SSE; they record step state via `ContentGraphDeps` (already exists for step recording) — `tail_session` polls and diffs `agent_steps`, no publish call in the node path.
+- The SSE endpoint is read-only and idempotent: on connect it replays the current step list from `agent_steps` (so a page refresh shows state), then keeps tailing the same table (see §5.1 "as built").
+- DB-tailing works unchanged from a worker or in-process; no separate bus to keep available.
 
 ## 4. Data model changes
 
@@ -207,7 +207,7 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 | AUTHOR-003 | Brief model/table/CRUD + Generate modal rework (picker, length, content type, save-as-brief) + topic-analyze `suggested_brief` | 5 | ADRs |
 | AUTHOR-004 | Section regenerate endpoint + toolbar action + diff accept | 3 | — |
 | AUTHOR-005 | Session/article usage endpoint + pricing settings + `UsageBadge` in progress header & article sidebar | 3 | AUTHOR-001 |
-| INFRA-007 | `CeleryDispatcher` + worker wiring for `_run_full_pipeline`; event bus already Redis-backed so streaming works from the worker | 5 | AUTHOR-001 |
+| INFRA-007 | `CeleryDispatcher` + worker wiring for `_run_full_pipeline`; DB-tailing works unchanged from a worker | 5 | AUTHOR-001 |
 
 **Phase A acceptance criteria**
 - [ ] Clicking Generate navigates to `/research/{id}` and shows live step + section progress within 2 s of each event; no fake percentages remain in `session-card.tsx`.
@@ -216,7 +216,7 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 - [ ] A Brief can be created from topic analysis, reused on a second topic, and its fields appear on the session and article; "Create & Generate" from the topic modal forwards keywords + diagram mode (fixes the current drop).
 - [ ] Regenerate on a section returns a diff, preserves all `data-spec-id` anchors, appends a `section_versions` row with `source=regenerate`.
 - [ ] Usage badge shows `$ · tokens · images` matching a hand-computed value from `llm_calls` for a FakeLLM run with configured pricing.
-- [ ] Redis down ⇒ SSE returns 503 and the UI falls back to polling with no console errors.
+- [ ] SSE unavailable ⇒ hook reaches `error`, polling still works.
 
 ### Phase B — Control & trust (≈20 SP)
 | Ticket | Title | SP | Depends on |
@@ -255,7 +255,7 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 | Risk | Mitigation |
 |---|---|
 | New session status breaks consumers (L-003) | AUTHOR-002 plan enumerates all 8 sites; grep gate in PR checklist |
-| SSE through in-process `BackgroundTasks` still exposes the API-freeze risk | INFRA-007 in Phase A; event bus is Redis from day 1 so moving the producer to a worker changes nothing on the consumer side |
+| SSE through in-process `BackgroundTasks` still exposes the API-freeze risk | INFRA-007 in Phase A; transport is DB-tailing from day 1 so moving the producer to a worker changes nothing on the consumer side |
 | Half-graph split diverges from full graph over time | Both are built by the same `build_content_graph` with two booleans; a unit test asserts node/edge sets are the same minus the split point |
 | Persona engine adds heavy deps (spaCy) | Use `textstat` + regex only in v1; feature-flag the nodes; measure latency in `llm_calls` |
 | Brief vs inline fields drift | Session always denormalises brief fields at start; brief edits never mutate past sessions |
@@ -277,7 +277,7 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 - [ ] Azure Boards: Epic 11 + AUTHOR-001…014 + INFRA-007/008 created; PROGRESS.md/BACKLOG.md rows added (done in this PR)
 - [ ] Decision confirmed: outline gate default **off**
 - [ ] Decision confirmed: v1 streaming granularity = step + section (token streaming = follow-up)
-- [ ] `fakeredis` (or in-memory bus double) approved as the unit-test strategy for the event bus
+- [ ] In-memory `ResearchService` double (done) approved as the unit-test strategy for the event bus
 
 ## 13. Follow-ups recorded (out of scope)
 
