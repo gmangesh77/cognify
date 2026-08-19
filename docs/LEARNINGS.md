@@ -116,6 +116,8 @@ DELETE FROM research_sessions WHERE topic_title LIKE 'Test%';
 
 **Rule**: Use `generate_full_article()` for the complete flow. The separate `generate_outline()` / `draft_article()` / `finalize_article()` methods exist for the REST API but each invokes the full graph from different starting points.
 
+See L-011 for the supported half-graph entry points (AUTHOR-002).
+
 ---
 
 ## L-007: FakeLLM Response Count Must Match Full Pipeline
