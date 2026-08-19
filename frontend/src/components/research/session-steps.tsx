@@ -17,9 +17,11 @@ const STEP_LABELS: Record<string, string> = {
   content_charts: "Generate Charts",
   content_diagrams: "Generate Diagrams",
   content_illustrations: "Generate Illustrations",
+  content_image_planner: "Plan Visuals",
+  content_image_render: "Render Visuals",
 };
 
-function getStepLabel(stepName: string): string {
+export function getStepLabel(stepName: string): string {
   if (STEP_LABELS[stepName]) return STEP_LABELS[stepName];
   if (stepName.startsWith("research_facet_")) {
     const rest = stepName.replace("research_facet_", "");

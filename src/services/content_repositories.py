@@ -47,6 +47,7 @@ class InMemoryArticleDraftRepository:
 class ArticleRepository(Protocol):
     async def create(self, article: CanonicalArticle) -> CanonicalArticle: ...
     async def get(self, article_id: UUID) -> CanonicalArticle | None: ...
+    async def find_by_session(self, session_id: UUID) -> CanonicalArticle | None: ...
     async def append_visual(
         self,
         article_id: UUID,
@@ -64,6 +65,12 @@ class InMemoryArticleRepository:
 
     async def get(self, article_id: UUID) -> CanonicalArticle | None:
         return self._store.get(article_id)
+
+    async def find_by_session(self, session_id: UUID) -> CanonicalArticle | None:
+        for article in self._store.values():
+            if article.provenance.research_session_id == session_id:
+                return article
+        return None
 
     async def append_visual(
         self,

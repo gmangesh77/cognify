@@ -44,3 +44,33 @@ export interface PaginatedResearchSessions {
   page: number;
   size: number;
 }
+
+export type SessionEventType =
+  | "snapshot"
+  | "status_changed"
+  | "step_started"
+  | "step_progress"
+  | "step_done"
+  | "step_failed"
+  | "done"
+  | "error"
+  | "keepalive";
+
+export interface SessionStepRow {
+  id: string;
+  step_name: string;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  duration_ms: number | null;
+  output_data: Record<string, unknown>;
+}
+
+export interface SessionEvent {
+  type: SessionEventType;
+  session_id: string;
+  status: string | null;
+  step: string | null;
+  data: Record<string, unknown>;
+  ts: string;
+}

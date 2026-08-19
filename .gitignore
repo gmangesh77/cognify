@@ -55,3 +55,7 @@ generated_assets/
 
 # Git worktrees
 .worktrees/
+
+# Claude Code worktrees / session lock
+.claude/worktrees/
+.claude/scheduled_tasks.lock

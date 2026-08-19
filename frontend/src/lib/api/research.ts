@@ -1,3 +1,4 @@
+import axios from "axios";
 import { apiClient } from "@/lib/api/client";
 import type {
   PaginatedResearchSessions,
@@ -29,4 +30,22 @@ export async function fetchSessionDetail(
     `/research/sessions/${sessionId}`,
   );
   return data;
+}
+
+export function sessionEventsUrl(sessionId: string): string {
+  return `${apiClient.defaults.baseURL}/research/sessions/${sessionId}/events`;
+}
+
+export async function fetchSessionArticle(
+  sessionId: string,
+): Promise<{ article_id: string } | null> {
+  try {
+    const { data } = await apiClient.get<{ article_id: string }>(
+      `/research/sessions/${sessionId}/article`,
+    );
+    return data;
+  } catch (e) {
+    if (axios.isAxiosError(e) && e.response?.status === 404) return null;
+    throw e;
+  }
 }

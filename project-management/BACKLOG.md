@@ -174,6 +174,37 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 
 ---
 
+### Epic 11: Supervised Authoring — PLANNED
+
+**Goal**: Turn the blind 2–5 min pipeline into a supervised, streaming, resumable authoring flow (brief → outline gate → streamed sections → per-section regenerate → cost visibility → drafts/resume), importing ImpactAI's *authoring model* on Cognify's LangGraph/service-layer spine.
+
+**Plan**: [`docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md`](../docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md)
+**Spec / rationale**: [`docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW_2026-08.md`](../docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW_2026-08.md) §4, §6
+
+| Ticket | Title | Priority | SP | Phase |
+|--------|-------|----------|---:|-------|
+| ADR-006/007 | ADRs: supervised pipeline (event bus + outline gate); Brief as authoring contract | Must | 1 | A |
+| AUTHOR-001 | PipelineEventBus + SSE endpoint + `useSessionEvents` + SessionProgress + session route + auto-navigate | Must | 8 | A |
+| AUTHOR-002 | Outline approval gate (half-graphs, `awaiting_outline_review`, outline endpoints, cancel, OutlineReviewStep; flagged) | Must | 8 | A |
+| AUTHOR-003 | Brief model/CRUD + Generate modal rework (picker, length, content type, save-as-brief) | Must | 5 | A |
+| AUTHOR-004 | Per-section regenerate-with-feedback (endpoint + toolbar + diff accept) | Must | 3 | A |
+| AUTHOR-005 | Session/article usage endpoint + pricing settings + UsageBadge | Should | 3 | A |
+| INFRA-007 | CeleryDispatcher + worker wiring for the full pipeline | Must | 5 | A |
+| AUTHOR-006 | PATCH article metadata + header/SEO editor + refetch + autosave | Should | 5 | B |
+| AUTHOR-007 | Article status (draft/in_review/approved/published) + list filters + Resume | Should | 3 | B |
+| AUTHOR-008 | Length target + content type through outliner (word budgets) | Should | 3 | B |
+| AUTHOR-009 | Humanize per-pass streaming + sentence-level accept/reject | Could | 3 | B |
+| AUTHOR-010 | Model tiering per step | Could | 2 | B |
+| INFRA-008 | Embedding warm-up w/ graceful degradation; live role re-check; shared toaster; split >200-line files | Should | 4 | B |
+| AUTHOR-011 | Persona voice engine v1 (fingerprint → prompt → score → fix; flagged) | Could | 13 | C |
+| AUTHOR-012 | Prompt registry + per-user overrides + Settings tab | Could | 5 | C |
+| AUTHOR-013 | LinkedIn repurpose transformer + modal | Could | 5 | C |
+| AUTHOR-014 | Playwright create-article flow (mocked SSE) | Should | 2 | C |
+
+Per-phase acceptance criteria are in the plan §9. Feature flags default to current behaviour (`COGNIFY_REQUIRE_OUTLINE_APPROVAL=false`).
+
+---
+
 ## Backlog Summary
 
 | Epic | Total | Done | Remaining | Points (remaining) |
@@ -189,7 +220,8 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
 | **Visual Generation Overhaul** | **8** | **8** | **0** | **0** |
-| **Total** | **57** | **56** | **1** | **5** |
+| **Supervised Authoring (Epic 11)** | **17** | **0** | **17** | **~78** |
+| **Total** | **74** | **56** | **18** | **~83** |
 
 **Velocity update (2026-05-07)**: Epic 10 (Visual Generation Overhaul)
 fully shipped — VISUAL-004 through VISUAL-011 (89 SP) merged to
@@ -199,4 +231,4 @@ follow-ups (INFRA-006, CONTENT-007, DASH-007, Playwright scaffold,
 The only remaining ticket in the entire backlog is PUBLISH-002
 (5 SP, WordPress integration).
 
-**Velocity**: 343 SP completed across 11 epics. 5 SP remaining (PUBLISH-002).
+**Velocity**: 343 SP completed across 11 epics. Remaining: PUBLISH-002 (5 SP) + Epic 11 Supervised Authoring (~78 SP, planned 2026-08-19).

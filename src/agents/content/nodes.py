@@ -7,6 +7,7 @@ returns an async node function compatible with LangGraph StateGraph.
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
@@ -36,6 +37,7 @@ from src.models.content_pipeline import (
 )
 from src.models.research import FacetFindings, TopicInput
 from src.services.milvus_retriever import MilvusRetriever
+from src.utils.step_progress import report_progress
 
 if TYPE_CHECKING:
     from src.agents.content.pipeline import ContentState
@@ -104,24 +106,47 @@ def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> An
         outline = _coerce_outline(state)
         queries_list = state.get("section_queries", [])
         drafts: list[SectionDraft] = []
-        for section in outline.sections:
+        total = len(outline.sections)
+        deps = _DraftDeps(state=state, retriever=retriever, llm=llm, topic=topic)
+        for i, section in enumerate(outline.sections, start=1):
             sq = _find_queries(queries_list, section.index)
-            ctx = DraftingContext(
-                retriever=retriever,
-                topic_id=str(topic.id),
-                llm=llm,
-                prior_drafts=list(drafts),
-                target_audience=state.get("target_audience"),
-                content_tone=state.get("content_tone"),
-                preferred_angle=state.get("preferred_angle"),
-                keywords=state.get("keywords"),
-            )
-            draft = await draft_section(section, sq, ctx)
+            draft = await draft_section(section, sq, _make_draft_ctx(deps, drafts))
             drafts.append(draft)
+            await report_progress(
+                {
+                    "sections_done": i,
+                    "sections_total": total,
+                    "current_section": section.title,
+                }
+            )
         logger.info("draft_sections_complete", count=len(drafts))
         return {"section_drafts": drafts, "status": "draft_complete"}
 
     return draft_node
+
+
+@dataclass(frozen=True)
+class _DraftDeps:
+    """Fixed per-invocation deps for building a DraftingContext each iteration."""
+
+    state: ContentState
+    retriever: MilvusRetriever | None
+    llm: BaseChatModel
+    topic: TopicInput
+
+
+def _make_draft_ctx(deps: _DraftDeps, drafts: list[SectionDraft]) -> DraftingContext:
+    """Build the per-section drafting context from pipeline state."""
+    return DraftingContext(
+        retriever=deps.retriever,
+        topic_id=str(deps.topic.id),
+        llm=deps.llm,
+        prior_drafts=list(drafts),
+        target_audience=deps.state.get("target_audience"),
+        content_tone=deps.state.get("content_tone"),
+        preferred_angle=deps.state.get("preferred_angle"),
+        keywords=deps.state.get("keywords"),
+    )
 
 
 def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> Any:  # noqa: ANN401

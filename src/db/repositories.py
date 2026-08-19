@@ -613,6 +613,21 @@ class PgArticleRepository:
                 return None
             return self._to_model(row)
 
+    async def find_by_session(self, session_id: UUID) -> CanonicalArticle | None:
+        """Return the most recent article produced by a research session."""
+        async with self._sf() as db:
+            stmt = (
+                select(CanonicalArticleRow)
+                .where(
+                    CanonicalArticleRow.provenance["research_session_id"].astext
+                    == str(session_id),
+                )
+                .order_by(CanonicalArticleRow.generated_at.desc())
+                .limit(1)
+            )
+            row = (await db.execute(stmt)).scalar_one_or_none()
+            return None if row is None else self._to_model(row)
+
     async def update_body_markdown(
         self,
         article_id: UUID,

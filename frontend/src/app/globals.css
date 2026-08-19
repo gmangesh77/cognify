@@ -17,6 +17,10 @@
   --color-border: #E2E8F0;
   --color-success: #16A34A;
   --color-success-light: #F0FDF4;
+  --color-warning: #D97706;
+  --color-warning-light: #FFFBEB;
+  --color-error: #DC2626;
+  --color-error-light: #FEF2F2;
   --color-info: #2563EB;
   --color-info-light: #EFF6FF;
   --color-accent: #F97316;
