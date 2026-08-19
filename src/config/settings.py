@@ -166,3 +166,8 @@ class Settings(BaseSettings):
     linkedin_author_urn: str = ""  # "urn:li:organization:XXX" or "urn:li:person:XXX"
     linkedin_access_token: str = ""  # stored via OAuth callback
     linkedin_refresh_token: str = ""  # stored via OAuth callback
+    # Session events — SSE progress stream (AUTHOR-001)
+    session_events_poll_seconds: float = 1.0
+    session_events_keepalive_seconds: float = 15.0
+    session_events_complete_grace_seconds: float = 30.0
+    session_events_max_seconds: float = 1800.0

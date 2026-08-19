@@ -41,6 +41,7 @@ from src.api.routers.oauth import oauth_router
 from src.api.routers.pipeline_debug import pipeline_debug_router
 from src.api.routers.publishing import publishing_router
 from src.api.routers.research import research_router
+from src.api.routers.session_events import session_events_router
 from src.api.routers.settings import settings_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
@@ -696,6 +697,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
     )
     app.include_router(
         research_router,
+        prefix=settings.api_v1_prefix,
+        tags=["research"],
+    )
+    app.include_router(
+        session_events_router,
         prefix=settings.api_v1_prefix,
         tags=["research"],
     )
