@@ -33,7 +33,7 @@
 - Produces: `current_progress_reporter: ContextVar[ProgressReporter | None]`, `async report_progress(data: dict[str, object]) -> None`, `make_step_reporter(step_repo, step) -> ProgressReporter` (merges `data` into the step's `output_data` and calls `step_repo.update`).
 - Draft node writes `{"sections_done": i, "sections_total": n, "current_section": title}` after each section.
 
-- [ ] **Step 1: Write failing tests for the reporter**
+- [x] **Step 1: Write failing tests for the reporter**
 
 ```python
 # tests/unit/utils/test_step_progress.py
@@ -98,12 +98,12 @@ async def test_reporter_swallows_repo_errors() -> None:
         current_progress_reporter.reset(token)
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/utils/test_step_progress.py -q -p no:cacheprovider`
 Expected: FAIL — `ModuleNotFoundError: src.utils.step_progress`
 
-- [ ] **Step 3: Implement `src/utils/step_progress.py`**
+- [x] **Step 3: Implement `src/utils/step_progress.py`**
 
 ```python
 """Per-step progress reporting for long-running pipeline nodes.
@@ -158,12 +158,12 @@ def make_step_reporter(step_repo: _StepUpdater, step: AgentStep) -> ProgressRepo
     return _report
 ```
 
-- [ ] **Step 4: Run tests — expect PASS**
+- [x] **Step 4: Run tests — expect PASS**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/utils/test_step_progress.py -q -p no:cacheprovider`
 Expected: 3 passed
 
-- [ ] **Step 5: Write failing test for `_wrap_node` binding + draft node progress**
+- [x] **Step 5: Write failing test for `_wrap_node` binding + draft node progress**
 
 ```python
 # tests/unit/agents/content/test_pipeline_progress.py
@@ -224,12 +224,12 @@ async def test_wrap_node_unbinds_reporter_after_node() -> None:
     assert current_progress_reporter.get() is None
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/content/test_pipeline_progress.py -q -p no:cacheprovider`
 Expected: FAIL — `running` list empty (reporter never bound)
 
-- [ ] **Step 7: Bind the reporter in `_wrap_node`** (`src/agents/content/pipeline.py`)
+- [x] **Step 7: Bind the reporter in `_wrap_node`** (`src/agents/content/pipeline.py`)
 
 Replace the body of `wrapped` with:
 
@@ -256,7 +256,7 @@ Replace the body of `wrapped` with:
             current_progress_reporter.reset(token)
 ```
 
-- [ ] **Step 8: Report per-section progress in the draft node** (`src/agents/content/nodes.py`)
+- [x] **Step 8: Report per-section progress in the draft node** (`src/agents/content/nodes.py`)
 
 Change the loop to:
 
@@ -283,12 +283,12 @@ Change the loop to:
 
 and add `from src.utils.step_progress import report_progress` to the imports. If `draft_node` exceeds 20 lines, extract `_make_ctx(state, retriever, llm, drafts)`.
 
-- [ ] **Step 9: Run tests — expect PASS; run the whole content-agent suite**
+- [x] **Step 9: Run tests — expect PASS; run the whole content-agent suite**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/content tests/unit/utils/test_step_progress.py -q -p no:cacheprovider`
 Expected: all pass (existing draft-node tests unaffected — `report_progress` is a no-op when unbound).
 
-- [ ] **Step 10: Lint + commit**
+- [x] **Step 10: Lint + commit**
 
 ```bash
 uv run ruff check --fix src/ tests/ && uv run ruff format src/ tests/
@@ -321,7 +321,7 @@ git commit -m "feat(pipeline): per-step progress reporter + per-section draft pr
   ```
 - Consumes: `ResearchService.get_session(session_id) -> SessionDetail(session, steps)` (`src/services/research.py:167`).
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```python
 # tests/unit/services/test_session_events.py
@@ -434,12 +434,12 @@ async def test_tail_stops_on_error_when_session_missing() -> None:
 
 (Check `ResearchSession`'s required fields in `src/models/research_db.py` and `NotFoundError`'s module before running; adjust the double accordingly — the test must construct a valid session.)
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/test_session_events.py -q -p no:cacheprovider`
 Expected: FAIL — `ModuleNotFoundError`
 
-- [ ] **Step 3: Implement `src/models/session_events.py`**
+- [x] **Step 3: Implement `src/models/session_events.py`**
 
 ```python
 """Typed events streamed to the dashboard for a research/article session."""
@@ -475,7 +475,7 @@ class SessionEvent(BaseModel):
         return f"event: {self.type}\ndata: {self.model_dump_json()}\n\n"
 ```
 
-- [ ] **Step 4: Implement `src/services/session_events.py`**
+- [x] **Step 4: Implement `src/services/session_events.py`**
 
 ```python
 """Turn persisted agent_steps + session status into a live event stream.
@@ -569,12 +569,12 @@ async def tail_session(svc: ResearchService, session_id: UUID, opts: TailOptions
 
 If `tail_session` exceeds 20 lines after formatting, extract `_poll_once(svc, session_id, state) -> tuple[list[SessionEvent], _State]` with a small `@dataclass _State(status, steps, last_change, last_emit)`.
 
-- [ ] **Step 5: Run tests — expect PASS**
+- [x] **Step 5: Run tests — expect PASS**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/test_session_events.py -q -p no:cacheprovider`
 Expected: all pass
 
-- [ ] **Step 6: Lint + commit**
+- [x] **Step 6: Lint + commit**
 
 ```bash
 uv run ruff check --fix src/ tests/ && uv run ruff format src/ tests/
@@ -594,7 +594,7 @@ git commit -m "feat(session-events): SessionEvent model, diff_steps, tail_sessio
 **Interfaces:**
 - Produces: `async find_by_session(self, session_id: UUID) -> CanonicalArticle | None` on `ArticleRepository` protocol, `InMemoryArticleRepository`, `PgArticleRepository` (JSONB filter `provenance->>'research_session_id'`).
 
-- [ ] **Step 1: Failing test (in-memory)**
+- [x] **Step 1: Failing test (in-memory)**
 
 ```python
 # tests/unit/services/test_content_repositories_find_by_session.py
@@ -618,9 +618,9 @@ async def test_find_by_session_returns_matching_article() -> None:
 
 Note: grep `tests/` for an existing CanonicalArticle factory (`rg "def make_canonical_article|CanonicalArticle\(" tests/unit | head`). Reuse it; if none exists, build the article inline in the test using the minimal required fields from `src/models/content.py` (title, subtitle, body_markdown, summary, content_type, domain, seo, provenance(research_session_id=sid, primary_model=..., drafting_model=..., embedding_model=...)).
 
-- [ ] **Step 2: Run → FAIL (`AttributeError: find_by_session`)**
+- [x] **Step 2: Run → FAIL (`AttributeError: find_by_session`)**
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Protocol + in-memory (`src/services/content_repositories.py`):
 ```python
@@ -648,9 +648,9 @@ Pg (`src/db/repositories.py`, inside `PgArticleRepository`, mirroring how `get` 
 ```
 Use whatever row→model helper `get()` already uses (grep `def get` in `PgArticleRepository`).
 
-- [ ] **Step 4: Run → PASS; run `tests/unit/services tests/unit/db -q`**
+- [x] **Step 4: Run → PASS; run `tests/unit/services tests/unit/db -q`**
 
-- [ ] **Step 5: Lint + commit** — `git commit -m "feat(articles): ArticleRepository.find_by_session (AUTHOR-001)"`
+- [x] **Step 5: Lint + commit** — `git commit -m "feat(articles): ArticleRepository.find_by_session (AUTHOR-001)"`
 
 ---
 
@@ -666,7 +666,7 @@ Use whatever row→model helper `get()` already uses (grep `def get` in `PgArtic
 - `GET /api/v1/research/sessions/{session_id}/events` → `text/event-stream` of `SessionEvent.to_sse()` frames. Headers: `Cache-Control: no-cache`, `X-Accel-Buffering: no`. Rate limit `30/minute`. Auth `require_viewer_or_above`. 400 on non-UUID.
 - `GET /api/v1/research/sessions/{session_id}/article` → `{"article_id": UUID}` or 404 `{"detail": "No article for session"}`.
 
-- [ ] **Step 1: Failing tests** (reuse `research_app`/`research_client` fixtures from `tests/unit/api/test_research_endpoints.py` — import them or copy the fixture body; the app's `research_service` there is in-memory)
+- [x] **Step 1: Failing tests** (reuse `research_app`/`research_client` fixtures from `tests/unit/api/test_research_endpoints.py` — import them or copy the fixture body; the app's `research_service` there is in-memory)
 
 ```python
 # tests/unit/api/test_session_events_endpoint.py
@@ -731,9 +731,9 @@ async def test_session_article_404_when_missing(research_client, auth_settings):
 
 Note: the `research_app` fixture's stub runner finishes the session immediately (status `complete`); with `complete_grace_seconds` the stream would wait 30 s. In the router, read `TailOptions` from `request.app.state.settings` **and** allow the test to override by setting `app.state.settings.session_events_poll_seconds = 0` and adding `session_events_complete_grace_seconds: float = 30.0` to Settings — set it to `0` in the test fixture (`research_app.state.settings.session_events_complete_grace_seconds = 0`). Add a 4th test asserting the stream ends with an `event: done` frame under that override.
 
-- [ ] **Step 2: Run → FAIL (404 route not found)**
+- [x] **Step 2: Run → FAIL (404 route not found)**
 
-- [ ] **Step 3: Implement router**
+- [x] **Step 3: Implement router**
 
 ```python
 """SSE progress stream + article lookup for a research/article session (AUTHOR-001)."""
@@ -813,11 +813,11 @@ Register in `src/api/main.py` next to the research router:
 ```
 Add the four settings fields to `Settings` (`src/config/settings.py`) with the defaults above. Ensure `research_app` fixture has `article_repo` (if not set there, the endpoint returns 404 via the `getattr` guard — fine for the test).
 
-- [ ] **Step 4: Run → PASS; then `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api -q -p no:cacheprovider`**
+- [x] **Step 4: Run → PASS; then `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api -q -p no:cacheprovider`**
 
-- [ ] **Step 5: Manual smoke against the running stack** (optional but recommended): `TOKEN=$(...login...)`; `curl -N -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/research/sessions/<id>/events | head -5` shows `event: snapshot`.
+- [x] **Step 5: Manual smoke against the running stack** (optional but recommended): `TOKEN=$(...login...)`; `curl -N -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/v1/research/sessions/<id>/events | head -5` shows `event: snapshot`.
 
-- [ ] **Step 6: Lint + commit** — `git commit -m "feat(api): SSE session events stream + session article lookup (AUTHOR-001)"`
+- [x] **Step 6: Lint + commit** — `git commit -m "feat(api): SSE session events stream + session article lookup (AUTHOR-001)"`
 
 ---
 
@@ -844,7 +844,7 @@ export function useSessionEvents(sessionId: string|null): SessionEventsState;
 ```
 Reducer rules: `snapshot` → replace steps/status; `step_started` → append `{id: data.id ?? step+ts, step_name: step, status:"running"}` (backend `_ev` sets `step` and `status`; to carry the step id, extend Task 2's `_ev` to include `data["step_id"] = str(step.id)` — do that in Task 2 if not already); `step_progress` → update matching step's `output_data` and, if `step === "content_draft"`, set `sections`; `step_done/step_failed` → update status; `status_changed/done` → set status; `done` → connection `closed`; `error` → `error`.
 
-- [ ] **Step 1: Failing tests for `consumeSse`**
+- [x] **Step 1: Failing tests for `consumeSse`**
 
 ```ts
 // frontend/src/lib/sse/consume-sse.test.ts
@@ -887,9 +887,9 @@ describe("consumeSse", () => {
 });
 ```
 
-- [ ] **Step 2: Run → FAIL** — `cd frontend && npx vitest run src/lib/sse/consume-sse.test.ts`
+- [x] **Step 2: Run → FAIL** — `cd frontend && npx vitest run src/lib/sse/consume-sse.test.ts`
 
-- [ ] **Step 3: Implement `consume-sse.ts`**
+- [x] **Step 3: Implement `consume-sse.ts`**
 
 ```ts
 export interface ConsumeSseOptions {
@@ -941,9 +941,9 @@ export async function consumeSse(url: string, opts: ConsumeSseOptions): Promise<
 ```
 (Normalize `\r\n` → `\n` after decode if the backend ever emits CRLF.) If `consumeSse` exceeds ~20 lines, split the read loop into `pumpFrames(reader, onEvent)`.
 
-- [ ] **Step 4: Run → PASS**
+- [x] **Step 4: Run → PASS**
 
-- [ ] **Step 5: Add API helpers** (`frontend/src/lib/api/research.ts`)
+- [x] **Step 5: Add API helpers** (`frontend/src/lib/api/research.ts`)
 
 ```ts
 export function sessionEventsUrl(sessionId: string): string {
@@ -961,7 +961,7 @@ export async function fetchSessionArticle(sessionId: string): Promise<{ article_
 ```
 Add the types from the Interfaces block to `types/research.ts`.
 
-- [ ] **Step 6: Failing hook test**
+- [x] **Step 6: Failing hook test**
 
 ```tsx
 // frontend/src/hooks/use-session-events.test.tsx
@@ -1006,11 +1006,11 @@ describe("useSessionEvents", () => {
 });
 ```
 
-- [ ] **Step 7: Run → FAIL; implement `use-session-events.ts`** (useReducer + useEffect with AbortController; reconnect with backoff 1s→30s on rejection while not terminal, max 5 attempts, then `connection: "error"`). Keep the reducer in a separate `frontend/src/hooks/session-events-reducer.ts` (pure, unit-testable) if the hook file nears 200 lines.
+- [x] **Step 7: Run → FAIL; implement `use-session-events.ts`** (useReducer + useEffect with AbortController; reconnect with backoff 1s→30s on rejection while not terminal, max 5 attempts, then `connection: "error"`). Keep the reducer in a separate `frontend/src/hooks/session-events-reducer.ts` (pure, unit-testable) if the hook file nears 200 lines.
 
-- [ ] **Step 8: Run → PASS; `npx eslint src/lib/sse src/hooks/use-session-events.ts src/hooks/session-events-reducer.ts`**
+- [x] **Step 8: Run → PASS; `npx eslint src/lib/sse src/hooks/use-session-events.ts src/hooks/session-events-reducer.ts`**
 
-- [ ] **Step 9: Commit** — `git commit -m "feat(frontend): consumeSse + useSessionEvents hook (AUTHOR-001)"`
+- [x] **Step 9: Commit** — `git commit -m "feat(frontend): consumeSse + useSessionEvents hook (AUTHOR-001)"`
 
 ---
 
@@ -1025,7 +1025,7 @@ describe("useSessionEvents", () => {
 - `SessionProgress({ sessionId }: { sessionId: string })` — renders: header (topic title from `useResearchSession(sessionId)`, status badge via existing `SessionStatusBadge`, elapsed time), connection chip (`live` green dot / `reconnecting` / `offline — polling`), ordered step list (`role="list"`, each `role="listitem"` with `data-status`), per-section progress bar + "Drafting 2 / 5 — Intro" when `sections` present, terminal footer: on `article_complete` → primary button **View article** (calls `fetchSessionArticle`, `router.push(/articles/{id})`); on `*_failed/failed` → red error panel with the failed step's `output_data.error` and a **Back to research** link.
 - Uses design tokens from `DESIGN.md` (badges `rounded-full px-2.5 py-0.5 text-xs`, card `rounded-lg border border-neutral-200 bg-white shadow-sm p-6`, primary `bg-primary text-white`). No inline styles except the progress width.
 
-- [ ] **Step 1: Failing component tests** (mock `useSessionEvents` and `useResearchSession`; assert: steps render with labels and `data-status`; sections bar text; "View article" appears on `article_complete` and navigates; error panel on `article_failed`; connection chip text for `error`).
+- [x] **Step 1: Failing component tests** (mock `useSessionEvents` and `useResearchSession`; assert: steps render with labels and `data-status`; sections bar text; "View article" appears on `article_complete` and navigates; error panel on `article_failed`; connection chip text for `error`).
 
 ```tsx
 // frontend/src/components/research/session-progress.test.tsx
@@ -1071,9 +1071,9 @@ describe("SessionProgress", () => {
 });
 ```
 
-- [ ] **Step 2: Run → FAIL; implement component (split into `session-progress.tsx` + `session-step-list.tsx` + `session-progress-footer.tsx` to stay < 200 lines each)**
+- [x] **Step 2: Run → FAIL; implement component (split into `session-progress.tsx` + `session-step-list.tsx` + `session-progress-footer.tsx` to stay < 200 lines each)**
 
-- [ ] **Step 3: Page** `frontend/src/app/(dashboard)/research/[id]/page.tsx`:
+- [x] **Step 3: Page** `frontend/src/app/(dashboard)/research/[id]/page.tsx`:
 ```tsx
 "use client";
 import { useParams } from "next/navigation";
@@ -1092,9 +1092,9 @@ export default function ResearchSessionPage() {
 ```
 (Match the `Header` props used by `research/page.tsx`.) Note: CLAUDE.md says "named exports only" — Next page files are the accepted exception in this repo (see existing pages).
 
-- [ ] **Step 4: Run tests → PASS; `npx vitest run src/components/research`; `npx eslint` the new files; `npx tsc --noEmit`**
+- [x] **Step 4: Run tests → PASS; `npx vitest run src/components/research`; `npx eslint` the new files; `npx tsc --noEmit`**
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(frontend): SessionProgress + /research/[id] live page (AUTHOR-001)"`
+- [x] **Step 5: Commit** — `git commit -m "feat(frontend): SessionProgress + /research/[id] live page (AUTHOR-001)"`
 
 ---
 
@@ -1106,15 +1106,15 @@ export default function ResearchSessionPage() {
 - Modify: `frontend/src/components/research/session-card.test.tsx` (update expectations)
 - Modify: `frontend/src/app/(dashboard)/topics/page.test.tsx` if it exists (assert `router.push`)
 
-- [ ] **Step 1: Failing test — topics page navigates to `/research/{id}` after confirm** (mock `createResearchSession` → `{session_id:"s9"}`, mock `useRouter().push`; assert push called with `/research/s9`). Also forward `keywords` and `structural_diagram_mode` in `handleCreateAndGenerate` (the plan notes this drop) — assert the POST body includes them when provided by `CreateTopicData`.
+- [x] **Step 1: Failing test — topics page navigates to `/research/{id}` after confirm** (mock `createResearchSession` → `{session_id:"s9"}`, mock `useRouter().push`; assert push called with `/research/s9`). Also forward `keywords` and `structural_diagram_mode` in `handleCreateAndGenerate` (the plan notes this drop) — assert the POST body includes them when provided by `CreateTopicData`.
 
-- [ ] **Step 2: Implement**: `const router = useRouter();` then in both handlers `const res = await createResearchSession(...); router.push(`/research/${res.session_id}`);` and remove the "Check Research page" toast (keep the failure toast).
+- [x] **Step 2: Implement**: `const router = useRouter();` then in both handlers `const res = await createResearchSession(...); router.push(`/research/${res.session_id}`);` and remove the "Check Research page" toast (keep the failure toast).
 
-- [ ] **Step 3: Session card**: replace `getProgressPercent`'s status→% map with: terminal → 100; active → indeterminate (`animate-pulse` bar at `w-1/3`, `aria-busy="true"`, no numeric width); add a **View progress →** link (`<Link href={`/research/${session.session_id}`}>`) for non-terminal sessions and **View article** (via the same `fetchSessionArticle` helper, or link to `/research/{id}` which offers the button) for `article_complete`. Update `session-card.test.tsx` accordingly; remove any assertion on exact `%` widths.
+- [x] **Step 3: Session card**: replace `getProgressPercent`'s status→% map with: terminal → 100; active → indeterminate (`animate-pulse` bar at `w-1/3`, `aria-busy="true"`, no numeric width); add a **View progress →** link (`<Link href={`/research/${session.session_id}`}>`) for non-terminal sessions and **View article** (via the same `fetchSessionArticle` helper, or link to `/research/{id}` which offers the button) for `article_complete`. Update `session-card.test.tsx` accordingly; remove any assertion on exact `%` widths.
 
-- [ ] **Step 4: Run → PASS: `npx vitest run src/components/research src/app`; `npx tsc --noEmit`; `npx eslint` changed files**
+- [x] **Step 4: Run → PASS: `npx vitest run src/components/research src/app`; `npx tsc --noEmit`; `npx eslint` changed files**
 
-- [ ] **Step 5: Commit** — `git commit -m "feat(frontend): navigate to live session page after Generate; honest session card progress (AUTHOR-001)"`
+- [x] **Step 5: Commit** — `git commit -m "feat(frontend): navigate to live session page after Generate; honest session card progress (AUTHOR-001)"`
 
 ---
 
@@ -1124,7 +1124,7 @@ export default function ResearchSessionPage() {
 - Modify: `project-management/PROGRESS.md` (AUTHOR-001 row → Done once merged; add cross-cutting note), `docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md` (§5.1–5.2: note v1 transport = DB tailing, Redis pub/sub deferred; tick Phase A AC items covered), `docs/architecture/adrs/ADR-006-…md` (add "Transport (v1): DB tailing of `agent_steps`; Redis pub/sub is an optional latency upgrade" under Decision Outcome)
 - Modify: `CLAUDE.md` "Current Status" (one line: Epic 11 Phase A in progress, AUTHOR-001)
 
-- [ ] **Step 1: Full suites**
+- [x] **Step 1: Full suites**
 ```bash
 COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q -p no:cacheprovider
 uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv run mypy src/ --ignore-missing-imports
@@ -1132,11 +1132,11 @@ cd frontend && npx vitest run && npx tsc --noEmit && npx eslint src
 ```
 Expected: all green (backend ≥ 1419 + new tests; frontend ≥ 357 + new).
 
-- [ ] **Step 2: Live smoke** (stack is running from `docker compose up -d` in the main checkout): rebuild api + frontend from this worktree (`docker compose build api frontend && docker compose up -d api frontend`, verify image timestamps advanced — see memory note on flaky `--no-cache`), log in, Generate on a topic, confirm redirect to `/research/{id}`, steps appear live, section counter advances, "View article" works. Capture one screenshot into the scratchpad (not the repo).
+- [x] **Step 2: Live smoke** (stack is running from `docker compose up -d` in the main checkout): rebuild api + frontend from this worktree (`docker compose build api frontend && docker compose up -d api frontend`, verify image timestamps advanced — see memory note on flaky `--no-cache`), log in, Generate on a topic, confirm redirect to `/research/{id}`, steps appear live, section counter advances, "View article" works. Capture one screenshot into the scratchpad (not the repo).
 
-- [ ] **Step 3: Docs edits + commit** — `git commit -m "docs: AUTHOR-001 progress, ADR-006 transport note"`
+- [x] **Step 3: Docs edits + commit** — `git commit -m "docs: AUTHOR-001 progress, ADR-006 transport note"`
 
-- [ ] **Step 4: Push + PR to `develop`**
+- [x] **Step 4: Push + PR to `develop`**
 ```bash
 git push -u origin feature/AUTHOR-001-pipeline-events
 gh pr create --base develop --title "feat(authoring): live session progress stream + session page (AUTHOR-001)" --body "$(cat <<'EOF'
