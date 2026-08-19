@@ -83,9 +83,28 @@ describe("useSessionEvents", () => {
 
   it("reports error state when the stream fails", async () => {
     consume.mockRejectedValue(new Error("SSE request failed: 503"));
-    const { result } = renderHook(() => useSessionEvents("s1"));
+    const { result } = renderHook(() =>
+      useSessionEvents("s1", { maxAttempts: 1, baseDelayMs: 0 }),
+    );
     await waitFor(() => expect(result.current.connection).toBe("error"));
     expect(result.current.error).toMatch(/503/);
+  });
+
+  it("shows reconnecting (not error) while retries remain under the attempt cap", async () => {
+    let callCount = 0;
+    consume.mockImplementation(async () => {
+      callCount += 1;
+      if (callCount === 1) throw new Error("SSE request failed: 503");
+      // second attempt: hang so state settles on "reconnecting" instead of
+      // racing forward to a second failure / "error".
+      await new Promise(() => {});
+    });
+    const { result } = renderHook(() =>
+      useSessionEvents("s1", { maxAttempts: 2, baseDelayMs: 0 }),
+    );
+    await waitFor(() => expect(result.current.connection).toBe("reconnecting"));
+    expect(result.current.error).toMatch(/503/);
+    expect(result.current.connection).not.toBe("error");
   });
 
   it("does nothing for null session id", () => {

@@ -36,12 +36,12 @@ describe("consumeSse", () => {
   });
 
   it("sends the bearer token and rejects on non-2xx", async () => {
-    const f = vi.fn(async (_url: string, _init?: RequestInit) => new Response("nope", { status: 403 }));
+    const f = vi.fn<typeof fetch>(async () => new Response("nope", { status: 403 }));
     vi.stubGlobal("fetch", f);
     await expect(
       consumeSse("/x", { token: "T", onEvent: () => {} }),
     ).rejects.toThrow(/403/);
-    expect((f.mock.calls[0][1] as RequestInit).headers).toMatchObject({
+    expect(f.mock.calls[0][1]?.headers).toMatchObject({
       Authorization: "Bearer T",
     });
   });
@@ -51,6 +51,19 @@ describe("consumeSse", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response(new ReadableStream({ start() {} }), { status: 200 })),
+    );
+    const p = consumeSse("/x", { signal: ctrl.signal, onEvent: () => {} });
+    ctrl.abort();
+    await expect(p).resolves.toBeUndefined();
+  });
+
+  it("resolves when fetch itself rejects due to an in-flight abort", async () => {
+    const ctrl = new AbortController();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new DOMException("Aborted", "AbortError");
+      }),
     );
     const p = consumeSse("/x", { signal: ctrl.signal, onEvent: () => {} });
     ctrl.abort();

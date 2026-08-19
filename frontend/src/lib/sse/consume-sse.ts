@@ -42,13 +42,15 @@ async function pumpFrames(
   if (buffer.trim()) dispatchFrame(buffer, onEvent);
 }
 
-export async function consumeSse(url: string, opts: ConsumeSseOptions): Promise<void> {
-  if (opts.signal?.aborted) return;
-  const headers: Record<string, string> = { Accept: "text/event-stream" };
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
-  const res = await fetch(url, { headers, signal: opts.signal, credentials: "include" });
-  if (!res.ok || !res.body) throw new Error(`SSE request failed: ${res.status}`);
-  const reader = res.body.getReader();
+function isAbortError(err: unknown): boolean {
+  return err instanceof Error && err.name === "AbortError";
+}
+
+async function consumeBody(
+  body: ReadableStream<Uint8Array>,
+  opts: ConsumeSseOptions,
+): Promise<void> {
+  const reader = body.getReader();
   const onAbort = () => {
     void reader.cancel().catch(() => {});
   };
@@ -56,10 +58,21 @@ export async function consumeSse(url: string, opts: ConsumeSseOptions): Promise<
   else opts.signal?.addEventListener("abort", onAbort);
   try {
     await pumpFrames(reader, opts.onEvent);
-  } catch (err) {
-    if ((err as Error)?.name === "AbortError" || opts.signal?.aborted) return;
-    throw err;
   } finally {
     opts.signal?.removeEventListener("abort", onAbort);
+  }
+}
+
+export async function consumeSse(url: string, opts: ConsumeSseOptions): Promise<void> {
+  if (opts.signal?.aborted) return;
+  const headers: Record<string, string> = { Accept: "text/event-stream" };
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+  try {
+    const res = await fetch(url, { headers, signal: opts.signal, credentials: "include" });
+    if (!res.ok || !res.body) throw new Error(`SSE request failed: ${res.status}`);
+    await consumeBody(res.body, opts);
+  } catch (err) {
+    if (isAbortError(err) || opts.signal?.aborted) return;
+    throw err;
   }
 }

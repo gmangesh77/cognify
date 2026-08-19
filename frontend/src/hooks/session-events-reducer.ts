@@ -6,11 +6,13 @@ export interface SessionSectionsProgress {
   current?: string;
 }
 
+export type SessionConnectionState = "connecting" | "live" | "reconnecting" | "closed" | "error";
+
 export interface SessionEventsState {
   status: SessionStatus | null;
   steps: SessionStepRow[];
   sections: SessionSectionsProgress | null;
-  connection: "connecting" | "live" | "closed" | "error";
+  connection: SessionConnectionState;
   error: string | null;
 }
 
@@ -25,19 +27,39 @@ export const initialSessionEventsState: SessionEventsState = {
 export type SessionEventsAction =
   | { kind: "sse"; event: SessionEvent }
   | { kind: "live" }
-  | { kind: "connection_error"; message: string };
+  | { kind: "reconnecting"; message: string }
+  | { kind: "connection_failed"; message: string };
 
 function stepIdOf(event: SessionEvent): string {
   const id = event.data.step_id;
   return typeof id === "string" ? id : `${event.step ?? "step"}-${event.ts}`;
 }
 
-function upsertStep(
-  steps: SessionStepRow[],
+function makeFallbackStep(
   id: string,
-  patch: Partial<SessionStepRow>,
-  fallback: SessionStepRow,
-): SessionStepRow[] {
+  event: SessionEvent,
+  status: string,
+  outputData: Record<string, unknown> = {},
+): SessionStepRow {
+  return {
+    id,
+    step_name: event.step ?? "",
+    status,
+    started_at: event.ts,
+    completed_at: null,
+    duration_ms: null,
+    output_data: outputData,
+  };
+}
+
+interface UpsertStepOptions {
+  steps: SessionStepRow[];
+  id: string;
+  patch: Partial<SessionStepRow>;
+  fallback: SessionStepRow;
+}
+
+function upsertStep({ steps, id, patch, fallback }: UpsertStepOptions): SessionStepRow[] {
   const idx = steps.findIndex((s) => s.id === id);
   if (idx === -1) return [...steps, { ...fallback, ...patch }];
   const next = [...steps];
@@ -48,51 +70,39 @@ function upsertStep(
 function applyStepStarted(state: SessionEventsState, event: SessionEvent): SessionEventsState {
   const id = stepIdOf(event);
   const status = event.status ?? "running";
-  const fallback: SessionStepRow = {
-    id,
-    step_name: event.step ?? "",
-    status,
-    started_at: event.ts,
-    completed_at: null,
-    duration_ms: null,
-    output_data: {},
-  };
+  const fallback = makeFallbackStep(id, event, status);
+  const patch = { status, step_name: event.step ?? "" };
+  return { ...state, steps: upsertStep({ steps: state.steps, id, patch, fallback }) };
+}
+
+function computeSectionsProgress(
+  state: SessionEventsState,
+  event: SessionEvent,
+): SessionSectionsProgress | null {
+  if (event.step !== "content_draft") return state.sections;
   return {
-    ...state,
-    steps: upsertStep(state.steps, id, { status, step_name: event.step ?? "" }, fallback),
+    done: Number(event.data.sections_done ?? 0),
+    total: Number(event.data.sections_total ?? 0),
+    current:
+      typeof event.data.current_section === "string" ? event.data.current_section : undefined,
   };
 }
 
 function applyStepProgress(state: SessionEventsState, event: SessionEvent): SessionEventsState {
   const id = stepIdOf(event);
   const existing = state.steps.find((s) => s.id === id);
-  const fallback: SessionStepRow = {
-    id,
-    step_name: event.step ?? "",
-    status: "running",
-    started_at: event.ts,
-    completed_at: null,
-    duration_ms: null,
-    output_data: event.data,
-  };
-  const steps = upsertStep(
-    state.steps,
-    id,
-    { output_data: { ...(existing?.output_data ?? {}), ...event.data } },
-    fallback,
-  );
-  const sections =
-    event.step === "content_draft"
-      ? {
-          done: Number(event.data.sections_done ?? 0),
-          total: Number(event.data.sections_total ?? 0),
-          current:
-            typeof event.data.current_section === "string"
-              ? event.data.current_section
-              : undefined,
-        }
-      : state.sections;
-  return { ...state, steps, sections };
+  const outputData = { ...(existing?.output_data ?? {}), ...event.data };
+  const fallback = makeFallbackStep(id, event, "running", outputData);
+  const patch = { output_data: outputData };
+  const steps = upsertStep({ steps: state.steps, id, patch, fallback });
+  return { ...state, steps, sections: computeSectionsProgress(state, event) };
+}
+
+function buildFinishedPatch(event: SessionEvent, status: string): Partial<SessionStepRow> {
+  const patch: Partial<SessionStepRow> = { status };
+  if (typeof event.data.duration_ms === "number") patch.duration_ms = event.data.duration_ms;
+  if (typeof event.data.completed_at === "string") patch.completed_at = event.data.completed_at;
+  return patch;
 }
 
 function applyStepFinished(
@@ -101,68 +111,75 @@ function applyStepFinished(
   status: string,
 ): SessionEventsState {
   const id = stepIdOf(event);
-  const patch: Partial<SessionStepRow> = { status };
-  if (typeof event.data.duration_ms === "number") patch.duration_ms = event.data.duration_ms;
-  if (typeof event.data.completed_at === "string") patch.completed_at = event.data.completed_at;
-  const fallback: SessionStepRow = {
-    id,
-    step_name: event.step ?? "",
-    status,
-    started_at: event.ts,
-    completed_at: patch.completed_at ?? null,
-    duration_ms: patch.duration_ms ?? null,
-    output_data: {},
-  };
-  return { ...state, steps: upsertStep(state.steps, id, patch, fallback) };
+  const patch = buildFinishedPatch(event, status);
+  const fallback = { ...makeFallbackStep(id, event, status), ...patch };
+  return { ...state, steps: upsertStep({ steps: state.steps, id, patch, fallback }) };
 }
 
+function handleSnapshot(state: SessionEventsState, event: SessionEvent): SessionEventsState {
+  const steps = Array.isArray(event.data.steps)
+    ? (event.data.steps as SessionStepRow[])
+    : state.steps;
+  return { ...state, steps, status: (event.status as SessionStatus | null) ?? state.status };
+}
+
+function handleStatusChanged(state: SessionEventsState, event: SessionEvent): SessionEventsState {
+  return { ...state, status: (event.status as SessionStatus | null) ?? state.status };
+}
+
+function handleDone(state: SessionEventsState, event: SessionEvent): SessionEventsState {
+  return {
+    ...state,
+    status: (event.status as SessionStatus | null) ?? state.status,
+    connection: "closed",
+  };
+}
+
+function handleError(state: SessionEventsState, event: SessionEvent): SessionEventsState {
+  return {
+    ...state,
+    connection: "error",
+    error: typeof event.data.message === "string" ? event.data.message : "Session stream error",
+  };
+}
+
+function handleStepDone(state: SessionEventsState, event: SessionEvent): SessionEventsState {
+  return applyStepFinished(state, event, event.status ?? "complete");
+}
+
+function handleStepFailed(state: SessionEventsState, event: SessionEvent): SessionEventsState {
+  return applyStepFinished(state, event, event.status ?? "failed");
+}
+
+type EventHandler = (state: SessionEventsState, event: SessionEvent) => SessionEventsState;
+
+const eventHandlers: Partial<Record<SessionEvent["type"], EventHandler>> = {
+  snapshot: handleSnapshot,
+  step_started: applyStepStarted,
+  step_progress: applyStepProgress,
+  step_done: handleStepDone,
+  step_failed: handleStepFailed,
+  status_changed: handleStatusChanged,
+  done: handleDone,
+  error: handleError,
+};
+
 function applySessionEvent(state: SessionEventsState, event: SessionEvent): SessionEventsState {
-  switch (event.type) {
-    case "snapshot": {
-      const steps = Array.isArray(event.data.steps)
-        ? (event.data.steps as SessionStepRow[])
-        : state.steps;
-      return { ...state, steps, status: (event.status as SessionStatus | null) ?? state.status };
-    }
-    case "step_started":
-      return applyStepStarted(state, event);
-    case "step_progress":
-      return applyStepProgress(state, event);
-    case "step_done":
-      return applyStepFinished(state, event, event.status ?? "complete");
-    case "step_failed":
-      return applyStepFinished(state, event, event.status ?? "failed");
-    case "status_changed":
-      return { ...state, status: (event.status as SessionStatus | null) ?? state.status };
-    case "done":
-      return {
-        ...state,
-        status: (event.status as SessionStatus | null) ?? state.status,
-        connection: "closed",
-      };
-    case "error":
-      return {
-        ...state,
-        connection: "error",
-        error:
-          typeof event.data.message === "string" ? event.data.message : "Session stream error",
-      };
-    case "keepalive":
-    default:
-      return state;
-  }
+  const handler = eventHandlers[event.type];
+  return handler ? handler(state, event) : state;
 }
 
 export function sessionEventsReducer(
   state: SessionEventsState,
   action: SessionEventsAction,
 ): SessionEventsState {
+  if (state.connection === "closed" && action.kind !== "sse") return state;
   switch (action.kind) {
     case "live":
-      return state.connection === "closed"
-        ? state
-        : { ...state, connection: "live", error: null };
-    case "connection_error":
+      return { ...state, connection: "live", error: null };
+    case "reconnecting":
+      return { ...state, connection: "reconnecting", error: action.message };
+    case "connection_failed":
       return { ...state, connection: "error", error: action.message };
     case "sse":
       return applySessionEvent(state, action.event);
