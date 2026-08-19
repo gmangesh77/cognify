@@ -35,6 +35,7 @@ export function useGenerateActions({ setToast }: UseGenerateActionsArgs): UseGen
       showToast(`Cannot start research — topic has no ID. Try scanning again.`);
       return;
     }
+    setToast(`Starting research for "${topic.title}"…`);
     try {
       const session = await createResearchSession(topic.id, articleParams);
       router.push(`/research/${session.session_id}`);
@@ -44,6 +45,7 @@ export function useGenerateActions({ setToast }: UseGenerateActionsArgs): UseGen
   }
 
   async function handleCreateAndGenerate(data: CreateTopicData) {
+    setToast(`Starting research for "${data.title}"…`);
     try {
       const result = await createManualTopic({
         title: data.title,

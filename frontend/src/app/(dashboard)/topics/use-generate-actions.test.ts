@@ -4,6 +4,7 @@ import { useGenerateActions } from "./use-generate-actions";
 import * as trendsApi from "@/lib/api/trends";
 import type { CreateTopicData } from "@/components/topics/create-topic-modal";
 import type { RankedTopic } from "@/types/api";
+import type { CreateSessionResponse } from "@/lib/api/trends";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -69,6 +70,35 @@ describe("useGenerateActions", () => {
       expect(setToast).not.toHaveBeenCalledWith(expect.stringContaining("Check Research page"));
     });
 
+    it("shows a 'Starting research' toast synchronously, before createResearchSession resolves", async () => {
+      let resolveSession!: (value: CreateSessionResponse) => void;
+      mockCreateResearchSession.mockImplementation(
+        () =>
+          new Promise<CreateSessionResponse>((resolve) => {
+            resolveSession = resolve;
+          }),
+      );
+      const setToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ setToast }));
+
+      let confirmPromise!: Promise<void>;
+      act(() => {
+        confirmPromise = result.current.handleConfirm(rankedTopic);
+      });
+
+      expect(setToast).toHaveBeenCalledWith(
+        expect.stringContaining(`Starting research for "${rankedTopic.title}"`),
+      );
+      expect(push).not.toHaveBeenCalled();
+
+      await act(async () => {
+        resolveSession({ session_id: "s9", status: "planning", started_at: "" });
+        await confirmPromise;
+      });
+
+      expect(push).toHaveBeenCalledWith("/research/s9");
+    });
+
     it("shows a failure toast and does not navigate when the topic has no id", async () => {
       const setToast = vi.fn();
       const { result } = renderHook(() => useGenerateActions({ setToast }));
@@ -120,6 +150,46 @@ describe("useGenerateActions", () => {
         expect.objectContaining({ keywords: createTopicData.keywords }),
       );
       await waitFor(() => expect(push).toHaveBeenCalledWith("/research/s9"));
+    });
+
+    it("shows a 'Starting research' toast synchronously, before createManualTopic resolves", async () => {
+      let resolveManualTopic!: (
+        value: Awaited<ReturnType<typeof trendsApi.createManualTopic>>,
+      ) => void;
+      mockCreateManualTopic.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveManualTopic = resolve;
+          }),
+      );
+      mockCreateResearchSession.mockResolvedValue({
+        session_id: "s9",
+        status: "planning",
+        started_at: "",
+      });
+      const setToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ setToast }));
+
+      let generatePromise!: Promise<void>;
+      act(() => {
+        generatePromise = result.current.handleCreateAndGenerate(createTopicData);
+      });
+
+      expect(setToast).toHaveBeenCalledWith(
+        expect.stringContaining(`Starting research for "${createTopicData.title}"`),
+      );
+      expect(push).not.toHaveBeenCalled();
+
+      await act(async () => {
+        resolveManualTopic({
+          topic: { id: "t1", title: "AI Regulation" } as unknown as trendsApi.PersistedTopic,
+          is_duplicate: false,
+          duplicate_of: null,
+        });
+        await generatePromise;
+      });
+
+      expect(push).toHaveBeenCalledWith("/research/s9");
     });
 
     it("uses duplicate_of as the topic id when the manual topic is a duplicate", async () => {
