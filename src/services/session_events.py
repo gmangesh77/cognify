@@ -14,7 +14,7 @@ from uuid import UUID
 
 from src.api.errors import NotFoundError
 from src.models.research_db import AgentStep
-from src.models.session_events import TERMINAL_STATUSES, SessionEvent
+from src.models.session_events import TERMINAL_STATUSES, EventType, SessionEvent
 from src.services.research import ResearchService
 
 
@@ -46,11 +46,11 @@ def is_terminal(status: str) -> bool:
 
 
 def _ev(
-    kind: str, sid: UUID, step: AgentStep, data: dict[str, object] | None = None
+    kind: EventType, step: AgentStep, data: dict[str, object] | None = None
 ) -> SessionEvent:
     return SessionEvent(
-        type=kind,  # type: ignore[arg-type]
-        session_id=sid,
+        type=kind,
+        session_id=step.session_id,
         step=step.step_name,
         status=step.status,
         data={"step_id": str(step.id), **(data or {})},
@@ -60,23 +60,28 @@ def _ev(
 def diff_steps(
     prev: list[AgentStep], curr: list[AgentStep], session_id: UUID
 ) -> list[SessionEvent]:
-    """Events explaining how ``curr`` differs from ``prev`` (keyed by step id)."""
+    """Events explaining how ``curr`` differs from ``prev`` (keyed by step id).
+
+    ``session_id`` is accepted (not just derived from ``step.session_id``) to
+    keep this a stable, self-describing signature for Task 4's callers; every
+    step in ``curr`` is assumed to belong to ``session_id`` already.
+    """
     before = {s.id: s for s in prev}
     out: list[SessionEvent] = []
     for s in curr:
         old = before.get(s.id)
         if old is None:
-            out.append(_ev("step_started", session_id, s))
+            out.append(_ev("step_started", s))
         elif (
             old.status == "running"
             and s.status == "running"
             and old.output_data != s.output_data
         ):
-            out.append(_ev("step_progress", session_id, s, s.output_data))
+            out.append(_ev("step_progress", s, s.output_data))
         elif old.status != s.status and s.status == "complete":
-            out.append(_ev("step_done", session_id, s, {"duration_ms": s.duration_ms}))
+            out.append(_ev("step_done", s, {"duration_ms": s.duration_ms}))
         elif old.status != s.status and s.status == "failed":
-            out.append(_ev("step_failed", session_id, s, s.output_data))
+            out.append(_ev("step_failed", s, s.output_data))
     return out
 
 
