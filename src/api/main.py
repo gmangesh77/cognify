@@ -38,6 +38,7 @@ from src.api.routers.content import content_router
 from src.api.routers.health import health_router
 from src.api.routers.metrics import metrics_router
 from src.api.routers.oauth import oauth_router
+from src.api.routers.outline import outline_router
 from src.api.routers.pipeline_debug import pipeline_debug_router
 from src.api.routers.publishing import publishing_router
 from src.api.routers.research import research_router
@@ -64,6 +65,7 @@ from src.db.settings_singleton_repositories import (
     PgSeoDefaultsRepository,
 )
 from src.services.content import ContentService
+from src.services.content.outline_gate import OutlineGateService
 from src.services.content_repositories import (
     ContentDeps,
     ContentRepositories,
@@ -77,6 +79,7 @@ from src.services.research import (
     ResearchRepositories,
     ResearchService,
 )
+from src.services.session_tasks import SessionTaskRegistry
 from src.services.topic_persistence import TopicPersistenceService
 from src.services.trends import init_registry
 from src.utils.key_resolver import ApiKeyResolver
@@ -147,6 +150,10 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     settings = app.state.settings
     db_url = settings.database_url
 
+    # AUTHOR-002 — registry of in-flight per-session background pipeline
+    # tasks, shared by the research create/cancel/approve endpoints.
+    app.state.session_tasks = SessionTaskRegistry()
+
     # --- Build LLM + content deps (shared by DB and non-DB paths) ---
     content_deps = ContentDeps(settings=settings)
     if settings.anthropic_api_key:
@@ -215,6 +222,7 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             deps=content_deps,
             step_repo=step_repo,
         )
+        app.state.outline_gate = OutlineGateService(app.state.content_service)
         # Topic persistence service
         topic_repo = PgTopicRepository(sf)
         app.state.topic_repo = topic_repo
@@ -272,6 +280,9 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                         repos=content_repos,
                         deps=content_deps,
                         step_repo=step_repo,
+                    )
+                    app.state.outline_gate = OutlineGateService(
+                        app.state.content_service
                     )
                     orchestrator = _build_real_orchestrator(
                         settings,
@@ -344,6 +355,7 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
             repos=in_mem_repos,
             deps=content_deps,
         )
+        app.state.outline_gate = OutlineGateService(app.state.content_service)
     yield
     if hasattr(app.state, "db_engine"):
         await app.state.db_engine.dispose()
@@ -697,6 +709,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
     )
     app.include_router(
         research_router,
+        prefix=settings.api_v1_prefix,
+        tags=["research"],
+    )
+    app.include_router(
+        outline_router,
         prefix=settings.api_v1_prefix,
         tags=["research"],
     )
