@@ -7,6 +7,7 @@ returns an async node function compatible with LangGraph StateGraph.
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
@@ -106,10 +107,10 @@ def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> An
         queries_list = state.get("section_queries", [])
         drafts: list[SectionDraft] = []
         total = len(outline.sections)
+        deps = _DraftDeps(state=state, retriever=retriever, llm=llm, topic=topic)
         for i, section in enumerate(outline.sections, start=1):
             sq = _find_queries(queries_list, section.index)
-            ctx = _make_draft_ctx(state, retriever, llm, drafts, topic)
-            draft = await draft_section(section, sq, ctx)
+            draft = await draft_section(section, sq, _make_draft_ctx(deps, drafts))
             drafts.append(draft)
             await report_progress(
                 {
@@ -124,23 +125,27 @@ def make_draft_node(llm: BaseChatModel, retriever: MilvusRetriever | None) -> An
     return draft_node
 
 
-def _make_draft_ctx(
-    state: ContentState,
-    retriever: MilvusRetriever | None,
-    llm: BaseChatModel,
-    drafts: list[SectionDraft],
-    topic: TopicInput,
-) -> DraftingContext:
+@dataclass(frozen=True)
+class _DraftDeps:
+    """Fixed per-invocation deps for building a DraftingContext each iteration."""
+
+    state: ContentState
+    retriever: MilvusRetriever | None
+    llm: BaseChatModel
+    topic: TopicInput
+
+
+def _make_draft_ctx(deps: _DraftDeps, drafts: list[SectionDraft]) -> DraftingContext:
     """Build the per-section drafting context from pipeline state."""
     return DraftingContext(
-        retriever=retriever,
-        topic_id=str(topic.id),
-        llm=llm,
+        retriever=deps.retriever,
+        topic_id=str(deps.topic.id),
+        llm=deps.llm,
         prior_drafts=list(drafts),
-        target_audience=state.get("target_audience"),
-        content_tone=state.get("content_tone"),
-        preferred_angle=state.get("preferred_angle"),
-        keywords=state.get("keywords"),
+        target_audience=deps.state.get("target_audience"),
+        content_tone=deps.state.get("content_tone"),
+        preferred_angle=deps.state.get("preferred_angle"),
+        keywords=deps.state.get("keywords"),
     )
 
 

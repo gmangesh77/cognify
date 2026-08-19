@@ -43,6 +43,7 @@ from src.models.visual import ImageSpec
 from src.services.milvus_retriever import MilvusRetriever
 from src.services.visuals import init_registry as init_visual_registry
 from src.services.visuals.object_storage import select_object_storage
+from src.utils.step_progress import current_progress_reporter, make_step_reporter
 
 if TYPE_CHECKING:
     from src.services.research import AgentStepRepository
@@ -99,10 +100,6 @@ def _wrap_node(
 
     async def wrapped(state: ContentState) -> dict:  # type: ignore[type-arg]
         from src.agents.research.orchestrator import _complete_step, _record_step
-        from src.utils.step_progress import (
-            current_progress_reporter,
-            make_step_reporter,
-        )
 
         sid = deps.session_id or state.get("session_id")
         step = await _record_step(step_repo, sid, f"content_{name}")
