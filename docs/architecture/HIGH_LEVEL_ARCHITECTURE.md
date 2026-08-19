@@ -276,3 +276,6 @@ See [docs/architecture/adrs/](./adrs/) for all decisions.
 - [ADR-002: Milvus for Vector Database](./adrs/ADR-002-milvus-vector-database.md)
 - [ADR-003: CanonicalArticle as Content Pipeline Boundary](./adrs/ADR-003-canonical-article-boundary.md)
 - [ADR-004: Centralized Publishing with Transformer/Adapter Pattern](./adrs/ADR-004-publishing-transformer-adapter-pattern.md)
+- [ADR-005: Image Spec Planner and Object Storage](./adrs/ADR-005-image-spec-planner-and-object-storage.md)
+- [ADR-006: Supervised Pipeline — Event Bus, SSE Progress and Outline Gate](./adrs/ADR-006-supervised-pipeline-events-and-outline-gate.md)
+- [ADR-007: Brief as the Authoring Input Contract](./adrs/ADR-007-brief-as-authoring-input-contract.md)

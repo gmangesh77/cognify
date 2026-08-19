@@ -183,7 +183,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 
 | Ticket | Title | Priority | SP | Phase |
 |--------|-------|----------|---:|-------|
-| ADR-005/006 | ADRs: supervised pipeline (event bus + outline gate); Brief as authoring contract | Must | 1 | A |
+| ADR-006/007 | ADRs: supervised pipeline (event bus + outline gate); Brief as authoring contract | Must | 1 | A |
 | AUTHOR-001 | PipelineEventBus + SSE endpoint + `useSessionEvents` + SessionProgress + session route + auto-navigate | Must | 8 | A |
 | AUTHOR-002 | Outline approval gate (half-graphs, `awaiting_outline_review`, outline endpoints, cancel, OutlineReviewStep; flagged) | Must | 8 | A |
 | AUTHOR-003 | Brief model/CRUD + Generate modal rework (picker, length, content type, save-as-brief) | Must | 5 | A |

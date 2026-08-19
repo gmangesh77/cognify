@@ -19,7 +19,7 @@
 - Every new setting is `COGNIFY_*` in `src/config/settings.py`; nothing hardcoded.
 - Feature flags default to **current behaviour** (`require_outline_approval=False`) so the self-driving pipeline is unchanged until a user opts in.
 - One PR per ticket, off `develop`, never stacked (see PROGRESS.md lesson from PR #68/#69). AB#<id> in commits when Azure Boards items exist.
-- New ADRs required before Phase A code: **ADR-005 Supervised pipeline (event bus + outline gate)**, **ADR-006 Brief as authoring input contract**.
+- New ADRs required before Phase A code: **ADR-006 Supervised pipeline (event bus + outline gate)**, **ADR-007 Brief as authoring input contract**.
 
 ---
 
@@ -197,7 +197,7 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 ### Phase A — Supervised loop (≈25 SP)
 | Ticket | Title | SP | Depends on |
 |---|---|---:|---|
-| ADR-005/006 | ADRs: supervised pipeline; Brief contract | 1 | — |
+| ADR-006/007 | ADRs: supervised pipeline; Brief contract | 1 | — |
 | AUTHOR-001 | PipelineEventBus + node publishing + SSE endpoint + `useSessionEvents` + `SessionProgress` + session detail route + auto-navigate | 8 | ADRs |
 | AUTHOR-002 | Outline gate: half-graphs, `awaiting_outline_review`, outline endpoints, cancel, `OutlineReviewStep` (flagged) | 8 | AUTHOR-001 |
 | AUTHOR-003 | Brief model/table/CRUD + Generate modal rework (picker, length, content type, save-as-brief) + topic-analyze `suggested_brief` | 5 | ADRs |
@@ -269,7 +269,7 @@ Ticket IDs are proposed as `AUTHOR-0xx`; INFRA-007 runs in parallel with Phase A
 
 ## 12. Sign-off checklist (before Phase A code)
 
-- [ ] ADR-005 and ADR-006 written and reviewed
+- [ ] ADR-006 and ADR-007 written and reviewed
 - [ ] Azure Boards: Epic 11 + AUTHOR-001…014 + INFRA-007/008 created; PROGRESS.md/BACKLOG.md rows added (done in this PR)
 - [ ] Decision confirmed: outline gate default **off**
 - [ ] Decision confirmed: v1 streaming granularity = step + section (token streaming = follow-up)
