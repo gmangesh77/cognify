@@ -166,7 +166,7 @@ describe("SessionProgress", () => {
     expect(screen.getByText("Elapsed: 0m 3s")).toBeInTheDocument();
   });
 
-  it("stops ticking once the session reaches a terminal status", () => {
+  it("stops ticking once the session reaches a terminal status (no completed_at yet)", () => {
     vi.useFakeTimers();
     const start = new Date("2026-01-01T00:00:00.000Z");
     vi.setSystemTime(start);
@@ -179,11 +179,56 @@ describe("SessionProgress", () => {
     });
     events.mockReturnValue({ ...base, status: "article_complete", connection: "closed" });
     render(<SessionProgress sessionId="s1" />);
-    expect(screen.getByText("Elapsed: 0m 0s")).toBeInTheDocument();
+    expect(screen.getByText("Duration: 0m 0s")).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(5000);
     });
-    expect(screen.getByText("Elapsed: 0m 0s")).toBeInTheDocument();
+    expect(screen.getByText("Duration: 0m 0s")).toBeInTheDocument();
+  });
+
+  it("computes Duration from started_at to completed_at when terminal, ignoring the current clock", () => {
+    vi.useFakeTimers();
+    const start = new Date("2026-01-01T00:00:00.000Z");
+    const completed = new Date("2026-01-01T00:05:03.000Z");
+    // The wall clock is days ahead of completion — this is the regression the
+    // fix targets: a page loaded long after the session finished must not
+    // show "Elapsed" computed against "now".
+    vi.setSystemTime(new Date("2026-01-05T00:00:00.000Z"));
+    researchSession.mockReturnValue({
+      data: {
+        topic_title: "OAuth 2.1",
+        status: "article_complete",
+        started_at: start.toISOString(),
+        completed_at: completed.toISOString(),
+      },
+    });
+    events.mockReturnValue({ ...base, status: "article_complete", connection: "closed" });
+    render(<SessionProgress sessionId="s1" />);
+    expect(screen.getByText("Duration: 5m 3s")).toBeInTheDocument();
+    expect(screen.queryByText(/Elapsed:/)).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    expect(screen.getByText("Duration: 5m 3s")).toBeInTheDocument();
+  });
+
+  it("formats durations of an hour or more with hours", () => {
+    vi.useFakeTimers();
+    const start = new Date("2026-01-01T00:00:00.000Z");
+    const completed = new Date("2026-01-01T01:05:09.000Z");
+    vi.setSystemTime(start);
+    researchSession.mockReturnValue({
+      data: {
+        topic_title: "OAuth 2.1",
+        status: "article_complete",
+        started_at: start.toISOString(),
+        completed_at: completed.toISOString(),
+      },
+    });
+    events.mockReturnValue({ ...base, status: "article_complete", connection: "closed" });
+    render(<SessionProgress sessionId="s1" />);
+    expect(screen.getByText("Duration: 1h 5m 9s")).toBeInTheDocument();
   });
 });

@@ -9,14 +9,39 @@ import { SessionStatusBadge } from "./session-status-badge";
 import { SessionStepList } from "./session-step-list";
 import { SessionProgressFooter } from "./session-progress-footer";
 
-function formatElapsed(startedAt: string | undefined, nowMs: number): string | null {
+function formatDuration(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  return `${minutes}m ${seconds}s`;
+}
+
+function formatElapsed(
+  startedAt: string | undefined,
+  endMs: number,
+  isTerminal: boolean,
+): string | null {
   if (!startedAt) return null;
   const startMs = new Date(startedAt).getTime();
   if (Number.isNaN(startMs)) return null;
-  const totalSeconds = Math.max(0, Math.floor((nowMs - startMs) / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `Elapsed: ${minutes}m ${seconds}s`;
+  const totalSeconds = Math.max(0, Math.floor((endMs - startMs) / 1000));
+  const label = isTerminal ? "Duration" : "Elapsed";
+  return `${label}: ${formatDuration(totalSeconds)}`;
+}
+
+/** End timestamp for the elapsed/duration calculation: `completed_at` once the
+ * session is terminal and the query has caught up with it; otherwise the
+ * live ticking clock (which itself freezes once terminal, since the ticker
+ * effect below stops scheduling further updates). */
+function resolveEndMs(
+  isTerminal: boolean,
+  completedAt: string | null | undefined,
+  nowMs: number,
+): number {
+  if (!isTerminal) return nowMs;
+  const completedMs = completedAt ? new Date(completedAt).getTime() : NaN;
+  return Number.isNaN(completedMs) ? nowMs : completedMs;
 }
 
 interface ConnectionChipProps {
@@ -73,15 +98,17 @@ export function SessionProgress({ sessionId }: SessionProgressProps) {
       ? (sessionQuery.data?.status ?? events.status ?? null)
       : (events.status ?? sessionQuery.data?.status ?? null);
 
+  const isTerminal = isTerminalSessionStatus(status);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
-    if (isTerminalSessionStatus(status)) return undefined;
+    if (isTerminal) return undefined;
     const timer = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [status]);
+  }, [isTerminal]);
 
-  const elapsed = formatElapsed(sessionQuery.data?.started_at, nowMs);
+  const endMs = resolveEndMs(isTerminal, sessionQuery.data?.completed_at, nowMs);
+  const elapsed = formatElapsed(sessionQuery.data?.started_at, endMs, isTerminal);
 
   return (
     <section className="space-y-5 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
