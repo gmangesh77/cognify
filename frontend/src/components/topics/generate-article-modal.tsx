@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TrendBadge } from "@/components/common/trend-badge";
 import { DomainBadge } from "@/components/common/domain-badge";
 import { FieldWithRegenerate } from "@/components/topics/field-with-regenerate";
+import { ReviewOutlineCheckbox } from "@/components/topics/review-outline-checkbox";
 import { useTopicAnalysis } from "@/hooks/use-topic-analysis";
 import type {
   RankedTopic,
@@ -262,15 +263,10 @@ export function GenerateArticleModal({
               </p>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-neutral-700">
-              <input
-                type="checkbox"
-                checked={requireOutlineApproval}
-                onChange={(e) => setRequireOutlineApproval(e.target.checked)}
-                className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
-              />
-              Review outline before drafting
-            </label>
+            <ReviewOutlineCheckbox
+              checked={requireOutlineApproval}
+              onChange={setRequireOutlineApproval}
+            />
           </div>
         )}
 
