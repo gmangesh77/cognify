@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isTerminalSessionStatus } from "@/lib/research/session-status";
 import { SessionStatusBadge } from "./session-status-badge";
-import type { ResearchSessionSummary, SessionStatus } from "@/types/research";
+import { ViewArticleButton } from "./view-article-button";
+import type { ResearchSessionSummary } from "@/types/research";
 
 const BORDER_COLORS: Record<string, string> = {
   planning: "border-l-blue-500",
@@ -18,44 +21,17 @@ const BORDER_COLORS: Record<string, string> = {
   failed: "border-l-red-500",
 };
 
-const PROGRESS_COLORS: Record<string, string> = {
+const ACTIVE_BAR_COLORS: Record<string, string> = {
   planning: "bg-blue-500",
   in_progress: "bg-amber-500",
   researching: "bg-amber-500",
   evaluating: "bg-amber-500",
   running: "bg-amber-500",
   complete: "bg-blue-500",
-  completed: "bg-blue-500",
   generating_article: "bg-purple-500",
-  article_complete: "bg-green-500",
-  article_failed: "bg-red-500",
-  failed: "bg-red-500",
 };
 
-function getProgressPercent(session: ResearchSessionSummary): number {
-  switch (session.status) {
-    case "planning":
-      return 10;
-    case "in_progress":
-    case "researching":
-    case "evaluating":
-      return 35;
-    case "running":
-      return 45;
-    case "complete":
-    case "completed":
-      return 60;
-    case "generating_article":
-      return 80;
-    case "article_complete":
-      return 100;
-    case "failed":
-    case "article_failed":
-      return Math.min(Math.round((session.round_count / 3) * 100), 90);
-    default:
-      return 50;
-  }
-}
+const ERROR_TERMINAL_STATUSES = new Set(["article_failed", "failed", "cancelled"]);
 
 function formatDuration(seconds: number | null | undefined): string {
   if (seconds == null) return "";
@@ -73,7 +49,8 @@ interface SessionCardProps {
 }
 
 export function SessionCard({ session, isExpanded, onToggle, children }: SessionCardProps) {
-  const progress = getProgressPercent(session);
+  const isTerminal = isTerminalSessionStatus(session.status);
+  const isError = ERROR_TERMINAL_STATUSES.has(session.status);
 
   return (
     <div
@@ -99,11 +76,21 @@ export function SessionCard({ session, isExpanded, onToggle, children }: Session
             {session.duration_seconds ? ` · ${formatDuration(session.duration_seconds)}` : ""}
           </p>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
-            <div
-              data-testid="progress-bar"
-              className={cn("h-full rounded-full transition-all", PROGRESS_COLORS[session.status] ?? "bg-neutral-400")}
-              style={{ width: `${progress}%` }}
-            />
+            {isTerminal ? (
+              <div
+                data-testid="progress-bar"
+                className={cn("h-full w-full rounded-full transition-all", isError ? "bg-error" : "bg-success")}
+              />
+            ) : (
+              <div
+                data-testid="progress-bar"
+                aria-busy="true"
+                className={cn(
+                  "h-full w-1/3 animate-pulse rounded-full transition-all",
+                  ACTIVE_BAR_COLORS[session.status] ?? "bg-neutral-400",
+                )}
+              />
+            )}
           </div>
         </div>
         <ChevronDown
@@ -113,6 +100,21 @@ export function SessionCard({ session, isExpanded, onToggle, children }: Session
           )}
         />
       </button>
+      {!isTerminal && (
+        <div className="flex justify-end px-4 pb-3">
+          <Link
+            href={`/research/${session.session_id}`}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            View progress →
+          </Link>
+        </div>
+      )}
+      {session.status === "article_complete" && (
+        <div className="flex justify-end px-4 pb-3">
+          <ViewArticleButton sessionId={session.session_id} />
+        </div>
+      )}
       {isExpanded && <div className="border-t border-neutral-100 px-4 pb-4">{children}</div>}
     </div>
   );

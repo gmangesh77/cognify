@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, Compass, Search, Plus } from "lucide-react";
+import { Zap, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/header";
-import { Skeleton } from "@/components/ui/skeleton";
 import { TopicCard } from "@/components/topics/topic-card";
 import { FilterBar } from "@/components/topics/filter-bar";
 import { ScanProgressBanner } from "@/components/topics/scan-progress-banner";
@@ -12,47 +11,10 @@ import { TopicPagination } from "@/components/topics/topic-pagination";
 import { GenerateArticleModal } from "@/components/topics/generate-article-modal";
 import { CreateTopicModal, type CreateTopicData } from "@/components/topics/create-topic-modal";
 import { useTopicDiscovery } from "@/hooks/use-topic-discovery";
-import { createResearchSession, createManualTopic } from "@/lib/api/trends";
+import { createManualTopic } from "@/lib/api/trends";
+import { useGenerateActions } from "./use-generate-actions";
+import { SkeletonGrid, EmptyNoScan, EmptyNoMatch } from "./topic-empty-states";
 import type { ArticleParams, RankedTopic } from "@/types/api";
-
-function SkeletonGrid() {
-  return (
-    <div className="grid grid-cols-2 gap-6">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <Skeleton key={i} className="h-44 rounded-lg" />
-      ))}
-    </div>
-  );
-}
-
-function EmptyNoScan() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <Compass className="mb-4 h-12 w-12 text-neutral-300" />
-      <h3 className="font-heading text-lg font-semibold text-neutral-700">
-        No topics discovered yet
-      </h3>
-      <p className="mt-2 max-w-sm text-sm text-neutral-500">
-        Select a domain from the filter bar, then click &ldquo;New Scan&rdquo; to discover
-        trending topics from all configured sources.
-      </p>
-    </div>
-  );
-}
-
-function EmptyNoMatch() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <Search className="mb-4 h-12 w-12 text-neutral-300" />
-      <h3 className="font-heading text-lg font-semibold text-neutral-700">
-        No topics match your filters
-      </h3>
-      <p className="mt-2 max-w-sm text-sm text-neutral-500">
-        Try adjusting the source, time range, or domain filters to see more results.
-      </p>
-    </div>
-  );
-}
 
 export default function TopicsPage() {
   const {
@@ -73,6 +35,7 @@ export default function TopicsPage() {
 
   const [toast, setToast] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { handleConfirm, handleCreateAndGenerate } = useGenerateActions({ setToast });
 
   const isScanning = scanState.isScanning;
   const hasDomain = filters.domain !== "";
@@ -104,45 +67,14 @@ export default function TopicsPage() {
     setTimeout(() => setToast(null), 5000);
   }
 
-  async function handleCreateAndGenerate(data: CreateTopicData) {
+  function onCreateAndGenerate(data: CreateTopicData) {
     setShowCreateModal(false);
-    try {
-      const result = await createManualTopic({
-        title: data.title,
-        description: data.description,
-        domain: data.domain,
-        keywords: data.keywords,
-      });
-      const topicId = result.duplicate_of || result.topic.id;
-      await createResearchSession(topicId, {
-        target_audience: data.target_audience,
-        content_tone: data.content_tone,
-        preferred_angle: data.preferred_angle,
-      });
-      setToast(`Research started for "${data.title}". Check Research page.`);
-    } catch {
-      setToast(`Failed to create topic and start research.`);
-    }
-    setTimeout(() => setToast(null), 5000);
+    void handleCreateAndGenerate(data);
   }
 
-  async function handleConfirm(topic: RankedTopic, articleParams?: ArticleParams) {
+  function onConfirmGenerate(topic: RankedTopic, articleParams?: ArticleParams) {
     closeModal();
-    if (!topic.id) {
-      setToast(`Cannot start research — topic has no ID. Try scanning again.`);
-      setTimeout(() => setToast(null), 5000);
-      return;
-    }
-    setToast(`Starting research for "${topic.title}"...`);
-    try {
-      await createResearchSession(topic.id, articleParams);
-      setToast(
-        `Research started for "${topic.title}". Check Research page for progress.`,
-      );
-    } catch {
-      setToast(`Failed to start research for "${topic.title}".`);
-    }
-    setTimeout(() => setToast(null), 5000);
+    void handleConfirm(topic, articleParams);
   }
 
   return (
@@ -209,14 +141,14 @@ export default function TopicsPage() {
       <GenerateArticleModal
         topic={modalTopic}
         onClose={closeModal}
-        onConfirm={(topic, params) => handleConfirm(topic, params)}
+        onConfirm={onConfirmGenerate}
       />
 
       <CreateTopicModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreateOnly={handleCreateOnly}
-        onCreateAndGenerate={handleCreateAndGenerate}
+        onCreateAndGenerate={onCreateAndGenerate}
       />
 
       {toast && (

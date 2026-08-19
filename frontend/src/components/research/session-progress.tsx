@@ -4,21 +4,10 @@ import { useEffect, useState } from "react";
 import { useSessionEvents } from "@/hooks/use-session-events";
 import type { SessionConnectionState } from "@/hooks/session-events-reducer";
 import { useResearchSession } from "@/hooks/use-research-sessions";
+import { isTerminalSessionStatus } from "@/lib/research/session-status";
 import { SessionStatusBadge } from "./session-status-badge";
 import { SessionStepList } from "./session-step-list";
 import { SessionProgressFooter } from "./session-progress-footer";
-
-const TERMINAL_STATUSES = new Set([
-  "article_complete",
-  "article_failed",
-  "failed",
-  "cancelled",
-  "completed",
-]);
-
-function isTerminalStatus(status: string | null): boolean {
-  return status !== null && TERMINAL_STATUSES.has(status);
-}
 
 function formatElapsed(startedAt: string | undefined, nowMs: number): string | null {
   if (!startedAt) return null;
@@ -81,7 +70,7 @@ export function SessionProgress({ sessionId }: SessionProgressProps) {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
-    if (isTerminalStatus(status)) return undefined;
+    if (isTerminalSessionStatus(status)) return undefined;
     const timer = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [status]);
