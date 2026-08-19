@@ -65,7 +65,13 @@ interface SessionProgressProps {
 export function SessionProgress({ sessionId }: SessionProgressProps) {
   const events = useSessionEvents(sessionId);
   const sessionQuery = useResearchSession(sessionId);
-  const status = events.status ?? sessionQuery.data?.status ?? null;
+  // On a stream error, `events.status` is frozen at whatever it last saw —
+  // prefer the freshly-polled query status so e.g. "View article" still
+  // appears if the session actually completed while the SSE stream was down.
+  const status =
+    events.connection === "error"
+      ? (sessionQuery.data?.status ?? events.status ?? null)
+      : (events.status ?? sessionQuery.data?.status ?? null);
 
   const [nowMs, setNowMs] = useState(() => Date.now());
 

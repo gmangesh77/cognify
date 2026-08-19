@@ -16,6 +16,15 @@ export interface SessionEventsState {
   error: string | null;
 }
 
+// Mirrors src/models/session_events.py TERMINAL_STATUSES.
+export const TERMINAL_SESSION_STATUSES: ReadonlySet<string> = new Set([
+  "article_complete",
+  "article_failed",
+  "failed",
+  "cancelled",
+  "completed",
+]);
+
 export const initialSessionEventsState: SessionEventsState = {
   status: null,
   steps: [],
@@ -113,14 +122,33 @@ function applyStepFinished(
   const id = stepIdOf(event);
   const patch = buildFinishedPatch(event, status);
   const fallback = { ...makeFallbackStep(id, event, status), ...patch };
-  return { ...state, steps: upsertStep({ steps: state.steps, id, patch, fallback }) };
+  const steps = upsertStep({ steps: state.steps, id, patch, fallback });
+  const sections = event.step === "content_draft" ? null : state.sections;
+  return { ...state, steps, sections };
+}
+
+function sectionsFromSteps(steps: SessionStepRow[]): SessionSectionsProgress | null {
+  const row = steps.find((s) => s.step_name === "content_draft");
+  if (!row || row.status !== "running") return null;
+  const output = row.output_data ?? {};
+  if (output.sections_done === undefined && output.sections_total === undefined) return null;
+  return {
+    done: Number(output.sections_done ?? 0),
+    total: Number(output.sections_total ?? 0),
+    current: typeof output.current_section === "string" ? output.current_section : undefined,
+  };
 }
 
 function handleSnapshot(state: SessionEventsState, event: SessionEvent): SessionEventsState {
   const steps = Array.isArray(event.data.steps)
     ? (event.data.steps as SessionStepRow[])
     : state.steps;
-  return { ...state, steps, status: (event.status as SessionStatus | null) ?? state.status };
+  return {
+    ...state,
+    steps,
+    status: (event.status as SessionStatus | null) ?? state.status,
+    sections: sectionsFromSteps(steps),
+  };
 }
 
 function handleStatusChanged(state: SessionEventsState, event: SessionEvent): SessionEventsState {
@@ -128,18 +156,21 @@ function handleStatusChanged(state: SessionEventsState, event: SessionEvent): Se
 }
 
 function handleDone(state: SessionEventsState, event: SessionEvent): SessionEventsState {
-  return {
-    ...state,
-    status: (event.status as SessionStatus | null) ?? state.status,
-    connection: "closed",
-  };
+  const status = (event.status as SessionStatus | null) ?? state.status;
+  // A `done` with a non-terminal status (e.g. the server's `max_seconds`
+  // safety valve) is not a real end-of-session — leave `connection` alone so
+  // the hook's reconnect-on-stream-end logic isn't blocked by the "closed"
+  // sticky guard below.
+  const terminal = !!status && TERMINAL_SESSION_STATUSES.has(status);
+  return { ...state, status, connection: terminal ? "closed" : state.connection };
 }
 
 function handleError(state: SessionEventsState, event: SessionEvent): SessionEventsState {
+  const message = event.data.error ?? event.data.message;
   return {
     ...state,
     connection: "error",
-    error: typeof event.data.message === "string" ? event.data.message : "Session stream error",
+    error: typeof message === "string" ? message : "Session stream error",
   };
 }
 

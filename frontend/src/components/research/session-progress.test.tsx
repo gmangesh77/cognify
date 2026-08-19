@@ -100,6 +100,24 @@ describe("SessionProgress", () => {
     expect(screen.getByText(/LLM timeout/)).toBeInTheDocument();
   });
 
+  it("prefers the query status over a frozen events.status when connection is 'error'", () => {
+    researchSession.mockReturnValue({
+      data: {
+        topic_title: "OAuth 2.1",
+        status: "article_complete",
+        started_at: new Date().toISOString(),
+      },
+    });
+    events.mockReturnValue({
+      ...base,
+      status: "generating_article",
+      connection: "error",
+      error: "boom",
+    });
+    render(<SessionProgress sessionId="s1" />);
+    expect(screen.getByRole("button", { name: /view article/i })).toBeInTheDocument();
+  });
+
   it("shows a connecting chip while the stream is establishing", () => {
     events.mockReturnValue({ ...base, connection: "connecting" });
     render(<SessionProgress sessionId="s1" />);
