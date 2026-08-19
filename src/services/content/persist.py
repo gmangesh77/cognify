@@ -46,7 +46,7 @@ async def persist_pipeline_result(
     outline = _extract_outline(result)
     _warn_if_partial_failure(result)
     draft = await _build_draft(ctx.repos, session, outline)
-    draft = await _apply_pipeline_outputs(ctx, draft, outline, result)
+    draft = await _apply_pipeline_outputs(ctx, draft, result)
     topic = build_topic_input(session)
     article = build_article(draft, topic)
     article = await store_article(ctx.repos, draft, article)
@@ -138,24 +138,10 @@ def _build_provenance(settings: Settings | None) -> Provenance:
 async def _apply_pipeline_outputs(
     ctx: PersistContext,
     draft: ArticleDraft,
-    outline: ArticleOutline,
     result: dict[str, object],
 ) -> ArticleDraft:
-    seo_result = _ensure_seo_result(ctx.settings, outline, result)
-    raw_drafts = result.get("section_drafts", [])
-    drafts_list = list(raw_drafts) if isinstance(raw_drafts, list) else []
-    citations = aggregate_citations(drafts_list)
-    updated = draft.model_copy(
-        update={
-            "section_drafts": _jsonable(drafts_list),
-            "citations": _jsonable(citations),
-            "total_word_count": result.get("total_word_count", 0),
-            "seo_result": seo_result,
-            "global_citations": _jsonable(list(result.get("global_citations") or [])),
-            "references_markdown": str(result.get("references_markdown", "")),
-            "visuals": _jsonable(list(result.get("visuals") or [])),
-        }
-    )
+    updates, drafts_list = _draft_updates(ctx, draft, result)
+    updated = draft.model_copy(update=updates)
     draft = await ctx.repos.drafts.update(updated)
     logger.info(
         "draft_stored",
@@ -164,3 +150,26 @@ async def _apply_pipeline_outputs(
         sections=len(drafts_list),
     )
     return draft
+
+
+def _draft_updates(
+    ctx: PersistContext,
+    draft: ArticleDraft,
+    result: dict[str, object],
+) -> tuple[dict[str, object], list[object]]:
+    # draft.outline is always set here — _build_draft just constructed it.
+    assert draft.outline is not None  # noqa: S101
+    seo_result = _ensure_seo_result(ctx.settings, draft.outline, result)
+    raw_drafts = result.get("section_drafts", [])
+    drafts_list = list(raw_drafts) if isinstance(raw_drafts, list) else []
+    citations = aggregate_citations(drafts_list)
+    updates: dict[str, object] = {
+        "section_drafts": _jsonable(drafts_list),
+        "citations": _jsonable(citations),
+        "total_word_count": result.get("total_word_count", 0),
+        "seo_result": seo_result,
+        "global_citations": _jsonable(list(result.get("global_citations") or [])),
+        "references_markdown": str(result.get("references_markdown", "")),
+        "visuals": _jsonable(list(result.get("visuals") or [])),
+    }
+    return updates, drafts_list
