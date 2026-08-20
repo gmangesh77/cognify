@@ -84,6 +84,10 @@ class PgResearchSessionRepository:
                 topic_description_override=session.topic_description_override,
                 structural_diagram_mode=session.structural_diagram_mode,
                 require_outline_approval=session.require_outline_approval,
+                brief_id=session.brief_id,
+                content_type=session.content_type,
+                length_target=session.length_target,
+                audience_persona=session.audience_persona,
             )
             db.add(row)
             await db.commit()
@@ -127,6 +131,10 @@ class PgResearchSessionRepository:
             row.topic_description_override = session.topic_description_override
             row.structural_diagram_mode = session.structural_diagram_mode
             row.require_outline_approval = session.require_outline_approval
+            row.brief_id = session.brief_id
+            row.content_type = session.content_type
+            row.length_target = session.length_target
+            row.audience_persona = session.audience_persona
             await db.commit()
             await db.refresh(row)
             updated = self._to_model(row)
@@ -201,6 +209,10 @@ class PgResearchSessionRepository:
             topic_description_override=row.topic_description_override,
             structural_diagram_mode=row.structural_diagram_mode or "illustration",
             require_outline_approval=row.require_outline_approval,
+            brief_id=row.brief_id,
+            content_type=row.content_type,
+            length_target=row.length_target,
+            audience_persona=row.audience_persona,
         )
 
 

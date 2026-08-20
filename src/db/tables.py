@@ -19,6 +19,9 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.base import Base, TimestampMixin, UUIDMixin
+from src.db.tables_briefs import (
+    BriefRow,  # noqa: F401 — registers table on Base.metadata
+)
 
 __all__ = [
     "TopicRow",
@@ -89,6 +92,16 @@ class ResearchSessionRow(Base, UUIDMixin, TimestampMixin):
     require_outline_approval: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default=false()
     )
+    # AUTHOR-003 — brief linkage + denormalised brief fields (ADR-007).
+    brief_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("briefs.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    content_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    length_target: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    audience_persona: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     steps: Mapped[list["AgentStepRow"]] = relationship(
         back_populates="session",
