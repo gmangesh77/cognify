@@ -173,7 +173,7 @@
 | ADR-006/007 | ADRs: supervised pipeline; Brief contract | Done | `feature/AUTHOR-001-pipeline-events` | [program plan](../docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md) | [review](../docs/architecture/COGNIFY_VS_IMPACTAI_REVIEW_2026-08.md) |
 | AUTHOR-001 | Live session progress (SSE) + session route + auto-navigate | Done (merged to develop `06439e9`, 2026-08-19) | `feature/AUTHOR-001-pipeline-events` | [plan](../docs/superpowers/plans/2026-08-19-author-001-session-events-sse.md) | review §6 #1 |
 | AUTHOR-002 | Outline approval gate + cancel | Done (PR #73 → develop `30f1a36`, 2026-08-19) | `feature/AUTHOR-002-outline-gate` | [plan](../docs/superpowers/plans/2026-08-19-author-002-outline-gate.md) | review §6 #2 |
-| AUTHOR-003 | Brief model + Generate modal rework | **Next** (Planned) | — | program plan §4.1, §5.4 | review §6 #3 |
+| AUTHOR-003 | Brief model + Generate modal rework | **In Progress** (started 2026-08-20) | `feature/AUTHOR-003-brief` | [plan](../docs/superpowers/plans/2026-08-20-author-003-brief.md) | ADR-007; review §6 #3 |
 | AUTHOR-004 | Per-section regenerate | Planned | — | program plan §5.5 | review §6 #4 |
 | AUTHOR-005 | Usage/cost badge | Planned | — | program plan §5.6 | review §6 #5 |
 | INFRA-007 | CeleryDispatcher + worker | Planned | — | program plan §9 Phase A | review §5 |
