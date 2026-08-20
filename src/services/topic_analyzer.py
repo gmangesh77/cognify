@@ -11,6 +11,7 @@ from src.api.schemas.topic_analysis import (
     VALID_TONES,
     TopicAnalysisResult,
 )
+from src.models.brief import BriefCreate
 from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
@@ -44,6 +45,21 @@ _REGENERATE_TEMPLATE = (
 _MAX_RETRIES = 2
 
 
+def suggested_brief_from(title: str, result: TopicAnalysisResult) -> BriefCreate:
+    """Prefill a Brief from LLM topic analysis (ADR-007 / AUTHOR-003)."""
+    return BriefCreate(
+        name=title[:200],
+        title=title[:500],
+        description=result.description[:4000],
+        target_audience=result.target_audience[:500] or None,
+        content_tone=(
+            result.content_tone if result.content_tone in VALID_TONES else None
+        ),
+        preferred_angle=result.preferred_angle[:500] or None,
+        keywords=result.keywords[:20],
+    )
+
+
 class TopicAnalyzer:
     """Analyze a topic title and suggest article metadata using an LLM."""
 
@@ -74,7 +90,10 @@ class TopicAnalyzer:
             response = await self._llm.ainvoke(messages)
             try:
                 data = parse_llm_json(str(response.content))
-                return TopicAnalysisResult.model_validate(data)
+                result = TopicAnalysisResult.model_validate(data)
+                return result.model_copy(
+                    update={"suggested_brief": suggested_brief_from(title, result)}
+                )
             except (json.JSONDecodeError, ValidationError) as exc:
                 logger.warning(
                     "topic_analysis_parse_failed",
