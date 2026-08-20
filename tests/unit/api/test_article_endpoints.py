@@ -555,6 +555,64 @@ def finalized_draft_id(
     return draft_id
 
 
+@pytest.fixture
+async def brief_id_for_test() -> UUID:
+    """A UUID to test brief_id round-tripping through API responses."""
+    return uuid4()
+
+
+@pytest.fixture
+async def finalize_app_with_brief(
+    auth_settings: Settings,
+    finalize_session_id: str,
+    brief_id_for_test: UUID,
+) -> tuple[FastAPI, str]:
+    """App with a draft that has a concrete brief_id for testing round-trip."""
+    app = create_app(auth_settings)
+    session_repo = InMemoryResearchSessionRepository()
+    session = _make_session(finalize_session_id)
+    await session_repo.create(session)
+
+    draft_repo = InMemoryArticleDraftRepository()
+    article_repo = InMemoryArticleRepository()
+
+    sid = UUID(finalize_session_id)
+    draft = ArticleDraft(
+        session_id=sid,
+        topic_id=session.topic_id,
+        outline=_make_finalize_outline(),
+        status=DraftStatus.DRAFT_COMPLETE,
+        created_at=datetime.now(UTC),
+        completed_at=datetime.now(UTC),
+        section_drafts=_make_section_drafts(),
+        global_citations=_make_global_citations(5),
+        references_markdown=_make_references_md(),
+        seo_result=_make_seo_result(sid, brief_id=brief_id_for_test),
+    )
+    await draft_repo.create(draft)
+
+    repos = ContentRepositories(
+        drafts=draft_repo,
+        research=session_repo,
+        articles=article_repo,
+    )
+    deps = ContentDeps(llm=FakeListChatModel(responses=[]))
+    app.state.content_service = ContentService(repos, deps)
+    return app, str(draft.id)
+
+
+@pytest.fixture
+async def finalize_client_with_brief(
+    finalize_app_with_brief: tuple[FastAPI, str],
+) -> httpx.AsyncClient:
+    app, _ = finalize_app_with_brief
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        yield ac  # type: ignore[misc]
+
+
 class TestFinalizeArticle:
     async def test_returns_201(
         self,
@@ -634,22 +692,23 @@ class TestGetArticle:
 
     async def test_provenance_includes_brief_id(
         self,
-        finalize_client: httpx.AsyncClient,
+        finalize_client_with_brief: httpx.AsyncClient,
         auth_settings: Settings,
-        finalized_draft_id: str,
+        brief_id_for_test: UUID,
+        finalize_app_with_brief: tuple[FastAPI, str],
     ) -> None:
-        """Regression test: brief_id must be mapped from Provenance to response."""
+        """Regression: brief_id must round-trip from Provenance to API response."""
+        _, draft_id_with_brief = finalize_app_with_brief
         editor_headers = make_auth_header("editor", auth_settings)
-        finalize_resp = await finalize_client.post(
-            f"/api/v1/articles/drafts/{finalized_draft_id}/finalize",
+        finalize_resp = await finalize_client_with_brief.post(
+            f"/api/v1/articles/drafts/{draft_id_with_brief}/finalize",
             headers=editor_headers,
         )
         article = finalize_resp.json()
-        # Verify provenance exists and has brief_id field (even if None)
+        # Verify brief_id round-trips correctly as a string UUID
         assert "provenance" in article
         assert "brief_id" in article["provenance"]
-        # brief_id should be None in this test (not set when creating the draft)
-        assert article["provenance"]["brief_id"] is None
+        assert article["provenance"]["brief_id"] == str(brief_id_for_test)
 
 
 class TestAttachVisualToArticle:
