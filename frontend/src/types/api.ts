@@ -1,4 +1,5 @@
 import type { PersistedTopic } from "@/lib/api/trends";
+import type { BriefContentType, BriefCreate, LengthTarget } from "@/types/brief";
 
 export interface RawTopic {
   title: string;
@@ -83,6 +84,7 @@ export interface TopicAnalysisResult {
   target_audience: string;
   content_tone: string;
   preferred_angle: string;
+  suggested_brief?: BriefCreate | null;
 }
 
 export interface AnalyzeTopicRequest {
@@ -124,4 +126,13 @@ export interface ArticleParams {
   structural_diagram_mode?: StructuralDiagramMode;
   /** Opt in to reviewing the LLM-generated outline before section drafting runs. */
   require_outline_approval?: boolean;
+  /** Brief to source generation params from. */
+  brief_id?: string;
+  /** Persist this generation's params as a new brief. */
+  save_as_brief?: boolean;
+  /** Name for the brief when save_as_brief is set. */
+  brief_name?: string;
+  content_type?: BriefContentType;
+  length_target?: LengthTarget;
+  audience_persona?: string;
 }
