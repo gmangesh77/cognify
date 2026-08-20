@@ -19,13 +19,13 @@ LengthTarget = Literal["short", "medium", "long", "pillar"]
 DiagramMode = Literal["illustration", "mermaid"]
 
 
-def _check_tone(value: str | None) -> str | None:
+def check_tone(value: str | None) -> str | None:
     if value is not None and value not in VALID_TONES:
         raise ValueError(f"content_tone must be one of {VALID_TONES}")
     return value
 
 
-def _check_persona(value: str | None) -> str | None:
+def check_persona(value: str | None) -> str | None:
     if value is not None and value not in PERSONA_VISUAL_DIRECTIONS:
         raise ValueError("unknown audience_persona")
     return value
@@ -47,8 +47,8 @@ class BriefFields(BaseModel):
     audience_persona: str | None = None
     require_outline_approval: bool = False
 
-    _tone = field_validator("content_tone")(_check_tone)
-    _persona = field_validator("audience_persona")(_check_persona)
+    _tone = field_validator("content_tone")(check_tone)
+    _persona = field_validator("audience_persona")(check_persona)
 
 
 class BriefCreate(BriefFields):
@@ -71,8 +71,8 @@ class BriefUpdate(BaseModel):
     audience_persona: str | None = None
     require_outline_approval: bool | None = None
 
-    _tone = field_validator("content_tone")(_check_tone)
-    _persona = field_validator("audience_persona")(_check_persona)
+    _tone = field_validator("content_tone")(check_tone)
+    _persona = field_validator("audience_persona")(check_persona)
 
     @model_validator(mode="after")
     def _at_least_one(self) -> "BriefUpdate":

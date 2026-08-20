@@ -54,6 +54,13 @@ def test_inline_overrides_brief_but_keeps_link() -> None:
     assert p.brief_id == b.id
 
 
+def test_inline_empty_keywords_overrides_brief_keywords() -> None:
+    b = _brief(keywords=["zt", "iam"])
+    body = CreateResearchSessionRequest(topic_id=uuid4(), keywords=[])
+    p = resolve_session_params(ParamSources(body, b, default_gate=False))
+    assert p.keywords == []
+
+
 def test_gate_falls_back_to_settings_default() -> None:
     body = CreateResearchSessionRequest(topic_id=uuid4())
     p = resolve_session_params(ParamSources(body, None, default_gate=True))

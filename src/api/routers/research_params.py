@@ -7,13 +7,15 @@ The brief is copied, never referenced again (ADR-007 invariant).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
 
 from src.api.schemas.research import CreateResearchSessionRequest
-from src.models.brief import Brief, BriefCreate, LengthTarget
+from src.models.brief import Brief, BriefCreate
 from src.models.content import ContentType
 from src.models.session_params import SessionParams
 
+# content_type is handled separately in resolve_session_params: the request
+# validates it as ContentType (an enum) but SessionParams.content_type is a
+# plain str, and model_copy(update=...) skips validation/coercion.
 _INLINE_FIELDS = (
     "target_audience",
     "content_tone",
@@ -22,7 +24,6 @@ _INLINE_FIELDS = (
     "topic_description_override",
     "structural_diagram_mode",
     "require_outline_approval",
-    "content_type",
     "length_target",
     "audience_persona",
 )
@@ -39,11 +40,13 @@ def resolve_session_params(src: ParamSources) -> SessionParams:
     base = SessionParams.from_brief(src.brief) if src.brief else SessionParams()
     if src.brief is None:
         base = base.model_copy(update={"require_outline_approval": src.default_gate})
-    overrides = {
+    overrides: dict[str, object] = {
         name: getattr(src.body, name)
         for name in _INLINE_FIELDS
         if getattr(src.body, name) is not None
     }
+    if src.body.content_type is not None:
+        overrides["content_type"] = str(src.body.content_type)
     return base.model_copy(update=overrides)
 
 
@@ -59,8 +62,8 @@ def inline_brief_create(
         content_tone=body.content_tone,
         preferred_angle=body.preferred_angle,
         keywords=body.keywords or [],
-        content_type=ContentType(body.content_type or "article"),
-        length_target=cast(LengthTarget, body.length_target or "medium"),
+        content_type=body.content_type or ContentType.ARTICLE,
+        length_target=body.length_target or "medium",
         structural_diagram_mode=body.structural_diagram_mode or "illustration",
         audience_persona=body.audience_persona,
         require_outline_approval=bool(body.require_outline_approval),

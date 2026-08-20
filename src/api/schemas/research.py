@@ -4,7 +4,10 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from src.models.brief import LengthTarget, check_persona, check_tone
+from src.models.content import ContentType
 
 
 class CreateResearchSessionRequest(BaseModel):
@@ -22,13 +25,19 @@ class CreateResearchSessionRequest(BaseModel):
     # settings.require_outline_approval (resolved by the router).
     require_outline_approval: bool | None = None
     # AUTHOR-003 (ADR-007): pick a saved brief and/or save the inline
-    # fields as a new one.
+    # fields as a new one. Typed against the same Brief field types
+    # (ContentType / LengthTarget / VALID_TONES / known personas) so
+    # FastAPI returns 422 for a bad value instead of the "save as brief"
+    # path raising a bare ValidationError deep inside the router (500).
     brief_id: UUID | None = None
     save_as_brief: bool = False
     brief_name: str | None = Field(default=None, max_length=200)
-    content_type: str | None = None
-    length_target: str | None = None
+    content_type: ContentType | None = None
+    length_target: LengthTarget | None = None
     audience_persona: str | None = None
+
+    _tone = field_validator("content_tone")(check_tone)
+    _persona = field_validator("audience_persona")(check_persona)
 
 
 class CreateResearchSessionResponse(BaseModel):

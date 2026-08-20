@@ -329,3 +329,35 @@ class TestCreateSessionFromBrief:
             )
         ).json()
         assert detail["brief_id"] == briefs[0]["id"]
+
+    async def test_create_session_save_as_brief_invalid_length_target_is_422(
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        resp = await research_client.post(
+            "/api/v1/research/sessions",
+            json={
+                "topic_id": test_topic_id,
+                "save_as_brief": True,
+                "length_target": "epic",
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 422
+
+    async def test_create_session_invalid_content_tone_is_422(
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        resp = await research_client.post(
+            "/api/v1/research/sessions",
+            json={"topic_id": test_topic_id, "content_tone": "sarcastic"},
+            headers=headers,
+        )
+        assert resp.status_code == 422
