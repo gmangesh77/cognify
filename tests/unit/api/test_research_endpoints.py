@@ -256,3 +256,76 @@ class TestServiceUnavailable:
             headers = make_auth_header("viewer", auth_settings)
             resp = await client.get("/api/v1/research/sessions", headers=headers)
             assert resp.status_code == 503
+
+
+class TestCreateSessionFromBrief:
+    async def test_create_session_with_brief_id_denormalises_and_links(
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        created = await research_client.post(
+            "/api/v1/briefs",
+            json={"name": "B", "target_audience": "CISOs", "length_target": "long"},
+            headers=headers,
+        )
+        assert created.status_code == 201, created.text
+        brief_id = created.json()["id"]
+        resp = await research_client.post(
+            "/api/v1/research/sessions",
+            json={"topic_id": test_topic_id, "brief_id": brief_id},
+            headers=headers,
+        )
+        assert resp.status_code == 201, resp.text
+        detail = await research_client.get(
+            f"/api/v1/research/sessions/{resp.json()['session_id']}", headers=headers
+        )
+        body = detail.json()
+        assert body["brief_id"] == brief_id
+        assert body["length_target"] == "long"
+
+    async def test_create_session_with_unknown_brief_is_404(
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        resp = await research_client.post(
+            "/api/v1/research/sessions",
+            json={"topic_id": test_topic_id, "brief_id": str(uuid4())},
+            headers=headers,
+        )
+        assert resp.status_code == 404
+
+    async def test_create_session_save_as_brief_creates_brief_and_links(
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        resp = await research_client.post(
+            "/api/v1/research/sessions",
+            json={
+                "topic_id": test_topic_id,
+                "keywords": ["k"],
+                "save_as_brief": True,
+                "brief_name": "Saved",
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 201, resp.text
+        briefs = (await research_client.get("/api/v1/briefs", headers=headers)).json()
+        assert len(briefs) == 1
+        assert briefs[0]["name"] == "Saved"
+        assert briefs[0]["keywords"] == ["k"]
+        detail = (
+            await research_client.get(
+                f"/api/v1/research/sessions/{resp.json()['session_id']}",
+                headers=headers,
+            )
+        ).json()
+        assert detail["brief_id"] == briefs[0]["id"]

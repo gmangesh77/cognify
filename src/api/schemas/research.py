@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CreateResearchSessionRequest(BaseModel):
@@ -16,10 +16,19 @@ class CreateResearchSessionRequest(BaseModel):
     topic_description_override: str | None = None
     # How structural diagrams (concept / process_step / comparison_split)
     # are rendered: "illustration" (gpt-image-1) or "mermaid".
-    structural_diagram_mode: Literal["illustration", "mermaid"] = "illustration"
+    # None = "not given" so a brief's value (or the default) applies.
+    structural_diagram_mode: Literal["illustration", "mermaid"] | None = None
     # Outline approval gate (AUTHOR-002). None = fall back to
     # settings.require_outline_approval (resolved by the router).
     require_outline_approval: bool | None = None
+    # AUTHOR-003 (ADR-007): pick a saved brief and/or save the inline
+    # fields as a new one.
+    brief_id: UUID | None = None
+    save_as_brief: bool = False
+    brief_name: str | None = Field(default=None, max_length=200)
+    content_type: str | None = None
+    length_target: str | None = None
+    audience_persona: str | None = None
 
 
 class CreateResearchSessionResponse(BaseModel):
@@ -51,6 +60,9 @@ class ResearchSessionResponse(BaseModel):
     completed_at: datetime | None
     steps: list[AgentStepResponse]
     require_outline_approval: bool = False
+    brief_id: UUID | None = None
+    content_type: str | None = None
+    length_target: str | None = None
 
 
 class ResearchSessionSummary(BaseModel):
