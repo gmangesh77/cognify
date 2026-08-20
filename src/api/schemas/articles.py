@@ -85,6 +85,7 @@ class CitationResponse(BaseModel):
 
 class ProvenanceResponse(BaseModel):
     research_session_id: UUID
+    brief_id: UUID | None = None
     primary_model: str
     drafting_model: str
     embedding_model: str

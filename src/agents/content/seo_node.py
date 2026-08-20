@@ -67,6 +67,7 @@ def _build_provenance(state: ContentState, settings: Settings) -> Provenance:
     """Build Provenance from settings and session state."""
     return Provenance(
         research_session_id=state["session_id"],
+        brief_id=state.get("brief_id"),
         primary_model=settings.primary_model_name,
         drafting_model=settings.drafting_model_name,
         embedding_model=settings.embedding_model,
