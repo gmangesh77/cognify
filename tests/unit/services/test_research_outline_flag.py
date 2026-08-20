@@ -8,6 +8,7 @@ persisted ResearchSession.
 from uuid import uuid4
 
 from src.models.research import TopicInput
+from src.models.session_params import SessionParams
 from src.services.research import (
     InMemoryAgentStepRepository,
     InMemoryResearchSessionRepository,
@@ -46,7 +47,9 @@ class TestRequireOutlineApprovalFlag:
         topic_id = uuid4()
         repos = _make_repos(topic_id)
         svc = ResearchService(repos, FakeOrchestrator())
-        session = await svc.start_session(topic_id, require_outline_approval=True)
+        session = await svc.start_session(
+            topic_id, SessionParams(require_outline_approval=True)
+        )
         assert session.require_outline_approval is True
         stored = await repos.sessions.get(session.id)
         assert stored is not None

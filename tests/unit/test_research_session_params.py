@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 
 from src.models.research import TopicInput
+from src.models.session_params import SessionParams
 from src.services.research import (
     InMemoryAgentStepRepository,
     InMemoryResearchSessionRepository,
@@ -51,11 +52,13 @@ async def test_start_session_with_article_params(
 
     session = await svc.start_session(
         topic.id,
-        target_audience="senior engineers",
-        content_tone="technical",
-        preferred_angle="practical applications",
-        keywords=["zero trust", "mTLS", "service mesh"],
-        topic_description_override="An edited description",
+        SessionParams(
+            target_audience="senior engineers",
+            content_tone="technical",
+            preferred_angle="practical applications",
+            keywords=["zero trust", "mTLS", "service mesh"],
+            topic_description_override="An edited description",
+        ),
     )
 
     assert session.target_audience == "senior engineers"
@@ -86,3 +89,38 @@ async def test_start_session_without_article_params(
     assert session.topic_description_override is None
     assert session.topic_id == topic.id
     assert session.status == "planning"
+
+
+@pytest.mark.asyncio
+async def test_start_session_denormalises_params(
+    repos: ResearchRepositories, mock_orchestrator: AsyncMock, topic: TopicInput
+) -> None:
+    repos.topics.seed(topic)  # type: ignore[attr-defined]
+    svc = ResearchService(repos, mock_orchestrator)
+    bid = uuid4()
+    params = SessionParams(
+        brief_id=bid,
+        content_type="report",
+        length_target="pillar",
+        audience_persona="general_business",
+        keywords=["k"],
+    )
+    session = await svc.start_session(topic.id, params)
+    stored = await repos.sessions.get(session.id)
+    assert stored is not None
+    assert stored.brief_id == bid
+    assert stored.content_type == "report"
+    assert stored.length_target == "pillar"
+    assert stored.audience_persona == "general_business"
+    assert stored.keywords == ["k"]
+
+
+@pytest.mark.asyncio
+async def test_start_session_without_params_uses_defaults(
+    repos: ResearchRepositories, mock_orchestrator: AsyncMock, topic: TopicInput
+) -> None:
+    repos.topics.seed(topic)  # type: ignore[attr-defined]
+    svc = ResearchService(repos, mock_orchestrator)
+    session = await svc.start_session(topic.id)
+    assert session.brief_id is None
+    assert session.structural_diagram_mode == "illustration"

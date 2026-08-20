@@ -21,6 +21,7 @@ from src.api.schemas.research import (
 )
 from src.models.research import TopicInput
 from src.models.research_db import ResearchSession
+from src.models.session_params import SessionParams
 from src.services.research import ResearchService
 from src.services.session_tasks import SessionTaskRegistry
 
@@ -96,8 +97,7 @@ async def create_research_session(
         if body.require_outline_approval is not None
         else settings.require_outline_approval
     )
-    session = await svc.start_session(
-        body.topic_id,
+    params = SessionParams(
         target_audience=body.target_audience,
         content_tone=body.content_tone,
         preferred_angle=body.preferred_angle,
@@ -106,6 +106,7 @@ async def create_research_session(
         structural_diagram_mode=body.structural_diagram_mode,
         require_outline_approval=require_outline_approval,
     )
+    session = await svc.start_session(body.topic_id, params)
     topic = await _enrich_topic(svc, body)
     _spawn_pipeline(request, session, topic)
     return CreateResearchSessionResponse(

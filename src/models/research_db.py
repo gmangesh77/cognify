@@ -31,6 +31,11 @@ class ResearchSession(BaseModel):
     topic_description_override: str | None = None
     structural_diagram_mode: str = "illustration"
     require_outline_approval: bool = False
+    # AUTHOR-003 — denormalised from the Brief at session start (ADR-007).
+    brief_id: UUID | None = None
+    content_type: str | None = None
+    length_target: str | None = None
+    audience_persona: str | None = None
     duration_seconds: float | None = None
     started_at: datetime
     completed_at: datetime | None = None

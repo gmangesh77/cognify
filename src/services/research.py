@@ -16,6 +16,7 @@ from src.agents.research.runner import ResearchOrchestrator
 from src.api.errors import NotFoundError
 from src.models.research import TopicInput
 from src.models.research_db import AgentStep, ResearchSession
+from src.models.session_params import SessionParams
 
 logger = structlog.get_logger()
 
@@ -134,28 +135,15 @@ class ResearchService:
         self._orchestrator = orchestrator
 
     async def start_session(
-        self,
-        topic_id: UUID,
-        target_audience: str | None = None,
-        content_tone: str | None = None,
-        preferred_angle: str | None = None,
-        keywords: list[str] | None = None,
-        topic_description_override: str | None = None,
-        structural_diagram_mode: str = "illustration",
-        require_outline_approval: bool = False,
+        self, topic_id: UUID, params: SessionParams | None = None
     ) -> ResearchSession:
         if not await self._repos.topics.exists(topic_id):
             raise NotFoundError(f"Topic {topic_id} not found")
+        p = params or SessionParams()
         session = ResearchSession(
             topic_id=topic_id,
             started_at=datetime.now(UTC),
-            target_audience=target_audience,
-            content_tone=content_tone,
-            preferred_angle=preferred_angle,
-            keywords=keywords,
-            topic_description_override=topic_description_override,
-            structural_diagram_mode=structural_diagram_mode,
-            require_outline_approval=require_outline_approval,
+            **p.model_dump(),
         )
         return await self._repos.sessions.create(session)
 
