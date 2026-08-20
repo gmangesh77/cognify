@@ -33,6 +33,7 @@ from src.api.rate_limiter import limiter
 from src.api.routers.admin import admin_router
 from src.api.routers.articles import articles_router
 from src.api.routers.auth import auth_router
+from src.api.routers.briefs import briefs_router
 from src.api.routers.canonical_articles import canonical_articles_router
 from src.api.routers.content import content_router
 from src.api.routers.health import health_router
@@ -64,6 +65,7 @@ from src.db.settings_singleton_repositories import (
     PgLlmConfigRepository,
     PgSeoDefaultsRepository,
 )
+from src.services.briefs import BriefService, InMemoryBriefRepository
 from src.services.content import ContentService
 from src.services.content.outline_gate import OutlineGateService
 from src.services.content_repositories import (
@@ -255,6 +257,10 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         )
 
         app.state.section_version_repo = PgSectionVersionRepository(sf)
+        # AUTHOR-003 — briefs (ADR-007). Lazy import: API boots before migration.
+        from src.db.brief_repository import PgBriefRepository
+
+        app.state.brief_service = BriefService(PgBriefRepository(sf))
         # Resolve API keys: DB overrides .env
         resolver = ApiKeyResolver(api_key_repo, settings)
         resolved = await resolver.resolve_all()
@@ -380,6 +386,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.user_repo = InMemoryUserRepository(_seed_dev_users(settings))
     app.state.trend_registry = init_registry(settings)
     _init_research_service(app)
+    app.state.brief_service = BriefService(InMemoryBriefRepository())
 
     _register_exception_handlers(app)
     _register_middleware(app, settings)
@@ -721,6 +728,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         session_events_router,
         prefix=settings.api_v1_prefix,
         tags=["research"],
+    )
+    app.include_router(
+        briefs_router,
+        prefix=settings.api_v1_prefix,
+        tags=["briefs"],
     )
     app.include_router(
         articles_router,
