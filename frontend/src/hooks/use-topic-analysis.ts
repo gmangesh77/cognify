@@ -109,10 +109,13 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
       field: K,
       value: TopicAnalysisResult[K],
     ) => {
-      if (!analysis) return;
-      setAnalysis({ ...analysis, [field]: value });
+      // Functional update: several fields can be set synchronously in one
+      // handler (e.g. applying a saved brief), and each call must build on
+      // the previous one rather than a stale `analysis` closure — otherwise
+      // only the last of the batch survives.
+      setAnalysis((prev) => (prev ? { ...prev, [field]: value } : prev));
     },
-    [analysis],
+    [],
   );
 
   const reset = useCallback(() => {
