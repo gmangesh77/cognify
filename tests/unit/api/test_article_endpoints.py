@@ -458,7 +458,7 @@ def _make_global_citations(count: int) -> list[dict[str, object]]:
     ]
 
 
-def _make_seo_result(session_id: UUID) -> SEOResult:
+def _make_seo_result(session_id: UUID, brief_id: UUID | None = None) -> SEOResult:
     """Build an SEOResult for the finalization fixture."""
     seo = SEOMetadata(
         title="Test Canonical Article Title",
@@ -470,6 +470,7 @@ def _make_seo_result(session_id: UUID) -> SEOResult:
     )
     provenance = Provenance(
         research_session_id=session_id,
+        brief_id=brief_id,
         primary_model="claude-opus-4",
         drafting_model="claude-sonnet-4",
         embedding_model="all-MiniLM-L6-v2",
@@ -630,6 +631,25 @@ class TestGetArticle:
             headers=headers,
         )
         assert resp.status_code == 404
+
+    async def test_provenance_includes_brief_id(
+        self,
+        finalize_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        finalized_draft_id: str,
+    ) -> None:
+        """Regression test: brief_id must be mapped from Provenance to response."""
+        editor_headers = make_auth_header("editor", auth_settings)
+        finalize_resp = await finalize_client.post(
+            f"/api/v1/articles/drafts/{finalized_draft_id}/finalize",
+            headers=editor_headers,
+        )
+        article = finalize_resp.json()
+        # Verify provenance exists and has brief_id field (even if None)
+        assert "provenance" in article
+        assert "brief_id" in article["provenance"]
+        # brief_id should be None in this test (not set when creating the draft)
+        assert article["provenance"]["brief_id"] is None
 
 
 class TestAttachVisualToArticle:
