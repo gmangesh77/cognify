@@ -25,6 +25,9 @@ const createTopicData: CreateTopicData = {
   target_audience: "policy makers",
   content_tone: "analytical",
   preferred_angle: "regulatory impact",
+  structural_diagram_mode: "illustration",
+  content_type: "article",
+  length_target: "medium",
 };
 
 const rankedTopic: RankedTopic = {
@@ -241,6 +244,40 @@ describe("useGenerateActions", () => {
       expect(mockCreateResearchSession).toHaveBeenCalledWith(
         "t1",
         expect.objectContaining({ require_outline_approval: true }),
+      );
+    });
+
+    it("forwards diagram mode, content type and length to createResearchSession", async () => {
+      mockCreateManualTopic.mockResolvedValue({
+        topic: { id: "t1", title: "AI Regulation" } as unknown as trendsApi.PersistedTopic,
+        is_duplicate: false,
+        duplicate_of: null,
+      });
+      mockCreateResearchSession.mockResolvedValue({
+        session_id: "s1",
+        status: "planning",
+        started_at: "",
+      });
+      const setToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ setToast }));
+
+      await act(async () => {
+        await result.current.handleCreateAndGenerate({
+          ...createTopicData,
+          structural_diagram_mode: "mermaid",
+          content_type: "how-to",
+          length_target: "long",
+        });
+      });
+
+      expect(mockCreateResearchSession).toHaveBeenCalledWith(
+        "t1",
+        expect.objectContaining({
+          keywords: createTopicData.keywords,
+          structural_diagram_mode: "mermaid",
+          content_type: "how-to",
+          length_target: "long",
+        }),
       );
     });
 

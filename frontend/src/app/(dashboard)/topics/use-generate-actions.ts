@@ -59,6 +59,9 @@ export function useGenerateActions({ setToast }: UseGenerateActionsArgs): UseGen
         content_tone: data.content_tone,
         preferred_angle: data.preferred_angle,
         keywords: data.keywords,
+        structural_diagram_mode: data.structural_diagram_mode,
+        content_type: data.content_type,
+        length_target: data.length_target,
         require_outline_approval: data.require_outline_approval,
       });
       router.push(`/research/${session.session_id}`);
