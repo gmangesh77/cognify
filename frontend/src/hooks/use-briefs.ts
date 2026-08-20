@@ -20,7 +20,11 @@ export function useBriefs() {
   return {
     briefs: query.data ?? ([] as Brief[]),
     isLoading: query.isLoading,
-    error: query.error ? (query.error as Error).message : null,
+    error: query.error
+      ? query.error instanceof Error
+        ? query.error.message
+        : "Failed to load briefs"
+      : null,
     create: (b: BriefCreate) => createM.mutateAsync(b),
     update: (id: string, body: BriefUpdate) => updateM.mutateAsync({ id, body }),
     remove: (id: string) => removeM.mutateAsync(id),

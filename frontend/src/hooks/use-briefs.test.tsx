@@ -43,4 +43,10 @@ describe("useBriefs", () => {
     const { result } = renderHook(() => useBriefs(), { wrapper: wrapper() });
     await waitFor(() => expect(result.current.error).toBe("boom"));
   });
+
+  it("guards a non-Error rejection with a fallback message", async () => {
+    vi.mocked(api.fetchBriefs).mockRejectedValue("boom-string");
+    const { result } = renderHook(() => useBriefs(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.error).toBe("Failed to load briefs"));
+  });
 });
