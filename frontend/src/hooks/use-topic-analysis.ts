@@ -76,6 +76,11 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
           target_audience: seed.target_audience || fresh.target_audience,
           content_tone: seed.content_tone || fresh.content_tone,
           preferred_angle: seed.preferred_angle || fresh.preferred_angle,
+          // Carry the analyzer's suggested_brief through untouched — it's
+          // not seeded from the topic, and useGenerateModalState reads it
+          // for content_type/length_target defaults and the brief_name
+          // fallback. Dropping it here silently disables both.
+          suggested_brief: fresh.suggested_brief,
         });
       } catch (err) {
         console.error("analyzeTopic (seeded) failed", err);

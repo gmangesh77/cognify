@@ -3,9 +3,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GenerateArticleModal } from "./generate-article-modal";
+import { analyzeTopic } from "@/lib/api/trends";
 import type { RankedTopic } from "@/types/api";
 
 // Mock the analyzeTopic API so the modal can auto-fill without network.
+// Includes a suggested_brief by default — most tests exercise the "brief
+// suggestion" path; tests that need the article/medium fallback (no
+// suggested_brief) override with a one-off mockResolvedValueOnce.
 vi.mock("@/lib/api/trends", () => ({
   analyzeTopic: vi.fn().mockResolvedValue({
     description: "LLM generated description",
@@ -14,6 +18,14 @@ vi.mock("@/lib/api/trends", () => ({
     target_audience: "security engineers",
     content_tone: "technical-authoritative",
     preferred_angle: "practical defender playbook",
+    suggested_brief: {
+      name: "Suggested name",
+      content_type: "analysis",
+      length_target: "long",
+      keywords: [],
+      structural_diagram_mode: "illustration",
+      require_outline_approval: false,
+    },
   }),
 }));
 
@@ -199,8 +211,18 @@ describe("GenerateArticleModal", () => {
     expect(btn).toBeDisabled();
   });
 
-  it("sends content_type and length_target defaults with inline params", async () => {
+  it("falls back to article/medium defaults when analysis has no suggested_brief", async () => {
     const onConfirm = vi.fn();
+    // This test's whole point is the fallback path, so override the shared
+    // mock (which carries a suggested_brief by default) for this one call.
+    vi.mocked(analyzeTopic).mockResolvedValueOnce({
+      description: "LLM generated description",
+      domain: "cybersecurity",
+      keywords: ["phishing", "ML detection", "email security"],
+      target_audience: "security engineers",
+      content_tone: "technical-authoritative",
+      preferred_angle: "practical defender playbook",
+    });
     renderModal({ onConfirm });
     await waitFor(() =>
       expect(screen.getByLabelText("Content type")).toBeInTheDocument(),
@@ -212,6 +234,26 @@ describe("GenerateArticleModal", () => {
         content_type: "article",
         length_target: "medium",
         structural_diagram_mode: "illustration",
+      }),
+    );
+    expect(onConfirm.mock.calls[0][1].brief_id).toBeUndefined();
+  });
+
+  it("uses suggested_brief content_type/length_target and brief_name fallback when no brief is picked", async () => {
+    const onConfirm = vi.fn();
+    renderModal({ onConfirm });
+    await waitFor(() =>
+      expect(screen.getByLabelText("Content type")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByLabelText("Save as brief"));
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      mockTopic,
+      expect.objectContaining({
+        content_type: "analysis",
+        length_target: "long",
+        save_as_brief: true,
+        brief_name: "Suggested name",
       }),
     );
     expect(onConfirm.mock.calls[0][1].brief_id).toBeUndefined();
@@ -243,6 +285,9 @@ describe("GenerateArticleModal", () => {
       expect.objectContaining({
         brief_id: "b1",
         target_audience: "CISOs",
+        content_tone: "analytical",
+        preferred_angle: "risk",
+        keywords: ["zt"],
         length_target: "long",
         structural_diagram_mode: "mermaid",
         require_outline_approval: true,

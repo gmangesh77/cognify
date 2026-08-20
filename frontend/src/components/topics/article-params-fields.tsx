@@ -15,7 +15,6 @@ const FIELD_CLASS =
   "w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none";
 
 interface ArticleParamsFieldsProps {
-  title: string;
   analysis: TopicAnalysisResult;
   isRegenerating: string | null;
   onRegenerate: (field: keyof TopicAnalysisResult) => void;

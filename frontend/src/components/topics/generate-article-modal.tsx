@@ -120,7 +120,6 @@ export function GenerateArticleModal({
               isLoading={gen.briefsLoading}
             />
             <ArticleParamsFields
-              title={topic.title}
               analysis={analysis}
               isRegenerating={isRegenerating}
               onRegenerate={(f) => regenerateField(topic.title, f)}
