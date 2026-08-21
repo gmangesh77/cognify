@@ -765,3 +765,11 @@ class TestContentLlmSource:
         assert resp.status_code == 200, resp.text
         assert resp.json()["markdown_fragment"] == "Fallback reply."
         build.assert_called_once()
+
+
+class TestSectionUpdateSourceLiteral:
+    def test_regenerate_is_an_accepted_source(self) -> None:
+        from src.api.routers.content import SectionUpdateRequest
+
+        req = SectionUpdateRequest(section_id="a:0", markdown="x", source="regenerate")
+        assert req.source == "regenerate"
