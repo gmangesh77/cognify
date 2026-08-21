@@ -76,6 +76,11 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
           target_audience: seed.target_audience || fresh.target_audience,
           content_tone: seed.content_tone || fresh.content_tone,
           preferred_angle: seed.preferred_angle || fresh.preferred_angle,
+          // Carry the analyzer's suggested_brief through untouched — it's
+          // not seeded from the topic, and useGenerateModalState reads it
+          // for content_type/length_target defaults and the brief_name
+          // fallback. Dropping it here silently disables both.
+          suggested_brief: fresh.suggested_brief,
         });
       } catch (err) {
         console.error("analyzeTopic (seeded) failed", err);
@@ -109,10 +114,13 @@ export function useTopicAnalysis(): UseTopicAnalysisReturn {
       field: K,
       value: TopicAnalysisResult[K],
     ) => {
-      if (!analysis) return;
-      setAnalysis({ ...analysis, [field]: value });
+      // Functional update: several fields can be set synchronously in one
+      // handler (e.g. applying a saved brief), and each call must build on
+      // the previous one rather than a stale `analysis` closure — otherwise
+      // only the last of the batch survives.
+      setAnalysis((prev) => (prev ? { ...prev, [field]: value } : prev));
     },
-    [analysis],
+    [],
   );
 
   const reset = useCallback(() => {

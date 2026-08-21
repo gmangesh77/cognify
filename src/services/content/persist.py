@@ -127,6 +127,7 @@ def _build_seo_fallback(
 
 
 def _build_provenance(settings: Settings | None) -> Provenance:
+    # Fallback provenance: no session context, so brief_id stays None (AUTHOR-003).
     return Provenance(
         primary_model=settings.primary_model_name if settings else "unknown",
         drafting_model=settings.drafting_model_name if settings else "unknown",

@@ -45,7 +45,8 @@ def build_initial_state(
         # VISUAL-005 / Phase 2 — image planner inputs. Phase 7 will
         # surface these via the Settings UI; until then they default to
         # None and the planner falls back to general_business.
-        "audience_persona": None,
+        "audience_persona": session.audience_persona,
+        "brief_id": session.brief_id,
         "page_art_direction": None,
         "image_specs": [],
     }

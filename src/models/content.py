@@ -80,6 +80,7 @@ class Provenance(BaseModel):
     """Tracks which models and versions produced the article."""
 
     research_session_id: UUID
+    brief_id: UUID | None = None  # AUTHOR-003 — reference only, never body.
     primary_model: str = Field(min_length=1)
     drafting_model: str = Field(min_length=1)
     embedding_model: str = Field(min_length=1)

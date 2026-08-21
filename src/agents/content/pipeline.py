@@ -86,6 +86,8 @@ class ContentState(TypedDict):
     image_specs: NotRequired[list[ImageSpec]]
     page_art_direction: NotRequired[str | None]
     audience_persona: NotRequired[str | None]
+    # AUTHOR-003 — denormalised Brief id, threaded through for Provenance (Task 7).
+    brief_id: NotRequired[UUID | None]
     # VISUAL-012 — "illustration" (diffusion) or "mermaid" for structural diagrams.
     structural_diagram_mode: NotRequired[str]
 

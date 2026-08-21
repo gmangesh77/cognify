@@ -10,6 +10,11 @@ from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above, require_viewer_or_above
 from src.api.errors import ServiceUnavailableError
 from src.api.rate_limiter import limiter
+from src.api.routers.research_params import (
+    ParamSources,
+    inline_brief_create,
+    resolve_session_params,
+)
 from src.api.routers.research_pipeline import PipelineDeps, _run_full_pipeline
 from src.api.schemas.research import (
     AgentStepResponse,
@@ -19,8 +24,10 @@ from src.api.schemas.research import (
     ResearchSessionResponse,
     ResearchSessionSummary,
 )
+from src.models.brief import Brief
 from src.models.research import TopicInput
 from src.models.research_db import ResearchSession
+from src.models.session_params import SessionParams
 from src.services.research import ResearchService
 from src.services.session_tasks import SessionTaskRegistry
 
@@ -90,23 +97,12 @@ async def create_research_session(
     user: TokenPayload = Depends(require_editor_or_above),
 ) -> CreateResearchSessionResponse:
     svc = _get_research_service(request)
-    settings = request.app.state.settings
-    require_outline_approval = (
-        body.require_outline_approval
-        if body.require_outline_approval is not None
-        else settings.require_outline_approval
+    brief = await _load_or_save_brief(request, body, user.sub)
+    params = resolve_session_params(
+        ParamSources(body, brief, request.app.state.settings.require_outline_approval)
     )
-    session = await svc.start_session(
-        body.topic_id,
-        target_audience=body.target_audience,
-        content_tone=body.content_tone,
-        preferred_angle=body.preferred_angle,
-        keywords=body.keywords,
-        topic_description_override=body.topic_description_override,
-        structural_diagram_mode=body.structural_diagram_mode,
-        require_outline_approval=require_outline_approval,
-    )
-    topic = await _enrich_topic(svc, body)
+    session = await svc.start_session(body.topic_id, params)
+    topic = await _enrich_topic(svc, body.topic_id, params)
     _spawn_pipeline(request, session, topic)
     return CreateResearchSessionResponse(
         session_id=session.id,
@@ -115,20 +111,35 @@ async def create_research_session(
     )
 
 
+async def _load_or_save_brief(
+    request: Request, body: CreateResearchSessionRequest, owner_id: str
+) -> Brief | None:
+    """Resolve `brief_id` (404 if not the caller's) or auto-create one when
+    `save_as_brief` is set. Returns None for the plain inline path."""
+    brief_svc = request.app.state.brief_service
+    if body.brief_id is not None:
+        return await brief_svc.get(owner_id, body.brief_id)  # type: ignore[no-any-return]
+    if body.save_as_brief:
+        topic = await _get_research_service_readonly(request).get_topic(body.topic_id)
+        gate = request.app.state.settings.require_outline_approval
+        data = inline_brief_create(body, topic.title, gate)
+        return await brief_svc.create(owner_id, data)  # type: ignore[no-any-return]
+    return None
+
+
 async def _enrich_topic(
-    svc: ResearchService, body: CreateResearchSessionRequest
+    svc: ResearchService, topic_id: UUID, params: SessionParams
 ) -> TopicInput:
     """Overlay per-session context so the research planner can tailor
     its search queries to the requested audience/tone/angle/keywords."""
-    topic = await svc.get_topic(body.topic_id)
-    description = body.topic_description_override or topic.description
+    topic = await svc.get_topic(topic_id)
     return topic.model_copy(
         update={
-            "description": description,
-            "target_audience": body.target_audience,
-            "content_tone": body.content_tone,
-            "preferred_angle": body.preferred_angle,
-            "keywords": tuple(body.keywords) if body.keywords else None,
+            "description": params.topic_description_override or topic.description,
+            "target_audience": params.target_audience,
+            "content_tone": params.content_tone,
+            "preferred_angle": params.preferred_angle,
+            "keywords": tuple(params.keywords) if params.keywords else None,
         }
     )
 
@@ -195,6 +206,9 @@ async def get_research_session(
         completed_at=s.completed_at,
         steps=steps,
         require_outline_approval=s.require_outline_approval,
+        brief_id=s.brief_id,
+        content_type=s.content_type,
+        length_target=s.length_target,
     )
 
 

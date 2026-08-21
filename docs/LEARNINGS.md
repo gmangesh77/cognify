@@ -209,3 +209,18 @@ lexical = json.dumps({
 **TRAP**: `ContentService._graph_deps()` must ALWAYS return a `ContentGraphDeps` (even with `step_repo=None`) — returning `None` silently drops `stop_after_outline` and the "outline-only" run executes the entire pipeline (caught in review of AUTHOR-002 Task 4; regression test `TestGraphDepsWithoutStepRepo`).
 
 **Rule**: Persisted `ArticleDraft.status == outline_complete` is the durable checkpoint; `OutlineGateService.generate_from_outline()` is the only supported way to resume. Do not call the legacy `draft_article()` for new flows.
+
+---
+
+## L-012: Brief values are copied onto the session, never read back
+
+**Context** (AUTHOR-003, ADR-007): `ResearchService.start_session(topic_id, params)` takes a `SessionParams` built by `resolve_session_params()` (`src/api/routers/research_params.py`) with per-field precedence inline > brief > default. After that point the pipeline reads **only** session columns (`graph_state.py`).
+
+**Rule**: Editing or deleting a brief must never change a past session — so never add a `brief_service` / `brief_repo` call anywhere downstream of `start_session`. `brief_id` on the session and on `Provenance` is a pointer for provenance/UI only.
+
+**Grep check**:
+```bash
+grep -rn "brief_service\|brief_repo\|BriefRepository" src/ | grep -v "api/routers/briefs.py\|api/routers/research\|services/briefs.py\|db/brief_repository.py\|api/main.py\|api/dependencies"
+```
+Any hit is a boundary violation.
+

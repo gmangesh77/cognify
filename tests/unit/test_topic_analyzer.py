@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from src.api.schemas.topic_analysis import TopicAnalysisResult
-from src.services.topic_analyzer import TopicAnalyzer
+from src.services.topic_analyzer import TopicAnalyzer, suggested_brief_from
 
 _VALID_RESULT = {
     "description": "An overview of AI safety research.",
@@ -78,3 +78,56 @@ async def test_analyze_regenerate_single_field() -> None:
     human_message_content = messages[1].content
     assert "preferred_angle" in human_message_content
     assert result.preferred_angle == "A new angle entirely"
+
+
+def test_suggested_brief_from_result() -> None:
+    """suggested_brief_from should prefill a BriefCreate from analysis."""
+    result = TopicAnalysisResult(
+        description="d",
+        domain="ai-ml",
+        keywords=["a", "b"],
+        target_audience="devs",
+        content_tone="educational",
+        preferred_angle="hands-on",
+    )
+
+    brief = suggested_brief_from("Agentic AI in 2026", result)
+
+    assert brief.name == "Agentic AI in 2026"
+    assert brief.title == "Agentic AI in 2026"
+    assert brief.description == "d"
+    assert brief.target_audience == "devs"
+    assert brief.keywords == ["a", "b"]
+    assert brief.content_tone == "educational"
+    assert brief.preferred_angle == "hands-on"
+    assert brief.content_type == "article"
+    assert brief.length_target == "medium"
+
+
+def test_suggested_brief_from_invalid_tone_is_none() -> None:
+    """An out-of-vocabulary content_tone must not be passed through."""
+    result = TopicAnalysisResult(
+        description="d",
+        domain="ai-ml",
+        keywords=["a"],
+        target_audience="devs",
+        content_tone="not-a-real-tone",
+        preferred_angle="hands-on",
+    )
+
+    brief = suggested_brief_from("Some Topic", result)
+
+    assert brief.content_tone is None
+
+
+@pytest.mark.asyncio
+async def test_analyze_attaches_suggested_brief() -> None:
+    """analyze() should attach a suggested_brief prefilled from the result."""
+    llm = _make_llm(_VALID_RESULT)
+    analyzer = TopicAnalyzer(llm=llm)
+
+    result = await analyzer.analyze(title="Agentic AI in 2026")
+
+    assert result.suggested_brief is not None
+    assert result.suggested_brief.name == "Agentic AI in 2026"
+    assert result.suggested_brief.keywords == _VALID_RESULT["keywords"]

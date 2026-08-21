@@ -3,14 +3,10 @@
 from pydantic import BaseModel, Field
 
 from src.api.schemas.topics import PersistedTopic
-
-VALID_TONES = [
-    "technical-authoritative",
-    "conversational",
-    "educational",
-    "analytical",
-    "news-reporting",
-]
+from src.models.brief import BriefCreate
+from src.models.tones import (
+    VALID_TONES,  # noqa: F401 — re-exported for existing importers
+)
 
 
 class TopicAnalysisResult(BaseModel):
@@ -22,6 +18,7 @@ class TopicAnalysisResult(BaseModel):
     target_audience: str
     content_tone: str
     preferred_angle: str
+    suggested_brief: BriefCreate | None = None
 
 
 class AnalyzeTopicRequest(BaseModel):

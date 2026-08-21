@@ -249,6 +249,7 @@ def _to_provenance_response(
     p = article.provenance
     return ProvenanceResponse(
         research_session_id=p.research_session_id,
+        brief_id=p.brief_id,
         primary_model=p.primary_model,
         drafting_model=p.drafting_model,
         embedding_model=p.embedding_model,

@@ -4,18 +4,13 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FieldWithRegenerate } from "@/components/topics/field-with-regenerate";
 import { ReviewOutlineCheckbox } from "@/components/topics/review-outline-checkbox";
+import { DiagramModeSelect } from "@/components/topics/diagram-mode-select";
+import { CreateTopicFields } from "@/components/topics/create-topic-fields";
+import { BriefOptionsFields, type BriefOptions } from "@/components/briefs/brief-options-fields";
 import { useTopicAnalysis } from "@/hooks/use-topic-analysis";
-import type { ContentTone } from "@/types/api";
-
-const TONE_OPTIONS: { value: ContentTone; label: string }[] = [
-  { value: "technical-authoritative", label: "Technical & Authoritative" },
-  { value: "conversational", label: "Conversational" },
-  { value: "educational", label: "Educational" },
-  { value: "analytical", label: "Analytical" },
-  { value: "news-reporting", label: "News Reporting" },
-];
+import type { ContentTone, StructuralDiagramMode } from "@/types/api";
+import type { BriefContentType, LengthTarget } from "@/types/brief";
 
 interface CreateTopicModalProps {
   open: boolean;
@@ -32,6 +27,9 @@ export interface CreateTopicData {
   target_audience: string;
   content_tone: ContentTone;
   preferred_angle: string;
+  structural_diagram_mode: StructuralDiagramMode;
+  content_type: BriefContentType;
+  length_target: LengthTarget;
   require_outline_approval?: boolean;
 }
 
@@ -45,6 +43,14 @@ export function CreateTopicModal({
   // Opt in to reviewing the LLM-generated outline before section drafting
   // runs (only meaningful for the "Create & Generate Article" path).
   const [requireOutlineApproval, setRequireOutlineApproval] = useState(false);
+  const [diagramMode, setDiagramMode] =
+    useState<StructuralDiagramMode>("illustration");
+  const [options, setOptions] = useState<BriefOptions>({
+    content_type: "article",
+    length_target: "medium",
+    save_as_brief: false,
+    brief_name: "",
+  });
   const {
     analysis,
     isAnalyzing,
@@ -61,6 +67,13 @@ export function CreateTopicModal({
   function handleClose() {
     setTitle("");
     setRequireOutlineApproval(false);
+    setDiagramMode("illustration");
+    setOptions({
+      content_type: "article",
+      length_target: "medium",
+      save_as_brief: false,
+      brief_name: "",
+    });
     reset();
     onClose();
   }
@@ -74,6 +87,9 @@ export function CreateTopicModal({
       target_audience: analysis!.target_audience,
       content_tone: analysis!.content_tone as ContentTone,
       preferred_angle: analysis!.preferred_angle,
+      structural_diagram_mode: diagramMode,
+      content_type: options.content_type,
+      length_target: options.length_target,
       require_outline_approval: requireOutlineApproval || undefined,
     };
   }
@@ -132,100 +148,19 @@ export function CreateTopicModal({
         {/* Analysis results */}
         {analysis && !isAnalyzing && (
           <div className="mt-4 space-y-4">
-            <FieldWithRegenerate
-              label="Description"
-              field="description"
+            <CreateTopicFields
+              analysis={analysis}
               isRegenerating={isRegenerating}
-              onRegenerate={() => regenerateField(title, "description")}
-            >
-              <textarea
-                value={analysis.description}
-                onChange={(e) => updateField("description", e.target.value)}
-                rows={4}
-                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-            </FieldWithRegenerate>
+              onRegenerate={(f) => regenerateField(title, f)}
+              onUpdate={updateField}
+            />
 
-            <FieldWithRegenerate
-              label="Domain"
-              field="domain"
-              isRegenerating={isRegenerating}
-              onRegenerate={() => regenerateField(title, "domain")}
-            >
-              <input
-                type="text"
-                value={analysis.domain}
-                onChange={(e) => updateField("domain", e.target.value)}
-                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-            </FieldWithRegenerate>
-
-            <FieldWithRegenerate
-              label="Keywords"
-              field="keywords"
-              isRegenerating={isRegenerating}
-              onRegenerate={() => regenerateField(title, "keywords")}
-            >
-              <textarea
-                value={analysis.keywords.join(", ")}
-                onChange={(e) =>
-                  updateField(
-                    "keywords",
-                    e.target.value.split(",").map((k) => k.trim()).filter(Boolean),
-                  )
-                }
-                rows={2}
-                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                placeholder="comma-separated keywords"
-              />
-            </FieldWithRegenerate>
-
-            <FieldWithRegenerate
-              label="Target Audience"
-              field="target_audience"
-              isRegenerating={isRegenerating}
-              onRegenerate={() => regenerateField(title, "target_audience")}
-            >
-              <textarea
-                value={analysis.target_audience}
-                onChange={(e) => updateField("target_audience", e.target.value)}
-                rows={2}
-                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-            </FieldWithRegenerate>
-
-            <FieldWithRegenerate
-              label="Content Tone"
-              field="content_tone"
-              isRegenerating={isRegenerating}
-              onRegenerate={() => regenerateField(title, "content_tone")}
-            >
-              <select
-                value={analysis.content_tone}
-                onChange={(e) => updateField("content_tone", e.target.value)}
-                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              >
-                {TONE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </FieldWithRegenerate>
-
-            <FieldWithRegenerate
-              label="Preferred Angle"
-              field="preferred_angle"
-              isRegenerating={isRegenerating}
-              onRegenerate={() => regenerateField(title, "preferred_angle")}
-            >
-              <textarea
-                value={analysis.preferred_angle}
-                onChange={(e) => updateField("preferred_angle", e.target.value)}
-                rows={3}
-                className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-            </FieldWithRegenerate>
+            <BriefOptionsFields
+              value={options}
+              onChange={setOptions}
+              showSave={false}
+            />
+            <DiagramModeSelect value={diagramMode} onChange={setDiagramMode} />
 
             <ReviewOutlineCheckbox
               checked={requireOutlineApproval}

@@ -147,6 +147,7 @@ See @docs/LEARNINGS.md for hard-won debugging lessons. **Read before making chan
 - **L-009**: Ghost 5+ requires Lexical format — raw `html` field is silently ignored
 - **L-010**: `COGNIFY_ENCRYPTION_KEY` must be stable in `.env` — ephemeral keys make DB-stored API keys unrecoverable
 - **L-011**: Outline gate: `ContentGraphDeps(stop_after_outline=True)` to stop after planning; seed `outline` + `status=outline_complete` to resume; `_graph_deps()` must never return `None`
+- **L-012**: Brief values are copied onto the session at `start_session` (inline > brief > default); nothing downstream may read the brief row — `brief_id` is provenance only
 
 ## Current Status
 
@@ -158,6 +159,6 @@ See @project-management/PROGRESS.md for full ticket status.
 **Post-Epic 10 housekeeping (PR #55):** `.env` flake fix + INFRA-006 (SSRF guard reuse for trend sources) + CONTENT-007 (structure-aware humanization) + DASH-007 (humanization diff panel) + Playwright E2E scaffolding (smoke test + opt-in CI lane).
 **INFRA-005 (Frontend Status Alignment):** Done (PR #46).
 **CI/CD & Docker:** Implemented — Dockerfiles (api, worker, frontend), GitHub Actions (ci.yml, cd.yml, e2e.yml), Makefile, docker-compose with full stack.
-**Test suite:** 1505 backend unit tests (0 failures) + 478 frontend Vitest tests + 1 Playwright smoke test.
-**Epic 11 (Supervised Authoring, started 2026-08-19):** program plan `docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md`; ADR-006/007 accepted. **Done:** AUTHOR-001 live SSE session progress + `/research/[id]` page (`06439e9`); AUTHOR-002 opt-in outline approval gate + cancel (PR #73, `30f1a36`, migration `a9d4e2f7c1b8`, gate off by default via `COGNIFY_REQUIRE_OUTLINE_APPROVAL`). See L-011 before touching the content graph.
-**Next action:** AUTHOR-003 (Brief — program plan §4.1/§5.4, ADR-007), then AUTHOR-004/005. Open env item: refresh the stack's Anthropic key (401) and run the deferred live smoke of the outline gate. PUBLISH-002 (WordPress, 5 SP) still open.
+**Test suite:** 1557 backend unit tests (0 failures) + 502 frontend Vitest tests + 1 Playwright smoke test.
+**Epic 11 (Supervised Authoring, started 2026-08-19):** program plan `docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md`; ADR-006/007 accepted. **Done:** AUTHOR-001 live SSE session progress + `/research/[id]` page (`06439e9`); AUTHOR-002 opt-in outline approval gate + cancel (PR #73, `30f1a36`, migration `a9d4e2f7c1b8`, gate off by default via `COGNIFY_REQUIRE_OUTLINE_APPROVAL`); AUTHOR-003 Brief as authoring input (ADR-007; `briefs` table + `/briefs` CRUD, `brief_id`/`save_as_brief` on session create, `suggested_brief` from topic analysis, Generate-modal brief picker; migration `b3c7e1f9a2d4`). See L-011 before touching the content graph and L-012 before touching brief resolution.
+**Next action:** AUTHOR-004 (per-section regenerate — program plan §5.5), then AUTHOR-005/INFRA-007. Open env item: refresh the stack's Anthropic key (401) and run the deferred live smoke of the outline gate. PUBLISH-002 (WordPress, 5 SP) still open.

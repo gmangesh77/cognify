@@ -185,6 +185,43 @@ describe("CreateTopicModal", () => {
     );
   });
 
+  it("forwards diagram mode, content type and length on Create & Generate", async () => {
+    mockAnalyze.mockResolvedValue({
+      description: "An exploration of zero trust",
+      domain: "cybersecurity",
+      keywords: ["zero trust", "cloud"],
+      target_audience: "Security engineers",
+      content_tone: "technical-authoritative",
+      preferred_angle: "Implementation guide",
+    });
+
+    render(<CreateTopicModal {...defaultProps} />);
+    const input = screen.getByPlaceholderText(/zero trust/i);
+    fireEvent.change(input, { target: { value: "Zero Trust Architecture" } });
+    fireEvent.click(screen.getByText("Analyze"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Create & Generate Article" }),
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Diagram style"), {
+      target: { value: "mermaid" },
+    });
+    fireEvent.change(screen.getByLabelText("Length"), {
+      target: { value: "short" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create & Generate Article" }));
+    expect(defaultProps.onCreateAndGenerate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        structural_diagram_mode: "mermaid",
+        length_target: "short",
+        content_type: "article",
+      }),
+    );
+  });
+
   it("shows analyzing state while request is pending", async () => {
     let resolveAnalyze!: (value: unknown) => void;
     mockAnalyze.mockReturnValue(
