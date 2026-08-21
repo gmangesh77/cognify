@@ -535,6 +535,17 @@ class PgArticleDraftRepository:
                 return None
             return self._to_model(row)
 
+    async def find_by_article_id(self, article_id: UUID) -> ArticleDraft | None:
+        async with self._sf() as db:
+            stmt = (
+                select(ArticleDraftRow)
+                .where(ArticleDraftRow.article_id == article_id)
+                .order_by(ArticleDraftRow.created_at.desc())
+                .limit(1)
+            )
+            row = (await db.execute(stmt)).scalar_one_or_none()
+            return None if row is None else self._to_model(row)
+
     @staticmethod
     def _to_jsonb(item: object) -> object:
         """Serialize a Pydantic model or dict for JSONB storage."""

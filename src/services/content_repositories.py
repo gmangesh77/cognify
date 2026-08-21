@@ -21,6 +21,7 @@ class ArticleDraftRepository(Protocol):
     async def get(self, draft_id: UUID) -> ArticleDraft | None: ...
     async def update(self, draft: ArticleDraft) -> ArticleDraft: ...
     async def find_latest_by_session(self, session_id: UUID) -> ArticleDraft | None: ...
+    async def find_by_article_id(self, article_id: UUID) -> ArticleDraft | None: ...
 
 
 class ResearchSessionReader(Protocol):
@@ -46,6 +47,13 @@ class InMemoryArticleDraftRepository:
 
     async def find_latest_by_session(self, session_id: UUID) -> ArticleDraft | None:
         candidates = [d for d in self._store.values() if d.session_id == session_id]
+        if not candidates:
+            return None
+        return max(candidates, key=lambda d: d.created_at)
+
+    async def find_by_article_id(self, article_id: UUID) -> ArticleDraft | None:
+        """Newest draft stamped with `article_id` (set by store_article)."""
+        candidates = [d for d in self._store.values() if d.article_id == article_id]
         if not candidates:
             return None
         return max(candidates, key=lambda d: d.created_at)

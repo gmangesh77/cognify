@@ -628,3 +628,27 @@ class TestPgArticleRepository:
     ) -> None:
         repo = PgArticleRepository(session_factory)
         assert await repo.get(uuid4()) is None
+
+    async def test_draft_find_by_article_id(
+        self, session_factory: async_sessionmaker[AsyncSession]
+    ) -> None:
+        topic = await _seed_topic(session_factory)
+        session = await _seed_session(session_factory, topic.id)
+        article = await PgArticleRepository(session_factory).create(
+            _make_canonical_article(session.id)
+        )
+        drafts = PgArticleDraftRepository(session_factory)
+        await drafts.create(
+            ArticleDraft(
+                session_id=session.id,
+                topic_id=topic.id,
+                article_id=article.id,
+                status=DraftStatus.COMPLETE,
+                created_at=datetime.now(UTC),
+            )
+        )
+        found = await drafts.find_by_article_id(article.id)
+        assert found is not None
+        assert found.article_id == article.id
+        assert found.session_id == session.id
+        assert await drafts.find_by_article_id(uuid4()) is None
