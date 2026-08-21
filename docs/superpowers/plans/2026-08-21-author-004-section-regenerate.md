@@ -118,7 +118,7 @@ class SectionHistoryService:
     async def list_history(...); async def restore(...)   # unchanged behaviour
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace `tests/unit/services/content/test_section_history.py` with:
 ```python
@@ -512,11 +512,11 @@ class TestOutlineIndexContractEndpoint:
         assert "## Second Section\nSecond section body." in body
 ```
 
-- [ ] **Step 2: Run — expect failure**
+- [x] **Step 2: Run — expect failure**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/content/test_section_history.py tests/unit/api/test_content_endpoints.py -q -p no:cacheprovider` → `ModuleNotFoundError: src.services.content.section_history_contracts`; after stubbing the module, `test_index_zero_skips_the_prelude` fails (prelude returned), `test_heading_check_receives_the_outline_index` fails (no violation raised for section 0) and `test_append_version_row_fans_out_every_column` fails (`ImportError: append_version_row`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `src/services/content/section_history_contracts.py` (168 lines after `ruff format`):
 ```python
@@ -906,11 +906,11 @@ from src.services.content.section_history_contracts import (
  */
 ```
 
-- [ ] **Step 4: Run — expect pass; whole content suite green**
+- [x] **Step 4: Run — expect pass; whole content suite green**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/content tests/unit/api/test_content_endpoints.py -q -p no:cacheprovider` → all pass (`test_md_index_is_outline_plus_one_and_inverts`, `test_append_version_row_fans_out_every_column`, `TestOutlineIndexContract` ×5, `TestOutlineIndexContractEndpoint` ×1 = **8 new**; 4 existing tests re-pointed from index 1 to 0). `wc -l src/services/content/section_history.py src/services/content/section_history_contracts.py` → **187 / 168** (measured after `ruff format`). Function lengths (AST, `def` line through end): `get_section_markdown` 17, `persist_section_update` 18, `_persist_row` 17, `_swap_section` 11, `restore` 18, `_version_markdown` 8, `_ensure_anchors` 12, `append_version_row` 17 — verify with `uv run python -c "import ast,sys;[print(f.name,f.end_lineno-f.lineno+1) for p in sys.argv[1:] for f in ast.walk(ast.parse(open(p).read())) if isinstance(f,(ast.FunctionDef,ast.AsyncFunctionDef)) and f.end_lineno-f.lineno+1>=20]" src/services/content/section_history.py src/services/content/section_history_contracts.py` → prints nothing.
 
-- [ ] **Step 5: Lint + commit**
+- [x] **Step 5: Lint + commit**
 
 `uv run ruff check --fix src/ tests/ && uv run ruff format src/ tests/ && uv run mypy src/ --ignore-missing-imports`
 `git add src/services/content/section_history.py src/services/content/section_history_contracts.py src/api/routers/content.py frontend/src/lib/api/content.ts tests/unit/services/content/test_section_history.py tests/unit/api/test_content_endpoints.py && git commit -m "fix(content): section_id is the 0-based outline index everywhere; md_index_for is the only conversion (L-013, AUTHOR-004)"`
@@ -947,7 +947,7 @@ async def draft_one_section(section, queries, ctx) -> OneSectionDraft   # graph-
 _SYSTEM_PROMPT = SYSTEM_PROMPT    # re-export for test_prompt_updates.py
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/utils/test_llm_usage.py`:
 ```python
@@ -1103,11 +1103,11 @@ class TestDraftOneSection:
         assert draft.body_markdown == "Body text."
 ```
 
-- [ ] **Step 2: Run — expect failure**
+- [x] **Step 2: Run — expect failure**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/utils/test_llm_usage.py tests/unit/agents/content/test_section_prompt.py -q -p no:cacheprovider` → `ModuleNotFoundError: src.utils.llm_usage` / `src.agents.content.section_prompt`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `src/utils/llm_usage.py`:
 ```python
@@ -1346,11 +1346,11 @@ async def _draft(
 ```
 6. Add at the bottom: `__all__ = ["DraftingContext", "OneSectionDraft", "draft_one_section", "draft_section", "extract_citations"]`.
 
-- [ ] **Step 4: Run — expect pass, and the regression set stays green**
+- [x] **Step 4: Run — expect pass, and the regression set stays green**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/utils/test_llm_usage.py tests/unit/agents/content/test_section_prompt.py tests/unit/agents/content/test_section_drafter.py tests/unit/agents/content/test_prompt_updates.py tests/unit/agents/content/test_pipeline.py -q -p no:cacheprovider` → all pass (**13 new**: 3 usage + 10 prompt/drafter). `wc -l src/agents/content/section_drafter.py src/agents/content/section_prompt.py src/utils/llm_usage.py` → all < 200 (≈ 170 / 90 / 35).
 
-- [ ] **Step 5: Lint + commit**
+- [x] **Step 5: Lint + commit**
 
 `uv run ruff check --fix src/ tests/ && uv run ruff format src/ tests/ && uv run mypy src/ --ignore-missing-imports`
 `git add src/agents/content/section_prompt.py src/agents/content/section_drafter.py src/utils/llm_usage.py tests/unit/agents/content/test_section_prompt.py tests/unit/utils/test_llm_usage.py && git commit -m "refactor(content): extract section prompt assembly + draft_one_section with instruction slot and token usage (AUTHOR-004)"`
@@ -1386,7 +1386,7 @@ def _get_content_llm(request: Request) -> BaseChatModel   # prefers request.app.
 def _build_anthropic_llm(settings: Settings) -> ChatAnthropic   # the old body
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/unit/services/content/test_section_rewriter.py`:
 ```python
@@ -1543,11 +1543,11 @@ class TestContentLlmSource:
         build.assert_called_once()
 ```
 
-- [ ] **Step 2: Run — expect failure**
+- [x] **Step 2: Run — expect failure**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_content_shared.py tests/unit/services/content/test_section_rewriter.py tests/unit/services/content/test_section_anchors.py tests/unit/agents/content/test_article_assembler.py tests/unit/api/test_content_endpoints.py tests/unit/services/test_content_service.py -q -p no:cacheprovider` → ImportErrors (`content_shared`, `strip_fences`, `model_label`, `find_spec_ids`, `strip_leading_heading`), `AttributeError: deps`, `_build_anthropic_llm` not found.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/services/content/section_rewriter.py`:
 1. Add import `from src.utils.llm_usage import extract_usage`; delete the local `_extract_usage` function; in `rewrite_section_prose` change `usage = _extract_usage(response)` → `usage = extract_usage(response)`.
@@ -1705,11 +1705,11 @@ def _build_anthropic_llm(settings: Settings) -> ChatAnthropic:
 ```
 and change both call sites (`section_rewrite`, `humanize_preview`) from `llm = _get_content_llm(settings)` to `llm = _get_content_llm(request)`. (Existing tests patch `src.api.routers.content._get_content_llm` with `return_value=` — still valid.)
 
-- [ ] **Step 4: Run — expect pass**
+- [x] **Step 4: Run — expect pass**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api tests/unit/services/content tests/unit/services/test_content_service.py tests/unit/agents/content/test_article_assembler.py -q -p no:cacheprovider` → all pass (**9 new**: 2 rewriter, 1 anchors, 1 assembler, 2 shared, 1 deps, 2 llm-source). `wc -l src/api/routers/content_shared.py` < 200; `src/api/routers/content.py` ≈ 495 (down from 546).
 
-- [ ] **Step 5: Lint + commit**
+- [x] **Step 5: Lint + commit**
 
 `uv run ruff check --fix src/ tests/ && uv run ruff format src/ tests/ && uv run mypy src/ --ignore-missing-imports`
 `git add src/api/routers/content_shared.py src/api/routers/content.py src/services/content/section_rewriter.py src/services/content/section_anchors.py src/services/content/__init__.py src/agents/content/article_assembler.py tests/unit/api/test_content_shared.py tests/unit/api/test_content_endpoints.py tests/unit/services/content/test_section_rewriter.py tests/unit/services/content/test_section_anchors.py tests/unit/services/test_content_service.py tests/unit/agents/content/test_article_assembler.py && git commit -m "refactor(content): promote strip_fences/model_label/strip_leading_heading/find_spec_ids, shared /content route helpers, ContentService.deps + tracked LLM for rewrite (AUTHOR-004)"`
@@ -1757,7 +1757,7 @@ class SectionRegenerateService:
 ```
 `section_index` is the OUTLINE index everywhere (command, result, version row, `validate_anchors`, `make_section_id`). The service never adds 1 — `SectionHistoryService.get_section_markdown` does the conversion (Task 1).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/services/test_content_repositories_find_by_article_id.py`:
 ```python
@@ -2218,11 +2218,11 @@ class TestRegenerate:
         assert res.section_index == 1
 ```
 
-- [ ] **Step 2: Run — expect failure**
+- [x] **Step 2: Run — expect failure**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/test_content_repositories_find_by_article_id.py tests/unit/services/content/test_section_regenerate.py -q -p no:cacheprovider` → `AttributeError: 'InMemoryArticleDraftRepository' object has no attribute 'find_by_article_id'` and `ModuleNotFoundError: src.services.content.section_regenerate_models`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/services/content_repositories.py`:
 1. In `ArticleDraftRepository` (Protocol), after `find_latest_by_session`:
@@ -2696,11 +2696,11 @@ __all__ = ["SectionRegenerateService"]
 ```
 Notes: `_validate` passes the **outline** index (`ImagePlacement.section_index` space) — the same call the accept path (`SectionHistoryService._ensure_anchors`) makes, so both calls agree (`test_spec_on_neighbouring_section_is_not_checked`). `_record` builds a `VersionRow` and goes through the shared `append_version_row` (Task 1) — the 11-kwarg repo call exists exactly once in the codebase. `section_word_count_outside_range` is emitted by `_log_word_count` inside `section_drafter._draft`; `RegenerateResult.word_count` is the raw draft's word count. `current_session_id` is set to `prep.draft.session_id` (FK-valid for `llm_calls`), never to provenance.
 
-- [ ] **Step 4: Run — expect pass**
+- [x] **Step 4: Run — expect pass**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/test_content_repositories_find_by_article_id.py tests/unit/services/content/test_section_regenerate.py -q -p no:cacheprovider` → `24 passed` (2 repo + 6 carry + 4 helpers + 12 service). `uv run ruff format src/services/content/section_regenerate.py src/services/content/section_regenerate_models.py src/services/content/section_regenerate_text.py && wc -l src/services/content/section_regenerate.py src/services/content/section_regenerate_models.py src/services/content/section_regenerate_text.py` → **177 / 91 / 161** (these blocks are already `ruff format` output with the repo's 88-column config — the numbers are measured, not estimated; if your count differs by more than ±3 you changed the code). Function lengths (AST, `def` through end): `regenerate` 17, `_prepare` 15, `_outline_section` 14, `_draft` 18, `_validate` 14, `_record` 17, `_log_recorded` 7; text module max is `build_drafting_context` 18 / `prior_drafts_from_body` 17 — `uv run python -c "import ast,sys;[print(f.name,f.end_lineno-f.lineno+1) for p in sys.argv[1:] for f in ast.walk(ast.parse(open(p).read())) if isinstance(f,(ast.FunctionDef,ast.AsyncFunctionDef)) and f.end_lineno-f.lineno+1>=20]" src/services/content/section_regenerate.py src/services/content/section_regenerate_text.py src/services/content/section_regenerate_models.py` → prints nothing. Integration (only if the DB stack is up; clean after, L-005): `uv run pytest tests/integration/db/test_pg_repositories.py -k find_by_article_id -q -p no:cacheprovider` → `1 passed`.
 
-- [ ] **Step 5: Lint + commit**
+- [x] **Step 5: Lint + commit**
 
 `uv run ruff check --fix src/ tests/ && uv run ruff format src/ tests/ && uv run mypy src/ --ignore-missing-imports`
 `git add src/services/content_repositories.py src/db/repositories.py src/services/content/section_regenerate.py src/services/content/section_regenerate_models.py src/services/content/section_regenerate_text.py tests/unit/services/test_content_repositories_find_by_article_id.py tests/unit/services/content/test_section_regenerate.py tests/integration/db/test_pg_repositories.py && git commit -m "feat(content): SectionRegenerateService — context by article_id, one tracked LLM call, positional anchor carry, candidate version row (AUTHOR-004)"`
@@ -2741,7 +2741,7 @@ class SectionRegenerateResponse(BaseModel):       # == RegenerateResult fields +
 # Fixtures mirror production: the ArticleDraft is stamped with article_id and its session_id is deliberately != provenance.research_session_id.
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/unit/api/test_content_regenerate_endpoint.py` (builds on the `content_app` pattern from `test_content_endpoints.py`: same RSA keys, CognifyError handler, plus the `RateLimitExceeded` handler exactly as `main.py` registers it):
 ```python
@@ -3059,11 +3059,11 @@ class TestSectionUpdateSourceLiteral:
         assert req.source == "regenerate"
 ```
 
-- [ ] **Step 2: Run — expect failure**
+- [x] **Step 2: Run — expect failure**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_content_regenerate_endpoint.py tests/unit/api/test_content_endpoints.py -q -p no:cacheprovider` → `ImportError: content_regenerate_router`. (The Literal already accepts `"regenerate"` since Task 3 — that test passes immediately; it guards the contract.)
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `src/api/routers/content_regenerate.py` (171 lines after `ruff format`; `section_regenerate` is 12 lines — the four error arms collapse into `_map_regenerate_error`; `_resolve_regenerate_state` + `_get_regenerate_service` split the app.state lookup from construction):
 ```python
@@ -3252,11 +3252,11 @@ __all__ = ["content_regenerate_router"]
 ```
 No new `app.state` attribute — `content_service` and `content_repos` are already set at all three construction sites.
 
-- [ ] **Step 4: Run — expect pass**
+- [x] **Step 4: Run — expect pass**
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_content_regenerate_endpoint.py tests/unit/api/test_content_endpoints.py tests/unit/api/test_main.py -q -p no:cacheprovider` → all pass (**13 new**: 2 auth + 10 regenerate + 1 Literal). Route registered: `COGNIFY_ANTHROPIC_API_KEY= uv run python -c "from src.api.main import create_app; print([r.path for r in create_app().routes if 'regenerate' in r.path])"` → `['/api/v1/content/section-regenerate']`. `wc -l src/api/routers/content_regenerate.py` → **171** (measured after `ruff format`); AST check (same one-liner as Task 4) prints nothing — `section_regenerate` 12, `_command` 7, `_map_regenerate_error` 7, `_to_response` 15, `_resolve_regenerate_state` 18, `_get_regenerate_service` 12.
 
-- [ ] **Step 5: Lint + commit**
+- [x] **Step 5: Lint + commit**
 
 `uv run ruff check --fix src/ tests/ && uv run ruff format src/ tests/ && uv run mypy src/ --ignore-missing-imports`
 `git add src/api/routers/content_regenerate.py src/api/main.py tests/unit/api/test_content_regenerate_endpoint.py tests/unit/api/test_content_endpoints.py && git commit -m "feat(api): POST /content/section-regenerate (editor+, 10/min) via content_service.deps; L-013 round-trip tests (AUTHOR-004)"`
@@ -3287,7 +3287,7 @@ export interface SectionRegenerateState { busy: boolean; error: string | null; v
 export function useSectionRegenerate(): SectionRegenerateState & { run: (body: SectionRegenerateRequest) => Promise<void>; reset: () => void }
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `frontend/src/lib/api/content-regenerate.test.ts`:
 ```ts
@@ -3424,11 +3424,11 @@ describe("useSectionRegenerate", () => {
 });
 ```
 
-- [ ] **Step 2: Run — expect failure**
+- [x] **Step 2: Run — expect failure**
 
 `cd frontend && npx vitest run src/lib/api/content-regenerate.test.ts src/lib/articles/locate-paragraph.test.ts src/hooks/use-section-regenerate.test.tsx` → module-not-found / `regenerateSection is not a function`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `frontend/src/types/content.ts` — replace the `SectionUpdateSource` line and append after `SectionUpdateResponse`:
 ```ts
@@ -3585,11 +3585,11 @@ export function useSectionRegenerate() {
 }
 ```
 
-- [ ] **Step 4: Run — expect pass**
+- [x] **Step 4: Run — expect pass**
 
 `cd frontend && npx vitest run src/lib/api/content-regenerate.test.ts src/lib/articles/locate-paragraph.test.ts src/hooks/use-section-regenerate.test.tsx src/components/article/InlineProseEditor.test.tsx` → all pass (**9 new**: 3 client/violations + 2 locate + 4 hook). `npx tsc --noEmit` clean (the widened `SectionUpdateSource` is additive). `wc -l src/components/article/InlineProseEditor.tsx` < 200.
 
-- [ ] **Step 5: Lint + commit**
+- [x] **Step 5: Lint + commit**
 
 `cd frontend && npx tsc --noEmit && npx eslint src`
 `git add frontend/src/types/content.ts frontend/src/lib/api/content.ts frontend/src/lib/api/anchorViolations.ts frontend/src/lib/api/content-regenerate.test.ts frontend/src/lib/articles/locate-paragraph.ts frontend/src/lib/articles/locate-paragraph.test.ts frontend/src/components/article/InlineProseEditor.tsx frontend/src/hooks/use-section-regenerate.ts frontend/src/hooks/use-section-regenerate.test.tsx && git commit -m "feat(frontend): regenerateSection client + useSectionRegenerate hook + shared extractAnchorViolations/locateParagraph (AUTHOR-004)"`
@@ -3639,7 +3639,7 @@ export type InsertableVisual = { spec: ImageSpec; render: RenderResponse };
 export function useArticleActions(deps: ArticleActionsDeps): { insertVisuals: (v: InsertableVisual[]) => Promise<void>; publish: (platforms: string[]) => Promise<void> }
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `frontend/src/components/article/SectionContextToolbar.test.tsx` — replace the file:
 ```tsx
@@ -3960,11 +3960,11 @@ Append to `frontend/src/components/articles/article-content.test.tsx` (inside th
   });
 ```
 
-- [ ] **Step 2: Run — expect failure**
+- [x] **Step 2: Run — expect failure**
 
 `cd frontend && npx vitest run src/components/article/SectionContextToolbar.test.tsx src/components/article/RegeneratePopover.test.tsx src/lib/articles/bucket-visuals.test.ts src/hooks/use-article-actions.test.tsx src/components/articles/article-content.test.tsx` → toolbar: `toolbar-regenerate-1` not found; popover / bucket / split-sections / studio-sections / actions: module not found; article-content: `toolbar-regenerate-0` not found. (Run the two new lib tests too: `npx vitest run src/lib/articles`.)
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 **3a. Toolbar** — `SectionContextToolbar.tsx`: import `RefreshCw` (`import { ImageIcon, LayoutPanelTop, Pencil, RefreshCw } from "lucide-react";`); add `onRegenerate: () => void;` to the props interface after `onRefineLayout`, destructure it, and add a fourth button after the Refine layout one:
 ```tsx
@@ -4923,11 +4923,11 @@ export default function ArticleDetailPage() {
 ```
 Expected **182** lines. Behaviour preserved: `onEditText` opens the editor with no panel; `onRefineLayout` auto-opens the refine panel; `onRegenerate` auto-opens the new popover; the workbench's `key` remounts it when the section or the requested initial panel changes; `PublishModal.onPublish` still closes the modal first (it used to be the first line of `handlePublish`). If `PublishModal`'s `onPublish` prop type is `(platforms: string[]) => Promise<void>`, wrap as `async (platforms) => { setPublishOpen(false); await publish(platforms); }`.
 
-- [ ] **Step 4: Run — expect pass + full frontend suite green**
+- [x] **Step 4: Run — expect pass + full frontend suite green**
 
 `cd frontend && npx vitest run src/components/article src/components/articles src/lib/articles src/hooks` → all pass (**15 new** this task: popover 5, bucket 3, split-sections 2, studio-sections 2, actions 2, article-content +1; the toolbar file is rewritten with the same 3 cases). Then `npx vitest run` → 502 + 24 new (Tasks 6–7: 9 + 15) ≈ 526 passed, 0 failures — **record the actual number**. `wc -l "src/app/(dashboard)/articles/[id]/page.tsx" src/components/articles/article-content.tsx src/components/articles/article-content-parts.tsx src/components/articles/article-detail-toolbar.tsx src/components/articles/article-not-found.tsx src/lib/articles/bucket-visuals.ts src/lib/articles/split-sections.ts src/lib/articles/studio-sections.ts src/components/article/SectionEditingWorkbench.tsx src/components/article/RegeneratePopover.tsx src/components/article/InlineProseEditor.tsx src/hooks/use-article-actions.ts src/components/article/SectionContextToolbar.tsx src/components/article/SectionHistoryDrawer.tsx` → every one < 200 (182 / ≈ 120 / ≈ 75 / ≈ 36 / ≈ 14 / ≈ 70 / ≈ 17 / ≈ 25 / ≈ 165 / ≈ 165 / ≈ 189 / ≈ 75 / ≈ 105 / ≈ 189 — `page.tsx` is counted from the block above, the rest are estimates within ±5). `npm run build` succeeds.
 
-- [ ] **Step 5: Lint + commit**
+- [x] **Step 5: Lint + commit**
 
 `cd frontend && npx tsc --noEmit && npx eslint src`
 `git add frontend/src && git commit -m "feat(frontend): Regenerate toolbar action + RegeneratePopover (diff accept/reject); split page/article-content/workbench under 200 lines (AUTHOR-004)"`
@@ -4940,7 +4940,7 @@ Expected **182** lines. Behaviour preserved: `onEditText` opens the editor with 
 - Modify: `project-management/PROGRESS.md`, `project-management/BACKLOG.md`, `CLAUDE.md`, `docs/LEARNINGS.md`, `frontend/DESIGN.md`, `docs/superpowers/plans/2026-08-19-epic-11-supervised-authoring-plan.md` (§9 AC tick), `docs/architecture/adrs/ADR-006-supervised-pipeline-events-and-outline-gate.md` (implementation note)
 - Test: `tests/unit/test_boundaries_regenerate.py` (new, tiny)
 
-- [ ] **Step 1: Boundary guard test (fails if someone imports the graph or publishing)**
+- [x] **Step 1: Boundary guard test (fails if someone imports the graph or publishing)**
 
 `tests/unit/test_boundaries_regenerate.py`:
 ```python
@@ -4978,7 +4978,7 @@ Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/test_boundaries_regene
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q -p no:cacheprovider` → 1557 (baseline on `develop` after AUTHOR-003) + 69 new (Tasks 1–5: 8 + 13 + 9 + 24 + 13, + 2 boundary) ≈ 1626 passed, 0 failed — **record the actual number from the run** in PROGRESS/CLAUDE.md (the 1 Pg integration test is not in this count). `cd frontend && npx vitest run` → 502 + 24 new ≈ 526 passed — **record the actual number**. `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv run mypy src/ --ignore-missing-imports` clean; `cd frontend && npx tsc --noEmit && npx eslint src && npm run build` clean. Line caps: `wc -l` on every file in the File map — every new file and every split file < 200; the five pre-existing over-cap files (`content.py`, `section_rewriter.py`, `main.py`, `services/content/__init__.py`, `db/repositories.py`) must not have grown except by the documented deltas. Function-length gate across everything new: `uv run python -c "import ast,sys;[print(p,f.name,f.end_lineno-f.lineno+1) for p in sys.argv[1:] for f in ast.walk(ast.parse(open(p).read())) if isinstance(f,(ast.FunctionDef,ast.AsyncFunctionDef)) and f.end_lineno-f.lineno+1>=20]" src/services/content/section_history.py src/services/content/section_history_contracts.py src/services/content/section_regenerate.py src/services/content/section_regenerate_models.py src/services/content/section_regenerate_text.py src/api/routers/content_shared.py src/api/routers/content_regenerate.py src/agents/content/section_prompt.py src/utils/llm_usage.py` → prints nothing. L-001 grep (`grep -rn "model_dump()" src/ | grep -v "mode="`) unchanged.
 
-- [ ] **Step 3: Docs**
+- [x] **Step 3: Docs**
 
 - `docs/LEARNINGS.md` — append (L-012 is already taken by briefs; this is **L-013**):
   ```markdown
@@ -5007,7 +5007,7 @@ Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/test_boundaries_regene
 - Program plan §9 Phase A AC: tick `- [x] Regenerate on a section returns a diff, preserves all data-spec-id anchors, appends a section_versions row with source=regenerate. *(AUTHOR-004; service + endpoint tests; accept adds a second, applied row via section-update; anchors carried by block position; L-013 section-id fix included)*`.
 - ADR-006 "Implementation notes" addendum (3–5 lines): per-section regenerate is a graph-free re-entry via `draft_one_section`; no pipeline events are emitted (no AgentStep exists for an ad-hoc regenerate); cost IS captured — the service binds `current_session_id` / `current_step_name="section_regenerate"` so `TrackedChatModel` writes one `llm_calls` row per regenerate; v1 returns un-humanized prose by design (one LLM call; AUTHOR-009 owns per-pass humanize).
 
-- [ ] **Step 4: Live smoke**
+- [ ] **Step 4: Live smoke** *(deferred to the post-merge session — see PROGRESS.md RESUME HERE)*
 
 `docker compose up --build -d` (verify the frontend image timestamp advanced — cached Next builds silently ship stale code; use `--no-cache` for the frontend if the chunk hash did not change) → open an article → hover the **second** section → **Edit text** → the editor shows the second section's markdown (L-013 fix visible) → Cancel → hover a section → **Regenerate** → optional instruction → diff + "N words · model" meta shows → Accept → article re-renders with the new section, figure anchors intact, neighbouring sections untouched → History drawer on that section shows "Regenerated" twice (candidate + applied). Reject → nothing changes. `/pipeline-debug` for the article's session shows one `section_regenerate` LLM call. If the stack's Anthropic key is invalid, record the smoke as deferred in PROGRESS (same as AUTHOR-002 did).
 

@@ -224,3 +224,25 @@ grep -rn "brief_service\|brief_repo\|BriefRepository" src/ | grep -v "api/router
 ```
 Any hit is a boundary violation.
 
+---
+
+## L-013: Two section-index spaces — outline (0-based H2) is the contract
+
+**Issue** (found in AUTHOR-004): `section_markdown.split_sections` ALWAYS returns the prelude as index 0 (empty string when the body starts with `## `), so the first H2 is markdown index 1. Everything else — `ArticleOutline.sections[].index`, `SectionDraft.section_index`, `ImagePlacement.section_index`, the frontend `sectionIdx` / `makeSectionId` — is 0-based over H2 sections. Until AUTHOR-004 the `/content/*` routes passed `{id}:{sectionIdx}` straight into `split_sections`, so every edit / AI rewrite / history / restore addressed the section *before* the one the user clicked, and `validate_anchors._check_headings` compared a markdown index against spec indices in outline space.
+
+**Rule**: the public `section_id` is `{article_id}:{outline_index}`. `src/services/content/section_history_contracts.md_index_for()` / `outline_index_for()` are the ONLY conversion; only `SectionHistoryService` (and the regenerate text helpers) call them, exactly where the body is read or replaced. `validate_anchors(section_index=…)` always receives the outline index. Never add `+1`/`-1` anywhere else (routers, services, frontend). On the frontend, derive indices only through `lib/articles/split-sections.ts` (`splitBySections` + `hasPreamble`) and `lib/articles/studio-sections.ts` — `page.tsx`'s old `segments.slice(1)` assumed a prelude and shifted Visual Studio's `section_index` by one for every no-prelude article.
+
+**Grep check**:
+```bash
+grep -rn "md_index_for\|outline_index_for\|section_index + 1\|section_index - 1\|sectionIdx + 1\|segments.slice(1)" src/ frontend/src | grep -v "section_history\|section_regenerate_text\|split-sections\|studio-sections\|test"
+```
+Any hit outside those modules (other than comments) is a bug.
+
+**Data already in the DB (pre-fix rows, no migration needed):** the frontend always sent outline-space ids, so `section_versions.section_id` / `section_index` are already correct and restore now lands on the intended H2. But rows with `source IN ('ai','tone_preset','humanize')` created before the fix through section-rewrite with `current_markdown=None` were generated from the PREVIOUS section's text, so restoring one writes section k-1's prose under section k's heading; and bodies saved pre-fix had `replace_section(md k)` overwrite section k-1 with section k's edit, so duplicated-H2 bodies may exist. Studio-inserted visuals on no-prelude articles carry `metadata.section_index` one too low (display-only drift). Audit once after deploy:
+```sql
+SELECT id, section_id, source, created_at FROM section_versions WHERE source <> 'manual' AND created_at < '<deploy-date>';
+SELECT id FROM canonical_articles WHERE body_markdown ~ '(## [^\n]+)\n[\s\S]*\1\n';
+SELECT id, jsonb_path_query(visuals, '$[*].metadata.section_index') FROM canonical_articles WHERE visuals::text LIKE '%"provider"%';
+```
+
+**Related, NOT fixed here:** `CanonicalArticle.provenance.research_session_id` is the TOPIC id (`graph_state.build_initial_state` sets `state["session_id"] = topic.id`; `seo_node` copies it into provenance). Never key a lookup on it — AUTHOR-004 resolves context through `ArticleDraftRepository.find_by_article_id` + `draft.session_id`. AUTHOR-001's `articles.find_by_session` (`src/api/routers/session_events.py`) depends on the current value, so the source fix is a separate ticket. Regression tests: `tests/unit/services/content/test_section_history.py`, `tests/unit/api/test_content_regenerate_endpoint.py` (round-trip with specs on k and k+1; 422 on both calls).

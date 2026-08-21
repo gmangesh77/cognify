@@ -197,8 +197,8 @@ The `data-state` attribute on the `<article>` exposes the current state for test
 ### Per-Section Context Toolbar (Phase 8 / VISUAL-011)
 
 > **Pencil source**: `pencil_designs/cognify.pen`, screen 9 (`Eyi7a`). The toolbar
-> floats over the active section in the article column and surfaces three
-> actions; an inline editor + AI rewrite popover anchor below.
+> floats over the active section in the article column and surfaces four
+> actions; an inline editor + AI rewrite / regenerate popovers anchor below.
 
 #### Toolbar anatomy
 - **Container**: `div role="toolbar"` absolutely positioned at `top-2 right-2` of
@@ -207,13 +207,17 @@ The `data-state` attribute on the `<article>` exposes the current state for test
 - **Visibility**: appears on `mouseenter` of the section's relative-positioned
   wrapper; disappears on `mouseleave`. Keyboard focus management is the parent
   page's responsibility.
-- **Three actions** (left → right):
+- **Four actions** (left → right):
   - **Edit text** (`Pencil` icon) — opens the `InlineProseEditor` + `AIRewritePopover`
     pair below the article column.
   - **Edit visual** (`ImageIcon`) — jumps the parent page to the matching Spec Card
     in the right-side Visual Studio panel.
   - **Refine layout** (`LayoutPanelTop`) — opens the existing
     `SectionHtmlRefinePanel` scoped to this section.
+  - **Regenerate** (`RefreshCw`) — opens the `RegeneratePopover` (same anatomy
+    as the AI rewrite popover; instruction optional; shows the word-level diff
+    against the current section; Accept persists through
+    `/content/section-update` with `source="regenerate"`, Reject discards).
 
 #### AI rewrite popover
 - **Container**: `dialog role="dialog"` fixed-width 460px panel, `rounded-lg border
@@ -254,7 +258,9 @@ The `data-state` attribute on the `<article>` exposes the current state for test
   placement.
 - **Section identifiers**. Use `makeSectionId(articleId, sectionIndex)` from
   `frontend/src/lib/api/content.ts` — the format mirrors the backend's
-  `make_section_id` (`f"{article_id}:{section_index}"`).
+  `make_section_id` (`f"{article_id}:{section_index}"`). `sectionIndex` is the
+  0-based H2 (outline) index — the backend uses the same space (L-013); never
+  offset for the prelude. Derive indices only via `lib/articles/split-sections.ts`.
 
 ### Boundary invariants for Visual Studio
 - **Read-only catalogue**: never mutate the cached `VisualStylesResponse`.
