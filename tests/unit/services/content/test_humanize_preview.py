@@ -60,3 +60,40 @@ class TestPreviewHumanization:
         assert preview.llm_called is True
         assert preview.diff, "expected a non-empty word-level diff"
         assert preview.score_after.score >= preview.score_before.score
+
+    @pytest.mark.asyncio
+    async def test_model_name_unwraps_tracked_chat_model(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A TrackedChatModel wrapper reports the inner model name (AUTHOR-004)."""
+        from unittest.mock import AsyncMock
+
+        from src.agents.content import slop_scorer
+        from src.models.content_pipeline import SlopScore
+        from src.utils.tracked_llm import TrackedChatModel
+
+        def _fake_score_text(text: str) -> SlopScore:
+            score = 80 if text.startswith("Tighter") else 30
+            return SlopScore(
+                score=score,
+                rating="LIKELY_AI" if score < 60 else "MOSTLY_HUMAN",
+                violations=[],
+                phrase_deductions=0,
+                pattern_deductions=0,
+            )
+
+        monkeypatch.setattr(slop_scorer, "score_text", _fake_score_text)
+
+        class _NamedFake(FakeListChatModel):
+            model: str = "claude-inner"
+
+        inner = _NamedFake(responses=["Tighter rewrite without the slop."])
+        llm = TrackedChatModel(inner=inner, repo=AsyncMock())
+        preview = await preview_humanization(
+            section_index=0,
+            title="Section",
+            markdown="Let me delve into this overly verbose paragraph.",
+            llm=llm,
+        )
+        assert preview.llm_called is True
+        assert preview.model == "claude-inner"

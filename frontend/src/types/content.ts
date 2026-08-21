@@ -45,7 +45,12 @@ export interface SectionRewriteResponse {
   usd: number | null;
 }
 
-export type SectionUpdateSource = "manual" | "ai" | "tone_preset" | "restore";
+export type SectionUpdateSource =
+  | "manual"
+  | "ai"
+  | "tone_preset"
+  | "restore"
+  | "regenerate";
 
 export interface SectionUpdateRequest {
   section_id: string;
@@ -58,6 +63,31 @@ export interface SectionUpdateResponse {
   section_id: string;
   version_id: string;
   persisted_markdown: string;
+}
+
+/** AUTHOR-004 — `section_index` is the 0-based H2 (outline) index (L-013). */
+export interface SectionRegenerateRequest {
+  article_id: string;
+  section_index: number;
+  instruction?: string | null;
+}
+
+/**
+ * Mirrors `SectionRegenerateResponse` in `src/api/routers/content_regenerate.py`.
+ * `section_id` is `{article_id}:{section_index}` — pass it to
+ * `persistSectionUpdate` unchanged.
+ */
+export interface SectionRegenerateResponse {
+  section_id: string;
+  section_index: number;
+  markdown: string;
+  diff: WordDiffEntry[];
+  version_id: string;
+  model: string;
+  word_count: number;
+  tokens_input: number | null;
+  tokens_output: number | null;
+  instruction: string | null;
 }
 
 export interface ParagraphToneRequest {

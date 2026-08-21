@@ -187,7 +187,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | AUTHOR-001 | Live session progress (SSE, DB-tailing) + SessionProgress + session route + auto-navigate — **DONE** (`06439e9`) | Must | 8 | A |
 | AUTHOR-002 | Outline approval gate (half-graphs, `awaiting_outline_review`, outline endpoints, cancel, OutlineReviewStep; flagged) — **DONE** (PR #73) | Must | 8 | A |
 | AUTHOR-003 | Brief model/CRUD + Generate modal rework (picker, length, content type, save-as-brief) — **DONE** (`feature/AUTHOR-003-brief`, 2026-08-21) | Must | 5 | A |
-| AUTHOR-004 | Per-section regenerate-with-feedback (endpoint + toolbar + diff accept) | Must | 3 | A |
+| AUTHOR-004 | Per-section regenerate-with-feedback (endpoint + toolbar + diff accept) — **DONE** (`feature/AUTHOR-004-section-regenerate`, 2026-08-21; +2 SP: L-013 section-id contract fix, in scope) | Must | 5 | A |
 | AUTHOR-005 | Session/article usage endpoint + pricing settings + UsageBadge | Should | 3 | A |
 | INFRA-007 | CeleryDispatcher + worker wiring for the full pipeline | Must | 5 | A |
 | AUTHOR-006 | PATCH article metadata + header/SEO editor + refetch + autosave | Should | 5 | B |
@@ -220,8 +220,8 @@ Per-phase acceptance criteria are in the plan §9. Feature flags default to curr
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
 | **Visual Generation Overhaul** | **8** | **8** | **0** | **0** |
-| **Supervised Authoring (Epic 11)** | **17** | **4** | **13** | **~56** |
-| **Total** | **74** | **60** | **14** | **~61** |
+| **Supervised Authoring (Epic 11)** | **17** | **5** | **12** | **~53** |
+| **Total** | **74** | **61** | **13** | **~58** |
 
 **Velocity update (2026-05-07)**: Epic 10 (Visual Generation Overhaul)
 fully shipped — VISUAL-004 through VISUAL-011 (89 SP) merged to
@@ -231,4 +231,4 @@ follow-ups (INFRA-006, CONTENT-007, DASH-007, Playwright scaffold,
 The only remaining ticket in the entire backlog is PUBLISH-002
 (5 SP, WordPress integration).
 
-**Velocity**: 365 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP on 2026-08-21). Remaining: PUBLISH-002 (5 SP) + Epic 11 (~56 SP).
+**Velocity**: 370 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21). Remaining: PUBLISH-002 (5 SP) + Epic 11 (~53 SP).

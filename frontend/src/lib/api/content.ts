@@ -4,6 +4,8 @@ import type {
   HumanizePreviewResponse,
   ParagraphToneRequest,
   SectionHistoryResponse,
+  SectionRegenerateRequest,
+  SectionRegenerateResponse,
   SectionRestoreRequest,
   SectionRewriteRequest,
   SectionRewriteResponse,
@@ -80,9 +82,23 @@ export async function restoreSectionVersion(
   return data;
 }
 
+/** AUTHOR-004 — redraft one section; returns a candidate + diff (body untouched). */
+export async function regenerateSection(
+  body: SectionRegenerateRequest,
+): Promise<SectionRegenerateResponse> {
+  const { data } = await apiClient.post<SectionRegenerateResponse>(
+    "/content/section-regenerate",
+    body,
+  );
+  return data;
+}
+
 /**
  * Stable section identifier used by the toolbar + drawer + popover.
- * Mirrors the backend's `make_section_id` (handoff brief gotcha 3).
+ * `sectionIndex` is the 0-based H2 (outline) index — the same space the
+ * backend's `make_section_id` uses since AUTHOR-004 (L-013). Never add
+ * an offset for the prelude here; `SectionHistoryService` converts to
+ * `split_sections` indices internally.
  */
 export function makeSectionId(articleId: string, sectionIndex: number): string {
   return `${articleId}:${sectionIndex}`;

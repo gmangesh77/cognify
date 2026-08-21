@@ -23,6 +23,7 @@ from langchain_core.language_models import BaseChatModel
 from src.agents.content.humanizer import fix_mechanical, rewrite_section
 from src.agents.content.slop_scorer import score_section
 from src.models.content_pipeline import SectionDraft, SlopScore
+from src.services.content.section_rewriter import model_label
 from src.services.content.word_diff import WordDiffOp, diff_words
 
 logger = structlog.get_logger()
@@ -95,11 +96,7 @@ async def preview_humanization(
 
     score_after = score_section(rewritten_section)
     diff = diff_words(section.body_markdown, rewritten_section.body_markdown)
-    model_name = (
-        getattr(llm, "model", None) or getattr(llm, "model_name", None)
-        if llm_called
-        else None
-    )
+    model_name = model_label(llm) if llm_called else None
     logger.info(
         "humanize_preview",
         section_index=section_index,
@@ -115,7 +112,7 @@ async def preview_humanization(
         score_after=score_after,
         diff=diff,
         llm_called=llm_called,
-        model=str(model_name) if model_name else None,
+        model=model_name,
     )
 
 

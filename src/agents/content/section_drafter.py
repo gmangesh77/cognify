@@ -9,8 +9,9 @@ from dataclasses import dataclass
 
 import structlog
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage
 
+from src.agents.content.section_prompt import SYSTEM_PROMPT, build_messages
 from src.models.content_pipeline import (
     CitationRef,
     OutlineSection,
@@ -19,21 +20,12 @@ from src.models.content_pipeline import (
 )
 from src.models.research import ChunkResult
 from src.services.milvus_retriever import MilvusRetriever
+from src.utils.llm_usage import extract_usage
 
 logger = structlog.get_logger()
 
-_SYSTEM_PROMPT = (
-    "You are an expert long-form writer. Draft a section of an article "
-    "using the provided research context. Every factual claim must include "
-    "an inline citation like [1], [2] referencing the numbered sources. "
-    "Write in a clear, authoritative tone. Target approximately "
-    "{target_word_count} words. "
-    "Do not use em-dashes or en-dashes. Use periods or commas instead. "
-    "Avoid words like delve, leverage, innovative, transformative, unprecedented. "
-    "Skip transitions like moreover, furthermore, additionally. "
-    "Vary sentence length and structure. "
-    "Write in a natural voice as a knowledgeable human, not an AI assistant."
-)
+# Re-exported so existing prompt-regression tests keep importing from here.
+_SYSTEM_PROMPT = SYSTEM_PROMPT
 
 _CITATION_PATTERN = re.compile(r"\[(\d+)\]")
 
@@ -50,6 +42,17 @@ class DraftingContext:
     content_tone: str | None = None
     preferred_angle: str | None = None
     keywords: list[str] | None = None
+    instruction: str | None = None
+
+
+@dataclass(frozen=True)
+class OneSectionDraft:
+    """Graph-free single-section result (AUTHOR-004 regenerate path)."""
+
+    body_markdown: str
+    word_count: int
+    tokens_input: int | None
+    tokens_output: int | None
 
 
 async def draft_section(
@@ -57,11 +60,38 @@ async def draft_section(
     queries: SectionQueries,
     ctx: DraftingContext,
 ) -> SectionDraft:
-    """Draft one section using RAG context and LLM."""
+    """Draft one section using RAG context and LLM (pipeline entry point)."""
+    draft, _ = await _draft(section, queries, ctx)
+    return draft
+
+
+async def draft_one_section(
+    section: OutlineSection,
+    queries: SectionQueries,
+    ctx: DraftingContext,
+) -> OneSectionDraft:
+    """Graph-free single-section draft with token usage (AUTHOR-004).
+
+    Exactly one LLM call; retrieval is skipped when `ctx.retriever` is None.
+    """
+    draft, response = await _draft(section, queries, ctx)
+    usage = extract_usage(response)
+    return OneSectionDraft(
+        body_markdown=draft.body_markdown,
+        word_count=draft.word_count,
+        tokens_input=usage.get("input"),
+        tokens_output=usage.get("output"),
+    )
+
+
+async def _draft(
+    section: OutlineSection,
+    queries: SectionQueries,
+    ctx: DraftingContext,
+) -> tuple[SectionDraft, BaseMessage]:
+    """Retrieve, call the LLM once, build the SectionDraft (+ raw response)."""
     logger.info(
-        "section_draft_started",
-        section_index=section.index,
-        title=section.title,
+        "section_draft_started", section_index=section.index, title=section.title
     )
     chunks = await _retrieve_chunks(queries, ctx)
     logger.info(
@@ -70,7 +100,14 @@ async def draft_section(
         chunk_count=len(chunks),
         unique_sources=len({c.source_url for c in chunks}),
     )
-    text = await _call_llm(section, chunks, ctx)
+    response = await ctx.llm.ainvoke(build_messages(section, chunks, ctx))
+    return _to_draft(section, str(response.content), chunks), response
+
+
+def _to_draft(
+    section: OutlineSection, text: str, chunks: list[ChunkResult]
+) -> SectionDraft:
+    """Extract citations, log the word count and build the SectionDraft."""
     citations = extract_citations(text, chunks)
     word_count = len(text.split())
     _log_word_count(section, word_count, len(citations))
@@ -99,56 +136,6 @@ async def _retrieve_chunks(
                 seen[key] = chunk
     ranked = sorted(seen.values(), key=lambda c: c.score, reverse=True)
     return ranked[:5]
-
-
-async def _call_llm(
-    section: OutlineSection,
-    chunks: list[ChunkResult],
-    ctx: DraftingContext,
-) -> str:
-    """Build prompt and call LLM to draft section text."""
-    system = _SYSTEM_PROMPT.format(
-        target_word_count=section.target_word_count,
-    )
-    if ctx.target_audience:
-        system += f"\nWrite for this audience: {ctx.target_audience}."
-    if ctx.content_tone:
-        system += f"\nTone: {ctx.content_tone}."
-    if ctx.preferred_angle:
-        system += f"\nEditorial angle: {ctx.preferred_angle}."
-    if ctx.keywords:
-        system += (
-            f"\nEnsure these key topics are referenced naturally: "
-            f"{', '.join(ctx.keywords)}."
-        )
-    user = _build_user_prompt(section, chunks, ctx.prior_drafts)
-    messages = [SystemMessage(content=system), HumanMessage(content=user)]
-    response = await ctx.llm.ainvoke(messages)
-    return str(response.content)
-
-
-def _build_user_prompt(
-    section: OutlineSection,
-    chunks: list[ChunkResult],
-    prior_drafts: list[SectionDraft],
-) -> str:
-    """Assemble user prompt with section info, RAG context, and prior summary."""
-    parts = [
-        f"## Section: {section.title}\n{section.description}",
-        f"Key points: {', '.join(section.key_points)}",
-        f"Target: ~{section.target_word_count} words\n",
-    ]
-    if chunks:
-        parts.append("### Research Context")
-        for i, c in enumerate(chunks, 1):
-            source = f'[{i}] Source: "{c.source_title}" ({c.source_url})'
-            parts.append(f"{source}\n{c.text}\n")
-    if prior_drafts:
-        parts.append("### Prior Sections")
-        for d in prior_drafts:
-            first = d.body_markdown.split(".")[0] + "."
-            parts.append(f"- {d.title}: {first}")
-    return "\n".join(parts)
 
 
 def extract_citations(
@@ -197,3 +184,12 @@ def _log_word_count(
         word_count=wc,
         citations_count=citation_count,
     )
+
+
+__all__ = [
+    "DraftingContext",
+    "OneSectionDraft",
+    "draft_one_section",
+    "draft_section",
+    "extract_citations",
+]

@@ -26,6 +26,11 @@ AnchorKind = Literal["spec_id", "heading_text"]
 _SPEC_ID_RE = re.compile(r'data-spec-id="([^"]+)"')
 
 
+def find_spec_ids(markdown: str) -> list[str]:
+    """All `data-spec-id` values in document order (duplicates preserved)."""
+    return _SPEC_ID_RE.findall(markdown)
+
+
 @dataclass(frozen=True)
 class AnchorViolation:
     """One missing-anchor finding."""
@@ -62,8 +67,8 @@ def validate_anchors(
 
 
 def _check_spec_ids(original: str, new: str) -> list[AnchorViolation]:
-    original_ids = set(_SPEC_ID_RE.findall(original))
-    new_ids = set(_SPEC_ID_RE.findall(new))
+    original_ids = set(find_spec_ids(original))
+    new_ids = set(find_spec_ids(new))
     missing = sorted(original_ids - new_ids)
     return [
         AnchorViolation(
@@ -112,4 +117,4 @@ def _check_headings(
     return violations
 
 
-__all__ = ["AnchorKind", "AnchorViolation", "validate_anchors"]
+__all__ = ["AnchorKind", "AnchorViolation", "find_spec_ids", "validate_anchors"]

@@ -408,3 +408,25 @@ class TestContentDeps:
         svc, session = await _make_service()
         draft = await svc.generate_outline(session.id)
         assert draft.outline is not None
+
+
+class TestDepsProperty:
+    def test_deps_exposes_injected_content_deps(self) -> None:
+        from src.services.content import (
+            ContentDeps,
+            ContentRepositories,
+            ContentService,
+        )
+        from src.services.content_repositories import (
+            InMemoryArticleDraftRepository,
+            InMemoryArticleRepository,
+        )
+
+        llm = FakeListChatModel(responses=["x"])
+        deps = ContentDeps(llm=llm)
+        repos = ContentRepositories(
+            drafts=InMemoryArticleDraftRepository(),
+            research=None,  # type: ignore[arg-type]
+            articles=InMemoryArticleRepository(),
+        )
+        assert ContentService(repos, deps).deps is deps

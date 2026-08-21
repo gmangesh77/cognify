@@ -121,3 +121,12 @@ class TestValidateAnchorsHeadings:
             section_index=2,
         )
         assert violations == []
+
+
+class TestFindSpecIds:
+    def test_returns_ids_in_document_order(self) -> None:
+        from src.services.content.section_anchors import find_spec_ids
+
+        md = '<figure data-spec-id="b"></figure>\n\ntext\n\n<img data-spec-id="a"/>'
+        assert find_spec_ids(md) == ["b", "a"]
+        assert find_spec_ids("no anchors") == []

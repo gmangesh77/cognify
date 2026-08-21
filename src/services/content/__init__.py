@@ -73,6 +73,11 @@ class ContentService:
         self._deps = deps
         self._step_repo = step_repo
 
+    @property
+    def deps(self) -> ContentDeps:
+        """Pipeline LLM / retriever / settings shared with prose routes (AUTHOR-004)."""
+        return self._deps
+
     async def generate_outline(self, session_id: UUID) -> ArticleDraft:
         session = await self._load_session(session_id)
         findings = self._reconstruct_findings(session)

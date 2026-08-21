@@ -35,6 +35,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.services.content.word_diff import WordDiffOp, diff_words
 from src.services.visuals.persona_directions import get_persona_register
+from src.utils.llm_usage import extract_usage
 
 logger = structlog.get_logger()
 
@@ -150,14 +151,10 @@ async def rewrite_section_prose(
     ]
     response = await llm.ainvoke(messages)
     raw = str(response.content).strip()
-    fragment = _strip_fences(raw)
+    fragment = strip_fences(raw)
     diff = diff_words(current_markdown, fragment)
-    usage = _extract_usage(response)
-    model_name = (
-        getattr(llm, "model", None)
-        or getattr(llm, "model_name", "unknown")
-        or "unknown"
-    )
+    usage = extract_usage(response)
+    model_name = model_label(llm)
     logger.info(
         "section_prose_rewritten",
         section_id=section_id,
@@ -206,7 +203,8 @@ def _scope_block(scope: RewriteScope, paragraph_index: int | None) -> str:
     return "the entire section body"
 
 
-def _strip_fences(text: str) -> str:
+def strip_fences(text: str) -> str:
+    """Drop a surrounding ``` fence the model added despite instructions."""
     stripped = text.strip()
     if stripped.startswith("```"):
         first_newline = stripped.find("\n")
@@ -217,25 +215,14 @@ def _strip_fences(text: str) -> str:
     return stripped
 
 
-def _extract_usage(response: object) -> dict[str, int | None]:
-    """Pull token counts off whatever Claude / FakeLLM returned."""
-    metadata = getattr(response, "usage_metadata", None) or {}
-    if isinstance(metadata, dict):
-        return {
-            "input": metadata.get("input_tokens"),
-            "output": metadata.get("output_tokens"),
-        }
-    response_metadata = getattr(response, "response_metadata", None) or {}
-    if isinstance(response_metadata, dict):
-        usage = response_metadata.get("usage")
-    else:
-        usage = None
-    if isinstance(usage, dict):
-        return {
-            "input": usage.get("input_tokens") or usage.get("prompt_tokens"),
-            "output": usage.get("output_tokens") or usage.get("completion_tokens"),
-        }
-    return {"input": None, "output": None}
+def model_label(llm: object) -> str:
+    """Best-effort model name for version rows (TrackedChatModel wraps `.inner`)."""
+    for target in (llm, getattr(llm, "inner", None)):
+        for attr in ("model", "model_name"):
+            value = getattr(target, attr, None)
+            if isinstance(value, str) and value:
+                return value
+    return "unknown"
 
 
 __all__ = [
@@ -244,5 +231,7 @@ __all__ = [
     "TONE_PRESETS",
     "TonePreset",
     "expand_tone_preset",
+    "model_label",
     "rewrite_section_prose",
+    "strip_fences",
 ]
