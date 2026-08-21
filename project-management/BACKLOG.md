@@ -231,4 +231,4 @@ follow-ups (INFRA-006, CONTENT-007, DASH-007, Playwright scaffold,
 The only remaining ticket in the entire backlog is PUBLISH-002
 (5 SP, WordPress integration).
 
-**Velocity**: 365 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21). Remaining: PUBLISH-002 (5 SP) + Epic 11 (~53 SP).
+**Velocity**: 370 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21). Remaining: PUBLISH-002 (5 SP) + Epic 11 (~53 SP).
