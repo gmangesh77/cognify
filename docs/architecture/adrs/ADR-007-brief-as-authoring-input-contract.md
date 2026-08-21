@@ -32,6 +32,12 @@ Per-article generation parameters (description override, audience, tone, angle, 
 ### Option C: First-class `Brief` entity (Selected)
 `briefs` table + `Brief` Pydantic model (`src/models/brief.py`): name, title, description, target_audience, content_tone, preferred_angle, keywords, content_type, length_target, structural_diagram_mode, audience_persona, require_outline_approval. `research_sessions.brief_id` (nullable FK). `CreateResearchSessionRequest` accepts `brief_id` **or** the existing inline fields; the inline path auto-creates a brief when the user ticks "save as brief". At session start the service **denormalises** brief fields onto the session (existing columns) so later brief edits never alter a past session.
 
+**Implementation note (AUTHOR-003, 2026-08-21):** the shipped implementation matches Option C with four clarifications:
+- `briefs.owner_id` is a `String(100)`, not a UUID — it stores the JWT `sub` claim verbatim (e.g. `"user-1"`), which is what every other owner-scoped lookup in the API uses. All `/briefs` reads and writes are scoped by that value in `BriefService`.
+- The session carries `content_type`, `length_target` and `audience_persona` alongside the pre-existing inline columns; word budgets derived from `length_target` are consumed later by AUTHOR-008, not here.
+- Precedence is resolved once, per field, in `resolve_session_params()` (`src/api/routers/research_params.py`): inline request value > brief value > default. A request that supplies `brief_id` *and* some inline fields keeps `brief_id` on the session for provenance while the inline fields win for those columns. Downstream code (`graph_state.py`, the content graph) reads only session columns — see L-012.
+- `Provenance.brief_id` (`src/models/content.py`) was added as a reference-only pointer; the brief body is never embedded in `CanonicalArticle`. The guard test `tests/unit/test_brief_boundary.py` fails if anything under `src/services/publishing/` imports `models.brief`.
+
 ## Decision Outcome
 
 Chosen option: **C**.
