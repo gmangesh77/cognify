@@ -4974,7 +4974,7 @@ def test_regenerate_modules_do_not_import_publishing() -> None:
 ```
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/test_boundaries_regenerate.py -q -p no:cacheprovider` → `2 passed`.
 
-- [ ] **Step 2: Full suites**
+- [x] **Step 2: Full suites** *(actual: 1632 backend / 532 frontend, 0 failures)*
 
 `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q -p no:cacheprovider` → 1557 (baseline on `develop` after AUTHOR-003) + 69 new (Tasks 1–5: 8 + 13 + 9 + 24 + 13, + 2 boundary) ≈ 1626 passed, 0 failed — **record the actual number from the run** in PROGRESS/CLAUDE.md (the 1 Pg integration test is not in this count). `cd frontend && npx vitest run` → 502 + 24 new ≈ 526 passed — **record the actual number**. `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv run mypy src/ --ignore-missing-imports` clean; `cd frontend && npx tsc --noEmit && npx eslint src && npm run build` clean. Line caps: `wc -l` on every file in the File map — every new file and every split file < 200; the five pre-existing over-cap files (`content.py`, `section_rewriter.py`, `main.py`, `services/content/__init__.py`, `db/repositories.py`) must not have grown except by the documented deltas. Function-length gate across everything new: `uv run python -c "import ast,sys;[print(p,f.name,f.end_lineno-f.lineno+1) for p in sys.argv[1:] for f in ast.walk(ast.parse(open(p).read())) if isinstance(f,(ast.FunctionDef,ast.AsyncFunctionDef)) and f.end_lineno-f.lineno+1>=20]" src/services/content/section_history.py src/services/content/section_history_contracts.py src/services/content/section_regenerate.py src/services/content/section_regenerate_models.py src/services/content/section_regenerate_text.py src/api/routers/content_shared.py src/api/routers/content_regenerate.py src/agents/content/section_prompt.py src/utils/llm_usage.py` → prints nothing. L-001 grep (`grep -rn "model_dump()" src/ | grep -v "mode="`) unchanged.
 
@@ -5011,7 +5011,7 @@ Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/test_boundaries_regene
 
 `docker compose up --build -d` (verify the frontend image timestamp advanced — cached Next builds silently ship stale code; use `--no-cache` for the frontend if the chunk hash did not change) → open an article → hover the **second** section → **Edit text** → the editor shows the second section's markdown (L-013 fix visible) → Cancel → hover a section → **Regenerate** → optional instruction → diff + "N words · model" meta shows → Accept → article re-renders with the new section, figure anchors intact, neighbouring sections untouched → History drawer on that section shows "Regenerated" twice (candidate + applied). Reject → nothing changes. `/pipeline-debug` for the article's session shows one `section_regenerate` LLM call. If the stack's Anthropic key is invalid, record the smoke as deferred in PROGRESS (same as AUTHOR-002 did).
 
-- [ ] **Step 5: Commit + hand off**
+- [x] **Step 5: Commit + hand off**
 
 `git add project-management CLAUDE.md docs frontend/DESIGN.md tests/unit/test_boundaries_regenerate.py && git commit -m "docs(AUTHOR-004): progress/backlog (+2 SP), L-013 section-index contract, ADR-006 impl note, DESIGN toolbar, boundary guard"`
 Then hand over to `superpowers:finishing-a-development-branch` (PR off `develop`, never stacked; PR body mentions the L-013 contract change so reviewers check any out-of-tree `section_id` consumers). Azure Boards: set the AUTHOR-004 work item to Closed (L-008: User Story → `Closed`) and bump its story points to 5.
