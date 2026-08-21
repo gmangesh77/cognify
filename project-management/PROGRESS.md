@@ -174,7 +174,7 @@
 | AUTHOR-001 | Live session progress (SSE) + session route + auto-navigate | Done (merged to develop `06439e9`, 2026-08-19) | `feature/AUTHOR-001-pipeline-events` | [plan](../docs/superpowers/plans/2026-08-19-author-001-session-events-sse.md) | review §6 #1 |
 | AUTHOR-002 | Outline approval gate + cancel | Done (PR #73 → develop `30f1a36`, 2026-08-19) | `feature/AUTHOR-002-outline-gate` | [plan](../docs/superpowers/plans/2026-08-19-author-002-outline-gate.md) | review §6 #2 |
 | AUTHOR-003 | Brief model + Generate modal rework | Done (PR #74 → develop `740af60`, 2026-08-21; migration `b3c7e1f9a2d4`; live smoke passed) | `feature/AUTHOR-003-brief` | [plan](../docs/superpowers/plans/2026-08-20-author-003-brief.md) | ADR-007; review §6 #3 |
-| AUTHOR-004 | Per-section regenerate | **Next** (Planned) | — | program plan §5.5 | review §6 #4 |
+| AUTHOR-004 | Per-section regenerate | **In Progress** (started 2026-08-21) | `feature/AUTHOR-004-section-regenerate` | [plan](../docs/superpowers/plans/2026-08-21-author-004-section-regenerate.md) | program plan §5.5; review §6 #4 |
 | AUTHOR-005 | Usage/cost badge | Planned | — | program plan §5.6 | review §6 #5 |
 | INFRA-007 | CeleryDispatcher + worker | Planned | — | program plan §9 Phase A | review §5 |
 | AUTHOR-006 | Article metadata editor + autosave | Planned | — | program plan §5.7, §6 | review §6 #6/#7 |
