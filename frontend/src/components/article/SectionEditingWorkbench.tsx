@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { History, LayoutPanelTop, RefreshCw, Wand2 } from "lucide-react";
 import { AIRewritePopover } from "./AIRewritePopover";
 import { HumanizationDiffPanel } from "./HumanizationDiffPanel";
@@ -23,7 +22,10 @@ export interface SectionEditingWorkbenchProps {
   articleId: string;
   section: ActiveSection;
   defaultPersona: string | null;
-  initialPanel: WorkbenchPanel | null;
+  /** Controlled: the page owns the open panel so toolbar clicks can switch
+   *  it in place without remounting the editor (unsaved draft survives). */
+  panel: WorkbenchPanel | null;
+  onPanelChange: (next: WorkbenchPanel | null) => void;
   onChange: (next: ActiveSection | null) => void;
   onToast: (message: string) => void;
   onOpenHistory: (sectionId: string) => void;
@@ -39,14 +41,15 @@ export function SectionEditingWorkbench({
   articleId,
   section,
   defaultPersona,
-  initialPanel,
+  panel,
+  onPanelChange,
   onChange,
   onToast,
   onOpenHistory,
   onPersisted,
 }: SectionEditingWorkbenchProps) {
-  const [panel, setPanel] = useState<WorkbenchPanel | null>(initialPanel);
-  const toggle = (p: WorkbenchPanel) => setPanel((cur) => (cur === p ? null : p));
+  const setPanel = onPanelChange;
+  const toggle = (p: WorkbenchPanel) => onPanelChange(panel === p ? null : p);
   // Stage a suggestion into the editor (not yet persisted).
   const stage = (md: string, msg: string) => {
     onChange({ ...section, markdown: md });

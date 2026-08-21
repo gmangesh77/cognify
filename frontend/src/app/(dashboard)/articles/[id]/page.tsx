@@ -35,7 +35,7 @@ export default function ArticleDetailPage() {
   const [toast, setToast] = useState<string | null>(null);
   const defaultPersona = useDefaultPersona();
   const [activeSection, setActiveSection] = useState<ActiveSection | null>(null);
-  const [initialPanel, setInitialPanel] = useState<WorkbenchPanel | null>(null);
+  const [panel, setPanel] = useState<WorkbenchPanel | null>(null);
   const [historySectionId, setHistorySectionId] = useState<string | null>(null);
   const [focusVisualSection, setFocusVisualSection] = useState<number | null>(null);
 
@@ -54,7 +54,7 @@ export default function ArticleDetailPage() {
 
   const openSection = (sectionIndex: number, markdown: string, panel: WorkbenchPanel | null) => {
     setActiveSection({ index: sectionIndex, sectionId: makeSectionId(id, sectionIndex), markdown });
-    setInitialPanel(panel);
+    setPanel(panel);
   };
 
   return (
@@ -104,11 +104,12 @@ export default function ArticleDetailPage() {
           />
           {activeSection ? (
             <SectionEditingWorkbench
-              key={`${activeSection.sectionId}-${initialPanel ?? "none"}`}
+              key={activeSection.sectionId}
               articleId={id}
               section={activeSection}
               defaultPersona={defaultPersona}
-              initialPanel={initialPanel}
+              panel={panel}
+              onPanelChange={setPanel}
               onChange={setActiveSection}
               onToast={showToast}
               onOpenHistory={setHistorySectionId}

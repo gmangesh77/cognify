@@ -87,6 +87,25 @@ describe("useSectionRegenerate", () => {
     expect(result.current.result?.version_id).toBe("v2");
   });
 
+  it("maps 409/429/503 to readable messages", async () => {
+    for (const [status, text] of [
+      [409, "no stored outline"],
+      [429, "Too many regenerations"],
+      [503, "not configured"],
+    ] as const) {
+      vi.mocked(api.regenerateSection).mockRejectedValueOnce(
+        Object.assign(new Error(`Request failed with status code ${status}`), {
+          response: { status },
+        }),
+      );
+      const { result } = renderHook(() => useSectionRegenerate());
+      await act(async () => {
+        await result.current.run({ article_id: "a", section_index: 0 });
+      });
+      expect(result.current.error).toContain(text);
+    }
+  });
+
   it("reset() clears everything", async () => {
     vi.mocked(api.regenerateSection).mockResolvedValue(RESPONSE);
     const { result } = renderHook(() => useSectionRegenerate());

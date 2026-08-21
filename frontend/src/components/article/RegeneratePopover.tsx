@@ -98,6 +98,7 @@ export function RegeneratePopover({
           onChange={(e) => setInstruction(e.target.value)}
           placeholder="e.g. open with a concrete incident, keep it under 250 words"
           rows={3}
+          maxLength={2000}
           data-testid="regenerate-instruction"
           className="rounded-md border border-neutral-200 px-3 py-2 text-sm text-neutral-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
