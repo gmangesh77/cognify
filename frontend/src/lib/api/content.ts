@@ -4,6 +4,8 @@ import type {
   HumanizePreviewResponse,
   ParagraphToneRequest,
   SectionHistoryResponse,
+  SectionRegenerateRequest,
+  SectionRegenerateResponse,
   SectionRestoreRequest,
   SectionRewriteRequest,
   SectionRewriteResponse,
@@ -75,6 +77,17 @@ export async function restoreSectionVersion(
 ): Promise<SectionUpdateResponse> {
   const { data } = await apiClient.post<SectionUpdateResponse>(
     `/content/section/${encodeURIComponent(sectionId)}/restore`,
+    body,
+  );
+  return data;
+}
+
+/** AUTHOR-004 — redraft one section; returns a candidate + diff (body untouched). */
+export async function regenerateSection(
+  body: SectionRegenerateRequest,
+): Promise<SectionRegenerateResponse> {
+  const { data } = await apiClient.post<SectionRegenerateResponse>(
+    "/content/section-regenerate",
     body,
   );
   return data;
