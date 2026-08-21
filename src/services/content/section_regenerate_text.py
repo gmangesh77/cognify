@@ -65,8 +65,11 @@ def reject_non_prose(section: MarkdownSection, article_id: UUID) -> None:
         )
 
 
-def _anchor_lines(block: MarkdownBlock) -> str:
-    return "\n".join(ln for ln in block.lines if find_spec_ids(ln))
+def _anchor_lines(block: MarkdownBlock, present: set[str]) -> str:
+    """Lines of `block` holding a data-spec-id that the new body lacks."""
+    return "\n".join(
+        ln for ln in block.lines if any(sid not in present for sid in find_spec_ids(ln))
+    )
 
 
 def _slot(pos: int, old_total: int, new_total: int) -> int:
@@ -83,8 +86,8 @@ def _carried_anchor_lines(old_body: str, new_body: str) -> list[tuple[int, str]]
     present = set(find_spec_ids(new_body))
     carried: list[tuple[int, str]] = []
     for pos, block in enumerate(parse_markdown_blocks(old_body)):
-        lines = _anchor_lines(block)
-        if lines and any(sid not in present for sid in find_spec_ids(lines)):
+        lines = _anchor_lines(block, present)
+        if lines:
             carried.append((pos, lines))
     return carried
 

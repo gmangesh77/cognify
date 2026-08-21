@@ -267,6 +267,12 @@ class TestCarryAnchorBlocks:
         out = carry_anchor_blocks(f"{FIGURE}\n\nA.\n\n{FIGURE_B}", "X.")
         assert out == f"{FIGURE}\n\nX.\n\n{FIGURE_B}"
 
+    def test_block_with_two_figures_carries_only_the_missing_one(self) -> None:
+        # Both figures share one block; the LLM reproduced spec-a only.
+        out = carry_anchor_blocks(f"{FIGURE}\n{FIGURE_B}", f"new.\n\n{FIGURE}")
+        assert out.count("spec-a") == 1
+        assert out.count("spec-b") == 1
+
     def test_idempotent_when_anchor_already_present(self) -> None:
         out = carry_anchor_blocks(FIGURE, f"new.\n\n{FIGURE}")
         assert out.count("spec-a") == 1

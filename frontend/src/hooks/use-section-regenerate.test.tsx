@@ -66,6 +66,27 @@ describe("useSectionRegenerate", () => {
     expect(result.current.error).toBe("boom");
   });
 
+  it("drops a stale response when a newer run() started", async () => {
+    let resolveFirst!: (v: typeof RESPONSE) => void;
+    vi.mocked(api.regenerateSection)
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (resolveFirst = resolve)),
+      )
+      .mockResolvedValueOnce({ ...RESPONSE, version_id: "v2" });
+    const { result } = renderHook(() => useSectionRegenerate());
+    act(() => {
+      void result.current.run({ article_id: "a", section_index: 0 });
+    });
+    await act(async () => {
+      await result.current.run({ article_id: "a", section_index: 0 });
+    });
+    await waitFor(() => expect(result.current.result?.version_id).toBe("v2"));
+    await act(async () => {
+      resolveFirst({ ...RESPONSE, version_id: "v1" });
+    });
+    expect(result.current.result?.version_id).toBe("v2");
+  });
+
   it("reset() clears everything", async () => {
     vi.mocked(api.regenerateSection).mockResolvedValue(RESPONSE);
     const { result } = renderHook(() => useSectionRegenerate());
