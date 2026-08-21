@@ -82,7 +82,12 @@ export function useGenerateModalState({ analysis, updateField }: Args) {
       keywords: a.keywords.length > 0 ? a.keywords : undefined,
       topic_description_override: descriptionEdited ? a.description : undefined,
       structural_diagram_mode: diagramMode,
-      require_outline_approval: requireOutlineApproval || undefined,
+      // With a saved brief the brief already supplies a concrete gate value, so
+      // send the explicit boolean (an unticked box must override brief=true).
+      // Without a brief, omit `false` so the server-side default still applies.
+      require_outline_approval: isNew
+        ? requireOutlineApproval || undefined
+        : requireOutlineApproval,
       content_type: effectiveOptions.content_type,
       length_target: effectiveOptions.length_target,
       brief_id: isNew ? undefined : selectedBriefId,

@@ -22,7 +22,7 @@ class BriefRow(Base, UUIDMixin, TimestampMixin):
     target_audience: Mapped[str | None] = mapped_column(String(500), nullable=True)
     content_tone: Mapped[str | None] = mapped_column(String(100), nullable=True)
     preferred_angle: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    keywords: Mapped[list] = mapped_column(JSONB, default=list)
+    keywords: Mapped[list[str]] = mapped_column(JSONB, default=list)
     content_type: Mapped[str] = mapped_column(String(20), default="article")
     length_target: Mapped[str] = mapped_column(String(20), default="medium")
     structural_diagram_mode: Mapped[str] = mapped_column(

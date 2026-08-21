@@ -121,7 +121,9 @@ async def _load_or_save_brief(
         return await brief_svc.get(owner_id, body.brief_id)  # type: ignore[no-any-return]
     if body.save_as_brief:
         topic = await _get_research_service_readonly(request).get_topic(body.topic_id)
-        return await brief_svc.create(owner_id, inline_brief_create(body, topic.title))  # type: ignore[no-any-return]
+        gate = request.app.state.settings.require_outline_approval
+        data = inline_brief_create(body, topic.title, gate)
+        return await brief_svc.create(owner_id, data)  # type: ignore[no-any-return]
     return None
 
 

@@ -77,3 +77,23 @@ def test_inline_brief_create_uses_brief_name_or_topic_title() -> None:
     assert bc.content_tone == "educational"
     body2 = body.model_copy(update={"brief_name": "My brief"})
     assert inline_brief_create(body2, "Topic T").name == "My brief"
+
+
+def test_save_as_brief_inherits_settings_gate_default() -> None:
+    """save_as_brief + gate omitted must behave like the plain inline path."""
+    body = CreateResearchSessionRequest(topic_id=uuid4(), save_as_brief=True)
+    bc = inline_brief_create(body, "Topic T", default_gate=True)
+    assert bc.require_outline_approval is True
+    saved = _brief(require_outline_approval=bc.require_outline_approval)
+    p = resolve_session_params(ParamSources(body, saved, default_gate=True))
+    assert p.require_outline_approval is True
+
+
+def test_save_as_brief_explicit_false_beats_settings_default() -> None:
+    body = CreateResearchSessionRequest(
+        topic_id=uuid4(), save_as_brief=True, require_outline_approval=False
+    )
+    assert (
+        inline_brief_create(body, "T", default_gate=True).require_outline_approval
+        is False
+    )

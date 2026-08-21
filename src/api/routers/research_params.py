@@ -51,9 +51,15 @@ def resolve_session_params(src: ParamSources) -> SessionParams:
 
 
 def inline_brief_create(
-    body: CreateResearchSessionRequest, topic_title: str
+    body: CreateResearchSessionRequest, topic_title: str, default_gate: bool = False
 ) -> BriefCreate:
-    """Build a BriefCreate from the inline request fields ("save as brief")."""
+    """Build a BriefCreate from the inline request fields ("save as brief").
+
+    `default_gate` is the settings default for the outline gate; it applies
+    only when the request omits `require_outline_approval`, so the saved brief
+    records the same value the plain inline path would have used.
+    """
+    gate = body.require_outline_approval
     return BriefCreate(
         name=body.brief_name or topic_title[:200],
         title=topic_title,
@@ -66,5 +72,5 @@ def inline_brief_create(
         length_target=body.length_target or "medium",
         structural_diagram_mode=body.structural_diagram_mode or "illustration",
         audience_persona=body.audience_persona,
-        require_outline_approval=bool(body.require_outline_approval),
+        require_outline_approval=default_gate if gate is None else gate,
     )

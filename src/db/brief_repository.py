@@ -16,7 +16,13 @@ logger = structlog.get_logger()
 
 
 def row_to_brief(row: BriefRow) -> Brief:
-    return Brief(
+    # Validate (not just construct) so the DB's plain strings are coerced into
+    # the ContentType enum / Literal fields exactly as API input would be.
+    return Brief.model_validate(_row_fields(row))
+
+
+def _row_fields(row: BriefRow) -> dict[str, object]:
+    return dict(
         id=row.id,
         owner_id=row.owner_id,
         name=row.name,
@@ -83,4 +89,4 @@ class PgBriefRepository:
         async with self._sf() as db:
             result = await db.execute(delete(BriefRow).where(BriefRow.id == brief_id))
             await db.commit()
-            return bool(result.rowcount)
+            return bool(getattr(result, "rowcount", 0))

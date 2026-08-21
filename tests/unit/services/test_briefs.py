@@ -70,3 +70,17 @@ async def test_duplicate_copies_fields_with_copy_suffix(svc: BriefService) -> No
     assert dup.id != b.id
     assert dup.name == "A (copy)"
     assert dup.keywords == ["k"] and dup.length_target == "long"
+
+
+async def test_delete_other_owner_not_found_and_keeps_row(svc: BriefService) -> None:
+    b = await svc.create("u1", BriefCreate(name="A"))
+    with pytest.raises(NotFoundError):
+        await svc.delete("u2", b.id)
+    assert (await svc.get("u1", b.id)).id == b.id
+
+
+async def test_duplicate_other_owner_not_found(svc: BriefService) -> None:
+    b = await svc.create("u1", BriefCreate(name="A"))
+    with pytest.raises(NotFoundError):
+        await svc.duplicate("u2", b.id)
+    assert await svc.list("u2") == []

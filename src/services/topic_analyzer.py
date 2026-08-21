@@ -8,10 +8,10 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
 from src.api.schemas.topic_analysis import (
-    VALID_TONES,
     TopicAnalysisResult,
 )
 from src.models.brief import BriefCreate
+from src.models.tones import VALID_TONES
 from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()

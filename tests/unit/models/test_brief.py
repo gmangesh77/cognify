@@ -65,3 +65,9 @@ def test_brief_round_trips_json_mode() -> None:
     dumped = b.model_dump(mode="json")
     assert dumped["keywords"] == ["a", "b"]
     assert isinstance(dumped["id"], str)
+
+
+def test_keyword_items_are_length_bounded() -> None:
+    with pytest.raises(ValidationError):
+        BriefCreate(name="A", keywords=["x" * 101])
+    assert BriefCreate(name="A", keywords=["x" * 100]).keywords == ["x" * 100]

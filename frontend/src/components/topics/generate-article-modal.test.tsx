@@ -295,6 +295,35 @@ describe("GenerateArticleModal", () => {
     );
   });
 
+  it("unticking 'Review outline' on a saved brief sends an explicit false", async () => {
+    const onConfirm = vi.fn();
+    renderModal({ onConfirm });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("option", { name: "Saved brief" }),
+      ).toBeInTheDocument(),
+    );
+    fireEvent.change(screen.getByLabelText("Brief"), {
+      target: { value: "b1" },
+    });
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("CISOs")).toBeInTheDocument(),
+    );
+    const gate = screen.getByLabelText(
+      /review outline before drafting/i,
+    ) as HTMLInputElement;
+    expect(gate.checked).toBe(true);
+    fireEvent.click(gate);
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      mockTopic,
+      expect.objectContaining({
+        brief_id: "b1",
+        require_outline_approval: false,
+      }),
+    );
+  });
+
   it("save-as-brief sends the flag and a name", async () => {
     const onConfirm = vi.fn();
     renderModal({ onConfirm });

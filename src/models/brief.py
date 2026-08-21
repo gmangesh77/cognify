@@ -6,10 +6,16 @@ the pipeline afterwards, so editing a brief never alters a past session.
 """
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 from src.models.content import ContentType
 from src.models.tones import VALID_TONES
@@ -17,6 +23,7 @@ from src.services.visuals.persona_directions import PERSONA_VISUAL_DIRECTIONS
 
 LengthTarget = Literal["short", "medium", "long", "pillar"]
 DiagramMode = Literal["illustration", "mermaid"]
+Keyword = Annotated[str, StringConstraints(max_length=100)]
 
 
 def check_tone(value: str | None) -> str | None:
@@ -40,7 +47,7 @@ class BriefFields(BaseModel):
     target_audience: str | None = Field(default=None, max_length=500)
     content_tone: str | None = None
     preferred_angle: str | None = Field(default=None, max_length=500)
-    keywords: list[str] = Field(default_factory=list, max_length=20)
+    keywords: list[Keyword] = Field(default_factory=list, max_length=20)
     content_type: ContentType = ContentType.ARTICLE
     length_target: LengthTarget = "medium"
     structural_diagram_mode: DiagramMode = "illustration"
@@ -64,7 +71,7 @@ class BriefUpdate(BaseModel):
     target_audience: str | None = Field(default=None, max_length=500)
     content_tone: str | None = None
     preferred_angle: str | None = Field(default=None, max_length=500)
-    keywords: list[str] | None = Field(default=None, max_length=20)
+    keywords: list[Keyword] | None = Field(default=None, max_length=20)
     content_type: ContentType | None = None
     length_target: LengthTarget | None = None
     structural_diagram_mode: DiagramMode | None = None
