@@ -199,3 +199,11 @@ class TestAssembleCanonicalArticle:
         draft.global_citations = _make_global_citations(3)
         article = assemble_canonical_article(draft, _make_topic())
         assert article is not None
+
+
+class TestStripLeadingHeading:
+    def test_drops_duplicated_heading_line_only(self) -> None:
+        from src.agents.content.article_assembler import strip_leading_heading
+
+        assert strip_leading_heading("## Title\n\nBody.") == "Body."
+        assert strip_leading_heading("Body only.") == "Body only."

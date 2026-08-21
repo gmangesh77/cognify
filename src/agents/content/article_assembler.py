@@ -71,7 +71,7 @@ def _transform_citations(
     return [Citation.model_validate(c) for c in global_citations]
 
 
-def _strip_leading_heading(body: str) -> str:
+def strip_leading_heading(body: str) -> str:
     """Remove leading markdown heading if present (LLM often duplicates it)."""
     stripped = body.lstrip()
     if stripped.startswith("#"):
@@ -93,7 +93,7 @@ def _compile_body(
     ]
     sorted_sections = sorted(parsed, key=lambda s: s.section_index)
     parts = [
-        f"## {s.title}\n\n{_strip_leading_heading(s.body_markdown)}"
+        f"## {s.title}\n\n{strip_leading_heading(s.body_markdown)}"
         for s in sorted_sections
     ]
     if references_md:
@@ -120,3 +120,6 @@ def _validate_assembly(
             minimum=_MIN_CITATIONS,
             hint="RAG retriever may be unavailable.",
         )
+
+
+__all__ = ["assemble_canonical_article", "strip_leading_heading"]

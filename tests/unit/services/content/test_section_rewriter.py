@@ -99,3 +99,22 @@ class TestRewriteSectionProse:
         rendered = "\n".join(str(m.content) for m in captured["messages"])  # type: ignore[union-attr]
         assert "Hard rules" in rendered
         assert "data-spec-id" in rendered
+
+
+class TestPromotedHelpers:
+    def test_strip_fences_removes_markdown_fence(self) -> None:
+        from src.services.content.section_rewriter import strip_fences
+
+        assert strip_fences("```markdown\nbody\n```") == "body"
+        assert strip_fences("plain") == "plain"
+
+    def test_model_label_reads_model_then_model_name_then_inner(self) -> None:
+        from types import SimpleNamespace
+
+        from src.services.content.section_rewriter import model_label
+
+        assert model_label(SimpleNamespace(model="claude-a")) == "claude-a"
+        assert model_label(SimpleNamespace(model_name="claude-b")) == "claude-b"
+        tracked = SimpleNamespace(inner=SimpleNamespace(model="claude-inner"))
+        assert model_label(tracked) == "claude-inner"
+        assert model_label(object()) == "unknown"

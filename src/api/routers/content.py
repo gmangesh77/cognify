@@ -28,17 +28,22 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi import status as http_status
 from langchain_anthropic import ChatAnthropic
+from langchain_core.language_models import BaseChatModel
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above
 from src.api.rate_limiter import limiter
+from src.api.routers.content_shared import (
+    WordDiffEntry,
+    anchor_violation_http,
+    get_history_service,
+)
 from src.config.settings import Settings
 from src.services.content.humanize_preview import preview_humanization
 from src.services.content.section_history import (
     AnchorViolationError,
     ArticleNotFoundError,
-    SectionHistoryService,
     SectionNotFoundError,
 )
 from src.services.content.section_history_contracts import (
@@ -52,35 +57,10 @@ from src.services.content.section_rewriter import (
     expand_tone_preset,
     rewrite_section_prose,
 )
-from src.services.content.word_diff import WordDiffOp
 
 logger = structlog.get_logger()
 
 content_router = APIRouter(prefix="/content")
-
-
-# ---------------------------------------------------------------------------
-# Shared schemas
-# ---------------------------------------------------------------------------
-
-
-class WordDiffEntry(BaseModel):
-    """Wire-format mirror of `WordDiffOp` so OpenAPI knows the shape."""
-
-    kind: Literal["equal", "insert", "delete", "replace"]
-    before: str
-    after: str
-
-    @classmethod
-    def from_op(cls, op: WordDiffOp) -> WordDiffEntry:
-        return cls(kind=op.kind, before=op.before, after=op.after)
-
-
-class AnchorViolationEntry(BaseModel):
-    kind: Literal["spec_id", "heading_text"]
-    value: str
-    spec_id: str | None = None
-    message: str
 
 
 # ---------------------------------------------------------------------------
@@ -119,8 +99,7 @@ async def section_rewrite(
     user: TokenPayload = Depends(require_editor_or_above),
 ) -> SectionRewriteResponse:
     """Apply Claude-driven prose refinement to one section / paragraph."""
-    settings: Settings = request.app.state.settings
-    history = _get_history_service(request)
+    history = get_history_service(request)
     current_md = body.current_markdown
     if current_md is None:
         article_id, section_index = _parse_or_400(body.section_id)
@@ -138,7 +117,7 @@ async def section_rewrite(
             ) from exc
         current_md = section.text
 
-    llm = _get_content_llm(settings)
+    llm = _get_content_llm(request)
     result = await rewrite_section_prose(
         section_id=body.section_id,
         instruction=body.instruction,
@@ -169,7 +148,7 @@ async def section_rewrite(
 class SectionUpdateRequest(BaseModel):
     section_id: str = Field(min_length=3, max_length=80)
     markdown: str = Field(min_length=1, max_length=20000)
-    source: Literal["manual", "ai", "tone_preset", "restore"] = "manual"
+    source: Literal["manual", "ai", "tone_preset", "restore", "regenerate"] = "manual"
     instruction: str | None = Field(default=None, max_length=2000)
 
 
@@ -187,7 +166,7 @@ async def section_update(
     user: TokenPayload = Depends(require_editor_or_above),
 ) -> SectionUpdateResponse:
     """Persist a section edit. Validates anchors, appends version row."""
-    history = _get_history_service(request)
+    history = get_history_service(request)
     article_id, section_index = _parse_or_400(body.section_id)
     try:
         result = await history.persist_section_update(
@@ -209,21 +188,7 @@ async def section_update(
             detail=str(exc),
         ) from exc
     except AnchorViolationError as exc:
-        raise HTTPException(
-            status_code=http_status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={
-                "error": "anchor_violation",
-                "violations": [
-                    AnchorViolationEntry(
-                        kind=v.kind,
-                        value=v.value,
-                        spec_id=v.spec_id,
-                        message=v.message,
-                    ).model_dump()
-                    for v in exc.violations
-                ],
-            },
-        ) from exc
+        raise anchor_violation_http(exc) from exc
     return SectionUpdateResponse(
         section_id=body.section_id,
         version_id=str(result.version_id),
@@ -308,7 +273,7 @@ async def section_history_list(
     user: TokenPayload = Depends(require_editor_or_above),
 ) -> SectionHistoryResponse:
     """List prior versions of a section, newest first."""
-    history = _get_history_service(request)
+    history = get_history_service(request)
     try:
         parse_section_id(section_id)
     except ValueError as exc:
@@ -360,7 +325,7 @@ async def section_restore(
     user: TokenPayload = Depends(require_editor_or_above),
 ) -> SectionUpdateResponse:
     """Restore a section to a prior version."""
-    history = _get_history_service(request)
+    history = get_history_service(request)
     try:
         parse_section_id(section_id)
     except ValueError as exc:
@@ -387,21 +352,7 @@ async def section_restore(
             detail=str(exc),
         ) from exc
     except AnchorViolationError as exc:
-        raise HTTPException(
-            status_code=http_status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={
-                "error": "anchor_violation",
-                "violations": [
-                    AnchorViolationEntry(
-                        kind=v.kind,
-                        value=v.value,
-                        spec_id=v.spec_id,
-                        message=v.message,
-                    ).model_dump()
-                    for v in exc.violations
-                ],
-            },
-        ) from exc
+        raise anchor_violation_http(exc) from exc
     return SectionUpdateResponse(
         section_id=section_id,
         version_id=str(result.version_id),
@@ -452,7 +403,7 @@ async def humanize_preview(
     `rewritten` markdown through `/content/section-update`, which runs
     the anchor-preservation validator and appends a version row.
     """
-    history = _get_history_service(request)
+    history = get_history_service(request)
     article_id, section_index = _parse_or_400(body.section_id)
     current_md = body.current_markdown
     if current_md is None:
@@ -470,8 +421,7 @@ async def humanize_preview(
             ) from exc
         current_md = section.text
 
-    settings: Settings = request.app.state.settings
-    llm = _get_content_llm(settings)
+    llm = _get_content_llm(request)
     preview = await preview_humanization(
         section_index=section_index,
         title=body.title,
@@ -513,24 +463,23 @@ def _parse_or_400(section_id: str) -> tuple[UUID, int]:
         ) from exc
 
 
-def _get_history_service(request: Request) -> SectionHistoryService:
-    svc = getattr(request.app.state, "section_history_service", None)
-    if svc is None:
-        article_repo = getattr(request.app.state, "article_repo", None)
-        version_repo = getattr(request.app.state, "section_version_repo", None)
-        if article_repo is None or version_repo is None:
-            raise HTTPException(
-                status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="section history service is not configured",
-            )
-        svc = SectionHistoryService(article_repo, version_repo)
-        request.app.state.section_history_service = svc
-    assert isinstance(svc, SectionHistoryService)
-    return svc
+def _get_content_llm(request: Request) -> BaseChatModel:
+    """Prefer the pipeline's (tracked) LLM so rewrite + regenerate share cost tracking.
+
+    NOTE: when `content_service` deps are present, section-rewrite and
+    humanize-preview inherit the pipeline model config (incl.
+    `max_tokens=4096`) instead of the 30 s ad-hoc ChatAnthropic below;
+    the fallback path is unchanged.
+    """
+    service = getattr(request.app.state, "content_service", None)
+    llm = getattr(getattr(service, "deps", None), "llm", None)
+    if llm is not None:
+        return llm  # type: ignore[no-any-return]
+    return _build_anthropic_llm(request.app.state.settings)
 
 
-def _get_content_llm(settings: Settings) -> ChatAnthropic:
-    """Build a Claude chat model for prose rewrites."""
+def _build_anthropic_llm(settings: Settings) -> ChatAnthropic:
+    """Fallback Claude model for prose rewrites (no ContentService on app.state)."""
     from pydantic import SecretStr
 
     return ChatAnthropic(

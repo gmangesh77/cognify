@@ -699,3 +699,69 @@ class TestOutlineIndexContractEndpoint:
         assert body.startswith("Intro prelude paragraph.")
         assert "Replaced first body." in body
         assert "## Second Section\nSecond section body." in body
+
+
+class TestContentLlmSource:
+    """_get_content_llm prefers the pipeline deps; falls back to ChatAnthropic."""
+
+    async def test_rewrite_uses_content_service_deps_llm(
+        self,
+        content_app: FastAPI,
+        content_client: httpx.AsyncClient,
+        content_settings: Settings,
+        section_id: str,
+    ) -> None:
+        from src.services.content import (
+            ContentDeps,
+            ContentRepositories,
+            ContentService,
+        )
+        from src.services.content_repositories import (
+            InMemoryArticleDraftRepository,
+            InMemoryArticleRepository,
+        )
+
+        repos = ContentRepositories(
+            drafts=InMemoryArticleDraftRepository(),
+            research=None,  # type: ignore[arg-type]
+            articles=InMemoryArticleRepository(),
+        )
+        content_app.state.content_service = ContentService(
+            repos, ContentDeps(llm=FakeListChatModel(responses=["Tracked reply."]))
+        )
+        with patch("src.api.routers.content._build_anthropic_llm") as build:
+            resp = await content_client.post(
+                "/api/v1/content/section-rewrite",
+                json={
+                    "section_id": section_id,
+                    "instruction": "Tighten.",
+                    "current_markdown": "Old.",
+                },
+                headers=_editor_headers(content_settings),
+            )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["markdown_fragment"] == "Tracked reply."
+        build.assert_not_called()
+
+    async def test_rewrite_falls_back_to_anthropic_builder(
+        self,
+        content_client: httpx.AsyncClient,
+        content_settings: Settings,
+        section_id: str,
+    ) -> None:
+        fake = FakeListChatModel(responses=["Fallback reply."])
+        with patch(
+            "src.api.routers.content._build_anthropic_llm", return_value=fake
+        ) as build:
+            resp = await content_client.post(
+                "/api/v1/content/section-rewrite",
+                json={
+                    "section_id": section_id,
+                    "instruction": "Tighten.",
+                    "current_markdown": "Old.",
+                },
+                headers=_editor_headers(content_settings),
+            )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["markdown_fragment"] == "Fallback reply."
+        build.assert_called_once()
