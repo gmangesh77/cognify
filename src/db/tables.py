@@ -67,7 +67,9 @@ class ResearchSessionRow(Base, UUIDMixin, TimestampMixin):
         nullable=True,
         index=True,
     )
-    status: Mapped[str] = mapped_column(String(20), default="planning", index=True)
+    # 40: "awaiting_outline_review" (AUTHOR-002) is 23 chars; see
+    # tests/unit/db/test_session_status_column_width.py.
+    status: Mapped[str] = mapped_column(String(40), default="planning", index=True)
     round_count: Mapped[int] = mapped_column(Integer, default=0)
     findings_count: Mapped[int] = mapped_column(Integer, default=0)
     indexed_count: Mapped[int] = mapped_column(Integer, default=0)
