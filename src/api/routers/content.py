@@ -40,6 +40,8 @@ from src.services.content.section_history import (
     ArticleNotFoundError,
     SectionHistoryService,
     SectionNotFoundError,
+)
+from src.services.content.section_history_contracts import (
     make_section_id,
     parse_section_id,
 )

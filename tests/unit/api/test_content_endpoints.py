@@ -35,10 +35,8 @@ from src.models.content import (
     SEOMetadata,
 )
 from src.models.visual import ImagePlacement, ImageSpec
-from src.services.content.section_history import (
-    SectionHistoryService,
-    make_section_id,
-)
+from src.services.content.section_history import SectionHistoryService
+from src.services.content.section_history_contracts import make_section_id
 from tests.unit.api.conftest import make_auth_header
 
 ARTICLE_BODY = (
@@ -204,7 +202,7 @@ def article_id() -> UUID:
 
 @pytest.fixture
 def section_id(article_id: UUID) -> str:
-    return make_section_id(article_id, 1)
+    return make_section_id(article_id, 0)
 
 
 @pytest.fixture
@@ -383,7 +381,7 @@ class TestSectionUpdateEndpoint:
             placement=ImagePlacement(
                 anchor="before_heading",
                 heading_text="First Section",
-                section_index=1,
+                section_index=0,
             ),
         )
         article = _build_article(article_id, image_specs=[spec])
@@ -416,7 +414,7 @@ class TestSectionUpdateEndpoint:
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as ac:
             body = {
-                "section_id": make_section_id(article_id, 1),
+                "section_id": make_section_id(article_id, 0),
                 # New body drops the heading the spec is anchored to.
                 "markdown": "## Renamed Heading\nReplacement body.",
                 "source": "manual",
@@ -675,3 +673,29 @@ class TestSectionHistoryAndRestore:
             headers=make_auth_header("viewer", content_settings),
         )
         assert resp.status_code == 403
+
+
+class TestOutlineIndexContractEndpoint:
+    """L-013 — `{article_id}:0` is the first H2, not the prelude."""
+
+    async def test_section_update_on_index_zero_replaces_first_h2(
+        self,
+        content_client: httpx.AsyncClient,
+        content_settings: Settings,
+        article_id: UUID,
+        article_repo: _FakeArticleRepo,
+    ) -> None:
+        resp = await content_client.post(
+            "/api/v1/content/section-update",
+            json={
+                "section_id": make_section_id(article_id, 0),
+                "markdown": "## First Section\nReplaced first body.",
+                "source": "manual",
+            },
+            headers=_editor_headers(content_settings),
+        )
+        assert resp.status_code == 200, resp.text
+        body = article_repo.persisted_body or ""
+        assert body.startswith("Intro prelude paragraph.")
+        assert "Replaced first body." in body
+        assert "## Second Section\nSecond section body." in body
