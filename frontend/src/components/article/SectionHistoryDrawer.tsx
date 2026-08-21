@@ -172,6 +172,8 @@ function labelForSource(source: SectionVersionEntry["source"]): string {
       return "Tone preset";
     case "restore":
       return "Restored";
+    case "regenerate":
+      return "Regenerated";
     default:
       return source;
   }

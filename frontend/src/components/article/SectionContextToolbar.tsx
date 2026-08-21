@@ -1,18 +1,20 @@
 "use client";
 
-import { ImageIcon, LayoutPanelTop, Pencil } from "lucide-react";
+import { ImageIcon, LayoutPanelTop, Pencil, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
  * Floating section-level action toolbar (Pencil Screen 9 `Eyi7a`).
  *
- * Surfaces three actions over a hovered / focused section:
+ * Surfaces four actions over a hovered / focused section:
  *
  * - **Edit text** — opens the inline prose editor + AI rewrite popover.
  * - **Edit visual** — jumps the parent page to that section's Spec
  *   Card in Visual Studio (parent decides how to scroll / open).
  * - **Refine layout** — opens the existing `SectionHtmlRefinePanel`
  *   scoped to this section.
+ * - **Regenerate** — redraft this section from the outline with an
+ *   optional instruction; diff accept / reject (AUTHOR-004).
  *
  * The toolbar itself is presentational — keyboard focus and visibility
  * are managed by the parent (the article-detail page wraps each
@@ -26,6 +28,7 @@ export interface SectionContextToolbarProps {
   onEditText: () => void;
   onEditVisual: () => void;
   onRefineLayout: () => void;
+  onRegenerate: () => void;
   className?: string;
 }
 
@@ -36,6 +39,7 @@ export function SectionContextToolbar({
   onEditText,
   onEditVisual,
   onRefineLayout,
+  onRegenerate,
   className,
 }: SectionContextToolbarProps) {
   // Always render — opacity flips on hover. This makes section
@@ -70,6 +74,12 @@ export function SectionContextToolbar({
         label="Refine layout"
         onClick={onRefineLayout}
         testId={`toolbar-refine-layout-${sectionIndex}`}
+      />
+      <ToolbarButton
+        icon={<RefreshCw className="h-3.5 w-3.5" />}
+        label="Regenerate"
+        onClick={onRegenerate}
+        testId={`toolbar-regenerate-${sectionIndex}`}
       />
     </div>
   );
