@@ -152,6 +152,22 @@ class ContentService:
         )
         return updated
 
+    async def update_article_metadata(
+        self,
+        article_id: UUID,
+        fields: dict[str, object],
+    ) -> CanonicalArticle:
+        """Persist title/subtitle/seo edits (AUTHOR-006)."""
+        updated = await self._repos.articles.update_metadata(article_id, fields)
+        if updated is None:
+            raise NotFoundError(f"Article {article_id} not found")
+        logger.info(
+            "article_metadata_updated",
+            article_id=str(article_id),
+            updated_fields=sorted(fields.keys()),
+        )
+        return updated
+
     async def get_draft(self, draft_id: UUID) -> ArticleDraft:
         draft = await self._repos.drafts.get(draft_id)
         if draft is None:
