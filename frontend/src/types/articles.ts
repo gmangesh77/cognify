@@ -87,3 +87,33 @@ export interface ArticleDetail {
   wordCount: number;
   workflow: WorkflowStep[];
 }
+
+// AUTHOR-006 — metadata editing wire types
+export interface ArticleMetadataPatch {
+  title?: string;
+  subtitle?: string;
+  seo_title?: string;
+  seo_description?: string;
+  keywords?: string[];
+}
+
+export interface FieldWarning {
+  field: string;
+  message: string;
+}
+
+export interface ArticleMetadataResult {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  seo: { title: string; description: string; keywords: string[] };
+  warnings: FieldWarning[];
+}
+
+export type SeoRegenerateField = "seo_title" | "seo_description" | "keywords";
+
+export interface SeoRegenerateResult {
+  field: string;
+  value: string | string[];
+  warnings: FieldWarning[];
+}

@@ -1,4 +1,10 @@
 import { apiClient } from "./client";
+import type {
+  ArticleMetadataPatch,
+  ArticleMetadataResult,
+  SeoRegenerateField,
+  SeoRegenerateResult,
+} from "@/types/articles";
 import type { UsageSummary } from "@/types/usage";
 
 export interface ArticleResponse {
@@ -128,6 +134,28 @@ export async function fetchArticleUsage(
 ): Promise<UsageSummary> {
   const { data } = await apiClient.get<UsageSummary>(
     `/articles/${articleId}/usage`,
+  );
+  return data;
+}
+
+export async function patchArticleMetadata(
+  articleId: string,
+  patch: ArticleMetadataPatch,
+): Promise<ArticleMetadataResult> {
+  const { data } = await apiClient.patch<ArticleMetadataResult>(
+    `/articles/${articleId}`,
+    patch,
+  );
+  return data;
+}
+
+export async function regenerateSeoField(
+  articleId: string,
+  field: SeoRegenerateField,
+): Promise<SeoRegenerateResult> {
+  const { data } = await apiClient.post<SeoRegenerateResult>(
+    `/articles/${articleId}/seo/regenerate`,
+    { field },
   );
   return data;
 }
