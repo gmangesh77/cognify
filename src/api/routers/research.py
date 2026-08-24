@@ -15,7 +15,7 @@ from src.api.routers.research_params import (
     inline_brief_create,
     resolve_session_params,
 )
-from src.api.routers.research_pipeline import PipelineDeps, _run_full_pipeline
+from src.api.routers.research_pipeline import get_pipeline_dispatcher
 from src.api.schemas.research import (
     AgentStepResponse,
     CreateResearchSessionRequest,
@@ -29,7 +29,6 @@ from src.models.research import TopicInput
 from src.models.research_db import ResearchSession
 from src.models.session_params import SessionParams
 from src.services.research import ResearchService
-from src.services.session_tasks import SessionTaskRegistry
 
 logger = structlog.get_logger()
 
@@ -144,28 +143,10 @@ async def _enrich_topic(
     )
 
 
-def _get_session_tasks(request: Request) -> SessionTaskRegistry:
-    """Fetch (or lazily create) the app's SessionTaskRegistry.
-
-    Lazy fallback so app instances built before this ticket (tests that
-    construct their own FastAPI app without wiring `session_tasks`) keep
-    working.
-    """
-    if not hasattr(request.app.state, "session_tasks"):
-        request.app.state.session_tasks = SessionTaskRegistry()
-    return request.app.state.session_tasks  # type: ignore[no-any-return]
-
-
 def _spawn_pipeline(
     request: Request, session: ResearchSession, topic: TopicInput
 ) -> None:
-    deps = PipelineDeps(
-        research_svc=request.app.state.research_service,
-        content_svc=getattr(request.app.state, "content_service", None),
-        outline_gate=getattr(request.app.state, "outline_gate", None),
-    )
-    registry = _get_session_tasks(request)
-    registry.spawn(session.id, _run_full_pipeline(deps, session.id, topic))
+    get_pipeline_dispatcher(request).dispatch_full_pipeline(session.id, topic)
 
 
 @limiter.limit("30/minute")
