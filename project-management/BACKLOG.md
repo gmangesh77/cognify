@@ -188,7 +188,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | AUTHOR-002 | Outline approval gate (half-graphs, `awaiting_outline_review`, outline endpoints, cancel, OutlineReviewStep; flagged) — **DONE** (PR #73) | Must | 8 | A |
 | AUTHOR-003 | Brief model/CRUD + Generate modal rework (picker, length, content type, save-as-brief) — **DONE** (`feature/AUTHOR-003-brief`, 2026-08-21) | Must | 5 | A |
 | AUTHOR-004 | Per-section regenerate-with-feedback (endpoint + toolbar + diff accept) — **DONE** (PR #76, 2026-08-21; +2 SP: L-013 section-id contract fix, in scope) | Must | 5 | A |
-| AUTHOR-005 | Session/article usage endpoint + pricing settings + UsageBadge — **DONE** (2026-08-24, `feature/AUTHOR-005-usage`) | Should | 3 | A |
+| AUTHOR-005 | Session/article usage endpoint + pricing settings + UsageBadge — **DONE** (PR #77, 2026-08-24) | Should | 3 | A |
 | INFRA-007 | CeleryDispatcher + worker wiring for the full pipeline | Must | 5 | A |
 | AUTHOR-006 | PATCH article metadata + header/SEO editor + refetch + autosave | Should | 5 | B |
 | AUTHOR-007 | Article status (draft/in_review/approved/published) + list filters + Resume | Should | 3 | B |
