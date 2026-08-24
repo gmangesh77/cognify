@@ -129,9 +129,7 @@ class TestDispatchModeChecks:
             async def aclose(self) -> None:
                 return None
 
-        monkeypatch.setattr(
-            "redis.asyncio.from_url", lambda url: _FakeRedis()
-        )
+        monkeypatch.setattr("redis.asyncio.from_url", lambda url: _FakeRedis())
         response = await celery_client.get("/api/v1/health")
         assert response.json()["checks"]["redis"] == "ok"
 
@@ -145,9 +143,7 @@ class TestDispatchModeChecks:
             async def aclose(self) -> None:
                 return None
 
-        monkeypatch.setattr(
-            "redis.asyncio.from_url", lambda url: _DeadRedis()
-        )
+        monkeypatch.setattr("redis.asyncio.from_url", lambda url: _DeadRedis())
         response = await celery_client.get("/api/v1/health")
         assert response.json()["checks"]["redis"] == "unavailable"
 

@@ -254,9 +254,7 @@ async def build_pipeline_services(
             )
             llm = _build_llm(settings, llm_call_repo=llm_call_repo)
             retriever = _try_build_retriever_from_settings(settings)
-            content_deps = ContentDeps(
-                llm=llm, retriever=retriever, settings=settings
-            )
+            content_deps = ContentDeps(llm=llm, retriever=retriever, settings=settings)
         except Exception as exc:
             logger.error("pipeline_llm_init_failed", error=str(exc))
     article_repo = PgArticleRepository(sf)

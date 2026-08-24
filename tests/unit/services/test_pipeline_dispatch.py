@@ -36,9 +36,7 @@ async def test_cancel_delegates_to_registry(
     async def hang(deps: object, session_id: object) -> None:
         await asyncio.sleep(30)
 
-    monkeypatch.setattr(
-        "src.services.pipeline_dispatch._run_drafting_pipeline", hang
-    )
+    monkeypatch.setattr("src.services.pipeline_dispatch._run_drafting_pipeline", hang)
     registry = SessionTaskRegistry()
     d = InProcessDispatcher(_RecordingDeps(), registry)  # type: ignore[arg-type]
     sid = uuid4()
@@ -55,9 +53,7 @@ async def test_duplicate_dispatch_raises_like_registry(
     async def hang(deps: object, session_id: object) -> None:
         await asyncio.sleep(30)
 
-    monkeypatch.setattr(
-        "src.services.pipeline_dispatch._run_drafting_pipeline", hang
-    )
+    monkeypatch.setattr("src.services.pipeline_dispatch._run_drafting_pipeline", hang)
     registry = SessionTaskRegistry()
     d = InProcessDispatcher(_RecordingDeps(), registry)  # type: ignore[arg-type]
     sid = uuid4()

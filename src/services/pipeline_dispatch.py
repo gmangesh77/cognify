@@ -53,9 +53,7 @@ class InProcessDispatcher:
         )
 
     def dispatch_drafting(self, session_id: UUID) -> None:
-        self._registry.spawn(
-            session_id, _run_drafting_pipeline(self._deps, session_id)
-        )
+        self._registry.spawn(session_id, _run_drafting_pipeline(self._deps, session_id))
 
     def cancel(self, session_id: UUID) -> bool:
         return self._registry.cancel(session_id)
