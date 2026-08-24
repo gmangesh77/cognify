@@ -78,6 +78,11 @@ class ContentService:
         """Pipeline LLM / retriever / settings shared with prose routes (AUTHOR-004)."""
         return self._deps
 
+    @property
+    def repos(self) -> ContentRepositories:
+        """Repository bundle shared with metadata routes (AUTHOR-006)."""
+        return self._repos
+
     async def generate_outline(self, session_id: UUID) -> ArticleDraft:
         session = await self._load_session(session_id)
         findings = self._reconstruct_findings(session)
@@ -149,6 +154,22 @@ class ContentService:
             "article_visual_attached",
             article_id=str(article_id),
             visual_id=str(visual.id),
+        )
+        return updated
+
+    async def update_article_metadata(
+        self,
+        article_id: UUID,
+        fields: dict[str, object],
+    ) -> CanonicalArticle:
+        """Persist title/subtitle/seo edits (AUTHOR-006)."""
+        updated = await self._repos.articles.update_metadata(article_id, fields)
+        if updated is None:
+            raise NotFoundError(f"Article {article_id} not found")
+        logger.info(
+            "article_metadata_updated",
+            article_id=str(article_id),
+            updated_fields=sorted(fields.keys()),
         )
         return updated
 

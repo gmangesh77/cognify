@@ -30,6 +30,7 @@ from src.api.middleware.request_logging import RequestLoggingMiddleware
 from src.api.middleware.security_headers import SecurityHeadersMiddleware
 from src.api.rate_limiter import limiter
 from src.api.routers.admin import admin_router
+from src.api.routers.article_metadata import article_metadata_router
 from src.api.routers.articles import articles_router
 from src.api.routers.auth import auth_router
 from src.api.routers.briefs import briefs_router
@@ -562,7 +563,7 @@ def _register_middleware(app: FastAPI, settings: Settings) -> None:
         CORSMiddleware,
         allow_origins=settings.cors_allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
     )
     app.add_middleware(SecurityHeadersMiddleware)
@@ -627,6 +628,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
     )
     app.include_router(
         canonical_articles_router,
+        prefix=settings.api_v1_prefix,
+        tags=["articles"],
+    )
+    app.include_router(
+        article_metadata_router,
         prefix=settings.api_v1_prefix,
         tags=["articles"],
     )

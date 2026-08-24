@@ -4,25 +4,21 @@ import { useCallback, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Header } from "@/components/layout/header";
-import {
-  SectionEditingWorkbench,
-  type ActiveSection,
-  type WorkbenchPanel,
-} from "@/components/article/SectionEditingWorkbench";
+import { SectionEditingWorkbench } from "@/components/article/SectionEditingWorkbench";
 import { SectionHistoryDrawer } from "@/components/article/SectionHistoryDrawer";
 import { ArticleContent } from "@/components/articles/article-content";
 import { ArticleDetailToolbar } from "@/components/articles/article-detail-toolbar";
+import { ArticleHeaderEditor } from "@/components/articles/article-header-editor";
 import { ArticleNotFound } from "@/components/articles/article-not-found";
 import { ArticleSidebar } from "@/components/articles/article-sidebar";
 import { PublishModal } from "@/components/articles/publish-modal";
 import { ImageImportModal } from "@/components/visuals/ImageImportModal";
 import { SavedAssetGallery } from "@/components/visuals/SavedAssetGallery";
 import { VisualStudio } from "@/components/visuals/VisualStudio";
+import { useArticleEditingState } from "@/hooks/use-article-editing-state";
 import { useArticle } from "@/hooks/use-article";
 import { useArticleActions } from "@/hooks/use-article-actions";
 import { useDefaultPersona } from "@/hooks/use-default-persona";
-import { makeSectionId } from "@/lib/api/content";
 import { studioSectionsFrom } from "@/lib/articles/studio-sections";
 
 export default function ArticleDetailPage() {
@@ -34,10 +30,17 @@ export default function ArticleDetailPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const defaultPersona = useDefaultPersona();
-  const [activeSection, setActiveSection] = useState<ActiveSection | null>(null);
-  const [panel, setPanel] = useState<WorkbenchPanel | null>(null);
-  const [historySectionId, setHistorySectionId] = useState<string | null>(null);
-  const [focusVisualSection, setFocusVisualSection] = useState<number | null>(null);
+  const {
+    activeSection,
+    setActiveSection,
+    panel,
+    setPanel,
+    historySectionId,
+    setHistorySectionId,
+    focusVisualSection,
+    setFocusVisualSection,
+    openSection,
+  } = useArticleEditingState(id);
 
   const showToast = useCallback((message: string, ms = 4000) => {
     setToast(message);
@@ -52,11 +55,6 @@ export default function ArticleDetailPage() {
 
   if (!article) return <ArticleNotFound />;
 
-  const openSection = (sectionIndex: number, markdown: string, panel: WorkbenchPanel | null) => {
-    setActiveSection({ index: sectionIndex, sectionId: makeSectionId(id, sectionIndex), markdown });
-    setPanel(panel);
-  };
-
   return (
     <div className="space-y-6">
       <Link
@@ -66,7 +64,7 @@ export default function ArticleDetailPage() {
         <ArrowLeft className="h-4 w-4" /> Back to Articles
       </Link>
 
-      <Header title={article.title} subtitle={article.subtitle ?? ""}>
+      <ArticleHeaderEditor article={article}>
         <div className="flex items-center gap-2">
           {article.aiGenerated && (
             <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
@@ -77,7 +75,7 @@ export default function ArticleDetailPage() {
             {article.contentType}
           </span>
         </div>
-      </Header>
+      </ArticleHeaderEditor>
 
       <div className="flex gap-8">
         <div className="min-w-0 flex-[2]">
@@ -160,6 +158,9 @@ export default function ArticleDetailPage() {
                 prev && prev.sectionId === historySectionId ? { ...prev, markdown: newMd } : prev,
               );
               setHistorySectionId(null);
+              // Refetch so ArticleContent re-renders the restored body
+              // (was a local-state-only patch — stale view, review §6 #7).
+              void refetch();
               showToast(`Restored to version ${vid.slice(0, 8)}`);
             }}
           />
