@@ -1,5 +1,9 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { DomainBadge } from "@/components/common/domain-badge";
+import { UsageBadge } from "@/components/visuals/UsageBadge";
+import { useArticleUsage } from "@/hooks/use-session-usage";
 import { WorkflowSteps } from "./workflow-steps";
 import type { ArticleDetail } from "@/types/articles";
 
@@ -16,6 +20,7 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export function ArticleSidebar({ article, onPublish }: ArticleSidebarProps) {
+  const { usage } = useArticleUsage(article.id);
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
@@ -35,6 +40,24 @@ export function ArticleSidebar({ article, onPublish }: ArticleSidebarProps) {
           <div><span className="text-neutral-500">Generated:</span> {formatTimeAgo(article.generatedAt)}</div>
         </div>
       </div>
+
+      {usage && (
+        <div className="rounded-lg border border-neutral-200 p-4">
+          <h4 className="text-xs font-medium uppercase text-neutral-400">Usage</h4>
+          <div className="mt-2">
+            <UsageBadge
+              totalUsd={usage.cost_usd}
+              tokens={usage.input_tokens + usage.output_tokens}
+              images={usage.images}
+              breakdown={usage.by_operation.map((o) => ({
+                provider: o.op,
+                count: o.llm_calls,
+                usd: o.cost_usd,
+              }))}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="rounded-lg border border-neutral-200 p-4">
         <h4 className="text-xs font-medium uppercase text-neutral-400">Agent Workflow</h4>

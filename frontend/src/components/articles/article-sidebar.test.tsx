@@ -1,9 +1,16 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
+const articleUsage = vi.fn();
+vi.mock("@/hooks/use-session-usage", () => ({
+  useArticleUsage: (id: string | null) => articleUsage(id),
+}));
+
 import { ArticleSidebar } from "./article-sidebar";
 import type { ArticleDetail } from "@/types/articles";
 
 const mockArticle: Partial<ArticleDetail> = {
+  id: "a1",
   domain: "cybersecurity",
   contentType: "analysis",
   wordCount: 3200,
@@ -18,6 +25,33 @@ const mockArticle: Partial<ArticleDetail> = {
 };
 
 describe("ArticleSidebar", () => {
+  beforeEach(() => {
+    articleUsage.mockClear();
+    articleUsage.mockReturnValue({ usage: null });
+  });
+
+  it("renders the usage card with the badge when usage is available", () => {
+    articleUsage.mockReturnValue({
+      usage: {
+        session_id: "s1",
+        llm_calls: 3,
+        input_tokens: 2100,
+        output_tokens: 1100,
+        images: 2,
+        cost_usd: 0.052,
+        by_operation: [
+          { op: "images", llm_calls: 0, input_tokens: 0, output_tokens: 0, cost_usd: 0.041 },
+        ],
+      },
+    });
+    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} />);
+    expect(screen.getByText("Usage")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /\$0\.052 this article · 3\.2k tok · 2 img/ }),
+    ).toBeInTheDocument();
+    expect(articleUsage).toHaveBeenCalledWith("a1");
+  });
+
   it("renders publish button", () => {
     render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} />);
     expect(screen.getByText("Publish Article")).toBeInTheDocument();

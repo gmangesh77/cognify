@@ -37,6 +37,11 @@ vi.mock("@/hooks/use-outline-review", () => ({
   useCancelSession: (id: string) => cancelSessionHook(id),
 }));
 
+const sessionUsage = vi.fn();
+vi.mock("@/hooks/use-session-usage", () => ({
+  useSessionUsage: (id: string | null, isActive: boolean) => sessionUsage(id, isActive),
+}));
+
 import { SessionProgress } from "./session-progress";
 
 const base = {
@@ -78,6 +83,8 @@ describe("SessionProgress", () => {
     cancelMutate.mockClear();
     cancelSessionHook.mockClear();
     cancelSessionHook.mockReturnValue({ mutate: cancelMutate, isPending: false });
+    sessionUsage.mockClear();
+    sessionUsage.mockReturnValue({ usage: null });
   });
 
   afterEach(() => {
@@ -95,6 +102,36 @@ describe("SessionProgress", () => {
       "data-status",
       "running",
     );
+  });
+
+  it("shows the usage badge in the header when usage is available", () => {
+    events.mockReturnValue(base);
+    sessionUsage.mockReturnValue({
+      usage: {
+        session_id: "s1",
+        llm_calls: 3,
+        input_tokens: 2100,
+        output_tokens: 1100,
+        images: 2,
+        cost_usd: 0.052,
+        by_operation: [
+          {
+            op: "content_draft",
+            llm_calls: 2,
+            input_tokens: 2000,
+            output_tokens: 1000,
+            cost_usd: 0.021,
+          },
+        ],
+      },
+    });
+    render(<SessionProgress sessionId="s1" />);
+    expect(
+      screen.getByRole("button", {
+        name: /\$0\.052 this session · 3\.2k tok · 2 img/,
+      }),
+    ).toBeInTheDocument();
+    expect(sessionUsage).toHaveBeenCalledWith("s1", true);
   });
 
   it("shows section progress", () => {
