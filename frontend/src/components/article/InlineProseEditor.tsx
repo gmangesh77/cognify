@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { UnsavedDraftChip } from "@/components/article/UnsavedDraftChip";
+import { useDraftAutosave } from "@/hooks/use-draft-autosave";
 import { extractAnchorViolations } from "@/lib/api/anchorViolations";
 import { persistSectionUpdate } from "@/lib/api/content";
 import { locateParagraph } from "@/lib/articles/locate-paragraph";
@@ -57,10 +59,12 @@ export function InlineProseEditor({
   onParagraphFocus,
   className,
 }: InlineProseEditorProps) {
-  // `key={sectionId}` on the parent remounts the editor when the
-  // section switches — that's the canonical React way to reset
-  // local state without a setState-in-effect.
-  const [draft, setDraft] = useState(initialMarkdown);
+  // `key={sectionId}` on the parent remounts the editor per section; a
+  // localStorage draft (AUTHOR-006) survives the remount, restored here.
+  const { draft, setDraft, restored, discard, clear } = useDraftAutosave(
+    sectionId,
+    initialMarkdown,
+  );
   const [state, setState] = useState<EditorState>(INITIAL_STATE);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const containerRef = useRef<HTMLElement | null>(null);
@@ -105,6 +109,7 @@ export function InlineProseEditor({
         source: SOURCE,
       });
       setState(INITIAL_STATE);
+      clear();
       onPersisted?.(res.persisted_markdown, res.version_id);
     } catch (err) {
       handleSaveError(err);
@@ -136,6 +141,8 @@ export function InlineProseEditor({
         className,
       )}
     >
+      {restored ? <UnsavedDraftChip onDiscard={discard} /> : null}
+
       <textarea
         ref={textareaRef}
         value={draft}
@@ -167,7 +174,10 @@ export function InlineProseEditor({
         {onCancel ? (
           <button
             type="button"
-            onClick={onCancel}
+            onClick={() => {
+              clear();
+              onCancel();
+            }}
             className="inline-flex items-center justify-center rounded-md bg-neutral-100 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-200"
           >
             Cancel
