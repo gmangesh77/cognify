@@ -5,8 +5,10 @@ import { useSessionEvents } from "@/hooks/use-session-events";
 import type { SessionConnectionState } from "@/hooks/session-events-reducer";
 import { useResearchSession } from "@/hooks/use-research-sessions";
 import { useCancelSession } from "@/hooks/use-outline-review";
+import { useSessionUsage } from "@/hooks/use-session-usage";
 import { isTerminalSessionStatus } from "@/lib/research/session-status";
 import { Button } from "@/components/ui/button";
+import { UsageBadge } from "@/components/visuals/UsageBadge";
 import { SessionStatusBadge } from "./session-status-badge";
 import { SessionStepList } from "./session-step-list";
 import { SessionProgressFooter } from "./session-progress-footer";
@@ -103,6 +105,7 @@ export function SessionProgress({ sessionId }: SessionProgressProps) {
 
   const isTerminal = isTerminalSessionStatus(status);
   const cancelMutation = useCancelSession(sessionId);
+  const { usage } = useSessionUsage(sessionId, !isTerminal);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -127,6 +130,19 @@ export function SessionProgress({ sessionId }: SessionProgressProps) {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {usage && (
+            <UsageBadge
+              totalUsd={usage.cost_usd}
+              label="this session"
+              tokens={usage.input_tokens + usage.output_tokens}
+              images={usage.images}
+              breakdown={usage.by_operation.map((o) => ({
+                provider: o.op,
+                count: o.llm_calls,
+                usd: o.cost_usd,
+              }))}
+            />
+          )}
           <ConnectionChip connection={events.connection} onRetry={events.reconnect} />
           {status !== null && !isTerminal && (
             <Button
