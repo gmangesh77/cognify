@@ -122,6 +122,12 @@ class TestComputeSessionUsage:
         assert ops["images"].cost_usd == 0.041
         assert ops["images"].llm_calls == 0
 
+    def test_providerless_legacy_assets_excluded_and_no_images_op(self) -> None:
+        usage = compute_session_usage([], [_visual(cost=None, provider=None)], _PRICING)
+        assert usage.images == 0
+        assert usage.cost_usd == 0.0
+        assert usage.by_operation == ()
+
     def test_mermaid_asset_free_but_counted(self) -> None:
         usage = compute_session_usage(
             [], [_visual(cost=None, provider="mermaid")], _PRICING

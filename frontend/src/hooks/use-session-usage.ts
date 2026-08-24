@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchArticleUsage } from "@/lib/api/articles";
@@ -16,6 +17,17 @@ export function useSessionUsage(sessionId: string | null, isActive: boolean) {
     refetchInterval: isActive ? ACTIVE_REFETCH_MS : false,
     staleTime: isActive ? 0 : 60_000,
   });
+
+  // Late pipeline steps (SEO, humanize) can land inside the last poll
+  // window — refetch once when the session flips active -> terminal so
+  // the badge settles on the final number.
+  const wasActive = useRef(isActive);
+  const refetch = query.refetch;
+  useEffect(() => {
+    if (wasActive.current && !isActive) void refetch();
+    wasActive.current = isActive;
+  }, [isActive, refetch]);
+
   return { usage: query.data ?? null };
 }
 
@@ -25,6 +37,8 @@ export function useArticleUsage(articleId: string | null) {
     queryFn: () => fetchArticleUsage(articleId as string),
     enabled: articleId !== null,
     staleTime: 60_000,
+    // Articles without a draft 404 — retrying cannot succeed.
+    retry: false,
   });
   return { usage: query.data ?? null };
 }

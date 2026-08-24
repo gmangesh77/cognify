@@ -59,6 +59,11 @@ describe("UsageBadge extended display (AUTHOR-005)", () => {
     expect(pill).not.toHaveTextContent("img");
   });
 
+  it("formats million-scale token counts with an M suffix", () => {
+    render(<UsageBadge totalUsd={4.2} tokens={1_500_000} />);
+    expect(screen.getByRole("button")).toHaveTextContent("1.5M tok");
+  });
+
   it("keeps the legacy call signature working", () => {
     render(<UsageBadge totalUsd={0.1} />);
     expect(screen.getByRole("button")).toHaveTextContent("$0.100 this article");

@@ -101,8 +101,10 @@ def compute_session_usage(
 ) -> SessionUsage:
     """Roll up token + image cost for one session. Pure — no I/O."""
     ops = _op_rollup(calls, pricing)
+    # Legacy pre-VISUAL-005 assets carry no `provider` metadata and are
+    # excluded from image_count/cost by aggregate_cost.
     image_cost = aggregate_cost(visuals)
-    if visuals:
+    if image_cost.image_count > 0:
         ops.append(OperationUsage(_IMAGES_OP, 0, 0, 0, round(image_cost.total_usd, 6)))
     ops.sort(key=lambda o: o.cost_usd, reverse=True)
     return SessionUsage(

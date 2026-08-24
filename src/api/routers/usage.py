@@ -16,6 +16,7 @@ from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_viewer_or_above
 from src.api.rate_limiter import limiter
 from src.api.schemas.usage import SessionUsageResponse, to_usage_response
+from src.models.content import ImageAsset
 from src.services.content_repositories import ArticleDraftRepository
 from src.services.usage import compute_session_usage, effective_pricing
 from src.utils.llm_call_repo import LlmCallRepository
@@ -41,10 +42,10 @@ def _draft_repo(request: Request) -> ArticleDraftRepository:
     return cast(ArticleDraftRepository, repos.drafts)
 
 
-async def _session_usage(request: Request, session_id: UUID) -> SessionUsageResponse:
+async def _usage_response(
+    request: Request, session_id: UUID, visuals: list[ImageAsset]
+) -> SessionUsageResponse:
     calls = await _llm_repo(request).list_by_session(session_id)
-    draft = await _draft_repo(request).find_latest_by_session(session_id)
-    visuals = draft.visuals if draft else []
     pricing = effective_pricing(request.app.state.settings.llm_pricing_json)
     return to_usage_response(session_id, compute_session_usage(calls, visuals, pricing))
 
@@ -60,7 +61,8 @@ async def get_session_usage(
     session_id: UUID,
     user: TokenPayload = Depends(require_viewer_or_above),
 ) -> SessionUsageResponse:
-    return await _session_usage(request, session_id)
+    draft = await _draft_repo(request).find_latest_by_session(session_id)
+    return await _usage_response(request, session_id, draft.visuals if draft else [])
 
 
 @usage_router.get(
@@ -77,4 +79,4 @@ async def get_article_usage(
     draft = await _draft_repo(request).find_by_article_id(article_id)
     if draft is None:
         raise HTTPException(status_code=404, detail="No draft found for this article")
-    return await _session_usage(request, draft.session_id)
+    return await _usage_response(request, draft.session_id, draft.visuals)

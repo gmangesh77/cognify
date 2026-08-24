@@ -145,6 +145,18 @@ class TestSessionUsage:
         assert ops["content_draft"]["cost_usd"] == 0.0105
         assert ops["images"]["cost_usd"] == 0.04
 
+    async def test_draftless_session_counts_calls_without_images(
+        self, app: FastAPI, client: httpx.AsyncClient, settings: Settings
+    ) -> None:
+        await _seed(app, with_draft=False)
+        resp = await client.get(
+            SESSION_URL, headers=make_auth_header("viewer", settings)
+        )
+        assert resp.status_code == 200
+        assert resp.json()["llm_calls"] == 1
+        assert resp.json()["images"] == 0
+        assert resp.json()["cost_usd"] == 0.0105
+
     async def test_unknown_session_returns_zero_usage(
         self, client: httpx.AsyncClient, settings: Settings
     ) -> None:
