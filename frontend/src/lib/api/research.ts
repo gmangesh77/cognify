@@ -8,6 +8,7 @@ import type {
   SessionActionResponse,
   SessionStatus,
 } from "@/types/research";
+import type { UsageSummary } from "@/types/usage";
 
 export async function fetchSessions(
   status?: SessionStatus,
@@ -94,4 +95,13 @@ export async function fetchSessionArticle(
     if (axios.isAxiosError(e) && e.response?.status === 404) return null;
     throw e;
   }
+}
+
+export async function fetchSessionUsage(
+  sessionId: string,
+): Promise<UsageSummary> {
+  const { data } = await apiClient.get<UsageSummary>(
+    `/research/sessions/${sessionId}/usage`,
+  );
+  return data;
 }

@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import type { UsageSummary } from "@/types/usage";
 
 export interface ArticleResponse {
   id: string;
@@ -118,6 +119,15 @@ export async function attachVisualToArticle(
   const { data } = await apiClient.post<ArticleResponse>(
     `/articles/${articleId}/visuals`,
     payload,
+  );
+  return data;
+}
+
+export async function fetchArticleUsage(
+  articleId: string,
+): Promise<UsageSummary> {
+  const { data } = await apiClient.get<UsageSummary>(
+    `/articles/${articleId}/usage`,
   );
   return data;
 }
