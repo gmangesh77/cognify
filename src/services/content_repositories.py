@@ -68,6 +68,11 @@ class ArticleRepository(Protocol):
         article_id: UUID,
         visual: ImageAsset,
     ) -> CanonicalArticle | None: ...
+    async def update_metadata(
+        self,
+        article_id: UUID,
+        fields: dict[str, object],
+    ) -> CanonicalArticle | None: ...
 
 
 class InMemoryArticleRepository:
@@ -97,6 +102,19 @@ class InMemoryArticleRepository:
             return None
         # CanonicalArticle is frozen — rebuild with the appended visual.
         updated = existing.model_copy(update={"visuals": [*existing.visuals, visual]})
+        self._store[article_id] = updated
+        return updated
+
+    async def update_metadata(
+        self,
+        article_id: UUID,
+        fields: dict[str, object],
+    ) -> CanonicalArticle | None:
+        existing = self._store.get(article_id)
+        if existing is None:
+            return None
+        allowed = {k: v for k, v in fields.items() if k in ("title", "subtitle", "seo")}
+        updated = existing.model_copy(update=allowed)
         self._store[article_id] = updated
         return updated
 

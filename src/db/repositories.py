@@ -713,6 +713,34 @@ class PgArticleRepository:
             )
             return self._to_model(row)
 
+    async def update_metadata(
+        self,
+        article_id: UUID,
+        fields: dict[str, object],
+    ) -> CanonicalArticle | None:
+        """Update title/subtitle/seo (AUTHOR-006). Other keys are ignored."""
+        async with self._sf() as db:
+            row = await db.get(CanonicalArticleRow, article_id)
+            if row is None:
+                return None
+            if "title" in fields:
+                row.title = str(fields["title"])
+            if "subtitle" in fields:
+                subtitle = fields["subtitle"]
+                row.subtitle = None if subtitle is None else str(subtitle)
+            seo = fields.get("seo")
+            if seo is not None and hasattr(seo, "model_dump"):
+                # Reassign so SQLAlchemy detects the JSONB mutation (L-001).
+                row.seo = seo.model_dump(mode="json")
+            await db.commit()
+            await db.refresh(row)
+            logger.info(
+                "article_metadata_updated",
+                article_id=str(article_id),
+                updated_fields=sorted(fields.keys()),
+            )
+            return self._to_model(row)
+
     async def list(
         self,
         page: int = 1,
