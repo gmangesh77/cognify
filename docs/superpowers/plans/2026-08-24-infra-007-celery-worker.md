@@ -40,7 +40,7 @@
   - `Settings.redis_url: str = "redis://localhost:6379/0"` (env `COGNIFY_REDIS_URL`)
   - `Settings.celery_broker_url: str = ""` and `Settings.celery_result_backend: str = ""` — empty string means "use `redis_url`"
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 """Settings for task dispatch (INFRA-007)."""
@@ -64,9 +64,9 @@ class TestDispatchSettings:
         assert s.redis_url == "redis://redis:6379/0"
 ```
 
-- [ ] **Step 2: Run it — FAIL** (`uv run pytest tests/unit/config/test_settings_dispatch.py -q` → AttributeError)
+- [x] **Step 2: Run it — FAIL** (`uv run pytest tests/unit/config/test_settings_dispatch.py -q` → AttributeError)
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Append to `src/config/settings.py` after the `require_outline_approval` block (compact style like the `session_events_*` block):
 
@@ -89,9 +89,9 @@ ignore_missing_imports = true
 
 Run `uv sync --dev` (locks celery+redis) — check `uv.lock` diff is committed.
 
-- [ ] **Step 4: Run tests — PASS**; `uv run ruff check src/config/settings.py` clean; settings.py still ≤ 200 lines (`(Get-Content src/config/settings.py).Count`).
+- [x] **Step 4: Run tests — PASS**; `uv run ruff check src/config/settings.py` clean; settings.py still ≤ 200 lines (`(Get-Content src/config/settings.py).Count`).
 
-- [ ] **Step 5: Commit** — `feat(config): task dispatch + redis/celery settings (INFRA-007 Task 1)` (include `pyproject.toml`, `uv.lock`).
+- [x] **Step 5: Commit** — `feat(config): task dispatch + redis/celery settings (INFRA-007 Task 1)` (include `pyproject.toml`, `uv.lock`).
 
 ---
 
@@ -134,7 +134,7 @@ async def build_pipeline_services(settings: Settings, sf: async_sessionmaker) ->
 
 **Watch out:** the retriever build connects to Milvus (can hang when Milvus is down and an anthropic key is set — the known test gotcha). Keep the try/except-log-None wrapper exactly as it is today.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 """Bootstrap factory (INFRA-007) — worker-reusable service construction."""
@@ -170,10 +170,10 @@ async def test_repos_are_bound_to_the_given_session_factory() -> None:
 
 (Adapt the private-attribute assertion to `PgLlmCallRepository`'s real attribute name — read `src/db/llm_call_repository.py:17` first; if it's `self._session_factory`, assert that. The point is: no hidden global engine.)
 
-- [ ] **Step 2: Run — FAIL** (module missing)
-- [ ] **Step 3: Implement `bootstrap.py` + rewire `_lifespan`** as described above. Keep `resolve_runtime_settings` out of the no-key test path (it needs DB reads; the two tests above only exercise `build_pipeline_services` with a fake factory — construction must not touch the DB until first use, which is true today since repos store the factory lazily).
-- [ ] **Step 4: Run the FULL backend suite** — `uv run pytest tests/unit/ -q`. This is the regression gate for the extraction; everything must stay green (1653+2). Also `uv run ruff check src/ tests/ && uv run mypy src/services/bootstrap.py src/api/main.py --ignore-missing-imports` (no NEW errors vs develop — main.py has pre-existing ones).
-- [ ] **Step 5: Commit** — `refactor(api): extract pipeline service bootstrap from _lifespan (INFRA-007 Task 2)`.
+- [x] **Step 2: Run — FAIL** (module missing)
+- [x] **Step 3: Implement `bootstrap.py` + rewire `_lifespan`** as described above. Keep `resolve_runtime_settings` out of the no-key test path (it needs DB reads; the two tests above only exercise `build_pipeline_services` with a fake factory — construction must not touch the DB until first use, which is true today since repos store the factory lazily).
+- [x] **Step 4: Run the FULL backend suite** — `uv run pytest tests/unit/ -q`. This is the regression gate for the extraction; everything must stay green (1653+2). Also `uv run ruff check src/ tests/ && uv run mypy src/services/bootstrap.py src/api/main.py --ignore-missing-imports` (no NEW errors vs develop — main.py has pre-existing ones).
+- [x] **Step 5: Commit** — `refactor(api): extract pipeline service bootstrap from _lifespan (INFRA-007 Task 2)`.
 
 ---
 
@@ -214,7 +214,7 @@ Move `_run_full_pipeline`/`_run_drafting_pipeline`/`PipelineDeps` OUT of `src/ap
 - `outline.py` cancel: `dispatcher.cancel(sid)` then the existing status write (order unchanged).
 - `main.py` `_lifespan`: after Task 2's `ps` assignment — `deps = PipelineDeps(research_svc=ps.research_service, content_svc=ps.content_service, outline_gate=ps.outline_gate)`; `app.state.pipeline_dispatcher = InProcessDispatcher(deps, app.state.session_tasks)` (Task 4 adds the celery branch).
 
-- [ ] **Step 1: Write failing dispatcher tests** (mirror `tests/unit/services/test_session_tasks.py` style)
+- [x] **Step 1: Write failing dispatcher tests** (mirror `tests/unit/services/test_session_tasks.py` style)
 
 ```python
 """PipelineDispatcher seam (INFRA-007)."""
@@ -285,10 +285,10 @@ async def test_duplicate_dispatch_raises_like_registry(monkeypatch) -> None:
     d.cancel(sid)
 ```
 
-- [ ] **Step 2: Run — FAIL** (module missing)
-- [ ] **Step 3: Implement** (`pipeline_runner.py` move + `pipeline_dispatch.py` + the three router/main touch-points)
-- [ ] **Step 4: Run the full backend suite** — the outline endpoint tests (`TestCancelDuringDrafting`, `TestDoubleApprove`, `TestNoGateRegression`) are the real seam regression check and must pass unmodified. If any of them needs modifying, STOP — the seam is not behaviour-preserving; fix the dispatcher instead.
-- [ ] **Step 5: Commit** — `refactor(pipeline): PipelineDispatcher seam, InProcessDispatcher default (INFRA-007 Task 3)`.
+- [x] **Step 2: Run — FAIL** (module missing)
+- [x] **Step 3: Implement** (`pipeline_runner.py` move + `pipeline_dispatch.py` + the three router/main touch-points)
+- [x] **Step 4: Run the full backend suite** — the outline endpoint tests (`TestCancelDuringDrafting`, `TestDoubleApprove`, `TestNoGateRegression`) are the real seam regression check and must pass unmodified. If any of them needs modifying, STOP — the seam is not behaviour-preserving; fix the dispatcher instead.
+- [x] **Step 5: Commit** — `refactor(pipeline): PipelineDispatcher seam, InProcessDispatcher default (INFRA-007 Task 3)`.
 
 ---
 
@@ -304,7 +304,7 @@ async def test_duplicate_dispatch_raises_like_registry(monkeypatch) -> None:
 - `_wrap_node`'s wrapped fn gains a pre-node check via an optional `cancel_check: Callable[[], Awaitable[None]] | None` on `ContentGraphDeps` (default `None` = no check, zero behaviour change); `ContentService` passes it when it has a research repo. If threading it through `ContentGraphDeps` exceeds the size budget or touches too many call sites, fall back to checking only in `_drive_to_completion` between research→outline→draft phase boundaries and document that in-node cancellation lands with the job-store follow-up.
 - `_run_full_pipeline` / `_run_drafting_pipeline` / `_drive_to_completion` catch `PipelineCancelled` and return WITHOUT writing a status (the cancel endpoint already wrote `"cancelled"`; `TERMINAL_STATUSES` already contains it, so SSE closes).
 
-- [ ] **Step 1: Failing test** — seed an in-memory research repo with a session whose status is `"cancelled"`; assert `raise_if_cancelled` raises; assert a `_drive_to_completion` run against it returns without calling `generate` and without overwriting the status (use a generate stub that fails the test if invoked, and assert final status is still `"cancelled"`).
+- [x] **Step 1: Failing test** — seed an in-memory research repo with a session whose status is `"cancelled"`; assert `raise_if_cancelled` raises; assert a `_drive_to_completion` run against it returns without calling `generate` and without overwriting the status (use a generate stub that fails the test if invoked, and assert final status is still `"cancelled"`).
 
 ```python
 @pytest.mark.asyncio
@@ -324,10 +324,10 @@ async def test_drive_to_completion_stops_on_cancelled_status() -> None:
 
 (Read `_drive_to_completion`'s current body first — it writes `generating_article` before calling `generate`; the check must run before that write.)
 
-- [ ] **Step 2: Run — FAIL**
-- [ ] **Step 3: Implement** (guard at the top of `_drive_to_completion`, catch in both runners; `_wrap_node` check only if the size budget allows, per the fallback note)
-- [ ] **Step 4: Full backend suite green** (the AUTHOR-002 cancel tests must still pass — in-process cancel now has both mechanisms).
-- [ ] **Step 5: Commit** — `feat(pipeline): cooperative cancellation via DB status (INFRA-007 Task 4)`.
+- [x] **Step 2: Run — FAIL**
+- [x] **Step 3: Implement** (guard at the top of `_drive_to_completion`, catch in both runners; `_wrap_node` check only if the size budget allows, per the fallback note)
+- [x] **Step 4: Full backend suite green** (the AUTHOR-002 cancel tests must still pass — in-process cancel now has both mechanisms).
+- [x] **Step 5: Commit** — `feat(pipeline): cooperative cancellation via DB status (INFRA-007 Task 4)`.
 
 ---
 
@@ -406,7 +406,7 @@ class CeleryDispatcher:
 
 `main.py` `_lifespan`: `if resolved.task_dispatch == "celery" and db_url: app.state.pipeline_dispatcher = CeleryDispatcher(make_celery(resolved))` else the Task 3 `InProcessDispatcher`. Import `make_celery` lazily inside the branch so the API process without celery configured never imports it at module load.
 
-- [ ] **Step 1: Failing tests** (`tests/unit/tasks/test_pipeline_tasks.py`; celery tasks are called as plain functions — no broker needed):
+- [x] **Step 1: Failing tests** (`tests/unit/tasks/test_pipeline_tasks.py`; celery tasks are called as plain functions — no broker needed):
 
 ```python
 def test_run_full_pipeline_task_drives_runner(monkeypatch) -> None:
@@ -451,10 +451,10 @@ def test_celery_dispatcher_serializes_and_uses_session_task_id() -> None:
 
 Build `_topic()` from the real `TopicInput` model (read its module for required fields) and `_fake_services()` as a namedtuple-shaped stub with the three service attributes.
 
-- [ ] **Step 2: Run — FAIL**
-- [ ] **Step 3: Implement** (celery_app, tasks, CeleryDispatcher, main.py branch)
-- [ ] **Step 4: Full backend suite + `uv run ruff check src/ tests/` + `uv run mypy src/tasks/ src/services/pipeline_dispatch.py --ignore-missing-imports`** — PASS, no new errors.
-- [ ] **Step 5: Commit** — `feat(tasks): Celery app + pipeline tasks + CeleryDispatcher (INFRA-007 Task 5)`.
+- [x] **Step 2: Run — FAIL**
+- [x] **Step 3: Implement** (celery_app, tasks, CeleryDispatcher, main.py branch)
+- [x] **Step 4: Full backend suite + `uv run ruff check src/ tests/` + `uv run mypy src/tasks/ src/services/pipeline_dispatch.py --ignore-missing-imports`** — PASS, no new errors.
+- [x] **Step 5: Commit** — `feat(tasks): Celery app + pipeline tasks + CeleryDispatcher (INFRA-007 Task 5)`.
 
 ---
 
@@ -468,25 +468,25 @@ Build `_topic()` from the real `TopicInput` model (read its module for required 
 
 **Steps:**
 
-- [ ] **Step 1: Dockerfile.worker** — copy the HF pre-bake block from `Dockerfile.api` (~lines 53-60: `HF_HOME=/opt/hf-cache`, model download layer, `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`) into `Dockerfile.worker` at the same relative position, and replace the placeholder CMD:
+- [x] **Step 1: Dockerfile.worker** — copy the HF pre-bake block from `Dockerfile.api` (~lines 53-60: `HF_HOME=/opt/hf-cache`, model download layer, `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`) into `Dockerfile.worker` at the same relative position, and replace the placeholder CMD:
 
 ```dockerfile
 CMD ["celery", "-A", "src.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
 ```
 
-- [ ] **Step 2: docker-compose.yml** — worker service: add `COGNIFY_REDIS_URL=redis://redis:6379/0`, `COGNIFY_TASK_DISPATCH=celery`, and the `generated_assets` volume mount copied from the api service (worker-rendered images must land on the filesystem the API serves). api service: add `COGNIFY_REDIS_URL=redis://redis:6379/0` (task_dispatch stays env-driven via `.env`, defaulting inprocess — put `COGNIFY_TASK_DISPATCH=${COGNIFY_TASK_DISPATCH:-inprocess}` so flipping one `.env` line switches modes).
+- [x] **Step 2: docker-compose.yml** — worker service: add `COGNIFY_REDIS_URL=redis://redis:6379/0`, `COGNIFY_TASK_DISPATCH=celery`, and the `generated_assets` volume mount copied from the api service (worker-rendered images must land on the filesystem the API serves). api service: add `COGNIFY_REDIS_URL=redis://redis:6379/0` (task_dispatch stays env-driven via `.env`, defaulting inprocess — put `COGNIFY_TASK_DISPATCH=${COGNIFY_TASK_DISPATCH:-inprocess}` so flipping one `.env` line switches modes).
 
-- [ ] **Step 3: Health checks (TDD)** — failing test first in `tests/unit/api/test_health.py`: with `redis_url` unreachable the endpoint still returns 200 with `redis: "unavailable"` (existing behaviour), and (new) monkeypatching the redis ping to succeed yields `redis: "ok"`. Implement in `_run_checks`: `redis` = `redis.asyncio.from_url(settings.redis_url).ping()` under a 1s timeout/try-except; `celery` = only checked when `settings.task_dispatch == "celery"` (a `celery_app.control.inspect(timeout=1.0).ping()` in a thread — or leave `celery: "unavailable"` when inprocess, which keeps today's contract). Keep the function under 20 lines by extracting `_check_redis(settings) -> CheckStatus`.
+- [x] **Step 3: Health checks (TDD)** — failing test first in `tests/unit/api/test_health.py`: with `redis_url` unreachable the endpoint still returns 200 with `redis: "unavailable"` (existing behaviour), and (new) monkeypatching the redis ping to succeed yields `redis: "ok"`. Implement in `_run_checks`: `redis` = `redis.asyncio.from_url(settings.redis_url).ping()` under a 1s timeout/try-except; `celery` = only checked when `settings.task_dispatch == "celery"` (a `celery_app.control.inspect(timeout=1.0).ping()` in a thread — or leave `celery: "unavailable"` when inprocess, which keeps today's contract). Keep the function under 20 lines by extracting `_check_redis(settings) -> CheckStatus`.
 
-- [ ] **Step 4: Full backend suite green; commit** — `feat(infra): worker image (HF pre-bake + celery cmd), compose wiring, redis health check (INFRA-007 Task 6)`.
+- [x] **Step 4: Full backend suite green; commit** — `feat(infra): worker image (HF pre-bake + celery cmd), compose wiring, redis health check (INFRA-007 Task 6)`.
 
 ---
 
 ### Task 7: Live smoke (celery mode), verification, docs, PR
 
-- [ ] **Step 1: Full suites + lint** — `uv run pytest tests/unit/ -q` (target: all green), `cd frontend && npx vitest run` (untouched — must stay 542), full ruff/mypy line, `npx tsc --noEmit` (13 pre-existing only).
+- [x] **Step 1: Full suites + lint** — `uv run pytest tests/unit/ -q` (target: all green), `cd frontend && npx vitest run` (untouched — must stay 542), full ruff/mypy line, `npx tsc --noEmit` (13 pre-existing only).
 
-- [ ] **Step 2: Live smoke in celery mode** — copy `.env` from the main checkout into the worktree; set `COGNIFY_TASK_DISPATCH=celery` in the environment; `docker compose -p cognify up --build -d api worker frontend` from the worktree (same compose project as the running stack). Then:
+- [x] **Step 2: Live smoke in celery mode** — copy `.env` from the main checkout into the worktree; set `COGNIFY_TASK_DISPATCH=celery` in the environment; `docker compose -p cognify up --build -d api worker frontend` from the worktree (same compose project as the running stack). Then:
   1. `docker logs cognify-worker-1` shows celery banner + registered tasks `cognify.run_full_pipeline` / `cognify.run_drafting_pipeline`.
   2. Generate an article from the UI (Topics → Generate). Verify: API process logs show NO pipeline step logs (they're in `docker logs cognify-worker-1`); `/research/{id}` SSE streams steps live (DB-tailing from worker writes); article completes; images render and are visible in the article (generated_assets volume shared); `llm_calls` rows carry the session id (contextvars rebound correctly — spot-check `SELECT call_name, session_id FROM llm_calls ORDER BY started_at DESC LIMIT 5`).
   3. Cancel path: start another generation → click Cancel during drafting → session status lands `cancelled` and STAYS cancelled ≥60s (cooperative stop worked; no late `article_complete` overwrite); worker log shows the run stopping.
@@ -495,9 +495,9 @@ CMD ["celery", "-A", "src.tasks.celery_app", "worker", "--loglevel=info", "--con
   6. Flip back: remove `COGNIFY_TASK_DISPATCH` (default inprocess), restart api, generate once — behaviour identical to before the ticket.
   Delete the worktree `.env` afterwards.
 
-- [ ] **Step 3: Docs** — PROGRESS.md (row → Done + smoke results in the RESUME block; note the deliberate scope cuts: no `is_running` in celery mode, job-status store deferred, `outline/regenerate` still synchronous), BACKLOG.md (row → DONE, velocity +5 SP), CLAUDE.md (status + "Next action": AUTHOR-006 per program plan Phase B — or per the user), `.env.example` (document `COGNIFY_TASK_DISPATCH` / `COGNIFY_REDIS_URL`), tick this plan's checkboxes (UTF-8-safe: `[System.IO.File]::ReadAllText/WriteAllText`, NOT `Get-Content|Set-Content`).
+- [x] **Step 3: Docs** — PROGRESS.md (row → Done + smoke results in the RESUME block; note the deliberate scope cuts: no `is_running` in celery mode, job-status store deferred, `outline/regenerate` still synchronous), BACKLOG.md (row → DONE, velocity +5 SP), CLAUDE.md (status + "Next action": AUTHOR-006 per program plan Phase B — or per the user), `.env.example` (document `COGNIFY_TASK_DISPATCH` / `COGNIFY_REDIS_URL`), tick this plan's checkboxes (UTF-8-safe: `[System.IO.File]::ReadAllText/WriteAllText`, NOT `Get-Content|Set-Content`).
 
-- [ ] **Step 4: Push + PR** — `git push -u origin feature/INFRA-007-celery`; `gh pr create --base develop --body-file <scratchpad>/pr-body-infra007.md` (body-file, not inline — inline body broke last time). PR body: what moved to the worker, the dispatch flag defaulting to inprocess, cooperative cancel design, the two infra traps fixed (HF pre-bake, generated_assets volume), scope cuts, smoke evidence. Standard footer.
+- [x] **Step 4: Push + PR** — `git push -u origin feature/INFRA-007-celery`; `gh pr create --base develop --body-file <scratchpad>/pr-body-infra007.md` (body-file, not inline — inline body broke last time). PR body: what moved to the worker, the dispatch flag defaulting to inprocess, cooperative cancel design, the two infra traps fixed (HF pre-bake, generated_assets volume), scope cuts, smoke evidence. Standard footer.
 
 ---
 
