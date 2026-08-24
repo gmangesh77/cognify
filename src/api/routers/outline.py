@@ -158,6 +158,11 @@ async def approve_outline(
         # change) is still closed here, since the registry only ever
         # tracks one running task per session.
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except Exception as exc:
+        # Broker down in celery mode: undo the status flip so the
+        # session doesn't hang in "generating_article" with no run.
+        await svc.update_session_status(sid, "article_failed")
+        raise HTTPException(status_code=503, detail="Pipeline dispatch failed") from exc
     logger.info("outline_approved", session_id=str(sid))
     return SessionActionResponse(session_id=sid, status="generating_article")
 

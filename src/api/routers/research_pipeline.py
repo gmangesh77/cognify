@@ -11,12 +11,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import structlog
+
 from src.services.pipeline_dispatch import (
     InProcessDispatcher,
     PipelineDeps,
     PipelineDispatcher,
 )
 from src.services.session_tasks import SessionTaskRegistry
+
+logger = structlog.get_logger()
 
 if TYPE_CHECKING:
     from fastapi import Request
@@ -34,10 +38,15 @@ def get_session_tasks(request: Request) -> SessionTaskRegistry:
 def _build_dispatcher(request: Request) -> PipelineDispatcher:
     settings = getattr(request.app.state, "settings", None)
     if settings is not None and getattr(settings, "task_dispatch", "") == "celery":
-        from src.services.pipeline_dispatch import CeleryDispatcher
-        from src.tasks.celery_app import make_celery
+        if not getattr(settings, "database_url", ""):
+            # A DB-less app has in-memory sessions the worker can't see —
+            # enqueuing would hang silently. Fall back to in-process.
+            logger.warning("celery_dispatch_requires_database_falling_back")
+        else:
+            from src.services.pipeline_dispatch import CeleryDispatcher
+            from src.tasks.celery_app import make_celery
 
-        return CeleryDispatcher(make_celery(settings))
+            return CeleryDispatcher(make_celery(settings))
     deps = PipelineDeps(
         research_svc=request.app.state.research_service,
         content_svc=getattr(request.app.state, "content_service", None),

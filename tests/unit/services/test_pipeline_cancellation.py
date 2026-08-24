@@ -60,6 +60,73 @@ class TestMakeCancelCheck:
         await check()  # no raise
 
 
+class TestCancelledIsTerminal:
+    """Review fix: pipeline writers must never overwrite a user cancel."""
+
+    @staticmethod
+    def _service_with(status: str):  # noqa: ANN205
+        from datetime import UTC, datetime
+
+        from src.models.research_db import ResearchSession
+        from src.services.research import (
+            InMemoryAgentStepRepository,
+            InMemoryResearchSessionRepository,
+            InMemoryTopicRepository,
+            ResearchRepositories,
+            ResearchService,
+        )
+
+        sessions = InMemoryResearchSessionRepository()
+        session = ResearchSession(
+            topic_id=uuid4(), status=status, started_at=datetime.now(UTC)
+        )
+        repos = ResearchRepositories(
+            sessions=sessions,
+            steps=InMemoryAgentStepRepository(),
+            topics=InMemoryTopicRepository(),
+        )
+        svc = ResearchService(repos, object())  # orchestrator unused here
+        return svc, sessions, session
+
+    async def test_update_session_status_skips_cancelled(self) -> None:
+        svc, sessions, session = self._service_with("cancelled")
+        await sessions.create(session)
+        await svc.update_session_status(session.id, "generating_article")
+        stored = await sessions.get(session.id)
+        assert stored is not None
+        assert stored.status == "cancelled"
+
+    async def test_persist_success_preserves_cancelled(self) -> None:
+        svc, sessions, session = self._service_with("cancelled")
+        await sessions.create(session)
+        from src.models.research import TopicInput
+
+        topic = TopicInput(id=uuid4(), title="t", description="d", domain="x")
+        await svc._persist_success(session.id, topic, {"findings": []})
+        stored = await sessions.get(session.id)
+        assert stored is not None
+        assert stored.status == "cancelled"
+        # findings still persisted alongside the preserved status
+        assert stored.completed_at is not None
+
+    async def test_persist_failure_preserves_cancelled(self) -> None:
+        svc, sessions, session = self._service_with("cancelled")
+        await sessions.create(session)
+        await svc._persist_failure(session.id)
+        stored = await sessions.get(session.id)
+        assert stored is not None
+        assert stored.status == "cancelled"
+
+
+class TestCeleryConfig:
+    def test_acks_late_disabled_to_avoid_redis_redelivery(self) -> None:
+        from src.config.settings import Settings
+        from src.tasks.celery_app import make_celery
+
+        app = make_celery(Settings(_env_file=None))
+        assert app.conf.task_acks_late is False
+
+
 class TestWrapNodeCancelCheck:
     async def test_cancelled_session_stops_before_node_runs(self) -> None:
         from src.agents.content.pipeline import ContentGraphDeps, _wrap_node

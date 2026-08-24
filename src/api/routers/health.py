@@ -76,6 +76,10 @@ async def _check_celery(request: Request) -> CheckStatus:
         if not hasattr(request.app.state, "_health_celery"):
             request.app.state._health_celery = make_celery(settings)
         celery = request.app.state._health_celery
+        # wait_for abandons (does not stop) the inspect thread on timeout;
+        # with a down broker and frequent probes, threads linger until
+        # kombu's own connection attempts give up. Acceptable at probe
+        # rates; revisit with a cached-failure backoff if it shows up.
         replies = await asyncio.wait_for(
             asyncio.to_thread(lambda: celery.control.inspect(timeout=1.0).ping()),
             timeout=2.0,

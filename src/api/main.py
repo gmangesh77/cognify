@@ -66,11 +66,11 @@ from src.db.settings_singleton_repositories import (
     PgLlmConfigRepository,
     PgSeoDefaultsRepository,
 )
-from src.services.bootstrap import (
+from src.services.bootstrap import apply_llm_config_overlay
+from src.services.bootstrap_builders import (
     _build_llm,
     _build_real_orchestrator,
     _NoOpOrchestrator,
-    apply_llm_config_overlay,
 )
 from src.services.briefs import BriefService, InMemoryBriefRepository
 from src.services.content import ContentService

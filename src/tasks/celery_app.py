@@ -16,8 +16,14 @@ def make_celery(settings: Settings) -> Celery:
     broker = settings.celery_broker_url or settings.redis_url
     backend = settings.celery_result_backend or settings.redis_url
     app = Celery("cognify", broker=broker, backend=backend)
+    # acks_late is deliberately OFF: with the Redis transport an unacked
+    # task is redelivered after the visibility timeout (default 3600s)
+    # even while still running — a >1h pipeline or a SIGKILLed worker
+    # would re-run the whole non-idempotent pipeline (duplicate LLM
+    # spend, duplicate article rows). A crashed worker's session instead
+    # ends via the SSE timeout + the stuck-workflow alert.
     app.conf.update(
-        task_acks_late=True,
+        task_acks_late=False,
         worker_prefetch_multiplier=1,
         task_track_started=True,
     )
@@ -27,6 +33,9 @@ def make_celery(settings: Settings) -> Celery:
 # Module-level app for the `celery -A src.tasks.celery_app` CLI and for
 # task registration (src.tasks.pipeline_tasks imports it). The worker
 # process reads broker config from the environment via Settings().
+# NOTE: Settings() here reads a `.env` if one exists in the CWD — keep
+# the dev worktree free of `.env` while running unit tests (known leak
+# gotcha from PR #55), or importing this module pins a real broker URL.
 celery_app = make_celery(Settings())
 
 # Register tasks on import of the app module (celery CLI autodiscovers

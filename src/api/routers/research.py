@@ -102,7 +102,15 @@ async def create_research_session(
     )
     session = await svc.start_session(body.topic_id, params)
     topic = await _enrich_topic(svc, body.topic_id, params)
-    _spawn_pipeline(request, session, topic)
+    try:
+        _spawn_pipeline(request, session, topic)
+    except Exception as exc:
+        # Broker down in celery mode: don't leave the session orphaned
+        # in "planning" — the SSE stream would hang to its timeout.
+        await svc.update_session_status(session.id, "failed")
+        raise ServiceUnavailableError(
+            message="Pipeline dispatch failed. Check the task broker."
+        ) from exc
     return CreateResearchSessionResponse(
         session_id=session.id,
         status=session.status,

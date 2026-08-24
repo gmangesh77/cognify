@@ -82,7 +82,8 @@ def _mark_failed(session_id: str) -> None:
         try:
             repo = PgResearchSessionRepository(get_session_factory(engine))
             session = await repo.get(UUID(session_id))
-            if session is not None:
+            # Never overwrite a user cancel (terminal by intent).
+            if session is not None and session.status != "cancelled":
                 await repo.update(
                     session.model_copy(update={"status": "article_failed"})
                 )
