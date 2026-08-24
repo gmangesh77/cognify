@@ -62,7 +62,5 @@ def seo_length_warnings(seo: SEOMetadata) -> list[FieldWarning]:
         warnings.append(_range_warning("seo_title", len(seo.title), lo, hi))
     lo, hi = SEO_DESCRIPTION_RANGE
     if not lo <= len(seo.description) <= hi:
-        warnings.append(
-            _range_warning("seo_description", len(seo.description), lo, hi)
-        )
+        warnings.append(_range_warning("seo_description", len(seo.description), lo, hi))
     return warnings
