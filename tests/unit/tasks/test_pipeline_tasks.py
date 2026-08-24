@@ -1,8 +1,11 @@
 """Celery pipeline tasks + CeleryDispatcher (INFRA-007 Task 5).
 
 Tasks are exercised as plain functions (`.run(...)`) — no broker needed.
+`_with_services` is patched so no DB/engine is touched; the fake still
+invokes the runner callback in-loop, mirroring the real control flow.
 """
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
@@ -10,7 +13,7 @@ import pytest
 
 from src.models.research import TopicInput
 from src.services.pipeline_dispatch import CeleryDispatcher
-from src.services.pipeline_runner import PipelineCancelled
+from src.services.pipeline_runner import PipelineCancelled, PipelineDeps
 from src.tasks.pipeline_tasks import (
     run_drafting_pipeline_task,
     run_full_pipeline_task,
@@ -28,10 +31,17 @@ def _topic() -> TopicInput:
 
 
 @dataclass
-class _FakeServices:
-    research_service: object = None
-    content_service: object = None
+class _FakeDeps:
+    research_svc: object = None
+    content_svc: object = None
     outline_gate: object = None
+
+
+def _fake_with_services(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake(run: Callable[[PipelineDeps], Awaitable[None]]) -> None:
+        await run(_FakeDeps())  # type: ignore[arg-type]
+
+    monkeypatch.setattr("src.tasks.pipeline_tasks._with_services", fake)
 
 
 class TestRunFullPipelineTask:
@@ -47,12 +57,8 @@ class TestRunFullPipelineTask:
             seen["title"] = topic.title
             seen["keywords"] = topic.keywords
 
-        monkeypatch.setattr(
-            "src.tasks.pipeline_tasks._run_full_pipeline", fake_runner
-        )
-        monkeypatch.setattr(
-            "src.tasks.pipeline_tasks._get_services", lambda: _FakeServices()
-        )
+        monkeypatch.setattr("src.tasks.pipeline_tasks._run_full_pipeline", fake_runner)
+        _fake_with_services(monkeypatch)
         sid = uuid4()
         run_full_pipeline_task.run(str(sid), _topic().model_dump(mode="json"))
         assert seen["session_id"] == sid
@@ -62,18 +68,29 @@ class TestRunFullPipelineTask:
     def test_pipeline_cancelled_is_not_a_task_failure(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        async def cancelled(
-            deps: object, session_id: UUID, topic: TopicInput
-        ) -> None:
+        async def cancelled(deps: object, session_id: UUID, topic: TopicInput) -> None:
             raise PipelineCancelled()
 
-        monkeypatch.setattr(
-            "src.tasks.pipeline_tasks._run_full_pipeline", cancelled
-        )
-        monkeypatch.setattr(
-            "src.tasks.pipeline_tasks._get_services", lambda: _FakeServices()
-        )
+        monkeypatch.setattr("src.tasks.pipeline_tasks._run_full_pipeline", cancelled)
+        _fake_with_services(monkeypatch)
         run_full_pipeline_task.run(str(uuid4()), _topic().model_dump(mode="json"))
+
+    def test_unexpected_error_marks_failed_and_reraises(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        async def boom(deps: object, session_id: UUID, topic: TopicInput) -> None:
+            raise ValueError("boom")
+
+        marked: list[str] = []
+        monkeypatch.setattr("src.tasks.pipeline_tasks._run_full_pipeline", boom)
+        monkeypatch.setattr(
+            "src.tasks.pipeline_tasks._mark_failed", lambda sid: marked.append(sid)
+        )
+        _fake_with_services(monkeypatch)
+        sid = uuid4()
+        with pytest.raises(ValueError):
+            run_full_pipeline_task.run(str(sid), _topic().model_dump(mode="json"))
+        assert marked == [str(sid)]
 
 
 class TestRunDraftingPipelineTask:
@@ -86,9 +103,7 @@ class TestRunDraftingPipelineTask:
         monkeypatch.setattr(
             "src.tasks.pipeline_tasks._run_drafting_pipeline", fake_runner
         )
-        monkeypatch.setattr(
-            "src.tasks.pipeline_tasks._get_services", lambda: _FakeServices()
-        )
+        _fake_with_services(monkeypatch)
         sid = uuid4()
         run_drafting_pipeline_task.run(str(sid))
         assert seen["session_id"] == sid
@@ -99,9 +114,7 @@ class TestCeleryDispatcher:
         sent: list[tuple[str, list[object], str]] = []
 
         class _FakeCelery:
-            def send_task(
-                self, name: str, args: list[object], task_id: str
-            ) -> None:
+            def send_task(self, name: str, args: list[object], task_id: str) -> None:
                 sent.append((name, args, task_id))
 
         d = CeleryDispatcher(_FakeCelery())  # type: ignore[arg-type]
@@ -111,16 +124,14 @@ class TestCeleryDispatcher:
         assert name == "cognify.run_full_pipeline"
         assert args[0] == str(sid)
         assert isinstance(args[1], dict)
-        assert args[1]["id"] == str(args[1]["id"])  # json-mode: plain strings
+        assert isinstance(args[1]["id"], str)  # json-mode dump: plain strings
         assert task_id == str(sid)
 
     def test_drafting_uses_prefixed_task_id(self) -> None:
         sent: list[tuple[str, list[object], str]] = []
 
         class _FakeCelery:
-            def send_task(
-                self, name: str, args: list[object], task_id: str
-            ) -> None:
+            def send_task(self, name: str, args: list[object], task_id: str) -> None:
                 sent.append((name, args, task_id))
 
         d = CeleryDispatcher(_FakeCelery())  # type: ignore[arg-type]
