@@ -78,6 +78,11 @@ class ContentService:
         """Pipeline LLM / retriever / settings shared with prose routes (AUTHOR-004)."""
         return self._deps
 
+    @property
+    def repos(self) -> ContentRepositories:
+        """Repository bundle shared with metadata routes (AUTHOR-006)."""
+        return self._repos
+
     async def generate_outline(self, session_id: UUID) -> ArticleDraft:
         session = await self._load_session(session_id)
         findings = self._reconstruct_findings(session)

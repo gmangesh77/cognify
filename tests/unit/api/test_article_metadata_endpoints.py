@@ -28,6 +28,14 @@ from tests.unit.api.test_content_endpoints import _build_article
 
 ARTICLE_ID = uuid4()
 
+SEO_JSON = (
+    '{"title": "Regenerated SEO title sized for search results ok", '
+    '"description": "A regenerated SEO description that lands within the '
+    "recommended range of one hundred fifty to one hundred sixty characters "
+    'for search engines today.", '
+    '"keywords": ["alpha", "beta", "gamma", "delta", "epsilon"]}'
+)
+
 IN_RANGE_TITLE = "A perfectly sized SEO title for the search results"  # 50 chars
 IN_RANGE_DESC = (
     "This SEO description is written carefully to land inside the "
@@ -144,3 +152,113 @@ class TestPatchArticleMetadata:
             headers=make_auth_header("editor", auth_settings),
         )
         assert resp.status_code == 422
+
+
+async def _make_app(auth_settings: Settings, llm: object | None) -> FastAPI:
+    app = create_app(auth_settings)
+    articles = InMemoryArticleRepository()
+    await articles.create(_build_article(ARTICLE_ID))
+    repos = ContentRepositories(
+        drafts=InMemoryArticleDraftRepository(),
+        research=None,  # type: ignore[arg-type]
+        articles=articles,
+    )
+    app.state.content_service = ContentService(
+        repos,
+        ContentDeps(llm=llm),  # type: ignore[arg-type]
+    )
+    return app
+
+
+class TestSeoRegenerate:
+    @staticmethod
+    def _regen_url(article_id: UUID | str = ARTICLE_ID) -> str:
+        return f"/api/v1/articles/{article_id}/seo/regenerate"
+
+    async def _client_for(self, app: FastAPI) -> httpx.AsyncClient:
+        transport = httpx.ASGITransport(app=app)
+        return httpx.AsyncClient(transport=transport, base_url="http://test")
+
+    async def test_returns_requested_field_without_persisting(
+        self, auth_settings: Settings
+    ) -> None:
+        app = await _make_app(auth_settings, FakeListChatModel(responses=[SEO_JSON]))
+        async with await self._client_for(app) as client:
+            resp = await client.post(
+                self._regen_url(),
+                json={"field": "seo_title"},
+                headers=make_auth_header("editor", auth_settings),
+            )
+            assert resp.status_code == 200
+            body = resp.json()
+            assert body["field"] == "seo_title"
+            assert body["value"].startswith("Regenerated SEO title")
+            # not persisted — GET still shows the original seo title
+            follow = await client.get(
+                _url(), headers=make_auth_header("viewer", auth_settings)
+            )
+            assert follow.json()["seo"]["title"] == "Quiet refactor"
+
+    async def test_tracked_llm_records_seo_regenerate_call(
+        self, auth_settings: Settings
+    ) -> None:
+        from datetime import UTC, datetime
+
+        from src.models.content_pipeline import ArticleDraft
+        from src.utils.llm_call_repo import InMemoryLlmCallRepository
+        from src.utils.tracked_llm import TrackedChatModel
+
+        llm_repo = InMemoryLlmCallRepository()
+        tracked = TrackedChatModel(
+            inner=FakeListChatModel(responses=[SEO_JSON]), repo=llm_repo
+        )
+        app = await _make_app(auth_settings, tracked)
+        session_id = uuid4()
+        await app.state.content_service.repos.drafts.create(
+            ArticleDraft(
+                session_id=session_id,
+                topic_id=uuid4(),
+                article_id=ARTICLE_ID,
+                created_at=datetime.now(UTC),
+            )
+        )
+        async with await self._client_for(app) as client:
+            resp = await client.post(
+                self._regen_url(),
+                json={"field": "seo_description"},
+                headers=make_auth_header("editor", auth_settings),
+            )
+            assert resp.status_code == 200
+        calls = await llm_repo.list_by_session(session_id)
+        assert len(calls) == 1
+        assert calls[0].call_name == "seo_regenerate"
+
+    async def test_no_llm_returns_503(self, auth_settings: Settings) -> None:
+        app = await _make_app(auth_settings, None)
+        async with await self._client_for(app) as client:
+            resp = await client.post(
+                self._regen_url(),
+                json={"field": "seo_title"},
+                headers=make_auth_header("editor", auth_settings),
+            )
+            assert resp.status_code == 503
+
+    async def test_unknown_article_404(self, auth_settings: Settings) -> None:
+        app = await _make_app(auth_settings, FakeListChatModel(responses=[SEO_JSON]))
+        async with await self._client_for(app) as client:
+            resp = await client.post(
+                self._regen_url(uuid4()),
+                json={"field": "seo_title"},
+                headers=make_auth_header("editor", auth_settings),
+            )
+            assert resp.status_code == 404
+
+    async def test_viewer_gets_403(self, auth_settings: Settings) -> None:
+        app = await _make_app(auth_settings, FakeListChatModel(responses=[SEO_JSON]))
+        async with await self._client_for(app) as client:
+            resp = await client.post(
+                self._regen_url(),
+                json={"field": "seo_title"},
+                headers=make_auth_header("viewer", auth_settings),
+            )
+            assert resp.status_code == 403
