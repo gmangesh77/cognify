@@ -176,7 +176,7 @@
 | AUTHOR-003 | Brief model + Generate modal rework | Done (PR #74 → develop `740af60`, 2026-08-21; migration `b3c7e1f9a2d4`; live smoke passed) | `feature/AUTHOR-003-brief` | [plan](../docs/superpowers/plans/2026-08-20-author-003-brief.md) | ADR-007; review §6 #3 |
 | AUTHOR-004 | Per-section regenerate (+ L-013 section-id contract fix) | Done (PR #76 → develop `7ef590c`, 2026-08-21; **grew 3 → 5 SP**: every existing edit/rewrite/history flow addressed the wrong section, fixed at the root as Task 1) | `feature/AUTHOR-004-section-regenerate` | [plan](../docs/superpowers/plans/2026-08-21-author-004-section-regenerate.md) | program plan §5.5; review §6 #4 |
 | AUTHOR-005 | Usage/cost badge | Done (PR #77 → develop `4a92b97`, 2026-08-24) | `feature/AUTHOR-005-usage` | [plan](../docs/superpowers/plans/2026-08-24-author-005-usage.md) | program plan §5.6; review §6 #5 |
-| INFRA-007 | CeleryDispatcher + worker | Done (2026-08-24, PR pending review) | `feature/INFRA-007-celery` | [plan](../docs/superpowers/plans/2026-08-24-infra-007-celery-worker.md) | program plan §9 Phase A; review §5 |
+| INFRA-007 | CeleryDispatcher + worker | Done (PR #78 → develop `c724f35`, 2026-08-24) | `feature/INFRA-007-celery` | [plan](../docs/superpowers/plans/2026-08-24-infra-007-celery-worker.md) | program plan §9 Phase A; review §5 |
 | AUTHOR-006 | Article metadata editor + autosave | Planned | — | program plan §5.7, §6 | review §6 #6/#7 |
 | AUTHOR-007 | Article status + filters + Resume | Planned | — | program plan §4.4 | review §6 #10 |
 | AUTHOR-008 | Length + content type budgets | Planned | — | program plan §9 Phase B | review §6 #8 |
