@@ -168,9 +168,21 @@ class ResearchService:
         return PaginatedSessions(items=items, total=total, page=page, size=size)
 
     async def update_session_status(self, session_id: UUID, status: str) -> None:
-        """Update a session's status field in place."""
+        """Update a session's status field in place.
+
+        "cancelled" is user-intent-terminal (INFRA-007): once set, no
+        pipeline writer may overwrite it — a worker-mode run cannot be
+        task-cancelled, so the DB status is the source of truth.
+        """
         session = await self._repos.sessions.get(session_id)
         if session is None:
+            return
+        if session.status == "cancelled" and status != "cancelled":
+            logger.info(
+                "status_write_skipped_cancelled",
+                session_id=str(session_id),
+                attempted=status,
+            )
             return
         updated = session.model_copy(update={"status": status})
         await self._repos.sessions.update(updated)
@@ -217,9 +229,13 @@ class ResearchService:
             if session.started_at
             else None
         )
+        # Preserve a user cancel that landed mid-research (INFRA-007):
+        # findings are still persisted, but the status stays terminal so
+        # the pipeline's _content_ready gate stops before drafting.
+        new_status = "cancelled" if session.status == "cancelled" else "complete"
         updated = session.model_copy(
             update={
-                "status": "complete",
+                "status": new_status,
                 "findings_data": findings_data,
                 "findings_count": len(findings_raw),
                 "indexed_count": result_dict.get("indexed_count", 0),
@@ -234,10 +250,11 @@ class ResearchService:
         await self._repos.sessions.update(updated)
 
     async def _persist_failure(self, session_id: UUID) -> None:
-        """Mark session as failed."""
+        """Mark session as failed (never overwriting a user cancel)."""
         session = await self._repos.sessions.get(session_id)
         if session:
+            new_status = "cancelled" if session.status == "cancelled" else "failed"
             updated = session.model_copy(
-                update={"status": "failed", "completed_at": datetime.now(UTC)}
+                update={"status": new_status, "completed_at": datetime.now(UTC)}
             )
             await self._repos.sessions.update(updated)

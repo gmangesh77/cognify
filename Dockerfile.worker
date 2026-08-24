@@ -28,8 +28,20 @@ RUN apt-get update && \
 # every src change). Writable HOME for HF cache, matplotlib config, etc.
 RUN groupadd -r cognify && useradd -r -g cognify -u 1000 -m -d /home/cognify cognify
 
-# Copy virtualenv and source from builder, owned by cognify at copy time
+# Copy virtualenv from builder, owned by cognify at copy time
 COPY --from=builder --chown=cognify:cognify /app/.venv /app/.venv
+
+# Pre-bake the sentence-transformers embedding model (mirrors Dockerfile.api).
+# The pipeline's RAG embedding step must NEVER download at run time — a
+# stalled unauthenticated HF Hub download is exactly the freeze INFRA-007
+# moves out of the API; without this block it would relocate into the worker.
+ENV HF_HOME=/opt/hf-cache
+RUN mkdir -p /opt/hf-cache && \
+    /app/.venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" && \
+    chown -R cognify:cognify /opt/hf-cache
+ENV HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1
+
 COPY --from=builder --chown=cognify:cognify /app/src /app/src
 COPY --from=builder --chown=cognify:cognify /app/pyproject.toml /app/pyproject.toml
 
@@ -37,9 +49,12 @@ COPY --from=builder --chown=cognify:cognify /app/pyproject.toml /app/pyproject.t
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app"
 
+# Asset output dirs (shared with the API via the compose volume). Note: no
+# Node/Chromium here — worker-side Mermaid rendering falls back to
+# client-side syntax rendering; Ghost PNG publishing runs on the API.
+RUN mkdir -p generated_assets/charts generated_assets/illustrations generated_assets/diagrams && \
+    chown -R cognify:cognify generated_assets
+
 USER cognify
 
-# Placeholder: Celery worker is not yet wired (AsyncIODispatcher in use).
-# When Celery is integrated, replace with:
-#   CMD ["celery", "-A", "src.tasks", "worker", "--loglevel=info"]
-CMD ["python", "-c", "import time; print('Worker container ready (Celery not yet wired)'); time.sleep(999999)"]
+CMD ["celery", "-A", "src.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=2"]

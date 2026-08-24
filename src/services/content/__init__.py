@@ -209,10 +209,13 @@ class ContentService:
         the outline-review gate for any ContentService without one,
         e.g. the in-memory `main.py` fallback).
         """
+        from src.services.pipeline_runner import make_cancel_check
+
         return ContentGraphDeps(
             step_repo=self._step_repo,  # type: ignore[arg-type]
             session_id=session_id,
             stop_after_outline=stop_after_outline,
+            cancel_check=make_cancel_check(self._repos.research, session_id),
         )
 
     async def _run_pipeline(

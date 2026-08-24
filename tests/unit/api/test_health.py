@@ -76,6 +76,100 @@ class TestHealthEndpoint:
         assert response.json()["status"] == "healthy"
 
 
+class _Inspect:
+    def ping(self) -> dict[str, object]:
+        return {"celery@worker": {"ok": "pong"}}
+
+
+class _Control:
+    def inspect(self, timeout: float) -> _Inspect:
+        return _Inspect()
+
+
+class _FakeCeleryApp:
+    control = _Control()
+
+
+class TestDispatchModeChecks:
+    """INFRA-007 — redis/celery checks light up only in celery mode."""
+
+    @pytest.fixture(autouse=True)
+    def _fake_celery(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Never build a real Celery app in unit tests: its kombu broker
+        # connections hang the event-loop teardown for ~80s.
+        monkeypatch.setattr(
+            "src.tasks.celery_app.make_celery", lambda settings: _FakeCeleryApp()
+        )
+
+    @pytest.fixture
+    def celery_app_fixture(self) -> FastAPI:
+        settings = Settings(_env_file=None, task_dispatch="celery")
+        app = FastAPI()
+        app.state.settings = settings
+        app.include_router(health_router, prefix=settings.api_v1_prefix)
+        return app
+
+    @pytest.fixture
+    async def celery_client(
+        self, celery_app_fixture: FastAPI
+    ) -> AsyncGenerator[httpx.AsyncClient, None]:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=celery_app_fixture),
+            base_url="http://test",
+        ) as ac:
+            yield ac
+
+    async def test_redis_ok_when_ping_succeeds(
+        self, celery_client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class _FakeRedis:
+            async def ping(self) -> bool:
+                return True
+
+            async def aclose(self) -> None:
+                return None
+
+        monkeypatch.setattr("redis.asyncio.from_url", lambda url: _FakeRedis())
+        response = await celery_client.get("/api/v1/health")
+        assert response.json()["checks"]["redis"] == "ok"
+
+    async def test_redis_unavailable_when_ping_fails(
+        self, celery_client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class _DeadRedis:
+            async def ping(self) -> bool:
+                raise ConnectionError("no redis")
+
+            async def aclose(self) -> None:
+                return None
+
+        monkeypatch.setattr("redis.asyncio.from_url", lambda url: _DeadRedis())
+        response = await celery_client.get("/api/v1/health")
+        assert response.json()["checks"]["redis"] == "unavailable"
+
+    async def test_celery_ok_when_worker_responds(
+        self, celery_client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class _FakeRedis:
+            async def ping(self) -> bool:
+                return True
+
+            async def aclose(self) -> None:
+                return None
+
+        monkeypatch.setattr("redis.asyncio.from_url", lambda url: _FakeRedis())
+        response = await celery_client.get("/api/v1/health")
+        assert response.json()["checks"]["celery"] == "ok"
+
+    async def test_inprocess_mode_leaves_checks_unavailable(
+        self, health_client: httpx.AsyncClient
+    ) -> None:
+        response = await health_client.get("/api/v1/health")
+        checks = response.json()["checks"]
+        assert checks["redis"] == "unavailable"
+        assert checks["celery"] == "unavailable"
+
+
 class TestReadinessEndpoint:
     async def test_readiness_returns_503_when_unavailable(
         self, health_client: httpx.AsyncClient

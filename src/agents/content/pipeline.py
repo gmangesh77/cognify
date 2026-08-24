@@ -7,6 +7,7 @@ drafting on retriever availability.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, NotRequired, TypedDict
 from uuid import UUID
@@ -58,6 +59,9 @@ class ContentGraphDeps:
     session_id: UUID | None = field(default=None)
     llm_call_repo: LlmCallRepository | None = field(default=None)
     stop_after_outline: bool = False
+    # INFRA-007 — cooperative cancel: awaited before each node; raises
+    # PipelineCancelled when the session status is "cancelled".
+    cancel_check: Callable[[], Awaitable[None]] | None = field(default=None)
 
 
 class ContentState(TypedDict):
@@ -105,6 +109,8 @@ def _wrap_node(
     async def wrapped(state: ContentState) -> dict:  # type: ignore[type-arg]
         from src.agents.research.orchestrator import _complete_step, _record_step
 
+        if deps.cancel_check is not None:
+            await deps.cancel_check()  # raises PipelineCancelled; no step row
         sid = deps.session_id or state.get("session_id")
         step = await _record_step(step_repo, sid, f"content_{name}")
         token = current_progress_reporter.set(

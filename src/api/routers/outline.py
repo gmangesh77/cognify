@@ -17,8 +17,8 @@ from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above, require_viewer_or_above
 from src.api.errors import ServiceUnavailableError
 from src.api.rate_limiter import limiter
-from src.api.routers.research import _get_research_service_readonly, _get_session_tasks
-from src.api.routers.research_pipeline import PipelineDeps, _run_drafting_pipeline
+from src.api.routers.research import _get_research_service_readonly
+from src.api.routers.research_pipeline import get_pipeline_dispatcher
 from src.api.schemas.outline import (
     OutlineResponse,
     RegenerateOutlineRequest,
@@ -149,20 +149,20 @@ async def approve_outline(
     # _require_awaiting_review check above. _run_drafting_pipeline sets the
     # same status again once it starts, which is harmless.
     await svc.update_session_status(sid, "generating_article")
-    deps = PipelineDeps(
-        research_svc=svc,
-        content_svc=getattr(request.app.state, "content_service", None),
-        outline_gate=_get_outline_gate(request),
-    )
-    registry = _get_session_tasks(request)
+    _get_outline_gate(request)  # 503 before dispatch when the gate is absent
     try:
-        registry.spawn(sid, _run_drafting_pipeline(deps, sid))
+        get_pipeline_dispatcher(request).dispatch_drafting(sid)
     except RuntimeError as exc:
         # Belt-and-suspenders: a true concurrent race (both requests pass
         # the awaiting-review check before either writes the status
         # change) is still closed here, since the registry only ever
         # tracks one running task per session.
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except Exception as exc:
+        # Broker down in celery mode: undo the status flip so the
+        # session doesn't hang in "generating_article" with no run.
+        await svc.update_session_status(sid, "article_failed")
+        raise HTTPException(status_code=503, detail="Pipeline dispatch failed") from exc
     logger.info("outline_approved", session_id=str(sid))
     return SessionActionResponse(session_id=sid, status="generating_article")
 
@@ -182,8 +182,7 @@ async def cancel_session(
     detail = await svc.get_session(sid)
     if detail.session.status in TERMINAL_STATUSES:
         raise HTTPException(status_code=409, detail="Session is already terminal")
-    registry = _get_session_tasks(request)
-    registry.cancel(sid)
+    get_pipeline_dispatcher(request).cancel(sid)
     await svc.update_session_status(sid, "cancelled")
     logger.info("session_cancelled", session_id=str(sid))
     return SessionActionResponse(session_id=sid, status="cancelled")

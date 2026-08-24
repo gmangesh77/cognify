@@ -34,6 +34,8 @@ dependencies = [
     "cryptography>=42.0,<44.0",
     "markdown>=3.5.0",
     "python-multipart>=0.0.27",
+    "celery>=5.4",
+    "redis>=5.0",
 ]
 
 [project.optional-dependencies]
@@ -93,6 +95,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "dateutil.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "celery.*"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

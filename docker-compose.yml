@@ -54,6 +54,10 @@ services:
       COGNIFY_MILVUS_URI: http://milvus:19530
       COGNIFY_CORS_ALLOWED_ORIGINS: '["http://localhost:3000"]'
       COGNIFY_DEBUG: ${COGNIFY_DEBUG:-false}
+      COGNIFY_REDIS_URL: redis://redis:6379/0
+      # "inprocess" (default) or "celery" — flip in .env to move article
+      # generation onto the worker container (INFRA-007).
+      COGNIFY_TASK_DISPATCH: ${COGNIFY_TASK_DISPATCH:-inprocess}
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,11 +81,16 @@ services:
     environment:
       COGNIFY_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-cognify}:${POSTGRES_PASSWORD:-cognify}@postgres:5432/${POSTGRES_DB:-cognify}
       COGNIFY_MILVUS_URI: http://milvus:19530
+      COGNIFY_REDIS_URL: redis://redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      # Same named volume as the api service — worker-rendered images must
+      # land on the filesystem the API serves via /static (INFRA-007).
+      - generated_assets:/app/generated_assets
 
   frontend:
     build:
