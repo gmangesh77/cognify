@@ -181,3 +181,9 @@ class Settings(BaseSettings):
     # auto-continuing into article generation. Per-session override via
     # CreateResearchSessionRequest.require_outline_approval.
     require_outline_approval: bool = False
+    # Task dispatch (INFRA-007) — "inprocess" runs pipelines on the API
+    # event loop (today's behaviour); "celery" enqueues to the worker.
+    task_dispatch: str = "inprocess"
+    redis_url: str = "redis://localhost:6379/0"
+    celery_broker_url: str = ""  # empty = use redis_url
+    celery_result_backend: str = ""  # empty = use redis_url
