@@ -32,6 +32,12 @@ def get_session_tasks(request: Request) -> SessionTaskRegistry:
 
 
 def _build_dispatcher(request: Request) -> PipelineDispatcher:
+    settings = getattr(request.app.state, "settings", None)
+    if settings is not None and getattr(settings, "task_dispatch", "") == "celery":
+        from src.services.pipeline_dispatch import CeleryDispatcher
+        from src.tasks.celery_app import make_celery
+
+        return CeleryDispatcher(make_celery(settings))
     deps = PipelineDeps(
         research_svc=request.app.state.research_service,
         content_svc=getattr(request.app.state, "content_service", None),
