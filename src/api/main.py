@@ -10,7 +10,6 @@ from fastapi import FastAPI
 if TYPE_CHECKING:
     from src.services.embeddings import EmbeddingService
     from src.services.milvus_service import MilvusRetriever
-    from src.services.research import AgentStepRepository
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -66,6 +65,12 @@ from src.db.settings_singleton_repositories import (
     PgGeneralConfigRepository,
     PgLlmConfigRepository,
     PgSeoDefaultsRepository,
+)
+from src.services.bootstrap import (
+    _build_llm,
+    _build_real_orchestrator,
+    _NoOpOrchestrator,
+    apply_llm_config_overlay,
 )
 from src.services.briefs import BriefService, InMemoryBriefRepository
 from src.services.content import ContentService
@@ -316,30 +321,11 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         # Without this, settings.default_image_provider always reflects the
         # static .env default. Mirrors the api_keys overlay above.
         try:
-            llm_repo = app.state.settings_repos.llm
-            llm_cfg = await llm_repo.get_or_create()
-            settings_updates: dict[str, str | None] = {}
-            if llm_cfg.image_provider:
-                settings_updates["default_image_provider"] = llm_cfg.image_provider
-            if llm_cfg.image_model:
-                # Map the provider's user-chosen model into the per-provider
-                # settings field that the provider registry consumes at boot.
-                provider_model_field = {
-                    "dalle_3": "dalle_model",
-                    "gemini_flash": "image_model_gemini_flash",
-                    "gemini_3_pro": "image_model_gemini_3_pro",
-                    "imagen_4": "image_model_imagen_4",
-                }.get(llm_cfg.image_provider)
-                if provider_model_field and hasattr(settings, provider_model_field):
-                    settings_updates[provider_model_field] = llm_cfg.image_model
-            if settings_updates:
-                settings = settings.model_copy(update=settings_updates)
+            llm_cfg = await app.state.settings_repos.llm.get_or_create()
+            overlaid = apply_llm_config_overlay(settings, llm_cfg)
+            if overlaid is not settings:
+                settings = overlaid
                 app.state.settings = settings
-                logger.info(
-                    "llm_config_overlay_applied",
-                    image_provider=llm_cfg.image_provider,
-                    image_model=llm_cfg.image_model,
-                )
         except Exception as exc:
             logger.warning("llm_config_overlay_skipped", error=str(exc))
 
@@ -424,116 +410,9 @@ def _seed_dev_users(settings: Settings) -> list[UserData]:
     ]
 
 
-def _build_llm(
-    settings: Settings,
-    llm_call_repo: object | None = None,
-):  # type: ignore[no-untyped-def]
-    """Build ChatAnthropic LLM instance from settings."""
-    from langchain_anthropic import ChatAnthropic
-
-    llm = ChatAnthropic(
-        model=settings.anthropic_model,
-        api_key=settings.anthropic_api_key,
-        max_tokens=4096,
-    )
-    if llm_call_repo is not None:
-        from src.utils.tracked_llm import TrackedChatModel
-
-        return TrackedChatModel(inner=llm, repo=llm_call_repo)
-    return llm
-
-
-def _build_real_orchestrator(
-    settings: Settings,
-    step_repo: AgentStepRepository | None = None,
-    llm_call_repo: object | None = None,
-):  # type: ignore[no-untyped-def]
-    """Build the full LangGraph research orchestrator."""
-    from src.agents.research.literature_review import (
-        LiteratureReviewAgent,
-    )
-    from src.agents.research.orchestrator import (
-        GraphDeps,
-        build_graph,
-    )
-    from src.agents.research.runner import (
-        LangGraphResearchOrchestrator,
-    )
-    from src.agents.research.web_search import WebSearchAgent
-    from src.services.semantic_scholar import SemanticScholarClient
-    from src.services.serpapi_client import SerpAPIClient
-    from src.services.task_dispatch import AsyncIODispatcher
-
-    llm = _build_llm(settings, llm_call_repo=llm_call_repo)
-    serpapi = SerpAPIClient(
-        api_key=settings.serpapi_api_key,
-        base_url=settings.serpapi_base_url,
-        timeout=settings.serpapi_timeout,
-        results_per_query=settings.serpapi_results_per_query,
-    )
-    scholar = SemanticScholarClient(
-        base_url=settings.semantic_scholar_base_url,
-        timeout=settings.semantic_scholar_timeout,
-        api_key=settings.semantic_scholar_api_key or None,
-    )
-    web_agent = WebSearchAgent(serpapi, llm)
-    lit_agent = LiteratureReviewAgent(scholar, llm)
-    dispatcher = AsyncIODispatcher(timeout_seconds=300.0)
-
-    # Milvus indexing is optional (unavailable on Windows)
-    vector_store = None
-    embedder = None
-    chunker = None
-    try:
-        from src.services.chunker import TokenChunker
-        from src.services.milvus_service import MilvusService
-
-        embedder = _get_or_create_embedding_service_from_settings(settings)
-        vector_store = MilvusService(
-            uri=settings.milvus_uri,
-            collection_name=settings.milvus_collection_name,
-        )
-        vector_store.ensure_collection()
-        chunker = TokenChunker(
-            chunk_size=settings.chunk_size_tokens,
-            overlap=settings.chunk_overlap_tokens,
-        )
-    except Exception as exc:
-        logger.warning(
-            "milvus_indexing_unavailable",
-            error=str(exc),
-            hint="Research will run without vector indexing.",
-        )
-    deps = GraphDeps(
-        vector_store=vector_store,
-        embedder=embedder,
-        chunker=chunker,
-        step_repo=step_repo,
-        llm_call_repo=llm_call_repo,
-    )
-    graph = build_graph(llm, dispatcher, web_agent, lit_agent, deps)
-    return LangGraphResearchOrchestrator(graph, step_repo)
-
-
-def _get_or_create_embedding_service_from_settings(
-    settings: Settings,
-) -> EmbeddingService:
-    """Create EmbeddingService from settings (no app state)."""
-    from src.services.embeddings import EmbeddingService
-
-    return EmbeddingService(model_name=settings.embedding_model)
-
-
-class _NoOpOrchestrator:
-    """Stub orchestrator used when ANTHROPIC_API_KEY is not set."""
-
-    async def run(self, session_id, topic):  # type: ignore[no-untyped-def]
-        return {
-            "status": "complete",
-            "findings": [],
-            "round_number": 1,
-            "indexed_count": 0,
-        }
+# _build_llm / _build_real_orchestrator / _NoOpOrchestrator /
+# _get_or_create_embedding_service_from_settings moved to
+# src/services/bootstrap.py (INFRA-007) so the Celery worker can reuse them.
 
 
 def _init_publishing_service(
