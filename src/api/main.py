@@ -48,6 +48,7 @@ from src.api.routers.session_events import session_events_router
 from src.api.routers.settings import settings_router
 from src.api.routers.topics import topics_router
 from src.api.routers.trends import trends_router
+from src.api.routers.usage import usage_router
 from src.api.routers.visuals import visuals_router
 from src.config.settings import Settings
 from src.db.engine import create_async_engine as create_db_engine
@@ -729,6 +730,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         session_events_router,
         prefix=settings.api_v1_prefix,
         tags=["research"],
+    )
+    app.include_router(
+        usage_router,
+        prefix=settings.api_v1_prefix,
+        tags=["usage"],
     )
     app.include_router(
         briefs_router,
