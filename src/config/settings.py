@@ -93,6 +93,11 @@ class Settings(BaseSettings):
     # Content pipeline model names (for Provenance tracking)
     primary_model_name: str = "claude-sonnet-4"
     drafting_model_name: str = "claude-sonnet-4"
+    # LLM token pricing overrides (USD per million tokens), keyed by
+    # model-name prefix; merged over services.usage.DEFAULT_LLM_PRICING.
+    # Env: COGNIFY_LLM_PRICING_JSON=
+    #   '{"claude-sonnet": {"input_per_mtok": 3.0, "output_per_mtok": 15.0}}'
+    llm_pricing_json: dict[str, dict[str, float]] = {}
     embedding_version: str = "v1"
     # Encryption (Fernet key for API key encryption at rest)
     encryption_key: str = ""
