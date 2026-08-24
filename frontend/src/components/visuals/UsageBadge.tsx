@@ -25,6 +25,12 @@ export interface UsageBadgeBreakdownEntry {
 
 export interface UsageBadgeProps {
   totalUsd: number;
+  /** Scope suffix after the dollar figure ("this article", "this session"). */
+  label?: string;
+  /** Total tokens (input + output); renders "· 3.2k tok" when set. */
+  tokens?: number | null;
+  /** Image count; renders "· 2 img" when > 0. */
+  images?: number | null;
   budgetUsd?: number | null;
   breakdown?: UsageBadgeBreakdownEntry[];
   /** When true, render only the warning pill state regardless of total. */
@@ -32,8 +38,16 @@ export interface UsageBadgeProps {
   className?: string;
 }
 
+function formatTokens(count: number): string {
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  return String(count);
+}
+
 export function UsageBadge({
   totalUsd,
+  label = "this article",
+  tokens = null,
+  images = null,
   budgetUsd = null,
   breakdown = [],
   forceWarning = false,
@@ -44,6 +58,14 @@ export function UsageBadge({
     forceWarning ||
     (budgetUsd !== null && budgetUsd > 0 && totalUsd >= budgetUsd * 0.8);
   const formattedTotal = `$${totalUsd.toFixed(3)}`;
+  const segments = [`${formattedTotal} ${label}`];
+  if (tokens !== null && tokens !== undefined) {
+    segments.push(`${formatTokens(tokens)} tok`);
+  }
+  if (images !== null && images !== undefined && images > 0) {
+    segments.push(`${images} img`);
+  }
+  const pillText = segments.join(" · ");
 
   return (
     <div className={cn("relative inline-block", className)}>
@@ -51,7 +73,7 @@ export function UsageBadge({
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        aria-label={`Cost: ${formattedTotal} this article`}
+        aria-label={`Cost: ${pillText}`}
         className={cn(
           "rounded-full px-3 py-1 text-xs font-medium transition-colors",
           isWarning
@@ -59,7 +81,7 @@ export function UsageBadge({
             : "bg-primary text-white hover:bg-primary/90",
         )}
       >
-        {formattedTotal} this article
+        {pillText}
       </button>
       {expanded ? (
         <div
@@ -71,7 +93,7 @@ export function UsageBadge({
           )}
         >
           <div className="mb-2 text-sm font-heading font-semibold text-neutral-900">
-            {formattedTotal} this article
+            {formattedTotal} {label}
           </div>
           {breakdown.length === 0 ? (
             <p className="text-xs text-neutral-500">No spend yet.</p>
