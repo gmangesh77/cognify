@@ -30,6 +30,37 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 
+class PipelineCancelled(Exception):
+    """Raised by cooperative cancel checks when the session was cancelled.
+
+    In worker mode (INFRA-007) `asyncio.Task.cancel()` cannot reach the
+    run, so the pipeline re-reads the session status and stops. The cancel
+    endpoint already wrote `"cancelled"` — handlers must NOT overwrite it.
+    """
+
+
+def make_cancel_check(
+    reader: object, session_id: UUID
+) -> Callable[[], Awaitable[None]]:
+    """Build an async check that raises PipelineCancelled on cancelled.
+
+    `reader` is anything with `async get(session_id)` returning an object
+    with a `status` attribute (ResearchSessionReader / session repo).
+    """
+
+    async def check() -> None:
+        session = await reader.get(session_id)  # type: ignore[attr-defined]
+        if getattr(session, "status", None) == "cancelled":
+            raise PipelineCancelled()
+
+    return check
+
+
+async def _is_cancelled(research_svc: ResearchService, session_id: UUID) -> bool:
+    detail = await research_svc.get_session(session_id)
+    return detail.session.status == "cancelled"
+
+
 @dataclass(frozen=True)
 class PipelineDeps:
     """Bundled dependencies for the background pipeline runners."""
@@ -113,6 +144,8 @@ async def _run_outline_gate(deps: PipelineDeps, session_id: UUID) -> None:
             session_id, "awaiting_outline_review"
         )
         logger.info("outline_awaiting_review", session_id=str(session_id))
+    except PipelineCancelled:
+        logger.info("outline_cancelled_mid_run", session_id=str(session_id))
     except Exception as exc:
         logger.error(
             "outline_generation_failed",
@@ -129,10 +162,16 @@ async def _drive_to_completion(
     generate: Callable[[], Awaitable[object]],
 ) -> None:
     """Set `generating_article`, run `generate`, land on complete/failed."""
+    if await _is_cancelled(research_svc, session_id):
+        logger.info("pipeline_cancelled_before_start", session_id=str(session_id))
+        return
     await research_svc.update_session_status(session_id, "generating_article")
     try:
         await generate()
         await research_svc.update_session_status(session_id, "article_complete")
+    except PipelineCancelled:
+        # The cancel endpoint already wrote "cancelled" — leave it.
+        logger.info("pipeline_cancelled_mid_run", session_id=str(session_id))
     except Exception as exc:
         logger.error(
             "content_pipeline_failed",
