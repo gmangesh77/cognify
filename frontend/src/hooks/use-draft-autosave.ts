@@ -10,16 +10,13 @@ import { clearDraft, loadDraft, saveDraft } from "@/lib/draft-storage";
  * store in sync; matching the initial markdown clears it.
  */
 export function useDraftAutosave(sectionId: string, initialMarkdown: string) {
-  const [draft, setDraftState] = useState(() => {
+  const [initial] = useState(() => {
     const stored = loadDraft(sectionId);
-    return stored !== null && stored !== initialMarkdown
-      ? stored
-      : initialMarkdown;
+    const restore = stored !== null && stored !== initialMarkdown;
+    return { draft: restore ? (stored as string) : initialMarkdown, restore };
   });
-  const [restored, setRestored] = useState(() => {
-    const stored = loadDraft(sectionId);
-    return stored !== null && stored !== initialMarkdown;
-  });
+  const [draft, setDraftState] = useState(initial.draft);
+  const [restored, setRestored] = useState(initial.restore);
 
   const setDraft = (next: string) => {
     setDraftState(next);

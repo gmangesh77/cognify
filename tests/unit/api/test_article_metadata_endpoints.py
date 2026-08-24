@@ -153,6 +153,21 @@ class TestPatchArticleMetadata:
         )
         assert resp.status_code == 422
 
+    async def test_explicit_null_clears_subtitle(
+        self, client: httpx.AsyncClient, auth_settings: Settings
+    ) -> None:
+        resp = await client.patch(
+            _url(),
+            json={"subtitle": None},
+            headers=make_auth_header("editor", auth_settings),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["subtitle"] is None
+
+    async def test_no_auth_header_401(self, client: httpx.AsyncClient) -> None:
+        resp = await client.patch(_url(), json={"title": "x"})
+        assert resp.status_code == 401
+
 
 async def _make_app(auth_settings: Settings, llm: object | None) -> FastAPI:
     app = create_app(auth_settings)
@@ -262,3 +277,23 @@ class TestSeoRegenerate:
                 headers=make_auth_header("viewer", auth_settings),
             )
             assert resp.status_code == 403
+
+    async def test_eleventh_call_within_a_minute_is_429(
+        self, auth_settings: Settings
+    ) -> None:
+        # Pins the decorator order — a mis-ordered @limiter.limit is
+        # silently dead (caught in review).
+        app = await _make_app(
+            auth_settings, FakeListChatModel(responses=[SEO_JSON] * 11)
+        )
+        async with await self._client_for(app) as client:
+            headers = make_auth_header("editor", auth_settings)
+            for _ in range(10):
+                ok = await client.post(
+                    self._regen_url(), json={"field": "seo_title"}, headers=headers
+                )
+                assert ok.status_code == 200
+            resp = await client.post(
+                self._regen_url(), json={"field": "seo_title"}, headers=headers
+            )
+            assert resp.status_code == 429

@@ -79,6 +79,25 @@ describe("ArticleHeaderEditor", () => {
     ).toBeInTheDocument();
   });
 
+  it("disables save when nothing changed", () => {
+    render(<ArticleHeaderEditor article={article} />);
+    fireEvent.click(screen.getByRole("button", { name: /edit metadata/i }));
+    expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled();
+  });
+
+  it("shows an error line when the save fails", async () => {
+    save.mockRejectedValue(new Error("boom"));
+    render(<ArticleHeaderEditor article={article} />);
+    fireEvent.click(screen.getByRole("button", { name: /edit metadata/i }));
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Changed" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/save failed/i);
+    // still in edit mode so the user can fix and retry
+    expect(screen.getByLabelText("Title")).toBeInTheDocument();
+  });
+
   it("fills the SEO title input from a regenerate", async () => {
     render(<ArticleHeaderEditor article={article} />);
     fireEvent.click(screen.getByRole("button", { name: /edit metadata/i }));

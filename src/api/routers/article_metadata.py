@@ -44,7 +44,9 @@ def _build_fields(
     fields: dict[str, object] = {}
     if patch.title is not None:
         fields["title"] = patch.title
-    if patch.subtitle is not None:
+    # model_fields_set distinguishes {"subtitle": null} (clear) from absent
+    # (the AUTHOR-003 PATCH flaw — fixed here for the new endpoint).
+    if "subtitle" in patch.model_fields_set:
         fields["subtitle"] = patch.subtitle
     seo_updates: dict[str, object] = {}
     if patch.seo_title is not None:
@@ -68,12 +70,16 @@ def _to_metadata_response(article: CanonicalArticle) -> ArticleMetadataResponse:
     )
 
 
-@limiter.limit("30/minute")
+# NOTE decorator order: the route decorator must be OUTERMOST and
+# @limiter.limit closest to the function, or slowapi never evaluates the
+# per-route limit (caught in review; canonical_articles.py/briefs.py have
+# the same latent bug — follow-up filed).
 @article_metadata_router.patch(
     "/articles/{article_id}",
     response_model=ArticleMetadataResponse,
     summary="Edit article title/subtitle/SEO metadata",
 )
+@limiter.limit("30/minute")
 async def patch_article_metadata(
     request: Request,
     article_id: UUID,
@@ -112,12 +118,12 @@ async def _regenerate_seo(
         current_session_id.reset(session_token)
 
 
-@limiter.limit("10/minute")
 @article_metadata_router.post(
     "/articles/{article_id}/seo/regenerate",
     response_model=SeoRegenerateResponse,
     summary="Propose a regenerated SEO field (not persisted)",
 )
+@limiter.limit("10/minute")
 async def regenerate_seo_field(
     request: Request,
     article_id: UUID,
@@ -132,6 +138,5 @@ async def regenerate_seo_field(
     )
     value: str | list[str] = getattr(seo, seo_field)
     proposed = article.seo.model_copy(update={seo_field: value})
-    return SeoRegenerateResponse(
-        field=body.field, value=value, warnings=seo_length_warnings(proposed)
-    )
+    warnings = [w for w in seo_length_warnings(proposed) if w.field == body.field]
+    return SeoRegenerateResponse(field=body.field, value=value, warnings=warnings)

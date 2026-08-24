@@ -63,27 +63,34 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
   const { save, saving, regenerate, regenerating } = useArticleMetadata(article.id);
   const [form, setForm] = useState<FormState | null>(null);
   const [warnings, setWarnings] = useState<FieldWarning[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const set = (key: keyof FormState) => (value: string) =>
     setForm((f) => (f ? { ...f, [key]: value } : f));
 
   const fill = (key: "seoTitle" | "seoDescription" | "keywords", field: SeoRegenerateField) =>
-    void regenerate(field).then((res) => {
-      const value = Array.isArray(res.value) ? res.value.join(", ") : res.value;
-      set(key)(value);
-    });
+    void regenerate(field)
+      .then((res) => {
+        setError(null);
+        const value = Array.isArray(res.value) ? res.value.join(", ") : res.value;
+        set(key)(value);
+      })
+      .catch(() => setError("Regenerate failed — try again."));
+
+  const canSave =
+    form !== null &&
+    form.title.trim().length > 0 &&
+    Object.keys(buildPatch(article, form)).length > 0;
 
   const onSave = () => {
-    if (!form) return;
-    const patch = buildPatch(article, form);
-    if (Object.keys(patch).length === 0) {
-      setForm(null);
-      return;
-    }
-    void save(patch).then((res) => {
-      setWarnings(res.warnings);
-      setForm(null);
-    });
+    if (!form || !canSave) return;
+    setError(null);
+    void save(buildPatch(article, form))
+      .then((res) => {
+        setWarnings(res.warnings);
+        setForm(null);
+      })
+      .catch(() => setError("Save failed — check the fields and try again."));
   };
 
   if (form === null) {
@@ -145,7 +152,7 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
   );
 
   return (
-    <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+    <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
       {field("Title", "title")}
       {field("Subtitle", "subtitle")}
       {field(
@@ -165,6 +172,11 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
         </span>,
       )}
       {field("Keywords", "keywords", regenButton("Regenerate keywords", "keywords", "keywords"))}
+      {error && (
+        <p role="alert" className="text-xs text-error">
+          {error}
+        </p>
+      )}
       <div className="flex justify-end gap-2">
         <button
           type="button"
@@ -175,7 +187,7 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
         </button>
         <button
           type="button"
-          disabled={saving}
+          disabled={saving || !canSave}
           onClick={onSave}
           className="rounded-md bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary/90 disabled:opacity-50"
         >

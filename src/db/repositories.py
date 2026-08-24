@@ -735,7 +735,7 @@ class PgArticleRepository:
             await db.commit()
             await db.refresh(row)
             logger.info(
-                "article_metadata_updated",
+                "article_metadata_row_updated",
                 article_id=str(article_id),
                 updated_fields=sorted(fields.keys()),
             )

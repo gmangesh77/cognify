@@ -15,7 +15,7 @@ import { PublishModal } from "@/components/articles/publish-modal";
 import { ImageImportModal } from "@/components/visuals/ImageImportModal";
 import { SavedAssetGallery } from "@/components/visuals/SavedAssetGallery";
 import { VisualStudio } from "@/components/visuals/VisualStudio";
-import { useArticleEditingState } from "@/hooks/article-editing-state";
+import { useArticleEditingState } from "@/hooks/use-article-editing-state";
 import { useArticle } from "@/hooks/use-article";
 import { useArticleActions } from "@/hooks/use-article-actions";
 import { useDefaultPersona } from "@/hooks/use-default-persona";
