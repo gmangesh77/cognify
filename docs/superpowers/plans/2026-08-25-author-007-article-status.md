@@ -32,11 +32,11 @@
 - Modify: `src/services/content_repositories.py` — Protocol: add `list` declaration (`async def list(self, page: int = 1, size: int = 20, status: str | None = None) -> tuple[list[CanonicalArticle], int]`) and widen `update_metadata` docs; `InMemoryArticleRepository`: widen whitelist to include `"status"`, add `list` (newest-first by `generated_at`, optional equality filter)
 - Tests: `tests/unit/db/test_article_status_column_width.py` (new, mirror of `test_session_status_column_width.py` with the 4 statuses), extend `tests/unit/services/test_article_update_metadata.py` (status update via whitelist; unknown key still ignored; in-memory `list` filter), extend `tests/integration/db/test_pg_article_metadata.py` (status round-trip: create → status defaults draft → update_metadata to in_review → list(status="in_review") finds it)
 
-- [ ] **Step 1: Write the failing tests** (column-width file, update_metadata status cases, in-memory list cases — real code, mimic the named files)
-- [ ] **Step 2: Run — FAIL** (`uv run pytest tests/unit/db/test_article_status_column_width.py tests/unit/services/test_article_update_metadata.py -q`)
-- [ ] **Step 3: Implement** (enum, field, column, migration file, both repos)
-- [ ] **Step 4: Run unit tests + FULL backend suite** (both `CanonicalArticle(` construction sites compile via the default; `_build_article` fixtures unchanged); apply the migration to the live DB (`uv run alembic upgrade head` with the compose postgres up — worktree needs no `.env` for this if `COGNIFY_DATABASE_URL` is exported inline for the one command) and run the integration test. Lint/mypy clean on touched files.
-- [ ] **Step 5: Commit** — `feat(db): ArticleStatus enum + canonical_articles.status migration + repo support (AUTHOR-007 Task 1)`
+- [x] **Step 1: Write the failing tests** (column-width file, update_metadata status cases, in-memory list cases — real code, mimic the named files)
+- [x] **Step 2: Run — FAIL** (`uv run pytest tests/unit/db/test_article_status_column_width.py tests/unit/services/test_article_update_metadata.py -q`)
+- [x] **Step 3: Implement** (enum, field, column, migration file, both repos)
+- [x] **Step 4: Run unit tests + FULL backend suite** (both `CanonicalArticle(` construction sites compile via the default; `_build_article` fixtures unchanged); apply the migration to the live DB (`uv run alembic upgrade head` with the compose postgres up — worktree needs no `.env` for this if `COGNIFY_DATABASE_URL` is exported inline for the one command) and run the integration test. Lint/mypy clean on touched files.
+- [x] **Step 5: Commit** — `feat(db): ArticleStatus enum + canonical_articles.status migration + repo support (AUTHOR-007 Task 1)`
 
 ---
 
@@ -50,7 +50,7 @@
 - Modify: `src/services/publishing/service.py` (`_persist_result` success path: `update = getattr(self._article_repo, "update_metadata", None); if update is not None: await update(article.id, {"status": ArticleStatus.PUBLISHED})` — duck-typed because the repo is typed `object`; import under TYPE_CHECKING/local)
 - Tests: extend `tests/unit/api/test_article_metadata_endpoints.py` (PATCH `{"status": "in_review"}` → 200 + persisted + response carries it; invalid value → 422 via enum), new `TestListArticlesFilter` in a small new file `tests/unit/api/test_article_list_filter.py` (seed 3 articles with mixed statuses on an `app.state.article_repo` = InMemoryArticleRepository; `GET /articles?status=approved` → only that one, `total` correct; no filter → all; NOTE the list endpoint reads `app.state.article_repo`, not content_service), publishing test (existing publishing service tests file — add: successful publish calls `update_metadata` with `PUBLISHED` when the repo has it; a repo without the method doesn't crash)
 
-- [ ] **Step 1: failing tests** → **Step 2: RED** → **Step 3: implement** → **Step 4: full backend suite + lint/mypy** → **Step 5: Commit** — `feat(api): article status through PATCH/list/publish (AUTHOR-007 Task 2)`
+- [x] **Step 1: failing tests** → **Step 2: RED** → **Step 3: implement** → **Step 4: full backend suite + lint/mypy** → **Step 5: Commit** — `feat(api): article status through PATCH/list/publish (AUTHOR-007 Task 2)`
 
 ---
 
@@ -63,7 +63,7 @@
 - Modify: `frontend/src/components/common/status-badge.tsx` (add `in_review` [info style, label "In Review"] and `approved` [success style, label "Approved"]; KEEP `complete` as legacy alias)
 - Tests: `status-badge.test.tsx` (+2 cases), `article-card.test.tsx` (fixture status → `"approved"`, assert "Approved" renders), `use-article-list.test.ts` (fixture gains `status: "in_review"`, assert mapped through; absent status → `"draft"`)
 
-- [ ] Steps 1–5 (RED → implement → full frontend suite + tsc no-new → Commit `feat(frontend): real ArticleStatus through mappers + badge variants (AUTHOR-007 Task 3)`)
+- [x] Steps 1–5 (RED → implement → full frontend suite + tsc no-new → Commit `feat(frontend): real ArticleStatus through mappers + badge variants (AUTHOR-007 Task 3)`)
 
 ---
 
@@ -73,7 +73,7 @@
 - Modify: `frontend/src/components/articles/article-header-editor.tsx` (187 — add a status pill + a compact next-step control in VIEW mode: current `StatusBadge` + a small "Move to <next>" ghost button for draft→in_review→approved→published, using `useArticleMetadata.save({ status })`; nothing added to page.tsx). If the addition pushes the file over 200, extract `article-status-control.tsx` and mount it from the editor's view mode.
 - Tests: extend `article-header-editor.test.tsx` (renders current status badge; clicking "Move to In Review" calls `save({status: "in_review"})`; published shows no next-step button)
 
-- [ ] Steps 1–5 (Commit `feat(frontend): status pill + next-step transition on article header (AUTHOR-007 Task 4)`)
+- [x] Steps 1–5 (Commit `feat(frontend): status pill + next-step transition on article header (AUTHOR-007 Task 4)`)
 
 ---
 
@@ -89,16 +89,16 @@
 - Modify: `frontend/src/app/(dashboard)/articles/page.tsx` (43 → ~70: filter state à la `research/page.tsx:17-31`, `<ArticleFilters/>`, `<ResumeSessionsStrip/>` above the grid)
 - Tests: new `frontend/src/app/(dashboard)/articles/page.test.tsx` (mock `@/lib/api/articles` + `@/lib/api/research`; default shows all + strip renders a failed session with a `/research/{id}` link; clicking the "Approved" pill refetches with `status="approved"`; empty resumables → no strip), `use-resumable-sessions.test.tsx`
 
-- [ ] Steps 1–5 (Commit `feat(frontend): articles status filters + resumable-sessions strip (AUTHOR-007 Task 5)`)
+- [x] Steps 1–5 (Commit `feat(frontend): articles status filters + resumable-sessions strip (AUTHOR-007 Task 5)`)
 
 ---
 
 ### Task 6: Verification, migration smoke, docs, review, PR
 
-- [ ] **Step 1:** Full suites (backend unit + the PG integration file, frontend vitest, ruff/format, mypy/tsc no-new).
-- [ ] **Step 2: Live smoke** — copy `.env` in; `docker compose -p cognify up --build -d api frontend`; **verify the migration ran** (entrypoint runs `alembic upgrade head` — check `alembic_version` = new head; existing articles have `status='draft'`); UI: articles list shows Draft badges; header status control: Draft → "Move to In Review" → badge updates without reload → DB row `in_review`; filter pills narrow the list (and `total`); publish an article to Ghost if configured OR skip publish smoke and note it; Resume strip: the cancelled/failed sessions from earlier smokes appear with working `/research/{id}` links; dashboard still renders (legacy `complete` alias). Delete `.env` after.
-- [ ] **Step 3: Docs** — PROGRESS (row + RESUME item; note the no-transition-enforcement decision and the dashboard alias), BACKLOG (+3 SP → 386), CLAUDE.md (status line + next action AUTHOR-008), tick plan checkboxes UTF-8-safely.
-- [ ] **Step 4:** Code review vs `develop` → fix findings → push → PR via `--body-file` (deviations: no server-side transition graph — any valid status, editor+; `complete` kept as badge alias; sessions strip is a second query because resumable sessions have no article row).
+- [x] **Step 1:** Full suites (backend unit + the PG integration file, frontend vitest, ruff/format, mypy/tsc no-new).
+- [x] **Step 2: Live smoke** — copy `.env` in; `docker compose -p cognify up --build -d api frontend`; **verify the migration ran** (entrypoint runs `alembic upgrade head` — check `alembic_version` = new head; existing articles have `status='draft'`); UI: articles list shows Draft badges; header status control: Draft → "Move to In Review" → badge updates without reload → DB row `in_review`; filter pills narrow the list (and `total`); publish an article to Ghost if configured OR skip publish smoke and note it; Resume strip: the cancelled/failed sessions from earlier smokes appear with working `/research/{id}` links; dashboard still renders (legacy `complete` alias). Delete `.env` after.
+- [x] **Step 3: Docs** — PROGRESS (row + RESUME item; note the no-transition-enforcement decision and the dashboard alias), BACKLOG (+3 SP → 386), CLAUDE.md (status line + next action AUTHOR-008), tick plan checkboxes UTF-8-safely.
+- [x] **Step 4:** Code review vs `develop` → fix findings → push → PR via `--body-file` (deviations: no server-side transition graph — any valid status, editor+; `complete` kept as badge alias; sessions strip is a second query because resumable sessions have no article row).
 
 ---
 
