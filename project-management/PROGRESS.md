@@ -179,7 +179,7 @@
 | INFRA-007 | CeleryDispatcher + worker | Done (PR #78 → develop `c724f35`, 2026-08-24) | `feature/INFRA-007-celery` | [plan](../docs/superpowers/plans/2026-08-24-infra-007-celery-worker.md) | program plan §9 Phase A; review §5 |
 | AUTHOR-006 | Article metadata editor + autosave | Done (PR #79 → develop `c35f8ef`, 2026-08-24) | `feature/AUTHOR-006-metadata` | [plan](../docs/superpowers/plans/2026-08-24-author-006-metadata-editor.md) | program plan §5.7, §6; review §6 #6/#7 |
 | AUTHOR-007 | Article status + filters + Resume | Done (2026-08-25, PR pending review; migration `d5e8f2a1c3b9`) | `feature/AUTHOR-007-status` | [plan](../docs/superpowers/plans/2026-08-25-author-007-article-status.md) | program plan §4.4; review §6 #10 |
-| AUTHOR-008 | Length + content type budgets | Planned | — | program plan §9 Phase B | review §6 #8 |
+| AUTHOR-008 | Length + content type budgets | In Progress (2026-08-25) | `feature/AUTHOR-008-length` | [plan](../docs/superpowers/plans/2026-08-25-author-008-length-budgets.md) | program plan §9 Phase B; review §6 #8 |
 | AUTHOR-009 | Humanize per-pass streaming | Planned | — | program plan §9 Phase B | review §6 #9 |
 | AUTHOR-010 | Model tiering per step | Planned | — | program plan §5.8 | review §6 #14 |
 | INFRA-008 | Warm-up, role re-check, toaster, file splits | Planned | — | program plan §5.9–5.10 | review §6 #15/#16 |
