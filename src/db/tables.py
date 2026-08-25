@@ -202,6 +202,10 @@ class CanonicalArticleRow(Base, UUIDMixin, TimestampMixin):
     content_type: Mapped[str] = mapped_column(String(20))
     domain: Mapped[str] = mapped_column(String(100))
     ai_generated: Mapped[bool] = mapped_column(Boolean, default=True)
+    # AUTHOR-007 — editorial state; String(40) per the L-003 width lesson.
+    status: Mapped[str] = mapped_column(
+        String(40), nullable=False, server_default="draft"
+    )
     generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     key_claims: Mapped[list] = mapped_column(JSONB, default=list)
     seo: Mapped[dict] = mapped_column(JSONB)

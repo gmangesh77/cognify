@@ -138,6 +138,7 @@ class CanonicalArticleResponse(BaseModel):
     generated_at: datetime
     provenance: ProvenanceResponse
     ai_generated: bool
+    status: str = "draft"  # AUTHOR-007 editorial state
 
 
 class PaginatedArticlesResponse(BaseModel):

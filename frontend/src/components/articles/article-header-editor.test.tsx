@@ -19,6 +19,7 @@ const article = {
   id: "a1",
   title: "Original title",
   subtitle: "Original subtitle",
+  status: "draft",
   seo: {
     title: "Original SEO title",
     description: "Original SEO description",
@@ -96,6 +97,27 @@ describe("ArticleHeaderEditor", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/save failed/i);
     // still in edit mode so the user can fix and retry
     expect(screen.getByLabelText("Title")).toBeInTheDocument();
+  });
+
+  it("shows the current status badge and the next-step transition", async () => {
+    render(<ArticleHeaderEditor article={article} />);
+    expect(screen.getByText("Draft")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: /move to in review/i }),
+    );
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith({ status: "in_review" }),
+    );
+  });
+
+  it("published articles show no next-step button", () => {
+    render(
+      <ArticleHeaderEditor
+        article={{ ...article, status: "published" } as unknown as ArticleDetail}
+      />,
+    );
+    expect(screen.getByText("Published")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /move to/i })).toBeNull();
   });
 
   it("fills the SEO title input from a regenerate", async () => {

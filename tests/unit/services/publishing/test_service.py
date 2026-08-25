@@ -135,3 +135,61 @@ class TestPublishingService:
         pair = _make_pair()
         svc.register("ghost", pair)
         assert "ghost" in svc._platforms
+
+
+class TestPublishMarksArticleStatus:
+    """AUTHOR-007 - a successful publish marks the article published."""
+
+    async def test_success_sets_published_status(
+        self,
+        article_repo: AsyncMock,
+        sample_article: CanonicalArticle,
+    ) -> None:
+        from src.models.content import ArticleStatus
+
+        svc = PublishingService(article_repo)
+        svc.register("test", _make_pair())
+        await svc.publish(sample_article.id, "test")
+        article_repo.update_metadata.assert_awaited_once_with(
+            sample_article.id, {"status": ArticleStatus.PUBLISHED}
+        )
+
+    async def test_failure_does_not_touch_status(
+        self,
+        article_repo: AsyncMock,
+        sample_article: CanonicalArticle,
+    ) -> None:
+        failed = PublicationResult(
+            article_id=sample_article.id,
+            platform="test",
+            status=PublicationStatus.FAILED,
+            error_message="401 unauthorized",
+        )
+        svc = PublishingService(article_repo)
+        svc.register("test", _make_pair(publish_result=failed))
+        await svc.publish(sample_article.id, "test")
+        article_repo.update_metadata.assert_not_called()
+
+    async def test_repo_without_update_metadata_does_not_crash(
+        self,
+        sample_article: CanonicalArticle,
+    ) -> None:
+        class _GetOnlyRepo:
+            async def get(self, article_id):  # noqa: ANN001, ANN202
+                return sample_article
+
+        svc = PublishingService(_GetOnlyRepo())
+        svc.register("test", _make_pair())
+        result = await svc.publish(sample_article.id, "test")
+        assert result.status == PublicationStatus.SUCCESS
+
+    async def test_status_mark_failure_does_not_fail_the_publish(
+        self,
+        article_repo: AsyncMock,
+        sample_article: CanonicalArticle,
+    ) -> None:
+        article_repo.update_metadata.side_effect = RuntimeError("db down")
+        svc = PublishingService(article_repo)
+        svc.register("test", _make_pair())
+        result = await svc.publish(sample_article.id, "test")
+        assert result.status == PublicationStatus.SUCCESS

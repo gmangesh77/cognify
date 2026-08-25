@@ -60,6 +60,7 @@ export interface ArticleResponse {
     embedding_version: string;
   };
   authors: string[];
+  status?: string; // AUTHOR-007 editorial state (optional: older fixtures)
 }
 
 export interface PaginatedArticles {
@@ -72,9 +73,12 @@ export interface PaginatedArticles {
 export async function fetchArticles(
   page = 1,
   size = 20,
+  status?: string,
 ): Promise<PaginatedArticles> {
+  const params: Record<string, string | number> = { page, size };
+  if (status) params.status = status;
   const { data } = await apiClient.get<PaginatedArticles>("/articles", {
-    params: { page, size },
+    params,
   });
   return data;
 }

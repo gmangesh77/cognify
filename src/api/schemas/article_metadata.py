@@ -8,7 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from src.api.schemas.articles import SEOMetadataResponse
-from src.models.content import SEOMetadata
+from src.models.content import ArticleStatus, SEOMetadata
 
 SEO_TITLE_RANGE = (50, 60)
 SEO_DESCRIPTION_RANGE = (150, 160)
@@ -22,6 +22,9 @@ class ArticleMetadataPatch(BaseModel):
     seo_title: str | None = Field(default=None, min_length=1, max_length=70)
     seo_description: str | None = Field(default=None, min_length=1, max_length=170)
     keywords: list[str] | None = Field(default=None, max_length=20)
+    # AUTHOR-007 — transitions are UI-guided, not server-enforced: any
+    # valid status is accepted from editor+ (deliberate; documented).
+    status: ArticleStatus | None = None
 
 
 class FieldWarning(BaseModel):
@@ -33,6 +36,7 @@ class ArticleMetadataResponse(BaseModel):
     id: UUID
     title: str
     subtitle: str | None
+    status: str
     seo: SEOMetadataResponse
     warnings: list[FieldWarning]
 

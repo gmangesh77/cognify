@@ -30,3 +30,15 @@ describe("StatusBadge", () => {
     expect(screen.getByText("Published")).toBeInTheDocument();
   });
 });
+
+describe("StatusBadge AUTHOR-007 variants", () => {
+  it("renders in_review status", () => {
+    render(<StatusBadge status="in_review" />);
+    expect(screen.getByText("In Review")).toBeInTheDocument();
+  });
+
+  it("renders approved status", () => {
+    render(<StatusBadge status="approved" />);
+    expect(screen.getByText("Approved")).toBeInTheDocument();
+  });
+});
