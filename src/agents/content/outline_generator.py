@@ -47,8 +47,9 @@ class OutlineContext:
 _SYSTEM_PROMPT = (
     "You are an expert content strategist. Generate a structured "
     "article outline from research findings. The outline should have "
-    "4-8 sections with narrative flow: introduction, findings, "
-    "analysis, and conclusion. "
+    "sections with narrative flow: introduction, findings, "
+    "analysis, and conclusion. Follow the section count and word "
+    "budgets given in the requirements. "
     "Do not use em-dashes. Use periods or commas instead. "
     "Avoid formal transitions like moreover, furthermore, in conclusion. "
     "Write in a natural conversational tone. Vary sentence length. "
@@ -73,7 +74,8 @@ def _requirements_block(ctx: OutlineContext | None) -> str:
     b = b or DEFAULT_LENGTH_BUDGETS["medium"]
     lines = [
         "Requirements:",
-        f"- {b['sections_min']}-{b['sections_max']} sections ordered for narrative flow",
+        f"- {b['sections_min']}-{b['sections_max']} sections ordered "
+        "for narrative flow",
         f"- Each section: {b['section_min']}-{b['section_max']} target words",
         f"- Total: {b['total_min']}-{b['total_max']} words",
         "- Map each section to relevant facet indices",
@@ -81,6 +83,7 @@ def _requirements_block(ctx: OutlineContext | None) -> str:
     if ctx is not None and ctx.content_type and ctx.content_type != "article":
         lines.append(f'- Set "content_type" to "{ctx.content_type}"')
     return "\n".join(lines) + "\n"
+
 
 _SCHEMA_HINT = (
     '{{"title": "...", "subtitle": "...", "content_type": "article", '
