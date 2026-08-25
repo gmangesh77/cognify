@@ -161,7 +161,8 @@ def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever | None) ->
 
     async def validate_node(state: ContentState) -> dict[str, object]:
         drafts = list(state.get("section_drafts", []))
-        result = validate_drafts(drafts)
+        outline = _coerce_outline(state) if state.get("outline") is not None else None
+        result = validate_drafts(drafts, outline)
         if result.needs_expansion and result.shortest_index is not None:
             drafts = await _redraft_shortest(
                 state,
@@ -170,7 +171,7 @@ def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever | None) ->
                 llm,
                 retriever,
             )
-            result = validate_drafts(drafts)
+            result = validate_drafts(drafts, outline)
         total = sum(d.word_count for d in drafts)
         logger.info("validate_article_complete", total_words=total)
         return {

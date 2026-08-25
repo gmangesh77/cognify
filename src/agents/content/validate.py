@@ -8,11 +8,14 @@ from dataclasses import dataclass
 
 import structlog
 
-from src.models.content_pipeline import CitationRef, SectionDraft
+from src.models.content_pipeline import ArticleOutline, CitationRef, SectionDraft
 
 logger = structlog.get_logger()
 
 _MIN_TOTAL_WORDS = 1500
+# AUTHOR-008 — an article is "complete enough" at 60% of its outline's
+# total target; below that the shortest section is re-drafted.
+_EXPANSION_RATIO = 0.6
 
 
 @dataclass(frozen=True)
@@ -25,20 +28,48 @@ class ValidationResult:
     shortest_index: int | None
 
 
-def validate_drafts(drafts: list[SectionDraft]) -> ValidationResult:
-    """Validate section drafts and aggregate citations."""
+def validate_drafts(
+    drafts: list[SectionDraft],
+    outline: ArticleOutline | None = None,
+) -> ValidationResult:
+    """Validate section drafts and aggregate citations.
+
+    With an outline, the expansion floor and per-section warn bands come
+    from its word budgets (AUTHOR-008); without one, the legacy
+    1500/200-500 constants apply.
+    """
     total = sum(d.word_count for d in drafts)
     citations = _deduplicate_citations(drafts)
     shortest = _find_shortest(drafts)
+    floor = _expansion_floor(outline)
     result = ValidationResult(
         total_word_count=total,
         all_citations=citations,
-        needs_expansion=total < _MIN_TOTAL_WORDS,
+        needs_expansion=total < floor,
         shortest_index=shortest,
     )
-    _log_section_warnings(drafts)
-    _log_validation_result(drafts, result)
+    _log_section_warnings(drafts, outline)
+    _log_validation_result(drafts, result, floor)
     return result
+
+
+def _expansion_floor(outline: ArticleOutline | None) -> int:
+    """Words below which the article needs expansion."""
+    if outline is None or outline.total_target_words <= 0:
+        return _MIN_TOTAL_WORDS
+    return int(outline.total_target_words * _EXPANSION_RATIO)
+
+
+def _section_band(
+    outline: ArticleOutline | None,
+    section_index: int,
+) -> tuple[int, int]:
+    """Acceptable word band for one section: 0.5-1.5x its outline target."""
+    if outline is not None:
+        for s in outline.sections:
+            if s.index == section_index and s.target_word_count > 0:
+                return (s.target_word_count // 2, s.target_word_count * 3 // 2)
+    return (200, 500)
 
 
 def replace_section(
@@ -70,10 +101,14 @@ def _find_shortest(drafts: list[SectionDraft]) -> int | None:
     return min(drafts, key=lambda d: d.word_count).section_index
 
 
-def _log_section_warnings(drafts: list[SectionDraft]) -> None:
-    """Warn on sections outside the 200-500 word range."""
+def _log_section_warnings(
+    drafts: list[SectionDraft],
+    outline: ArticleOutline | None,
+) -> None:
+    """Warn on sections outside their budget band."""
     for d in drafts:
-        if d.word_count < 200 or d.word_count > 500:
+        lo, hi = _section_band(outline, d.section_index)
+        if d.word_count < lo or d.word_count > hi:
             logger.warning(
                 "section_word_count_outside_range",
                 section_index=d.section_index,
@@ -84,13 +119,14 @@ def _log_section_warnings(drafts: list[SectionDraft]) -> None:
 def _log_validation_result(
     drafts: list[SectionDraft],
     result: ValidationResult,
+    floor: int,
 ) -> None:
     """Log final validation summary."""
     if result.needs_expansion:
         logger.warning(
             "article_below_word_target",
             total_words=result.total_word_count,
-            target=_MIN_TOTAL_WORDS,
+            target=floor,
             shortest_section=result.shortest_index,
         )
     logger.info(

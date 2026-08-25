@@ -1,7 +1,33 @@
 """Tests for article validation — word count checks and citation dedup."""
 
 from src.agents.content.validate import replace_section, validate_drafts
-from src.models.content_pipeline import CitationRef, SectionDraft
+from src.models.content_pipeline import (
+    ArticleOutline,
+    CitationRef,
+    OutlineSection,
+    SectionDraft,
+)
+
+
+def _make_outline(section_targets: list[int]) -> ArticleOutline:
+    sections = [
+        OutlineSection(
+            index=i,
+            title=f"Section {i}",
+            description="d",
+            key_points=["k"],
+            target_word_count=t,
+            relevant_facets=[0],
+        )
+        for i, t in enumerate(section_targets)
+    ]
+    return ArticleOutline(
+        title="T",
+        content_type="article",
+        sections=sections,
+        total_target_words=sum(section_targets),
+        reasoning="r",
+    )
 
 
 def _make_draft(
@@ -55,6 +81,34 @@ class TestValidateDrafts:
         assert result.needs_expansion is True
         assert result.shortest_index is None
         assert result.all_citations == []
+
+
+class TestBudgetAwareValidation:
+    """AUTHOR-008 — expansion threshold derives from the outline's totals."""
+
+    def test_pillar_outline_raises_expansion_threshold(self) -> None:
+        # 6 x 400 = 2400 words: fine under the legacy 1500 floor, but a
+        # 6000-word pillar outline demands expansion (floor = 0.6 * 6000).
+        outline = _make_outline([1000] * 6)
+        drafts = [_make_draft(i, 400) for i in range(6)]
+        result = validate_drafts(drafts, outline)
+        assert result.needs_expansion is True
+
+    def test_no_outline_keeps_legacy_1500_threshold(self) -> None:
+        drafts = [_make_draft(i, 400) for i in range(4)]  # 1600 total
+        assert validate_drafts(drafts).needs_expansion is False
+
+    def test_short_outline_does_not_demand_1500(self) -> None:
+        # 3 x 250 = 750 words >= 0.6 * 900 — a short article is complete
+        # even though it is far below the legacy 1500 floor.
+        outline = _make_outline([300] * 3)
+        drafts = [_make_draft(i, 250) for i in range(3)]
+        assert validate_drafts(drafts, outline).needs_expansion is False
+
+    def test_outline_meeting_target_passes(self) -> None:
+        outline = _make_outline([1000] * 6)
+        drafts = [_make_draft(i, 900) for i in range(6)]
+        assert validate_drafts(drafts, outline).needs_expansion is False
 
 
 class TestReplaceSection:
