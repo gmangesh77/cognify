@@ -97,6 +97,7 @@ export interface ArticleMetadataPatch {
   seo_title?: string;
   seo_description?: string;
   keywords?: string[];
+  status?: ArticleStatus; // AUTHOR-007
 }
 
 export interface FieldWarning {
