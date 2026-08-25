@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Pencil, RefreshCw } from "lucide-react";
+import { Pencil } from "lucide-react";
+import {
+  Counter,
+  MetadataField,
+  RegenButton,
+} from "@/components/articles/article-metadata-fields";
+import { ArticleStatusControl } from "@/components/articles/article-status-control";
 import { Header } from "@/components/layout/header";
 import { useArticleMetadata } from "@/hooks/use-article-metadata";
 import type {
@@ -40,18 +46,6 @@ function buildPatch(article: ArticleDetail, form: FormState): ArticleMetadataPat
   if (keywords.join(",") !== article.seo.keywords.join(","))
     patch.keywords = keywords;
   return patch;
-}
-
-function Counter({ id, length, lo, hi }: { id: string; length: number; lo: number; hi: number }) {
-  const inRange = length >= lo && length <= hi;
-  return (
-    <span
-      data-testid={id}
-      className={`text-xs ${inRange ? "text-neutral-500" : "text-warning"}`}
-    >
-      {length}/{lo}–{hi}
-    </span>
-  );
 }
 
 interface ArticleHeaderEditorProps {
@@ -97,6 +91,15 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
     return (
       <div>
         <Header title={article.title} subtitle={article.subtitle ?? ""}>
+          <ArticleStatusControl
+            status={article.status}
+            busy={saving}
+            onTransition={(next) =>
+              void save({ status: next }).catch(() =>
+                setError("Status change failed — try again."),
+              )
+            }
+          />
           {children}
           <button
             type="button"
@@ -107,6 +110,11 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
             <Pencil className="h-4 w-4" />
           </button>
         </Header>
+        {error && (
+          <p role="alert" className="mt-2 text-xs text-error">
+            {error}
+          </p>
+        )}
         {warnings.length > 0 && (
           <ul className="mt-2 space-y-0.5 text-xs text-warning">
             {warnings.map((w) => (
@@ -118,37 +126,22 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
     );
   }
 
-  const field = (
-    label: string,
-    key: keyof FormState,
-    extra?: ReactNode,
-  ) => (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <label htmlFor={`meta-${key}`} className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-          {label}
-        </label>
-        {extra}
-      </div>
-      <input
-        id={`meta-${key}`}
-        value={form[key]}
-        onChange={(e) => set(key)(e.target.value)}
-        className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm text-neutral-900"
-      />
-    </div>
+  const field = (label: string, key: keyof FormState, extra?: ReactNode) => (
+    <MetadataField
+      label={label}
+      id={`meta-${key}`}
+      value={form[key]}
+      onChange={set(key)}
+      extra={extra}
+    />
   );
 
-  const regenButton = (label: string, key: "seoTitle" | "seoDescription" | "keywords", f: SeoRegenerateField) => (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={regenerating}
-      onClick={() => fill(key, f)}
-      className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 disabled:opacity-50"
-    >
-      <RefreshCw className="h-3.5 w-3.5" />
-    </button>
+  const regen = (
+    label: string,
+    key: "seoTitle" | "seoDescription" | "keywords",
+    f: SeoRegenerateField,
+  ) => (
+    <RegenButton label={label} disabled={regenerating} onClick={() => fill(key, f)} />
   );
 
   return (
@@ -160,7 +153,7 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
         "seoTitle",
         <span className="flex items-center gap-2">
           <Counter id="seo-title-counter" length={form.seoTitle.length} lo={50} hi={60} />
-          {regenButton("Regenerate SEO title", "seoTitle", "seo_title")}
+          {regen("Regenerate SEO title", "seoTitle", "seo_title")}
         </span>,
       )}
       {field(
@@ -168,10 +161,10 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
         "seoDescription",
         <span className="flex items-center gap-2">
           <Counter id="seo-description-counter" length={form.seoDescription.length} lo={150} hi={160} />
-          {regenButton("Regenerate SEO description", "seoDescription", "seo_description")}
+          {regen("Regenerate SEO description", "seoDescription", "seo_description")}
         </span>,
       )}
-      {field("Keywords", "keywords", regenButton("Regenerate keywords", "keywords", "keywords"))}
+      {field("Keywords", "keywords", regen("Regenerate keywords", "keywords", "keywords"))}
       {error && (
         <p role="alert" className="text-xs text-error">
           {error}
