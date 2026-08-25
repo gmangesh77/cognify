@@ -73,6 +73,12 @@ class ArticleRepository(Protocol):
         article_id: UUID,
         fields: dict[str, object],
     ) -> CanonicalArticle | None: ...
+    async def list(
+        self,
+        page: int = 1,
+        size: int = 20,
+        status: str | None = None,
+    ) -> tuple[list[CanonicalArticle], int]: ...
 
 
 class InMemoryArticleRepository:
@@ -113,10 +119,28 @@ class InMemoryArticleRepository:
         existing = self._store.get(article_id)
         if existing is None:
             return None
-        allowed = {k: v for k, v in fields.items() if k in ("title", "subtitle", "seo")}
+        allowed = {
+            k: v
+            for k, v in fields.items()
+            if k in ("title", "subtitle", "seo", "status")
+        }
         updated = existing.model_copy(update=allowed)
         self._store[article_id] = updated
         return updated
+
+    async def list(
+        self,
+        page: int = 1,
+        size: int = 20,
+        status: str | None = None,
+    ) -> tuple[list[CanonicalArticle], int]:
+        items = [
+            a
+            for a in self._store.values()
+            if status is None or a.status.value == status
+        ]
+        items.sort(key=lambda a: a.generated_at, reverse=True)
+        return items[(page - 1) * size : page * size], len(items)
 
 
 @dataclass(frozen=True)
