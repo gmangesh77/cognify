@@ -172,7 +172,7 @@ def build_content_graph(
     """Build and compile the content pipeline graph."""
     graph = StateGraph(ContentState)
     graph.add_node(
-        "generate_outline", _wrap_node("outline", make_outline_node(llm), deps)
+        "generate_outline", _wrap_node("outline", make_outline_node(llm, settings), deps)
     )
     graph.set_entry_point("generate_outline")
 
