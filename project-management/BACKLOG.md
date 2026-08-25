@@ -192,7 +192,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | INFRA-007 | CeleryDispatcher + worker wiring for the full pipeline — **DONE** (PR #78, 2026-08-24) | Must | 5 | A |
 | AUTHOR-006 | PATCH article metadata + header/SEO editor + refetch + autosave — **DONE** (PR #79, 2026-08-24) | Should | 5 | B |
 | AUTHOR-007 | Article status (draft/in_review/approved/published) + list filters + Resume — **DONE** (2026-08-25, `feature/AUTHOR-007-status`, migration `d5e8f2a1c3b9`) | Should | 3 | B |
-| AUTHOR-008 | Length target + content type through outliner (word budgets) | Should | 3 | B |
+| AUTHOR-008 | Length target + content type through outliner (word budgets) — **DONE** (`feature/AUTHOR-008-length`, 2026-08-25) | Should | 3 | B |
 | AUTHOR-009 | Humanize per-pass streaming + sentence-level accept/reject | Could | 3 | B |
 | AUTHOR-010 | Model tiering per step | Could | 2 | B |
 | INFRA-008 | Embedding warm-up w/ graceful degradation; live role re-check; shared toaster; split >200-line files | Should | 4 | B |
@@ -231,4 +231,4 @@ follow-ups (INFRA-006, CONTENT-007, DASH-007, Playwright scaffold,
 The only remaining ticket in the entire backlog is PUBLISH-002
 (5 SP, WordPress integration).
 
-**Velocity**: 386 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21; AUTHOR-005 = 3 SP, INFRA-007 = 5 SP and AUTHOR-006 = 5 SP on 2026-08-24; AUTHOR-007 = 3 SP on 2026-08-25). Remaining: PUBLISH-002 (5 SP) + Epic 11 (~37 SP).
+**Velocity**: 389 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21; AUTHOR-005 = 3 SP, INFRA-007 = 5 SP and AUTHOR-006 = 5 SP on 2026-08-24; AUTHOR-007 = 3 SP and AUTHOR-008 = 3 SP on 2026-08-25). Remaining: PUBLISH-002 (5 SP) + Epic 11 (~34 SP).

@@ -1,6 +1,6 @@
 # AUTHOR-008: Length Target + Content Type Through the Outliner Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** The session's `length_target` (`short|medium|long|pillar`) and `content_type` (`article|how-to|analysis|report`) — collected since AUTHOR-003 but never consumed — drive the outliner's per-section word budgets and structure guidance, and the downstream word-count guardrails become budget-aware instead of hardcoded 200/500/1500.
 
@@ -30,7 +30,7 @@
 **Interfaces:**
 - Produces: `LengthBudget = dict[str, int]`; `DEFAULT_LENGTH_BUDGETS: dict[str, LengthBudget]`; `budget_for(length_target: str | None, overrides: dict[str, dict[str, int]]) -> LengthBudget`; `content_type_guidance(content_type: str | None) -> str | None`; settings field `length_budgets_json: dict[str, dict[str, int]] = {}`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 """Tests for length-target word budgets (AUTHOR-008)."""
@@ -89,9 +89,9 @@ class TestContentTypeGuidance:
             assert text and len(text) > 20
 ```
 
-- [ ] **Step 2: Run to verify failure** — `uv run pytest tests/unit/agents/content/test_length_budgets.py -q` → FAIL (module missing).
+- [x] **Step 2: Run to verify failure** — `uv run pytest tests/unit/agents/content/test_length_budgets.py -q` → FAIL (module missing).
 
-- [ ] **Step 3: Implement `src/agents/content/length_budgets.py`**
+- [x] **Step 3: Implement `src/agents/content/length_budgets.py`**
 
 ```python
 """Length-target word budgets for the outliner (AUTHOR-008).
@@ -163,7 +163,7 @@ def content_type_guidance(content_type: str | None) -> str | None:
     return _CONTENT_TYPE_GUIDANCE.get(content_type)
 ```
 
-- [ ] **Step 4: Add the settings field** in `src/config/settings.py` right after `llm_pricing_json`:
+- [x] **Step 4: Add the settings field** in `src/config/settings.py` right after `llm_pricing_json`:
 
 ```python
     # Length-target word-budget overrides for the outliner, keyed by
@@ -173,8 +173,8 @@ def content_type_guidance(content_type: str | None) -> str | None:
     length_budgets_json: dict[str, dict[str, int]] = {}
 ```
 
-- [ ] **Step 5: Run tests** — module tests PASS; `uv run pytest tests/unit/config/ -q` still green.
-- [ ] **Step 6: Commit** — `feat(content): length-target word budgets with settings overrides (AUTHOR-008)`
+- [x] **Step 5: Run tests** — module tests PASS; `uv run pytest tests/unit/config/ -q` still green.
+- [x] **Step 6: Commit** — `feat(content): length-target word budgets with settings overrides (AUTHOR-008)`
 
 ### Task 2: Seed `content_type` / `length_target` into the graph state
 
@@ -185,7 +185,7 @@ def content_type_guidance(content_type: str | None) -> str | None:
 **Interfaces:**
 - Produces: `state["content_type"]: str | None`, `state["length_target"]: str | None` available to all nodes.
 
-- [ ] **Step 1: Failing test** (template: `test_build_initial_state_seeds_audience_persona_and_brief_id` in the same file)
+- [x] **Step 1: Failing test** (template: `test_build_initial_state_seeds_audience_persona_and_brief_id` in the same file)
 
 ```python
 def test_build_initial_state_seeds_content_type_and_length_target() -> None:
@@ -197,8 +197,8 @@ def test_build_initial_state_seeds_content_type_and_length_target() -> None:
 
 (Adapt `_make_session`/`_topic` to the file's existing helpers — extend the existing session fixture with the two kwargs.)
 
-- [ ] **Step 2: Run to verify failure** — KeyError.
-- [ ] **Step 3: Implement** — in `ContentState` add:
+- [x] **Step 2: Run to verify failure** — KeyError.
+- [x] **Step 3: Implement** — in `ContentState` add:
 
 ```python
     # AUTHOR-008 — editorial sizing, consumed by the outline node.
@@ -213,8 +213,8 @@ and in `build_initial_state` (after `"keywords"`):
         "length_target": session.length_target,
 ```
 
-- [ ] **Step 4: Run** — `uv run pytest tests/unit/services/test_graph_state.py -q` PASS.
-- [ ] **Step 5: Commit** — `feat(content): seed content_type/length_target into graph state (AUTHOR-008)`
+- [x] **Step 4: Run** — `uv run pytest tests/unit/services/test_graph_state.py -q` PASS.
+- [x] **Step 5: Commit** — `feat(content): seed content_type/length_target into graph state (AUTHOR-008)`
 
 ### Task 3: Budget-aware outline prompt
 
@@ -226,7 +226,7 @@ and in `build_initial_state` (after `"keywords"`):
 - Consumes: `budget_for`, `content_type_guidance` (Task 1); state keys (Task 2).
 - Produces: `OutlineContext` gains `content_type: str | None = None` and `budget: LengthBudget | None = None`; `make_outline_node(llm, settings=None)`.
 
-- [ ] **Step 1: Failing tests** (use the file's existing `_CapturingLLM` + `_outline_json` helpers)
+- [x] **Step 1: Failing tests** (use the file's existing `_CapturingLLM` + `_outline_json` helpers)
 
 ```python
 class TestBudgetPrompt:
@@ -264,8 +264,8 @@ class TestBudgetPrompt:
         assert "Set \"content_type\"" not in llm.captured
 ```
 
-- [ ] **Step 2: Run to verify failure** — unknown kwargs on `OutlineContext`.
-- [ ] **Step 3: Implement in `outline_generator.py`:**
+- [x] **Step 2: Run to verify failure** — unknown kwargs on `OutlineContext`.
+- [x] **Step 3: Implement in `outline_generator.py`:**
   - Extend the dataclass: `content_type: str | None = None`, `budget: LengthBudget | None = None` (import `LengthBudget`, `DEFAULT_LENGTH_BUDGETS`, `content_type_guidance` from `.length_budgets`).
   - Replace the static requirements lines in `_USER_TEMPLATE` with a `{requirements}` placeholder; keep the `Requirements:\n` heading INSIDE the generated block so the existing context-lines splice keeps working unchanged:
 
@@ -305,7 +305,7 @@ def _requirements_block(ctx: OutlineContext | None) -> str:
 ```
 
   - In `generate_outline`, pass `requirements=_requirements_block(ctx)` into the format call. The `user_msg.replace("Requirements:\n", ...)` splice still matches because the block starts with that literal.
-- [ ] **Step 4: `make_outline_node(llm, settings=None)`** in `nodes.py` — resolve budget from state + settings and extend the ctx:
+- [x] **Step 4: `make_outline_node(llm, settings=None)`** in `nodes.py` — resolve budget from state + settings and extend the ctx:
 
 ```python
 def make_outline_node(
@@ -329,10 +329,10 @@ def make_outline_node(
 ```
 
 (import `budget_for` + `Settings`; `Settings` is already imported by `pipeline.py` — in `nodes.py` import under TYPE_CHECKING if needed, or plainly.)
-- [ ] **Step 5:** `pipeline.py:172` — `make_outline_node(llm, settings)`.
-- [ ] **Step 6: Node-level test** in `test_outline_generator.py` or `tests/unit/agents/content/test_pipeline.py`: state with `length_target="short"` → capturing LLM prompt contains `"3-5 sections"`. Simplest as a direct `make_outline_node` invocation test with a minimal state dict.
-- [ ] **Step 7: Run** — outline generator + pipeline + outline-gate + content-service test files. All green.
-- [ ] **Step 8: Commit** — `feat(content): budget + content-type aware outline prompt (AUTHOR-008)`
+- [x] **Step 5:** `pipeline.py:172` — `make_outline_node(llm, settings)`.
+- [x] **Step 6: Node-level test** in `test_outline_generator.py` or `tests/unit/agents/content/test_pipeline.py`: state with `length_target="short"` → capturing LLM prompt contains `"3-5 sections"`. Simplest as a direct `make_outline_node` invocation test with a minimal state dict.
+- [x] **Step 7: Run** — outline generator + pipeline + outline-gate + content-service test files. All green.
+- [x] **Step 8: Commit** — `feat(content): budget + content-type aware outline prompt (AUTHOR-008)`
 
 ### Task 4: Outline-derived guardrails (validate + drafter warning)
 
@@ -343,7 +343,7 @@ def make_outline_node(
 **Interfaces:**
 - Produces: `validate_drafts(drafts, outline: ArticleOutline | None = None)` — expansion threshold `max(0.6 × outline.total_target_words, ...)` when outline given, legacy 1500 otherwise; per-section warn band `0.5–1.5 × section target` when outline given, legacy 200/500 otherwise. `_log_word_count` warns outside `0.5–1.5 × section.target_word_count`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 ```python
 class TestBudgetAwareValidation:
@@ -369,8 +369,8 @@ class TestBudgetAwareValidation:
 
 Drafter test (`test_section_drafter.py`): `_log_word_count` with a 900-target section and 700 words does NOT warn; with 300 words DOES warn (patch `logger.warning` or capture via structlog `capture_logs`; follow existing test style in the file).
 
-- [ ] **Step 2: Run to verify failure.**
-- [ ] **Step 3: Implement** in `validate.py`:
+- [x] **Step 2: Run to verify failure.**
+- [x] **Step 3: Implement** in `validate.py`:
 
 ```python
 def validate_drafts(
@@ -412,8 +412,8 @@ def _section_band(
 ```
 
 `_log_section_warnings(drafts, outline)` uses `_section_band`; `_log_validation_result` logs `target=floor`. Import `ArticleOutline`.
-- [ ] **Step 4:** `make_validate_node`'s `validate_node` passes the outline: `result = validate_drafts(drafts, _coerce_outline(state))`.
-- [ ] **Step 5:** `section_drafter._log_word_count` — replace `if wc < 200 or wc > 500:` with a band from the section's own target:
+- [x] **Step 4:** `make_validate_node`'s `validate_node` passes the outline: `result = validate_drafts(drafts, _coerce_outline(state))`.
+- [x] **Step 5:** `section_drafter._log_word_count` — replace `if wc < 200 or wc > 500:` with a band from the section's own target:
 
 ```python
     lo, hi = section.target_word_count // 2, section.target_word_count * 3 // 2
@@ -422,8 +422,8 @@ def _section_band(
     if wc < lo or wc > hi:
 ```
 
-- [ ] **Step 6: Run** the two test files + `tests/unit/agents/content/test_pipeline.py` (redraft path uses `validate_drafts` — its `_full_pipeline_responses` outlines have targets, verify no behavior change breaks the redraft test).
-- [ ] **Step 7: Commit** — `feat(content): outline-derived word-count guardrails (AUTHOR-008)`
+- [x] **Step 6: Run** the two test files + `tests/unit/agents/content/test_pipeline.py` (redraft path uses `validate_drafts` — its `_full_pipeline_responses` outlines have targets, verify no behavior change breaks the redraft test).
+- [x] **Step 7: Commit** — `feat(content): outline-derived word-count guardrails (AUTHOR-008)`
 
 ### Task 5: Frontend — word-budget chip + smarter new-section default
 
@@ -434,7 +434,7 @@ def _section_band(
 **Interfaces:**
 - Consumes: `section.target_word_count`, `outline.total_target_words` (already in `types/research.ts` — no type change).
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 ```tsx
 // outline-section-editor.test.tsx
@@ -454,8 +454,8 @@ it("defaults a new section's budget to the outline average", async () => {
 ```
 
 (Adapt precisely to each file's existing render helpers/mocks.)
-- [ ] **Step 2: Run to verify failure** — `cd frontend && npx vitest run src/components/research`.
-- [ ] **Step 3: Implement:**
+- [x] **Step 2: Run to verify failure** — `cd frontend && npx vitest run src/components/research`.
+- [x] **Step 3: Implement:**
   - `outline-section-editor.tsx` header row (next to the reorder buttons): `<span className="text-xs font-medium text-neutral-500">~{section.target_word_count} words</span>` (design tokens per DESIGN.md caption scale; no new colors).
   - `outline-review-step.tsx`: `newSection(sections)` — average of existing `target_word_count`s rounded to nearest 50, fallback 300:
 
@@ -468,15 +468,15 @@ function averageBudget(sections: OutlineSection[]): number {
 ```
 
   - Optional single line near the outline title: `Total target: ~{outline.total_target_words} words` (`text-xs text-neutral-500`), if it fits without layout churn.
-- [ ] **Step 4: Run** — the two test files, then the full frontend suite.
-- [ ] **Step 5: Commit** — `feat(frontend): word-budget chip + budget-aware add-section (AUTHOR-008)`
+- [x] **Step 4: Run** — the two test files, then the full frontend suite.
+- [x] **Step 5: Commit** — `feat(frontend): word-budget chip + budget-aware add-section (AUTHOR-008)`
 
 ### Task 6: Full verification + docs
 
-- [ ] **Step 1:** `uv run pytest tests/unit/ -q` (blank `COGNIFY_ANTHROPIC_API_KEY` — no `.env` in this worktree) — 0 failures.
-- [ ] **Step 2:** `cd frontend && npx vitest run` — 0 failures; `npx tsc --noEmit` — only the 13 pre-existing errors.
-- [ ] **Step 3:** `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/`.
-- [ ] **Step 4:** Update `project-management/PROGRESS.md` (AUTHOR-008 row → Done + RESUME item) and `BACKLOG.md` (velocity +3 SP), check plan checkboxes.
-- [ ] **Step 5:** Request code review (requesting-code-review skill), fix findings.
+- [x] **Step 1:** `uv run pytest tests/unit/ -q` (blank `COGNIFY_ANTHROPIC_API_KEY` — no `.env` in this worktree) — 0 failures.
+- [x] **Step 2:** `cd frontend && npx vitest run` — 0 failures; `npx tsc --noEmit` — only the 13 pre-existing errors.
+- [x] **Step 3:** `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/`.
+- [x] **Step 4:** Update `project-management/PROGRESS.md` (AUTHOR-008 row → Done + RESUME item) and `BACKLOG.md` (velocity +3 SP), check plan checkboxes.
+- [x] **Step 5:** Request code review (requesting-code-review skill), fix findings.
 - [ ] **Step 6:** Live smoke after stack rebuild: generate with length=Short → outline review shows 3-5 sections with ~150-350 budgets; generate with content type=How-to → step-shaped section titles; article totals in band.
 - [ ] **Step 7:** Push + PR to develop.
