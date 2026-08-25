@@ -182,3 +182,14 @@ class TestPublishMarksArticleStatus:
         svc.register("test", _make_pair())
         result = await svc.publish(sample_article.id, "test")
         assert result.status == PublicationStatus.SUCCESS
+
+    async def test_status_mark_failure_does_not_fail_the_publish(
+        self,
+        article_repo: AsyncMock,
+        sample_article: CanonicalArticle,
+    ) -> None:
+        article_repo.update_metadata.side_effect = RuntimeError("db down")
+        svc = PublishingService(article_repo)
+        svc.register("test", _make_pair())
+        result = await svc.publish(sample_article.id, "test")
+        assert result.status == PublicationStatus.SUCCESS

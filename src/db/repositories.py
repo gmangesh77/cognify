@@ -776,6 +776,15 @@ class PgArticleRepository:
             return [self._to_model(r) for r in rows], total
 
     @staticmethod
+    def _article_status(raw: str | None) -> ArticleStatus:
+        """Unrecognized/legacy DB values degrade to DRAFT instead of a
+        ValueError that would 500 every get/list touching the row."""
+        try:
+            return ArticleStatus(raw or "draft")
+        except ValueError:
+            return ArticleStatus.DRAFT
+
+    @staticmethod
     def _to_model(row: CanonicalArticleRow) -> CanonicalArticle:
         seo = SEOMetadata.model_validate(row.seo)
         citations = [Citation.model_validate(c) for c in (row.citations or [])]
@@ -797,8 +806,7 @@ class PgArticleRepository:
             generated_at=row.generated_at,
             provenance=provenance,
             ai_generated=row.ai_generated,
-            # Rows written before the AUTHOR-007 backfill may be None.
-            status=ArticleStatus(row.status or "draft"),
+            status=PgArticleRepository._article_status(row.status),
         )
 
 

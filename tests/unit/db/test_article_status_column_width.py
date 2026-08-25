@@ -22,6 +22,14 @@ def test_all_known_statuses_fit_the_column() -> None:
     assert too_long == [], f"status column is VARCHAR({length}); too long: {too_long}"
 
 
+def test_unrecognized_db_value_degrades_to_draft() -> None:
+    from src.db.repositories import PgArticleRepository
+
+    assert PgArticleRepository._article_status("garbage") is ArticleStatus.DRAFT
+    assert PgArticleRepository._article_status(None) is ArticleStatus.DRAFT
+    assert PgArticleRepository._article_status("approved") is ArticleStatus.APPROVED
+
+
 def test_column_defaults_to_draft() -> None:
     default = CanonicalArticleRow.__table__.c.status.server_default
     assert default is not None

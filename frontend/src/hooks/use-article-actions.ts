@@ -72,9 +72,12 @@ export function useArticleActions({ id, refetch, showToast }: ArticleActionsDeps
       for (const platform of platforms) {
         results.push(await publishOne(id, platform));
       }
+      // A successful publish flips the article to "published" server-side
+      // (AUTHOR-007) — refetch so the header badge/transition update.
+      await refetch();
       showToast(results.join(" | "), 8000);
     },
-    [id, showToast],
+    [id, refetch, showToast],
   );
 
   return { insertVisuals, publish };

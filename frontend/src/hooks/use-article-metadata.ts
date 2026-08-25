@@ -20,6 +20,10 @@ export function useArticleMetadata(articleId: string) {
       // Explicit invalidate bypasses use-article's 5-minute staleTime so
       // the header re-renders from fresh data (review §6 #7 stale view).
       void queryClient.invalidateQueries({ queryKey: ["article", articleId] });
+      // Status changes also affect the list badges/filters and the
+      // dashboard recent-articles rows (AUTHOR-007).
+      void queryClient.invalidateQueries({ queryKey: ["article-list"] });
+      void queryClient.invalidateQueries({ queryKey: ["articles"] });
     },
   });
 

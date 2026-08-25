@@ -96,10 +96,13 @@ class PublishingService:
             platform,
         )
 
-        if result.status == PublicationStatus.SUCCESS:
-            await self._mark_article_published(article_id)
         if self._pub_repo is not None:
             await self._persist_result(result, article)
+        # Mark AFTER the publication row persists: if persisting throws,
+        # the benign failure mode is "row exists, status unchanged" —
+        # never a published-status article with no publication record.
+        if result.status == PublicationStatus.SUCCESS:
+            await self._mark_article_published(article_id)
 
         return result
 

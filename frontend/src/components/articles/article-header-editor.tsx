@@ -94,11 +94,12 @@ export function ArticleHeaderEditor({ article, children }: ArticleHeaderEditorPr
           <ArticleStatusControl
             status={article.status}
             busy={saving}
-            onTransition={(next) =>
+            onTransition={(next) => {
+              setError(null);
               void save({ status: next }).catch(() =>
                 setError("Status change failed — try again."),
-              )
-            }
+              );
+            }}
           />
           {children}
           <button
