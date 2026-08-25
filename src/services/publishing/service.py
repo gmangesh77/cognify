@@ -98,8 +98,30 @@ class PublishingService:
 
         if self._pub_repo is not None:
             await self._persist_result(result, article)
+        # Mark AFTER the publication row persists: if persisting throws,
+        # the benign failure mode is "row exists, status unchanged" —
+        # never a published-status article with no publication record.
+        if result.status == PublicationStatus.SUCCESS:
+            await self._mark_article_published(article_id)
 
         return result
+
+    async def _mark_article_published(self, article_id: UUID) -> None:
+        """Set the AUTHOR-007 editorial status; best-effort, duck-typed
+        because `article_repo` is typed `object` on this service."""
+        update = getattr(self._article_repo, "update_metadata", None)
+        if update is None:
+            return
+        try:
+            from src.models.content import ArticleStatus
+
+            await update(article_id, {"status": ArticleStatus.PUBLISHED})
+        except Exception as exc:
+            logger.warning(
+                "article_publish_status_mark_failed",
+                article_id=str(article_id),
+                error=str(exc),
+            )
 
     async def retry(self, publication_id: UUID) -> PublicationResult:
         """Re-publish a failed publication."""

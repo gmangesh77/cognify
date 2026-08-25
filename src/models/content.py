@@ -22,6 +22,15 @@ class ContentType(StrEnum):
     REPORT = "report"
 
 
+class ArticleStatus(StrEnum):
+    """Editorial workflow state (AUTHOR-007). L-003: grep consumers first."""
+
+    DRAFT = "draft"
+    IN_REVIEW = "in_review"
+    APPROVED = "approved"
+    PUBLISHED = "published"
+
+
 class SchemaOrgAuthor(BaseModel, frozen=True):
     """Schema.org author for JSON-LD."""
 
@@ -111,6 +120,9 @@ class CanonicalArticle(BaseModel):
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     provenance: Provenance
     ai_generated: bool = True
+    # AUTHOR-007 — editorial workflow state. Defaulted so pre-existing
+    # construction sites (assembler, repos, fixtures) keep compiling.
+    status: ArticleStatus = ArticleStatus.DRAFT
 
     # VISUAL-005 / Phase 2 — persona-aware image planner output. Optional
     # and default-empty so articles persisted before this field was added

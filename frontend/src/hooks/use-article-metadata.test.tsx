@@ -41,6 +41,9 @@ describe("useArticleMetadata", () => {
     await waitFor(() =>
       expect(invalidate).toHaveBeenCalledWith({ queryKey: ["article", "a1"] }),
     );
+    // AUTHOR-007: status edits also refresh the list + dashboard caches.
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["article-list"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["articles"] });
   });
 
   it("regenerates a single seo field", async () => {

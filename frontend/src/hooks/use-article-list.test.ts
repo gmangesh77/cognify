@@ -37,6 +37,7 @@ const mockResponse: PaginatedArticles = {
         embedding_version: "v2.0",
       },
       authors: ["Cognify AI"],
+      status: "in_review",
     },
   ],
   total: 1,
@@ -78,6 +79,32 @@ describe("useArticleList", () => {
     expect(article.domain).toBeDefined();
     expect(article.status).toBeDefined();
     expect(article.wordCount).toBeGreaterThan(0);
+  });
+
+  it("maps the real backend status through (AUTHOR-007)", async () => {
+    const { result } = renderHook(() => useArticleList(), { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(result.current.articles[0]?.status).toBe("in_review");
+    });
+  });
+
+  it("defaults a missing status to draft", async () => {
+    const noStatus = {
+      ...mockResponse,
+      items: [{ ...mockResponse.items[0], status: undefined }],
+    } as unknown as PaginatedArticles;
+    mockFetchArticles.mockResolvedValue(noStatus);
+    const { result } = renderHook(() => useArticleList(), { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(result.current.articles[0]?.status).toBe("draft");
+    });
+  });
+
+  it("passes the status filter to the API", async () => {
+    renderHook(() => useArticleList("approved"), { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(mockFetchArticles).toHaveBeenCalledWith(1, 20, "approved");
+    });
   });
 
   it("returns empty array on API error", async () => {

@@ -70,3 +70,27 @@ async def test_update_metadata_round_trip(
     assert fresh.body_markdown == article.body_markdown
 
     assert await repo.update_metadata(uuid4(), {"title": "x"}) is None
+
+
+@pytest.mark.integration
+async def test_status_round_trip(sf: async_sessionmaker[AsyncSession]) -> None:
+    from src.models.content import ArticleStatus
+
+    repo = PgArticleRepository(sf)
+    sid = uuid4()
+    article = _build_article(sid)
+    try:
+        created = await repo.create(article)
+        assert created.status is ArticleStatus.DRAFT
+        updated = await repo.update_metadata(sid, {"status": ArticleStatus.IN_REVIEW})
+        assert updated is not None and updated.status is ArticleStatus.IN_REVIEW
+        in_review, total = await repo.list(status="in_review")
+        assert sid in [a.id for a in in_review]
+        drafts, _ = await repo.list(status="draft")
+        assert sid not in [a.id for a in drafts]
+    finally:
+        async with sf() as db:
+            await db.execute(
+                text("DELETE FROM canonical_articles WHERE id = :id"), {"id": sid}
+            )
+            await db.commit()

@@ -38,3 +38,44 @@ async def test_partial_update_keeps_other_fields() -> None:
 async def test_unknown_article_returns_none() -> None:
     repo = InMemoryArticleRepository()
     assert await repo.update_metadata(uuid4(), {"title": "x"}) is None
+
+
+async def test_status_update_persists(  # AUTHOR-007
+) -> None:
+    from src.models.content import ArticleStatus
+
+    repo = InMemoryArticleRepository()
+    article = _build_article(uuid4())
+    await repo.create(article)
+    assert article.status is ArticleStatus.DRAFT  # defaulted field
+    updated = await repo.update_metadata(
+        article.id, {"status": ArticleStatus.IN_REVIEW}
+    )
+    assert updated is not None
+    assert updated.status is ArticleStatus.IN_REVIEW
+    stored = await repo.get(article.id)
+    assert stored is not None and stored.status is ArticleStatus.IN_REVIEW
+
+
+async def test_unknown_keys_still_ignored() -> None:
+    repo = InMemoryArticleRepository()
+    article = _build_article(uuid4())
+    await repo.create(article)
+    updated = await repo.update_metadata(article.id, {"body_markdown": "HACKED"})
+    assert updated is not None
+    assert updated.body_markdown == article.body_markdown
+
+
+async def test_in_memory_list_filters_by_status() -> None:
+    from src.models.content import ArticleStatus
+
+    repo = InMemoryArticleRepository()
+    a1 = _build_article(uuid4())
+    a2 = _build_article(uuid4()).model_copy(update={"status": ArticleStatus.APPROVED})
+    await repo.create(a1)
+    await repo.create(a2)
+    all_items, total = await repo.list()
+    assert total == 2 and len(all_items) == 2
+    approved, approved_total = await repo.list(status="approved")
+    assert approved_total == 1
+    assert [a.id for a in approved] == [a2.id]

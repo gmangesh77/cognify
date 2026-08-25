@@ -27,6 +27,7 @@ from src.db.tables import (
     TopicRow,
 )
 from src.models.content import (
+    ArticleStatus,
     CanonicalArticle,
     Citation,
     ContentType,
@@ -628,6 +629,7 @@ class PgArticleRepository:
                 content_type=article.content_type.value,
                 domain=article.domain,
                 ai_generated=article.ai_generated,
+                status=article.status.value,
                 generated_at=article.generated_at,
                 key_claims=list(article.key_claims),
                 seo=article.seo.model_dump(mode="json"),
@@ -718,7 +720,7 @@ class PgArticleRepository:
         article_id: UUID,
         fields: dict[str, object],
     ) -> CanonicalArticle | None:
-        """Update title/subtitle/seo (AUTHOR-006). Other keys are ignored."""
+        """Update title/subtitle/seo/status. Other keys are ignored."""
         async with self._sf() as db:
             row = await db.get(CanonicalArticleRow, article_id)
             if row is None:
@@ -728,6 +730,8 @@ class PgArticleRepository:
             if "subtitle" in fields:
                 subtitle = fields["subtitle"]
                 row.subtitle = None if subtitle is None else str(subtitle)
+            if "status" in fields:
+                row.status = str(fields["status"])
             seo = fields.get("seo")
             if seo is not None and hasattr(seo, "model_dump"):
                 # Reassign so SQLAlchemy detects the JSONB mutation (L-001).
@@ -745,22 +749,40 @@ class PgArticleRepository:
         self,
         page: int = 1,
         size: int = 20,
+        status: str | None = None,
     ) -> tuple[list[CanonicalArticle], int]:
-        """List all articles, newest first."""
+        """List articles, newest first, optionally filtered by status.
+
+        The filter is applied to BOTH the count and page queries (the
+        research-session list precedent — a filtered page with an
+        unfiltered total is a subtle bug).
+        """
         async with self._sf() as session:
             count_q = select(func.count()).select_from(
                 CanonicalArticleRow,
             )
-            total = (await session.execute(count_q)).scalar_one()
             q = (
                 select(CanonicalArticleRow)
                 .order_by(CanonicalArticleRow.generated_at.desc())
                 .offset((page - 1) * size)
                 .limit(size)
             )
+            if status is not None:
+                count_q = count_q.where(CanonicalArticleRow.status == status)
+                q = q.where(CanonicalArticleRow.status == status)
+            total = (await session.execute(count_q)).scalar_one()
             rows = (await session.execute(q)).scalars().all()
             logger.debug("articles_listed", page=page, size=size, total=total)
             return [self._to_model(r) for r in rows], total
+
+    @staticmethod
+    def _article_status(raw: str | None) -> ArticleStatus:
+        """Unrecognized/legacy DB values degrade to DRAFT instead of a
+        ValueError that would 500 every get/list touching the row."""
+        try:
+            return ArticleStatus(raw or "draft")
+        except ValueError:
+            return ArticleStatus.DRAFT
 
     @staticmethod
     def _to_model(row: CanonicalArticleRow) -> CanonicalArticle:
@@ -784,6 +806,7 @@ class PgArticleRepository:
             generated_at=row.generated_at,
             provenance=provenance,
             ai_generated=row.ai_generated,
+            status=PgArticleRepository._article_status(row.status),
         )
 
 

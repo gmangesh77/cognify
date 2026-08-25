@@ -24,6 +24,7 @@ from src.api.schemas.articles import (
     StructuredDataLDResponse,
 )
 from src.models.content import (
+    ArticleStatus,
     CanonicalArticle,
     Citation,
     ImageAsset,
@@ -62,11 +63,12 @@ async def list_articles(
     request: Request,
     page: int = 1,
     size: int = 20,
+    status: ArticleStatus | None = None,
     user: TokenPayload = Depends(require_viewer_or_above),
 ) -> PaginatedArticlesResponse:
     """Return a paginated list of canonical articles."""
     repo = request.app.state.article_repo
-    items, total = await repo.list(page, size)
+    items, total = await repo.list(page, size, status.value if status else None)
     api_base = _get_api_base_url(request)
     return PaginatedArticlesResponse(
         items=[_to_canonical_response(a, api_base) for a in items],
@@ -168,6 +170,7 @@ def _to_canonical_response(
         generated_at=article.generated_at,
         provenance=_to_provenance_response(article),
         ai_generated=article.ai_generated,
+        status=article.status.value,
     )
 
 
