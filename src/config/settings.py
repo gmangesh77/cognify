@@ -100,6 +100,11 @@ class Settings(BaseSettings):
     # Env: COGNIFY_LLM_PRICING_JSON=
     #   '{"claude-sonnet": {"input_per_mtok": 3.0, "output_per_mtok": 15.0}}'
     llm_pricing_json: dict[str, dict[str, float]] = {}
+    # Length-target word-budget overrides for the outliner, keyed by
+    # length target (short|medium|long|pillar); merged per-key over
+    # agents.content.length_budgets.DEFAULT_LENGTH_BUDGETS.
+    # Env: COGNIFY_LENGTH_BUDGETS_JSON='{"long": {"total_max": 6000}}'
+    length_budgets_json: dict[str, dict[str, int]] = {}
     embedding_version: str = "v1"
     # Encryption (Fernet key for API key encryption at rest)
     encryption_key: str = ""

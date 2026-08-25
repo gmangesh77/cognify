@@ -178,7 +178,16 @@ def _outline_validation_messages(outline: ArticleOutline) -> list[str]:
 
 
 def _renumber_sections(outline: ArticleOutline) -> ArticleOutline:
+    """Renumber indices and recompute the total from section budgets.
+
+    AUTHOR-008: editors add/delete sections without touching
+    `total_target_words`, and the validate node's expansion floor derives
+    from it — so the save path is the single place it is recomputed.
+    """
     renumbered = [
         s.model_copy(update={"index": i}) for i, s in enumerate(outline.sections)
     ]
-    return outline.model_copy(update={"sections": renumbered})
+    total = sum(s.target_word_count for s in renumbered)
+    return outline.model_copy(
+        update={"sections": renumbered, "total_target_words": total}
+    )

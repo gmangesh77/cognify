@@ -1,8 +1,9 @@
 """LLM-based article outline generation.
 
-Takes research findings and generates a structured 4-8 section outline
-with narrative flow, target word counts, and key points per section.
-Follows the same pattern as planner.py.
+Takes research findings and generates a structured outline with narrative
+flow, per-section target word counts (from the resolved length budget,
+AUTHOR-008), and key points per section. Follows the same pattern as
+planner.py.
 """
 
 import json
@@ -13,6 +14,11 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
+from src.agents.content.length_budgets import (
+    DEFAULT_LENGTH_BUDGETS,
+    LengthBudget,
+    content_type_guidance,
+)
 from src.models.content_pipeline import ArticleOutline
 from src.models.research import FacetFindings, TopicInput
 from src.utils.llm_json import parse_llm_json
@@ -34,13 +40,17 @@ class OutlineContext:
     content_tone: str | None = None
     keywords: list[str] | None = None
     instruction: str | None = None
+    # AUTHOR-008 — editorial sizing: resolved word budget + content type.
+    content_type: str | None = None
+    budget: LengthBudget | None = None
 
 
 _SYSTEM_PROMPT = (
     "You are an expert content strategist. Generate a structured "
     "article outline from research findings. The outline should have "
-    "4-8 sections with narrative flow: introduction, findings, "
-    "analysis, and conclusion. "
+    "sections with narrative flow: introduction, findings, "
+    "analysis, and conclusion. Follow the section count and word "
+    "budgets given in the requirements. "
     "Do not use em-dashes. Use periods or commas instead. "
     "Avoid formal transitions like moreover, furthermore, in conclusion. "
     "Write in a natural conversational tone. Vary sentence length. "
@@ -54,13 +64,27 @@ _USER_TEMPLATE = (
     "Description: {description}\n"
     "Domain: {domain}\n\n"
     "Research findings:\n{findings_summary}\n\n"
-    "Requirements:\n"
-    "- 4-8 sections ordered for narrative flow\n"
-    "- Each section: 200-500 target words\n"
-    "- Total: 1500-3000 words\n"
-    "- Map each section to relevant facet indices\n\n"
+    "{requirements}\n"
     "Return JSON: {schema_hint}"
 )
+
+
+def _requirements_block(ctx: OutlineContext | None) -> str:
+    """Render the sizing requirements from the resolved budget (AUTHOR-008)."""
+    b = ctx.budget if ctx is not None and ctx.budget else None
+    b = b or DEFAULT_LENGTH_BUDGETS["medium"]
+    lines = [
+        "Requirements:",
+        f"- {b['sections_min']}-{b['sections_max']} sections ordered "
+        "for narrative flow",
+        f"- Each section: {b['section_min']}-{b['section_max']} target words",
+        f"- Total: {b['total_min']}-{b['total_max']} words",
+        "- Map each section to relevant facet indices",
+    ]
+    if ctx is not None and ctx.content_type and ctx.content_type != "article":
+        lines.append(f'- Set "content_type" to "{ctx.content_type}"')
+    return "\n".join(lines) + "\n"
+
 
 _SCHEMA_HINT = (
     '{{"title": "...", "subtitle": "...", "content_type": "article", '
@@ -97,6 +121,9 @@ def _build_context_lines(ctx: OutlineContext) -> list[str]:
         context_lines.append(
             f"Key topics that must be covered: {', '.join(ctx.keywords)}"
         )
+    guidance = content_type_guidance(ctx.content_type)
+    if guidance:
+        context_lines.append(guidance)
     if ctx.instruction:
         context_lines.append(
             f"Editor instructions for this revision: {ctx.instruction}"
@@ -117,6 +144,7 @@ async def generate_outline(
         description=topic.description,
         domain=topic.domain,
         findings_summary=_summarize_findings(findings),
+        requirements=_requirements_block(ctx),
         schema_hint=_SCHEMA_HINT,
     )
     context_lines = _build_context_lines(ctx) if ctx is not None else []

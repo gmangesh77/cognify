@@ -32,6 +32,9 @@ export function OutlineSectionEditor({
           onChange={(e) => onChange({ ...section, title: e.target.value })}
           className="flex-1 rounded-md border border-neutral-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
         />
+        <span className="shrink-0 text-xs font-medium text-neutral-500">
+          ~{section.target_word_count} words
+        </span>
         <div className="flex shrink-0 gap-1">
           <Button
             type="button"

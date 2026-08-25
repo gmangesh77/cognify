@@ -28,6 +28,13 @@ function renderEditor(section: OutlineSection = baseSection) {
   return onChange;
 }
 
+describe("OutlineSectionEditor word budget", () => {
+  it("shows the section word budget chip", () => {
+    renderEditor({ ...baseSection, target_word_count: 450 });
+    expect(screen.getByText("~450 words")).toBeInTheDocument();
+  });
+});
+
 describe("OutlineSectionEditor key points", () => {
   it("filters out blank lines when the key points textarea changes", () => {
     const onChange = renderEditor();

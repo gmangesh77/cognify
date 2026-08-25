@@ -195,6 +195,15 @@ class TestValidateOutline:
         assert [s.index for s in validated.sections] == [0, 1]
         assert [s.title for s in validated.sections] == ["First", "Second"]
 
+    def test_recomputes_total_target_words_from_sections(self) -> None:
+        # AUTHOR-008: editor adds/deletes sections without touching the
+        # stale total; the save path recomputes it (the expansion floor
+        # in validate_drafts derives from it).
+        outline = _outline_with_sections([_section(0, "A"), _section(1, "B")])
+        assert outline.total_target_words == 1000  # stale fixture value
+        validated = validate_outline(outline)
+        assert validated.total_target_words == 600  # 2 x 300
+
 
 class TestUpdateOutline:
     async def test_persists_validated_outline(self) -> None:

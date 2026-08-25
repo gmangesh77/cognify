@@ -25,6 +25,7 @@ from src.agents.content.illustration_generator import (
     ImageGenerator,
     generate_illustration_prompt,
 )
+from src.agents.content.length_budgets import budget_for
 from src.agents.content.outline_generator import OutlineContext, generate_outline
 from src.agents.content.query_generator import generate_section_queries
 from src.agents.content.section_drafter import DraftingContext, draft_section
@@ -41,12 +42,17 @@ from src.utils.step_progress import report_progress
 
 if TYPE_CHECKING:
     from src.agents.content.pipeline import ContentState
+    from src.config.settings import Settings
 
 logger = structlog.get_logger()
 
 
-def make_outline_node(llm: BaseChatModel) -> Any:  # noqa: ANN401
+def make_outline_node(
+    llm: BaseChatModel,
+    settings: Settings | None = None,
+) -> Any:  # noqa: ANN401
     """Factory for the outline generation node."""
+    budget_overrides = settings.length_budgets_json if settings else {}
 
     async def outline_node(state: ContentState) -> dict[str, object]:
         if state.get("outline") is not None:
@@ -65,6 +71,8 @@ def make_outline_node(llm: BaseChatModel) -> Any:  # noqa: ANN401
             content_tone=state.get("content_tone"),
             keywords=state.get("keywords"),
             instruction=state.get("outline_instruction"),
+            content_type=state.get("content_type"),
+            budget=budget_for(state.get("length_target"), budget_overrides),
         )
         try:
             outline = await generate_outline(topic, findings, llm, ctx)
@@ -153,7 +161,8 @@ def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever | None) ->
 
     async def validate_node(state: ContentState) -> dict[str, object]:
         drafts = list(state.get("section_drafts", []))
-        result = validate_drafts(drafts)
+        outline = _coerce_outline(state) if state.get("outline") is not None else None
+        result = validate_drafts(drafts, outline)
         if result.needs_expansion and result.shortest_index is not None:
             drafts = await _redraft_shortest(
                 state,
@@ -162,7 +171,7 @@ def make_validate_node(llm: BaseChatModel, retriever: MilvusRetriever | None) ->
                 llm,
                 retriever,
             )
-            result = validate_drafts(drafts)
+            result = validate_drafts(drafts, outline)
         total = sum(d.word_count for d in drafts)
         logger.info("validate_article_complete", total_words=total)
         return {

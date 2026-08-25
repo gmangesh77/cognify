@@ -170,8 +170,12 @@ def _log_word_count(
     wc: int,
     citation_count: int,
 ) -> None:
-    """Log word count with warning if outside target range."""
-    if wc < 200 or wc > 500:
+    """Log word count with warning if outside the section's budget band."""
+    if section.target_word_count > 0:
+        lo, hi = section.target_word_count // 2, section.target_word_count * 3 // 2
+    else:
+        lo, hi = 200, 500
+    if wc < lo or wc > hi:
         logger.warning(
             "section_word_count_outside_range",
             section_index=section.index,

@@ -35,6 +35,32 @@ def _make_queries(index: int = 0) -> SectionQueries:
     return SectionQueries(section_index=index, queries=["query a", "query b"])
 
 
+class TestBudgetBandLogging:
+    """AUTHOR-008 — the out-of-range warning is relative to the section target."""
+
+    def _warnings_for(self, target: int, wc: int) -> list[dict]:  # type: ignore[type-arg]
+        from structlog.testing import capture_logs
+
+        from src.agents.content.section_drafter import _log_word_count
+
+        section = _make_section().model_copy(update={"target_word_count": target})
+        with capture_logs() as logs:
+            _log_word_count(section, wc, 0)
+        return [e for e in logs if e["event"] == "section_word_count_outside_range"]
+
+    def test_within_band_of_large_target_no_warning(self) -> None:
+        assert self._warnings_for(target=900, wc=700) == []
+
+    def test_below_half_target_warns(self) -> None:
+        assert len(self._warnings_for(target=900, wc=300)) == 1
+
+    def test_above_band_of_small_target_warns(self) -> None:
+        assert len(self._warnings_for(target=200, wc=450)) == 1
+
+    def test_zero_target_falls_back_to_legacy_band(self) -> None:
+        assert self._warnings_for(target=0, wc=300) == []
+
+
 def _make_chunks(count: int = 5) -> list[ChunkResult]:
     return [
         ChunkResult(
