@@ -152,7 +152,10 @@ export function OutlineReviewStep({ sessionId }: OutlineReviewStepProps) {
       </div>
 
       <p className="text-xs text-neutral-500">
-        Total target: ~{local.total_target_words} words
+        {`Total target: ~${local.sections.reduce(
+          (sum, s) => sum + s.target_word_count,
+          0,
+        )} words`}
       </p>
 
       <div role="list" className="space-y-3">

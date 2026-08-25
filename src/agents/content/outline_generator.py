@@ -1,8 +1,9 @@
 """LLM-based article outline generation.
 
-Takes research findings and generates a structured 4-8 section outline
-with narrative flow, target word counts, and key points per section.
-Follows the same pattern as planner.py.
+Takes research findings and generates a structured outline with narrative
+flow, per-section target word counts (from the resolved length budget,
+AUTHOR-008), and key points per section. Follows the same pattern as
+planner.py.
 """
 
 import json

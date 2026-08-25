@@ -106,14 +106,7 @@ class TestOutlineContext:
         assert isinstance(outline, ArticleOutline)
 
     async def test_instruction_appears_in_prompt(self) -> None:
-        captured: list[str] = []
-
-        class _CapturingLLM(FakeListChatModel):
-            async def ainvoke(self, messages, *args, **kwargs):  # type: ignore[no-untyped-def]
-                captured.append(str(messages[-1].content))
-                return await super().ainvoke(messages, *args, **kwargs)
-
-        llm = _CapturingLLM(responses=[_outline_json(3)])
+        llm, captured = _capturing_llm([_outline_json(3)])
         ctx = OutlineContext(instruction="Make it punchier and cut the jargon.")
         await generate_outline(_make_topic(), _make_findings(), llm, ctx)
         assert any(
@@ -123,14 +116,7 @@ class TestOutlineContext:
         )
 
     async def test_no_ctx_omits_instruction_line(self) -> None:
-        captured: list[str] = []
-
-        class _CapturingLLM(FakeListChatModel):
-            async def ainvoke(self, messages, *args, **kwargs):  # type: ignore[no-untyped-def]
-                captured.append(str(messages[-1].content))
-                return await super().ainvoke(messages, *args, **kwargs)
-
-        llm = _CapturingLLM(responses=[_outline_json(3)])
+        llm, captured = _capturing_llm([_outline_json(3)])
         await generate_outline(_make_topic(), _make_findings(), llm)
         assert all("Editor instructions" not in msg for msg in captured)
 
@@ -216,3 +202,21 @@ class TestOutlineNodeBudget:
         state = {"topic": _make_topic(), "findings": _make_findings()}
         await node(state)
         assert "4-8 sections" in captured[0]
+
+    async def test_settings_overrides_reach_the_prompt(self) -> None:
+        from src.agents.content.nodes import make_outline_node
+        from src.config.settings import Settings
+
+        llm, captured = _capturing_llm([_outline_json(6)])
+        settings = Settings(
+            _env_file=None,
+            length_budgets_json={"long": {"total_max": 6000}},
+        )
+        node = make_outline_node(llm, settings)
+        state = {
+            "topic": _make_topic(),
+            "findings": _make_findings(),
+            "length_target": "long",
+        }
+        await node(state)
+        assert "Total: 3000-6000 words" in captured[0]
