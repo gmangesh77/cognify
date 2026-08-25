@@ -8,7 +8,7 @@ const mockArticle: ArticleListItem = {
   title: "AI-Powered Phishing Detection Trends",
   summary: "New machine learning approaches to detecting sophisticated phishing attacks",
   domain: "cybersecurity",
-  status: "complete",
+  status: "approved",
   wordCount: 3200,
   generatedAt: new Date().toISOString(),
 };
@@ -31,7 +31,7 @@ describe("ArticleCard", () => {
 
   it("renders status badge", () => {
     render(<ArticleCard article={mockArticle} />);
-    expect(screen.getByText("Complete")).toBeInTheDocument();
+    expect(screen.getByText("Approved")).toBeInTheDocument();
   });
 
   it("renders word count", () => {

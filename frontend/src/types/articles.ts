@@ -1,4 +1,6 @@
-export type ArticleStatus = "draft" | "complete" | "published";
+// AUTHOR-007 — real editorial states ("complete" removed; the badge keeps
+// a legacy alias for the dashboard's separate Article union in types/api.ts).
+export type ArticleStatus = "draft" | "in_review" | "approved" | "published";
 
 export interface ArticleListItem {
   id: string;

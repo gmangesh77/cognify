@@ -64,7 +64,7 @@ function toDetail(a: ArticleResponse): ArticleDetail {
       embeddingVersion: a.provenance.embedding_version,
     },
     aiGenerated: a.ai_generated,
-    status: "complete",
+    status: (a.status as ArticleDetail["status"]) ?? "draft",
     wordCount: a.body_markdown.split(/\s+/).length,
     workflow: [],
   };

@@ -11,7 +11,9 @@ export function useArticles() {
         return result.items.map((a) => ({
           id: a.id,
           title: a.title,
-          status: "complete" as const,
+          // Dashboard's Article union predates AUTHOR-007: map published
+          // to its "live" pill, everything else keeps the legacy look.
+          status: a.status === "published" ? ("live" as const) : ("complete" as const),
           published_at: a.generated_at,
           views: 0,
           domain: a.domain,

@@ -5,8 +5,10 @@ const STATUS_STYLES = {
   draft: "bg-steady-light text-steady",
   scheduled: "bg-accent-light text-accent",
   failed: "bg-primary-light text-primary",
-  complete: "bg-success-light text-success",
+  complete: "bg-success-light text-success", // legacy alias (dashboard union)
   published: "bg-success-light text-success",
+  in_review: "bg-info-light text-info", // AUTHOR-007
+  approved: "bg-success-light text-success", // AUTHOR-007
 } as const;
 
 const STATUS_LABELS = {
@@ -14,8 +16,10 @@ const STATUS_LABELS = {
   draft: "Draft",
   scheduled: "Scheduled",
   failed: "Failed",
-  complete: "Complete",
+  complete: "Complete", // legacy alias (dashboard union)
   published: "Published",
+  in_review: "In Review", // AUTHOR-007
+  approved: "Approved", // AUTHOR-007
 } as const;
 
 interface StatusBadgeProps {
