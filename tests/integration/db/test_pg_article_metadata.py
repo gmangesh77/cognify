@@ -82,9 +82,7 @@ async def test_status_round_trip(sf: async_sessionmaker[AsyncSession]) -> None:
     try:
         created = await repo.create(article)
         assert created.status is ArticleStatus.DRAFT
-        updated = await repo.update_metadata(
-            sid, {"status": ArticleStatus.IN_REVIEW}
-        )
+        updated = await repo.update_metadata(sid, {"status": ArticleStatus.IN_REVIEW})
         assert updated is not None and updated.status is ArticleStatus.IN_REVIEW
         in_review, total = await repo.list(status="in_review")
         assert sid in [a.id for a in in_review]

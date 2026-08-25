@@ -71,9 +71,7 @@ async def test_in_memory_list_filters_by_status() -> None:
 
     repo = InMemoryArticleRepository()
     a1 = _build_article(uuid4())
-    a2 = _build_article(uuid4()).model_copy(
-        update={"status": ArticleStatus.APPROVED}
-    )
+    a2 = _build_article(uuid4()).model_copy(update={"status": ArticleStatus.APPROVED})
     await repo.create(a1)
     await repo.create(a2)
     all_items, total = await repo.list()
