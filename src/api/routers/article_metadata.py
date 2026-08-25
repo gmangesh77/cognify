@@ -48,6 +48,8 @@ def _build_fields(
     # (the AUTHOR-003 PATCH flaw — fixed here for the new endpoint).
     if "subtitle" in patch.model_fields_set:
         fields["subtitle"] = patch.subtitle
+    if patch.status is not None:
+        fields["status"] = patch.status
     seo_updates: dict[str, object] = {}
     if patch.seo_title is not None:
         seo_updates["title"] = patch.seo_title
@@ -65,6 +67,7 @@ def _to_metadata_response(article: CanonicalArticle) -> ArticleMetadataResponse:
         id=article.id,
         title=article.title,
         subtitle=article.subtitle,
+        status=article.status.value,
         seo=_to_seo_metadata_response(article),
         warnings=seo_length_warnings(article.seo),
     )

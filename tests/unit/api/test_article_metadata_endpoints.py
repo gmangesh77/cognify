@@ -168,6 +168,31 @@ class TestPatchArticleMetadata:
         resp = await client.patch(_url(), json={"title": "x"})
         assert resp.status_code == 401
 
+    async def test_status_transition_persists(  # AUTHOR-007
+        self, client: httpx.AsyncClient, auth_settings: Settings
+    ) -> None:
+        resp = await client.patch(
+            _url(),
+            json={"status": "in_review"},
+            headers=make_auth_header("editor", auth_settings),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "in_review"
+        follow = await client.get(
+            _url(), headers=make_auth_header("viewer", auth_settings)
+        )
+        assert follow.json()["status"] == "in_review"
+
+    async def test_invalid_status_value_422(
+        self, client: httpx.AsyncClient, auth_settings: Settings
+    ) -> None:
+        resp = await client.patch(
+            _url(),
+            json={"status": "complete"},  # legacy frontend value, not valid
+            headers=make_auth_header("editor", auth_settings),
+        )
+        assert resp.status_code == 422
+
 
 async def _make_app(auth_settings: Settings, llm: object | None) -> FastAPI:
     app = create_app(auth_settings)
