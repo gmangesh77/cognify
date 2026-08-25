@@ -101,6 +101,20 @@ describe("OutlineReviewStep", () => {
     expect(screen.getByDisplayValue("New section")).toBeInTheDocument();
   });
 
+  it("defaults a new section's word budget to the outline average", async () => {
+    // AUTHOR-008: sections target 200 + 400 -> average 300.
+    renderStep();
+    await screen.findByDisplayValue("Introduction");
+    fireEvent.click(screen.getByRole("button", { name: /add section/i }));
+    expect(screen.getByText("~300 words")).toBeInTheDocument();
+  });
+
+  it("shows the outline's total word target", async () => {
+    renderStep();
+    await screen.findByDisplayValue("Introduction");
+    expect(screen.getByText("Total target: ~600 words")).toBeInTheDocument();
+  });
+
   it("deletes a section when its delete button is clicked", async () => {
     renderStep();
     await screen.findByDisplayValue("Introduction");

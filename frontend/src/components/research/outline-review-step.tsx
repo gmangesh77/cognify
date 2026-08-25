@@ -11,13 +11,22 @@ interface OutlineReviewStepProps {
   sessionId: string;
 }
 
-function newSection(index: number): OutlineSection {
+/** AUTHOR-008: new sections inherit the outline's average word budget
+ * (rounded to 50) so an added section doesn't skew a short/pillar plan. */
+function averageBudget(sections: OutlineSection[]): number {
+  if (sections.length === 0) return 300;
+  const avg =
+    sections.reduce((sum, s) => sum + s.target_word_count, 0) / sections.length;
+  return Math.max(50, Math.round(avg / 50) * 50);
+}
+
+function newSection(index: number, sections: OutlineSection[]): OutlineSection {
   return {
     index,
     title: "New section",
     description: "",
     key_points: [],
-    target_word_count: 300,
+    target_word_count: averageBudget(sections),
     relevant_facets: [],
   };
 }
@@ -87,7 +96,12 @@ export function OutlineReviewStep({ sessionId }: OutlineReviewStepProps) {
 
   function addSection() {
     if (!local) return;
-    update({ sections: [...local.sections, newSection(local.sections.length)] });
+    update({
+      sections: [
+        ...local.sections,
+        newSection(local.sections.length, local.sections),
+      ],
+    });
   }
 
   async function handleApprove() {
@@ -136,6 +150,10 @@ export function OutlineReviewStep({ sessionId }: OutlineReviewStepProps) {
           className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-primary focus:outline-none"
         />
       </div>
+
+      <p className="text-xs text-neutral-500">
+        Total target: ~{local.total_target_words} words
+      </p>
 
       <div role="list" className="space-y-3">
         {local.sections.map((section, i) => (
