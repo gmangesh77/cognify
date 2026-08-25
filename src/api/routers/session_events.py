@@ -40,8 +40,10 @@ def _parse_uuid(value: str) -> UUID:
         raise HTTPException(status_code=400, detail="Invalid session id") from exc
 
 
-@limiter.limit("30/minute")
+# Route decorator OUTERMOST or slowapi never evaluates the limit
+# (AUTHOR-006 lesson).
 @session_events_router.get("/research/sessions/{session_id}/events")
+@limiter.limit("30/minute")
 async def stream_session_events(
     request: Request,
     session_id: str,
@@ -61,15 +63,26 @@ async def stream_session_events(
     )
 
 
-@limiter.limit("60/minute")
 @session_events_router.get("/research/sessions/{session_id}/article")
+@limiter.limit("60/minute")
 async def get_session_article(
     request: Request,
     session_id: str,
     user: TokenPayload = Depends(require_viewer_or_above),
 ) -> dict[str, str]:
+    """Resolve the article a session produced — via the DRAFT's real
+    session id (L-013). Real articles store the TOPIC id in
+    `provenance.research_session_id`, so the old provenance-keyed
+    `find_by_session` never matched live data (dead View-article button);
+    it remains only as a fallback for draft-less legacy rows."""
+    sid = _parse_uuid(session_id)
+    repos = getattr(request.app.state, "content_repos", None)
+    if repos is not None:
+        draft = await repos.drafts.find_latest_by_session(sid)
+        if draft is not None and draft.article_id is not None:
+            return {"article_id": str(draft.article_id)}
     repo = getattr(request.app.state, "article_repo", None)
-    article = await repo.find_by_session(_parse_uuid(session_id)) if repo else None
+    article = await repo.find_by_session(sid) if repo else None
     if article is None:
         raise HTTPException(status_code=404, detail="No article for session")
     return {"article_id": str(article.id)}

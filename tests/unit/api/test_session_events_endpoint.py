@@ -125,3 +125,55 @@ async def test_events_stream_ends_with_done_frame(
                 if any(f.startswith("event: done\n") for f in frames):
                     break
     assert any(f.startswith("event: done\n") for f in frames)
+
+
+@pytest.mark.asyncio
+async def test_session_article_resolves_via_draft_not_provenance(
+    research_app: FastAPI,  # noqa: F811
+    research_client,  # noqa: F811
+    test_topic_id,  # noqa: F811
+    auth_settings: Settings,
+):
+    """L-013: real articles store the TOPIC id in provenance.research_session_id,
+    so the lookup must go through article_drafts.session_id (the real session).
+    Regression for the dead "View article" button (found live 2026-08-25)."""
+    from datetime import UTC, datetime
+    from uuid import UUID
+
+    from src.models.content_pipeline import ArticleDraft
+    from src.services.content_repositories import (
+        ContentRepositories,
+        InMemoryArticleDraftRepository,
+        InMemoryArticleRepository,
+    )
+    from tests.unit.api.test_content_endpoints import _build_article
+
+    headers = make_auth_header("editor", auth_settings)
+    session_id = await _create_session(research_client, headers, test_topic_id)
+
+    article_id = uuid4()
+    articles = InMemoryArticleRepository()
+    # Realistic article: provenance.research_session_id is the TOPIC id,
+    # never the research session id (_build_article uses a random uuid).
+    await articles.create(_build_article(article_id))
+    drafts = InMemoryArticleDraftRepository()
+    await drafts.create(
+        ArticleDraft(
+            session_id=UUID(session_id),
+            topic_id=UUID(test_topic_id),
+            article_id=article_id,
+            created_at=datetime.now(UTC),
+        )
+    )
+    research_app.state.article_repo = articles
+    research_app.state.content_repos = ContentRepositories(
+        drafts=drafts,
+        research=None,  # type: ignore[arg-type]
+        articles=articles,
+    )
+
+    r = await research_client.get(
+        f"/api/v1/research/sessions/{session_id}/article", headers=headers
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["article_id"] == str(article_id)
