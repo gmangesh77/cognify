@@ -86,6 +86,9 @@ class ContentState(TypedDict):
     preferred_angle: NotRequired[str | None]
     keywords: NotRequired[list[str] | None]
     outline_instruction: NotRequired[str | None]
+    # AUTHOR-008 — editorial sizing, consumed by the outline node.
+    content_type: NotRequired[str | None]
+    length_target: NotRequired[str | None]
     # VISUAL-005 / Phase 2 — image planner output and per-article style hints.
     image_specs: NotRequired[list[ImageSpec]]
     page_art_direction: NotRequired[str | None]

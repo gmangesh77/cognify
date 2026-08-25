@@ -41,6 +41,9 @@ def build_initial_state(
         "content_tone": session.content_tone,
         "preferred_angle": session.preferred_angle,
         "keywords": session.keywords,
+        # AUTHOR-008 — editorial sizing, consumed by the outline node.
+        "content_type": session.content_type,
+        "length_target": session.length_target,
         "structural_diagram_mode": session.structural_diagram_mode,
         # VISUAL-005 / Phase 2 — image planner inputs. Phase 7 will
         # surface these via the Settings UI; until then they default to
