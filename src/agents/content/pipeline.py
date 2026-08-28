@@ -111,7 +111,7 @@ def _bind_step_name(step_name: str, node_fn: object) -> object:
     async def bound(state: ContentState) -> dict:  # type: ignore[type-arg]
         token = current_step_name.set(step_name)
         try:
-            return await node_fn(state)  # type: ignore[misc, no-any-return]
+            return await node_fn(state)  # type: ignore[operator, no-any-return]
         finally:
             current_step_name.reset(token)
 
