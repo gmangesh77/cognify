@@ -1,15 +1,20 @@
 name: E2E Tests
 
 # Playwright E2E lane shipped alongside DASH-007 humanization panel.
-# Runs the smoke test in `frontend/tests/e2e/`. Triggered on:
+# Runs the suite in `frontend/tests/e2e/`:
+#   - smoke.spec.ts          — dev server + browser + app shell
+#   - create-article.spec.ts — AUTHOR-014: brief → outline gate →
+#                              drafting → article page, fully mocked
+#                              backend (SSE via route interception)
+# Triggered on:
 #   - manual workflow_dispatch (cheap to run on demand)
 #   - PRs labelled `e2e` (so contributors opt in when their change
 #     might affect the rendered UI)
 #   - pushes to main (post-merge gate)
 #
 # The deferred Visual Studio + per-section editing flows
-# (VISUAL-008 §11.5, VISUAL-011 §11.8) live next to the smoke test
-# once their fixtures land — see `frontend/tests/e2e/README.md`.
+# (VISUAL-008 §11.5, VISUAL-011 §11.8) follow the same mock-backend
+# pattern — see `frontend/tests/e2e/README.md`.
 
 on:
   workflow_dispatch:
@@ -20,7 +25,7 @@ on:
 
 jobs:
   e2e:
-    name: Playwright smoke
+    name: Playwright suite
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' ||
