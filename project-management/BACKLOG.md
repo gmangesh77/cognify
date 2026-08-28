@@ -193,7 +193,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | AUTHOR-006 | PATCH article metadata + header/SEO editor + refetch + autosave — **DONE** (PR #79, 2026-08-24) | Should | 5 | B |
 | AUTHOR-007 | Article status (draft/in_review/approved/published) + list filters + Resume — **DONE** (2026-08-25, `feature/AUTHOR-007-status`, migration `d5e8f2a1c3b9`) | Should | 3 | B |
 | AUTHOR-008 | Length target + content type through outliner (word budgets) — **DONE** (PR #82 → develop `608f4fc`, 2026-08-25) | Should | 3 | B |
-| AUTHOR-009 | Humanize per-pass streaming + sentence-level accept/reject — **DONE** (2026-08-28, `feature/AUTHOR-009-humanize-stream`; up to 2 LLM passes via `COGNIFY_HUMANIZE_PREVIEW_MAX_PASSES`, changes start accepted) | Could | 3 | B |
+| AUTHOR-009 | Humanize per-pass streaming + sentence-level accept/reject — **DONE** (PR #84 → develop `1efcd11`, 2026-08-28; up to 2 LLM passes via `COGNIFY_HUMANIZE_PREVIEW_MAX_PASSES`, changes start accepted) | Could | 3 | B |
 | AUTHOR-010 | Model tiering per step | Could | 2 | B |
 | INFRA-008 | Embedding warm-up w/ graceful degradation; live role re-check; shared toaster; split >200-line files — **DONE** (PR #83 → develop `372e635`, 2026-08-28; role drift logged not enforced — see PROGRESS) | Should | 4 | B |
 | AUTHOR-011 | Persona voice engine v1 (fingerprint → prompt → score → fix; flagged) | Could | 13 | C |
