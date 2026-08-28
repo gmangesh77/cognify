@@ -71,6 +71,11 @@ export async function previewHumanization(
   return data;
 }
 
+/** AUTHOR-009 — POST-SSE endpoint consumed via `consumeSse({ method: "POST" })`. */
+export function humanizeStreamUrl(): string {
+  return `${apiClient.defaults.baseURL}/content/humanize-preview/stream`;
+}
+
 export async function restoreSectionVersion(
   sectionId: string,
   body: SectionRestoreRequest,

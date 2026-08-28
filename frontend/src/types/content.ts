@@ -151,3 +151,41 @@ export interface HumanizePreviewResponse {
   llm_called: boolean;
   model: string | null;
 }
+
+// AUTHOR-009 — POST /content/humanize-preview/stream (SSE) wire types.
+export interface HumanizeStreamRequest {
+  section_id: string;
+  title?: string;
+  current_markdown: string;
+}
+
+/** One gap-free span of the section; `change` segments carry a word diff. */
+export interface HumanizeSegment {
+  id: string;
+  kind: "equal" | "change";
+  before: string;
+  after: string;
+  ops: WordDiffEntry[];
+}
+
+export interface HumanizePassEvent {
+  index: number;
+  name: "mechanical" | "llm";
+  score_before: number;
+  score_after: number;
+  rating: string;
+  changed: boolean;
+  model: string | null;
+}
+
+export interface HumanizeDoneEvent {
+  original: string;
+  rewritten: string;
+  diff: WordDiffEntry[];
+  segments: HumanizeSegment[];
+  passes: number;
+  llm_called: boolean;
+  model: string | null;
+  score_before: number;
+  score_after: number;
+}
