@@ -60,7 +60,7 @@
   ```
 - Invariants: `"".join(s.before for s in segs) == before`; `"".join(s.after for s in segs) == after`; `resolve_segments(segs, set()) == after`; `resolve_segments(segs, {all change ids}) == before`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 """AUTHOR-009 — sentence-level segments between original and humanized text."""
@@ -154,12 +154,12 @@ class TestResolveSegments:
         assert "Old." in out and "Newer." in out
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/content/test_sentence_segments.py -q`
 Expected: collection error — `src.services.content.sentence_segments` does not exist.
 
-- [ ] **Step 3: Implement** — `src/services/content/sentence_segments.py`:
+- [x] **Step 3: Implement** — `src/services/content/sentence_segments.py`:
 
 ```python
 """AUTHOR-009 — sentence-level segments between original and humanized text.
@@ -247,12 +247,12 @@ __all__ = ["Segment", "SegmentKind", "resolve_segments", "segment_sentences", "t
 
 If `test_changed_sentence_becomes_a_change_segment` shows the change segment absorbing the surrounding space (e.g. `before == " Delve into the topic."`), that is acceptable **only if** the round-trip and resolve assertions still hold — adjust the test's `.strip()` expectations rather than the tokenizer. Do not weaken the round-trip invariants.
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/content/test_sentence_segments.py -q`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/content/sentence_segments.py tests/unit/services/content/test_sentence_segments.py
@@ -285,7 +285,7 @@ git commit -m "feat(content): sentence-level segmenter for humanize accept/rejec
 - `Settings.humanize_preview_max_passes: int = 2` (`COGNIFY_HUMANIZE_PREVIEW_MAX_PASSES`).
 - Loop rules: always one mechanical pass first; then LLM passes while `score < REWRITE_THRESHOLD` and `passes_done < max_llm_passes`; stop early when a pass leaves the text unchanged (`changed=False`). An exception inside a pass yields `error` and ends the stream (no `done`).
 
-- [ ] **Step 1: Write the failing tests** — `tests/unit/services/content/test_humanize_stream.py`:
+- [x] **Step 1: Write the failing tests** — `tests/unit/services/content/test_humanize_stream.py`:
 
 ```python
 """AUTHOR-009 — multi-pass humanization as an event stream."""
@@ -421,12 +421,12 @@ class TestSettings:
         assert Settings(_env_file=None).humanize_preview_max_passes == 2  # type: ignore[call-arg]
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/content/test_humanize_stream.py -q`
 Expected: import error.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/config/settings.py` — after `length_budgets_json`:
 
@@ -556,12 +556,12 @@ __all__ = ["HumanizeEvent", "stream_humanization"]
 
 Note the `passes` counter counts *all* passes (mechanical + LLM) — matches the test expectations (`passes == 1` for clean text, `3` for two LLM passes). If a helper exceeds 20 lines under `ruff format`, split `_done_event`'s dict into a `_done_payload()` helper.
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/content/test_humanize_stream.py tests/unit/services/content/test_humanize_preview.py -q`
 Expected: all pass (existing preview tests untouched).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/content/humanize_stream.py src/config/settings.py tests/unit/services/content/test_humanize_stream.py
@@ -580,7 +580,7 @@ git commit -m "feat(content): multi-pass streaming humanization service (AUTHOR-
 - Consumes: `stream_humanization` (Task 2), `_get_content_llm` (re-exported from `src.api.routers.content`), `parse_section_id` (`section_history_contracts`), `require_editor_or_above`, `limiter`.
 - Produces: request `HumanizeStreamRequest {section_id: str (3..80), title: str = "Section" (≤200), current_markdown: str (1..20000)}` — **`current_markdown` is required** (the panel always has it; this keeps the stream free of the history service). Response: `text/event-stream` with `pass`/`done`/`error` frames; stops on client disconnect. Router variable `content_humanize_stream_router`.
 
-- [ ] **Step 1: Write the failing tests** — `tests/unit/api/test_content_humanize_stream_endpoint.py`:
+- [x] **Step 1: Write the failing tests** — `tests/unit/api/test_content_humanize_stream_endpoint.py`:
 
 ```python
 """AUTHOR-009 — POST-SSE humanize stream endpoint."""
@@ -712,12 +712,12 @@ class TestHumanizeStreamEndpoint:
 
 Confirm `_PRIV`/`_PUB` are the module-level key names in `test_content_endpoints.py` (line ~80 shows `jwt_private_key=_PRIV`); if they are named differently, import the actual names. The rate-limit test relies on the `reset_rate_limiter` autouse fixture in `tests/unit/api/conftest.py`.
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_content_humanize_stream_endpoint.py -q`
 Expected: 404s / import error on the router module.
 
-- [ ] **Step 3: Implement** — `src/api/routers/content_humanize_stream.py`:
+- [x] **Step 3: Implement** — `src/api/routers/content_humanize_stream.py`:
 
 ```python
 """AUTHOR-009 — POST-SSE endpoint for the multi-pass humanize preview.
@@ -808,12 +808,12 @@ __all__ = ["content_humanize_stream_router"]
     )
 ```
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_content_humanize_stream_endpoint.py tests/unit/api/test_content_endpoints.py -q`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/routers/content_humanize_stream.py src/api/main.py tests/unit/api/test_content_humanize_stream_endpoint.py
@@ -831,7 +831,7 @@ git commit -m "feat(api): POST-SSE /content/humanize-preview/stream (AUTHOR-009)
 **Interfaces:**
 - Produces: `ConsumeSseOptions` gains `method?: "GET" | "POST"` (default `"GET"`) and `body?: unknown` (JSON-serialised; sets `Content-Type: application/json`). GET behaviour byte-identical.
 
-- [ ] **Step 1: Failing test** — `frontend/src/lib/sse/consume-sse.test.ts` (new file, or append the `describe` block):
+- [x] **Step 1: Failing test** — `frontend/src/lib/sse/consume-sse.test.ts` (new file, or append the `describe` block):
 
 ```ts
 import { describe, expect, it, vi, afterEach } from "vitest";
@@ -883,7 +883,7 @@ describe("consumeSse POST support", () => {
 
 Run: `cd frontend && npx vitest run src/lib/sse/consume-sse.test.ts` → the POST case fails (`init.method` undefined / body missing).
 
-- [ ] **Step 2: Implement** — in `consume-sse.ts`:
+- [x] **Step 2: Implement** — in `consume-sse.ts`:
 
 ```ts
 export interface ConsumeSseOptions {
@@ -907,12 +907,12 @@ and in `consumeSse` replace the `fetch(...)` call:
     const res = await fetch(url, init);
 ```
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `cd frontend && npx vitest run src/lib/sse src/hooks/use-session-events.test.tsx`
 Expected: pass (GET path unchanged).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/lib/sse/consume-sse.ts frontend/src/lib/sse/consume-sse.test.ts
@@ -938,7 +938,7 @@ git commit -m "feat(frontend): POST support in the shared SSE consumer (AUTHOR-0
 - `lib/api/content.ts` adds `export function humanizeStreamUrl(): string { return \`${apiClient.defaults.baseURL}/content/humanize-preview/stream\`; }`.
 - `resolve-segments.ts` exports `resolveSegments(segments: HumanizeSegment[], rejected: ReadonlySet<string>): string` and `changeIds(segments): string[]`.
 
-- [ ] **Step 1: Failing test** — `resolve-segments.test.ts`:
+- [x] **Step 1: Failing test** — `resolve-segments.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -968,7 +968,7 @@ describe("resolveSegments", () => {
 
 Run: `cd frontend && npx vitest run src/lib/content/resolve-segments.test.ts` → FAIL (module missing).
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `resolve-segments.ts`:
 
@@ -993,9 +993,9 @@ export function changeIds(segments: HumanizeSegment[]): string[] {
 
 Add the four interfaces to `types/content.ts` (next to `HumanizePreviewResponse`) and `humanizeStreamUrl` to `lib/api/content.ts` (next to `previewHumanization`).
 
-- [ ] **Step 3: Verify** — `cd frontend && npx vitest run src/lib/content && npx tsc --noEmit 2>&1 | grep -c "error TS"` → tests pass; tsc count = 13 (baseline).
+- [x] **Step 3: Verify** — `cd frontend && npx vitest run src/lib/content && npx tsc --noEmit 2>&1 | grep -c "error TS"` → tests pass; tsc count = 13 (baseline).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/lib/content/resolve-segments.ts frontend/src/lib/content/resolve-segments.test.ts frontend/src/types/content.ts frontend/src/lib/api/content.ts
@@ -1023,7 +1023,7 @@ git commit -m "feat(frontend): humanize stream types + segment resolver (AUTHOR-
   ```
 - Rules: `run()` aborts any in-flight stream, clears state, POSTs `{section_id, current_markdown}`; `pass` events append; `done` sets `done`, `status="done"`, `rejected = ∅` (all accepted); `error` event or thrown error → `status="error"`; stream ending without `done` → `error: "Stream ended early"`; `cancel()` aborts and returns to `idle`; unmount aborts.
 
-- [ ] **Step 1: Failing test** — `use-humanize-stream.test.tsx`:
+- [x] **Step 1: Failing test** — `use-humanize-stream.test.tsx`:
 
 ```tsx
 import { act, renderHook, waitFor } from "@testing-library/react";
@@ -1134,7 +1134,7 @@ describe("useHumanizeStream", () => {
 
 Run: `cd frontend && npx vitest run src/hooks/use-humanize-stream.test.tsx` → FAIL (module missing).
 
-- [ ] **Step 2: Implement** — `use-humanize-stream.ts`:
+- [x] **Step 2: Implement** — `use-humanize-stream.ts`:
 
 ```ts
 "use client";
@@ -1238,9 +1238,9 @@ export function useHumanizeStream({ sectionId, currentMarkdown }: UseHumanizeStr
 
 If the file lands over 200 lines after formatting, move `onEvent`'s reducer logic into `lib/content/humanize-stream-reducer.ts` (pure `applyHumanizeEvent(state, type, data)`).
 
-- [ ] **Step 3: Verify** — `cd frontend && npx vitest run src/hooks/use-humanize-stream.test.tsx` → 5 passed.
+- [x] **Step 3: Verify** — `cd frontend && npx vitest run src/hooks/use-humanize-stream.test.tsx` → 5 passed.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/hooks/use-humanize-stream.ts frontend/src/hooks/use-humanize-stream.test.tsx
@@ -1260,7 +1260,7 @@ git commit -m "feat(frontend): useHumanizeStream hook (AUTHOR-009)"
 - `HumanizeChangeList({ segments, rejected, onToggle, onAcceptAll, onRejectAll })` — renders only `kind === "change"` segments; each row (`data-testid="humanize-change"`, `data-rejected="true|false"`) shows `<WordDiffView ops={segment.ops} />` and a toggle button (`data-testid="toggle-change-{id}"`, label `Reject` when accepted / `Accept` when rejected); header shows `N of M changes accepted` with `Accept all` / `Reject all` buttons (`data-testid="accept-all-changes"` / `"reject-all-changes"`); empty state text `No sentence changes — mechanical fixes only.` when there are zero change segments.
 - `HumanizationDiffPanel` keeps its props (`sectionId, currentMarkdown, onAccept, onCancel, className`) and test ids (`run-humanize`, `accept-humanize`, `reject-humanize`, `humanize-score-badges`); it now uses `useHumanizeStream`; `onAccept(resolvedMarkdown)`; `Reject` = `reset()`; `Close` = `cancel()` then `onCancel?.()`; while streaming the Run button reads `Humanizing… (pass N)` and a `Cancel` button (`data-testid="cancel-humanize"`) is shown. Score badges show `done.score_before → done.score_after`. **`WordDiffView` for the whole text is no longer rendered** — the per-change diffs replace it (existing `word-diff-view` test id still appears inside each change row).
 
-- [ ] **Step 1: Rewrite the panel test** — replace `HumanizationDiffPanel.test.tsx` with:
+- [x] **Step 1: Rewrite the panel test** — replace `HumanizationDiffPanel.test.tsx` with:
 
 ```tsx
 import { describe, expect, it, vi, beforeEach } from "vitest";
@@ -1394,7 +1394,7 @@ describe("HumanizationDiffPanel (streaming)", () => {
 
 Run: `cd frontend && npx vitest run src/components/article/HumanizationDiffPanel.test.tsx` → FAIL (panel still calls `previewHumanization`).
 
-- [ ] **Step 2: Implement the two sub-components**
+- [x] **Step 2: Implement the two sub-components**
 
 `HumanizePassTiles.tsx`:
 
@@ -1528,7 +1528,7 @@ export function HumanizeChangeList({
 }
 ```
 
-- [ ] **Step 3: Rewrite `HumanizationDiffPanel.tsx`** — keep the header (`Wand2`, title, `ScoreBadgePair` when `done`), replace the body:
+- [x] **Step 3: Rewrite `HumanizationDiffPanel.tsx`** — keep the header (`Wand2`, title, `ScoreBadgePair` when `done`), replace the body:
 
 ```tsx
   const stream = useHumanizeStream({ sectionId, currentMarkdown });
@@ -1545,12 +1545,12 @@ export function HumanizeChangeList({
 
 Body order: error `<p role="alert">` (when `stream.error`), `<HumanizePassTiles passes={stream.passes} streaming={streaming} />`, then when `stream.done`: `<HumanizeChangeList segments={stream.done.segments} rejected={stream.rejected} onToggle={stream.toggle} onAcceptAll={stream.acceptAll} onRejectAll={stream.rejectAll} />` + the existing `llm_called` hint line (reads `stream.done.llm_called` / `stream.done.model`, plus `· ${stream.done.passes} passes`); otherwise the existing intro paragraph. Footer: `Close` → `handleClose`; when `streaming` a `Cancel` button (`data-testid="cancel-humanize"`, `onClick={stream.cancel}`); when `stream.done` the `Reject` (`stream.reset`) + `Accept` (`handleAccept`) pair; otherwise `Run humanizer` (`stream.run`, disabled when `streaming || !currentMarkdown.trim()`, label `Humanizing… (pass ${stream.passes.length})` while streaming). Drop the `previewHumanization` import and `PanelState`. Keep `ScoreBadgePair` in this file.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 Run: `cd frontend && npx vitest run src/components/article src/file-size-budget.test.ts && wc -l src/components/article/HumanizationDiffPanel.tsx src/components/article/HumanizePassTiles.tsx src/components/article/HumanizeChangeList.tsx`
 Expected: all pass (incl. `SectionEditingWorkbench.test.tsx`, which must not need changes — it only checks the panel mounts); each file ≤ 200 lines.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/article/HumanizationDiffPanel.tsx frontend/src/components/article/HumanizationDiffPanel.test.tsx frontend/src/components/article/HumanizePassTiles.tsx frontend/src/components/article/HumanizeChangeList.tsx
@@ -1564,15 +1564,15 @@ git commit -m "feat(frontend): streaming humanize panel with per-sentence accept
 **Files:**
 - Modify: `project-management/PROGRESS.md`, `project-management/BACKLOG.md`, `CLAUDE.md`, this plan
 
-- [ ] **Step 1: Backend gates** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q` (≥ 1771 + ~25 new, 0 failures); `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/`; `uv run mypy src/ --ignore-missing-imports 2>&1 | tail -1` — no new errors in touched files (baseline 116 in the worktree venv / 114 on develop's venv; the delta is `types-markdown`).
+- [x] **Step 1: Backend gates** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q` (≥ 1771 + ~25 new, 0 failures); `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/`; `uv run mypy src/ --ignore-missing-imports 2>&1 | tail -1` — no new errors in touched files (baseline 116 in the worktree venv / 114 on develop's venv; the delta is `types-markdown`).
 
-- [ ] **Step 2: Frontend gates** — `cd frontend && npx vitest run && npm run lint && npx tsc --noEmit 2>&1 | grep -c "error TS"` → all green, 0 eslint errors, tsc = 13.
+- [x] **Step 2: Frontend gates** — `cd frontend && npx vitest run && npm run lint && npx tsc --noEmit 2>&1 | grep -c "error TS"` → all green, 0 eslint errors, tsc = 13.
 
-- [ ] **Step 3: Live smoke** — the Docker stack is down; run the API in-process as in INFRA-008 (`COGNIFY_DATABASE_URL= COGNIFY_DEBUG=true uv run uvicorn src.api.main:app --port 8011 --env-file D:/Workbench/github/cognify/.env` — **with the real Anthropic key from `.env`**, do NOT blank it) and `curl -N -X POST …/content/humanize-preview/stream` with an editor token and a sloppy paragraph (`"Let me delve into this. It's important to note that…"`): expect ≥ 2 `pass` frames, a `done` frame whose `segments` round-trip (`"".join(before) == input`), and `passes ≤ 3`. Then run the frontend dev server against it (`NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8011/api/v1 npm run dev`), open an article, Humanize prose → tiles stream in → untick one sentence → Accept → Save → confirm the saved section keeps the original sentence and `/content/section/{id}/history` shows a `manual` version (that is the anchors-intact round-trip through `section-update`). Record scores/pass counts in PROGRESS.
+- [x] **Step 3: Live smoke** — the Docker stack is down; run the API in-process as in INFRA-008 (`COGNIFY_DATABASE_URL= COGNIFY_DEBUG=true uv run uvicorn src.api.main:app --port 8011 --env-file D:/Workbench/github/cognify/.env` — **with the real Anthropic key from `.env`**, do NOT blank it) and `curl -N -X POST …/content/humanize-preview/stream` with an editor token and a sloppy paragraph (`"Let me delve into this. It's important to note that…"`): expect ≥ 2 `pass` frames, a `done` frame whose `segments` round-trip (`"".join(before) == input`), and `passes ≤ 3`. Then run the frontend dev server against it (`NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8011/api/v1 npm run dev`), open an article, Humanize prose → tiles stream in → untick one sentence → Accept → Save → confirm the saved section keeps the original sentence and `/content/section/{id}/history` shows a `manual` version (that is the anchors-intact round-trip through `section-update`). Record scores/pass counts in PROGRESS.
 
-- [ ] **Step 4: Docs** — PROGRESS.md: Epic 11 row → Done; RESUME block item 11 (what shipped, `COGNIFY_HUMANIZE_PREVIEW_MAX_PASSES`, smoke numbers, follow-ups: learning loop #19, pipeline-node multi-pass, migrate JSON endpoint callers / retire `/humanize-preview` once nothing else uses it, `content.py` still > 200 lines); BACKLOG.md: AUTHOR-009 row DONE, summary counts (Done 11 / Remaining 6 / ~30 SP), velocity 396 SP; CLAUDE.md Current Status sentence + Next action (AUTHOR-010 or PUBLISH-002); tick this plan's boxes.
+- [x] **Step 4: Docs** — PROGRESS.md: Epic 11 row → Done; RESUME block item 11 (what shipped, `COGNIFY_HUMANIZE_PREVIEW_MAX_PASSES`, smoke numbers, follow-ups: learning loop #19, pipeline-node multi-pass, migrate JSON endpoint callers / retire `/humanize-preview` once nothing else uses it, `content.py` still > 200 lines); BACKLOG.md: AUTHOR-009 row DONE, summary counts (Done 11 / Remaining 6 / ~30 SP), velocity 396 SP; CLAUDE.md Current Status sentence + Next action (AUTHOR-010 or PUBLISH-002); tick this plan's boxes.
 
-- [ ] **Step 5: Commit + PR**
+- [x] **Step 5: Commit + PR**
 
 ```bash
 git add project-management/ CLAUDE.md docs/superpowers/plans/2026-08-28-author-009-humanize-stream.md
