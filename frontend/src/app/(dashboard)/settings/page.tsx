@@ -10,6 +10,7 @@ import { VisualsTab } from "@/components/settings/visuals-tab";
 import { ApiKeysTab } from "@/components/settings/api-keys-tab";
 import { SeoDefaultsTab } from "@/components/settings/seo-defaults-tab";
 import { GeneralTab } from "@/components/settings/general-tab";
+import { useToast } from "@/components/ui/toaster";
 import { useSettings } from "@/hooks/use-settings";
 import type { SettingsTab } from "@/types/settings";
 
@@ -35,21 +36,15 @@ function SettingsContent() {
 
   const oauthToast = getOAuthToast(searchParams);
   const [activeTab, setActiveTab] = useState<SettingsTab>(oauthToast ? "api-keys" : "domains");
-  const [toast, setToast] = useState<string | null>(oauthToast);
+  const { showToast } = useToast();
 
   const settings = useSettings();
 
-  function showToast(message: string) {
-    setToast(message);
-    setTimeout(() => setToast(null), 4000);
-  }
-
   useEffect(() => {
     if (!oauthToast) return;
+    showToast(oauthToast);
     router.replace("/settings", { scroll: false });
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [oauthToast, router]);
+  }, [oauthToast, router, showToast]);
 
   return (
     <div className="space-y-8">
@@ -113,15 +108,6 @@ function SettingsContent() {
           )}
         </div>
       </div>
-
-      {toast && (
-        <div
-          role="status"
-          className="fixed bottom-6 right-6 z-50 rounded-lg bg-neutral-900 px-4 py-3 text-sm text-white shadow-lg"
-        >
-          {toast}
-        </div>
-      )}
     </div>
   );
 }

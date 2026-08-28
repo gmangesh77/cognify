@@ -19,6 +19,8 @@ class UserRepository(Protocol):
 
     def get_by_id(self, user_id: str) -> UserData | None: ...
 
+    def set_active(self, user_id: str, is_active: bool) -> UserData | None: ...
+
 
 class InMemoryRefreshTokenRepository:
     def __init__(self) -> None:
@@ -55,3 +57,12 @@ class InMemoryUserRepository:
 
     def get_by_id(self, user_id: str) -> UserData | None:
         return self._users_by_id.get(user_id)
+
+    def set_active(self, user_id: str, is_active: bool) -> UserData | None:
+        user = self._users_by_id.get(user_id)
+        if user is None:
+            return None
+        updated = user.model_copy(update={"is_active": is_active})
+        self._users_by_id[user_id] = updated
+        self._users_by_email[updated.email] = updated
+        return updated

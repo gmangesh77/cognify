@@ -20,6 +20,7 @@ class DependencyChecks(BaseModel):
     redis: CheckStatus = "unavailable"
     milvus: CheckStatus = "unavailable"
     celery: CheckStatus = "unavailable"
+    embedding: CheckStatus = "unavailable"
 
 
 class HealthResponse(BaseModel):
@@ -90,11 +91,24 @@ async def _check_celery(request: Request) -> CheckStatus:
         return "unavailable"
 
 
+def _check_embedding(request: Request) -> CheckStatus:
+    """INFRA-008 — ok once loaded, degraded while the warm-up thread runs."""
+    service = getattr(request.app.state, "embedding_service", None)
+    if service is None:
+        return "unavailable"
+    if service.is_ready:
+        return "ok"
+    if service.is_warming:
+        return "degraded"
+    return "unavailable"
+
+
 async def _run_checks(request: Request) -> DependencyChecks:
     return DependencyChecks(
         database=await _check_database(request),
         redis=await _check_redis(request),
         celery=await _check_celery(request),
+        embedding=_check_embedding(request),
     )
 
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -12,6 +12,7 @@ import { ArticleHeaderEditor } from "@/components/articles/article-header-editor
 import { ArticleNotFound } from "@/components/articles/article-not-found";
 import { ArticleSidebar } from "@/components/articles/article-sidebar";
 import { PublishModal } from "@/components/articles/publish-modal";
+import { useToast } from "@/components/ui/toaster";
 import { ImageImportModal } from "@/components/visuals/ImageImportModal";
 import { SavedAssetGallery } from "@/components/visuals/SavedAssetGallery";
 import { VisualStudio } from "@/components/visuals/VisualStudio";
@@ -28,7 +29,7 @@ export default function ArticleDetailPage() {
   const [studioOpen, setStudioOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const { showToast } = useToast();
   const defaultPersona = useDefaultPersona();
   const {
     activeSection,
@@ -42,10 +43,6 @@ export default function ArticleDetailPage() {
     openSection,
   } = useArticleEditingState(id);
 
-  const showToast = useCallback((message: string, ms = 4000) => {
-    setToast(message);
-    setTimeout(() => setToast(null), ms);
-  }, []);
   const { insertVisuals, publish } = useArticleActions({ id, refetch, showToast });
   // Outline-space sections (L-013) — shared splitter with ArticleContent.
   const studioSections = useMemo(
@@ -182,14 +179,6 @@ export default function ArticleDetailPage() {
         onImported={() => setImportOpen(false)}
       />
 
-      {toast && (
-        <div
-          role="status"
-          className="fixed bottom-6 right-6 z-50 rounded-lg bg-neutral-900 px-4 py-3 text-sm text-white shadow-lg"
-        >
-          {toast}
-        </div>
-      )}
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import { useCallback } from "react";
+import type { ShowToast } from "@/components/ui/toaster";
 import { attachVisualToArticle, publishArticle } from "@/lib/api/articles";
 import type { ImageSpec, RenderResponse } from "@/types/visuals";
 
 export interface ArticleActionsDeps {
   id: string;
   refetch: () => Promise<unknown>;
-  showToast: (message: string, ms?: number) => void;
+  showToast: ShowToast;
 }
 
 export type InsertableVisual = { spec: ImageSpec; render: RenderResponse };

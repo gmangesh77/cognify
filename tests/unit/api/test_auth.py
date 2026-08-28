@@ -328,6 +328,22 @@ class TestAuthService:
             user_repo=self.user_repo,
         )
 
+    def test_login_rejects_inactive_user(self) -> None:
+        # INFRA-008 (found in live smoke): a deactivated user must not be
+        # issued fresh tokens at all, not merely rejected on the next request.
+        self.user_repo.set_active("user-1", False)
+        with pytest.raises(AuthenticationError) as exc_info:
+            self.service.login("test@example.com", "correct-password")
+        assert exc_info.value.code == "user_inactive"
+
+    def test_refresh_rejects_inactive_user(self) -> None:
+        # INFRA-008: a deactivated user cannot mint a fresh access token.
+        tokens = self.service.login("test@example.com", "correct-password")
+        self.user_repo.set_active("user-1", False)
+        with pytest.raises(AuthenticationError) as exc_info:
+            self.service.refresh(tokens.refresh_token)
+        assert exc_info.value.code == "user_inactive"
+
     def test_login_success(self) -> None:
         result = self.service.login("test@example.com", "correct-password")
         assert result.access_token

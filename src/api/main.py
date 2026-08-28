@@ -24,6 +24,7 @@ from src.api.auth.repository import (
     InMemoryUserRepository,
 )
 from src.api.auth.schemas import UserData
+from src.api.auth.user_status import UserStatusCache
 from src.api.errors import CognifyError, build_error_response
 from src.api.middleware.correlation_id import CorrelationIdMiddleware
 from src.api.middleware.request_logging import RequestLoggingMiddleware
@@ -163,6 +164,12 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     # AUTHOR-002 — registry of in-flight per-session background pipeline
     # tasks, shared by the research create/cancel/approve endpoints.
     app.state.session_tasks = SessionTaskRegistry()
+
+    # INFRA-008 — warm the embedding model on a daemon thread so the first
+    # dedup/RAG call never blocks the event loop on a model load (PR #72
+    # baked the weights into the image; this removes the first-call stall).
+    if settings.embedding_warmup:
+        _get_or_create_embedding_service(app).warm_up_in_background()
 
     # --- Build LLM + content deps (shared by DB and non-DB paths) ---
     content_deps = ContentDeps(settings=settings)
@@ -373,6 +380,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.limiter = limiter
     app.state.refresh_repo = InMemoryRefreshTokenRepository()
     app.state.user_repo = InMemoryUserRepository(_seed_dev_users(settings))
+    app.state.user_status_cache = UserStatusCache(
+        ttl_seconds=settings.auth_recheck_ttl_seconds
+    )
     app.state.trend_registry = init_registry(settings)
     _init_research_service(app)
     app.state.brief_service = BriefService(InMemoryBriefRepository())

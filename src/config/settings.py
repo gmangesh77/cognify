@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "RS256"
     jwt_access_token_expire_minutes: int = 1440
     jwt_refresh_token_expire_days: int = 7
+    # INFRA-008: how long get_current_user trusts a cached user-status
+    # answer before re-reading is_active/role from the user repository.
+    auth_recheck_ttl_seconds: float = 30.0
     # Topic ranking weights (must sum to 1.0)
     relevance_weight: float = 0.4
     recency_weight: float = 0.3
@@ -32,6 +35,9 @@ class Settings(BaseSettings):
     diversity_weight: float = 0.1
     # Embedding / dedup
     embedding_model: str = "all-MiniLM-L6-v2"
+    # INFRA-008: load the sentence-transformer on a background thread at API
+    # boot; RAG retrieval is skipped (no-context drafting) while it is cold.
+    embedding_warmup: bool = True
     dedup_similarity_threshold: float = 0.85
     # Hacker News integration
     hn_api_base_url: str = "https://hn.algolia.com/api/v1"

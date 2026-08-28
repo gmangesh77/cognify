@@ -1,3 +1,4 @@
+import pytest
 from fastapi import FastAPI
 
 from src.api.main import create_app
@@ -32,3 +33,42 @@ class TestCreateApp:
         settings = Settings(debug=True)
         app = create_app(settings)
         assert app.debug is False
+
+
+class TestEmbeddingWarmupAtBoot:
+    """INFRA-008 — lifespan kicks off the warm-up when the flag is on."""
+
+    async def _run_lifespan(
+        self, monkeypatch: pytest.MonkeyPatch, *, warmup: bool
+    ) -> tuple[FastAPI, list[str]]:
+        from src.api.main import _lifespan
+        from src.services.embeddings import EmbeddingService
+
+        calls: list[str] = []
+        monkeypatch.setattr(
+            EmbeddingService,
+            "warm_up_in_background",
+            lambda self: calls.append(self._model_name),
+        )
+        settings = Settings(  # type: ignore[call-arg]
+            _env_file=None,
+            embedding_warmup=warmup,
+            database_url="",
+            anthropic_api_key="",
+        )
+        app = create_app(settings)
+        async with _lifespan(app):
+            pass
+        return app, calls
+
+    async def test_lifespan_warms_up_when_enabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        app, calls = await self._run_lifespan(monkeypatch, warmup=True)
+        assert calls == [app.state.settings.embedding_model]
+
+    async def test_lifespan_skips_warmup_when_disabled(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _, calls = await self._run_lifespan(monkeypatch, warmup=False)
+        assert calls == []

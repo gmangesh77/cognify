@@ -29,7 +29,37 @@ async def get_current_user(
         )
 
     settings = request.app.state.settings
-    return decode_access_token(parts[1], settings)
+    payload = decode_access_token(parts[1], settings)
+    return _recheck_user_status(request, payload)
+
+
+def _recheck_user_status(request: Request, payload: TokenPayload) -> TokenPayload:
+    """INFRA-008: deactivated users lose access within the cache TTL.
+
+    A user unknown to the repository keeps the token's claims (the in-memory
+    seed is not authoritative for existence); a role mismatch is logged, not
+    enforced — see the INFRA-008 plan, deviations #1/#2.
+    """
+    repo = getattr(request.app.state, "user_repo", None)
+    cache = getattr(request.app.state, "user_status_cache", None)
+    if repo is None or cache is None:
+        return payload
+    user = cache.lookup(payload.sub, repo)
+    if user is None:
+        return payload
+    if not user.is_active:
+        logger.warning("auth_user_inactive", user_id=payload.sub)
+        raise AuthenticationError(
+            code="user_inactive", message="User account is deactivated"
+        )
+    if user.role != payload.role:
+        logger.warning(
+            "auth_role_drift",
+            user_id=payload.sub,
+            token_role=payload.role,
+            repo_role=user.role,
+        )
+    return payload
 
 
 async def get_db_session() -> None:

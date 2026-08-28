@@ -195,7 +195,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | AUTHOR-008 | Length target + content type through outliner (word budgets) — **DONE** (PR #82 → develop `608f4fc`, 2026-08-25) | Should | 3 | B |
 | AUTHOR-009 | Humanize per-pass streaming + sentence-level accept/reject | Could | 3 | B |
 | AUTHOR-010 | Model tiering per step | Could | 2 | B |
-| INFRA-008 | Embedding warm-up w/ graceful degradation; live role re-check; shared toaster; split >200-line files | Should | 4 | B |
+| INFRA-008 | Embedding warm-up w/ graceful degradation; live role re-check; shared toaster; split >200-line files — **DONE** (2026-08-28, `feature/INFRA-008-warmup-recheck-splits`; role drift logged not enforced — see PROGRESS) | Should | 4 | B |
 | AUTHOR-011 | Persona voice engine v1 (fingerprint → prompt → score → fix; flagged) | Could | 13 | C |
 | AUTHOR-012 | Prompt registry + per-user overrides + Settings tab | Could | 5 | C |
 | AUTHOR-013 | LinkedIn repurpose transformer + modal | Could | 5 | C |
@@ -220,8 +220,8 @@ Per-phase acceptance criteria are in the plan §9. Feature flags default to curr
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
 | **Visual Generation Overhaul** | **8** | **8** | **0** | **0** |
-| **Supervised Authoring (Epic 11)** | **17** | **9** | **8** | **~37** |
-| **Total** | **74** | **65** | **9** | **~42** |
+| **Supervised Authoring (Epic 11)** | **17** | **10** | **7** | **~33** |
+| **Total** | **74** | **66** | **8** | **~38** |
 
 **Velocity update (2026-05-07)**: Epic 10 (Visual Generation Overhaul)
 fully shipped — VISUAL-004 through VISUAL-011 (89 SP) merged to
@@ -231,4 +231,4 @@ follow-ups (INFRA-006, CONTENT-007, DASH-007, Playwright scaffold,
 The only remaining ticket in the entire backlog is PUBLISH-002
 (5 SP, WordPress integration).
 
-**Velocity**: 389 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21; AUTHOR-005 = 3 SP, INFRA-007 = 5 SP and AUTHOR-006 = 5 SP on 2026-08-24; AUTHOR-007 = 3 SP and AUTHOR-008 = 3 SP on 2026-08-25). Remaining: PUBLISH-002 (5 SP) + Epic 11 (~34 SP).
+**Velocity**: 393 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21; AUTHOR-005 = 3 SP, INFRA-007 = 5 SP and AUTHOR-006 = 5 SP on 2026-08-24; AUTHOR-007 = 3 SP and AUTHOR-008 = 3 SP on 2026-08-25; INFRA-008 = 4 SP on 2026-08-28). Remaining: PUBLISH-002 (5 SP) + Epic 11 (~30 SP).

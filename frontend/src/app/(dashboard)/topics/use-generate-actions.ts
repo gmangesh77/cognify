@@ -1,14 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import type { ShowToast } from "@/components/ui/toaster";
 import { createManualTopic, createResearchSession } from "@/lib/api/trends";
 import type { CreateTopicData } from "@/components/topics/create-topic-modal";
 import type { ArticleParams, RankedTopic } from "@/types/api";
 
-const TOAST_DURATION_MS = 5000;
-
 interface UseGenerateActionsArgs {
-  setToast: (message: string | null) => void;
+  showToast: ShowToast;
 }
 
 interface UseGenerateActionsResult {
@@ -22,20 +21,15 @@ interface UseGenerateActionsResult {
  * paths. Extracted from the topics page so the navigation behaviour can be
  * unit-tested without mocking the page's full data-fetching surface.
  */
-export function useGenerateActions({ setToast }: UseGenerateActionsArgs): UseGenerateActionsResult {
+export function useGenerateActions({ showToast }: UseGenerateActionsArgs): UseGenerateActionsResult {
   const router = useRouter();
-
-  function showToast(message: string) {
-    setToast(message);
-    setTimeout(() => setToast(null), TOAST_DURATION_MS);
-  }
 
   async function handleConfirm(topic: RankedTopic, articleParams?: ArticleParams) {
     if (!topic.id) {
       showToast(`Cannot start research — topic has no ID. Try scanning again.`);
       return;
     }
-    setToast(`Starting research for "${topic.title}"…`);
+    showToast(`Starting research for "${topic.title}"…`);
     try {
       const session = await createResearchSession(topic.id, articleParams);
       router.push(`/research/${session.session_id}`);
@@ -45,7 +39,7 @@ export function useGenerateActions({ setToast }: UseGenerateActionsArgs): UseGen
   }
 
   async function handleCreateAndGenerate(data: CreateTopicData) {
-    setToast(`Starting research for "${data.title}"…`);
+    showToast(`Starting research for "${data.title}"…`);
     try {
       const result = await createManualTopic({
         title: data.title,
