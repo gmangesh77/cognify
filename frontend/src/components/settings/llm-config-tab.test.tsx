@@ -7,9 +7,19 @@ const mockConfig: LlmConfig = {
   primaryModel: "claude-opus-4",
   draftingModel: "claude-sonnet-4",
   imageGeneration: "stable-diffusion-xl",
+  imageProvider: "dalle_3",
+  imageModel: null,
+  defaultModel: "claude-sonnet-4-6",
+  modelByStep: { content_queries: "claude-haiku-4-5" },
 };
 
 describe("LlmConfigTab", () => {
+  it("renders the read-only model tiering card (AUTHOR-010)", () => {
+    render(<LlmConfigTab config={mockConfig} onUpdate={vi.fn()} />);
+    expect(screen.getByTestId("model-tiering-card")).toBeInTheDocument();
+    expect(screen.getAllByTestId("tiering-row")).toHaveLength(1);
+  });
+
   it("renders all 3 dropdowns", () => {
     render(<LlmConfigTab config={mockConfig} onUpdate={vi.fn()} />);
     expect(screen.getByLabelText("Primary Model")).toBeInTheDocument();

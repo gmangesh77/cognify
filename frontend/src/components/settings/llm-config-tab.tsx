@@ -1,4 +1,5 @@
 import type { LlmConfig } from "@/types/settings";
+import { ModelTieringCard } from "./model-tiering-card";
 
 interface LlmConfigTabProps {
   config: LlmConfig;
@@ -71,6 +72,8 @@ export function LlmConfigTab({ config, onUpdate }: LlmConfigTabProps) {
             Used for article hero images and illustrations
           </p>
         </div>
+
+        <ModelTieringCard defaultModel={config.defaultModel} modelByStep={config.modelByStep} />
       </div>
     </div>
   );
