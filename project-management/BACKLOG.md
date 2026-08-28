@@ -194,7 +194,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | AUTHOR-007 | Article status (draft/in_review/approved/published) + list filters + Resume — **DONE** (2026-08-25, `feature/AUTHOR-007-status`, migration `d5e8f2a1c3b9`) | Should | 3 | B |
 | AUTHOR-008 | Length target + content type through outliner (word budgets) — **DONE** (PR #82 → develop `608f4fc`, 2026-08-25) | Should | 3 | B |
 | AUTHOR-009 | Humanize per-pass streaming + sentence-level accept/reject — **DONE** (PR #84 → develop `1efcd11`, 2026-08-28; up to 2 LLM passes via `COGNIFY_HUMANIZE_PREVIEW_MAX_PASSES`, changes start accepted) | Could | 3 | B |
-| AUTHOR-010 | Model tiering per step | Could | 2 | B |
+| AUTHOR-010 | Model tiering per step — **DONE** (2026-08-28, `feature/AUTHOR-010-model-tiering`; `COGNIFY_LLM_MODEL_BY_STEP` + read-only Settings card) | Could | 2 | B |
 | INFRA-008 | Embedding warm-up w/ graceful degradation; live role re-check; shared toaster; split >200-line files — **DONE** (PR #83 → develop `372e635`, 2026-08-28; role drift logged not enforced — see PROGRESS) | Should | 4 | B |
 | AUTHOR-011 | Persona voice engine v1 (fingerprint → prompt → score → fix; flagged) | Could | 13 | C |
 | AUTHOR-012 | Prompt registry + per-user overrides + Settings tab | Could | 5 | C |
@@ -220,8 +220,8 @@ Per-phase acceptance criteria are in the plan §9. Feature flags default to curr
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
 | **Visual Generation Overhaul** | **8** | **8** | **0** | **0** |
-| **Supervised Authoring (Epic 11)** | **17** | **11** | **6** | **~30** |
-| **Total** | **74** | **67** | **7** | **~35** |
+| **Supervised Authoring (Epic 11)** | **17** | **12** | **5** | **~28** |
+| **Total** | **74** | **68** | **6** | **~33** |
 
 **Velocity update (2026-05-07)**: Epic 10 (Visual Generation Overhaul)
 fully shipped — VISUAL-004 through VISUAL-011 (89 SP) merged to
@@ -231,4 +231,4 @@ follow-ups (INFRA-006, CONTENT-007, DASH-007, Playwright scaffold,
 The only remaining ticket in the entire backlog is PUBLISH-002
 (5 SP, WordPress integration).
 
-**Velocity**: 393 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21; AUTHOR-005 = 3 SP, INFRA-007 = 5 SP and AUTHOR-006 = 5 SP on 2026-08-24; AUTHOR-007 = 3 SP and AUTHOR-008 = 3 SP on 2026-08-25; INFRA-008 = 4 SP and AUTHOR-009 = 3 SP on 2026-08-28). Remaining: PUBLISH-002 (5 SP) + Epic 11 (~27 SP).
+**Velocity**: 393 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21; AUTHOR-005 = 3 SP, INFRA-007 = 5 SP and AUTHOR-006 = 5 SP on 2026-08-24; AUTHOR-007 = 3 SP and AUTHOR-008 = 3 SP on 2026-08-25; INFRA-008 = 4 SP, AUTHOR-009 = 3 SP and AUTHOR-010 = 2 SP on 2026-08-28). Remaining: PUBLISH-002 (5 SP) + Epic 11 Phase C (~25 SP).

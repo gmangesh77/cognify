@@ -52,7 +52,7 @@
   ```
   `_generate` / `_agenerate` delegate to `active()`; `_llm_type == "tiered"`.
 
-- [ ] **Step 1: Write the failing tests** — `tests/unit/utils/test_tiered_llm.py`:
+- [x] **Step 1: Write the failing tests** — `tests/unit/utils/test_tiered_llm.py`:
 
 ```python
 """AUTHOR-010 — per-step model routing via the tracker's step contextvar."""
@@ -163,9 +163,9 @@ class TestTrackedOverTiered:
         assert getattr(saved[0], "call_name") == "content_queries"
 ```
 
-- [ ] **Step 2: Run to verify they fail** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/utils/test_tiered_llm.py -q` → import error.
+- [x] **Step 2: Run to verify they fail** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/utils/test_tiered_llm.py -q` → import error.
 
-- [ ] **Step 3: Implement** — `src/utils/tiered_llm.py`:
+- [x] **Step 3: Implement** — `src/utils/tiered_llm.py`:
 
 ```python
 """AUTHOR-010 — route each pipeline step to its own model.
@@ -249,9 +249,9 @@ __all__ = ["KNOWN_LLM_STEPS", "TieredChatModel"]
 
 If pydantic complains about the `model` property shadowing its protected `model_` namespace, add `model_config = ConfigDict(protected_namespaces=())` to the class (import `ConfigDict` from `pydantic`).
 
-- [ ] **Step 4: Run to verify they pass** — same command → 8 passed.
+- [x] **Step 4: Run to verify they pass** — same command → 8 passed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/utils/tiered_llm.py tests/unit/utils/test_tiered_llm.py
@@ -271,7 +271,7 @@ git commit -m "feat(llm): TieredChatModel routes calls by tracked step name (AUT
 - `bootstrap_builders.build_tiered_llm(settings) -> BaseChatModel` (untracked): plain `ChatAnthropic` for `{}`; otherwise `TieredChatModel` with one shared `ChatAnthropic` per distinct model id (`max_tokens=4096`, same as today); logs `llm_tiering_configured` (steps, distinct models) and `llm_tiering_unknown_step` per key not in `KNOWN_LLM_STEPS`.
 - `_build_llm(settings, llm_call_repo)` now calls `build_tiered_llm` and wraps in `TrackedChatModel` when a repo is given (unchanged contract).
 
-- [ ] **Step 1: Failing tests** — append to `tests/unit/services/test_bootstrap.py`:
+- [x] **Step 1: Failing tests** — append to `tests/unit/services/test_bootstrap.py`:
 
 ```python
 import structlog.testing
@@ -335,7 +335,7 @@ def settings_default_model() -> str:
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/test_bootstrap.py -q` → import error on `build_tiered_llm` / unknown field.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `src/config/settings.py` — after `humanize_preview_max_passes`:
 
@@ -408,9 +408,9 @@ def _build_llm(
 # COGNIFY_LLM_MODEL_BY_STEP={"content_queries":"claude-haiku-4-5-20251001","content_validate":"claude-haiku-4-5-20251001","content_citations":"claude-haiku-4-5-20251001","evaluate_completeness":"claude-haiku-4-5-20251001"}
 ```
 
-- [ ] **Step 3: Verify** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/test_bootstrap.py tests/unit/utils/test_tiered_llm.py -q` → all pass.
+- [x] **Step 3: Verify** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/test_bootstrap.py tests/unit/utils/test_tiered_llm.py -q` → all pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/config/settings.py src/services/bootstrap_builders.py .env.example tests/unit/services/test_bootstrap.py
@@ -427,7 +427,7 @@ git commit -m "feat(llm): COGNIFY_LLM_MODEL_BY_STEP builds a tiered pipeline mod
 
 **Interfaces:** `_wrap_node(name, node_fn, deps)` keeps its signature. Without a step repo it now returns a wrapper that sets `current_step_name` to `f"content_{name}"` for the node's duration and resets it afterwards (with a step repo, `_record_step` already sets it).
 
-- [ ] **Step 1: Failing test** — append to `test_pipeline_progress.py`:
+- [x] **Step 1: Failing test** — append to `test_pipeline_progress.py`:
 
 ```python
 async def test_wrap_node_binds_step_name_without_step_repo() -> None:
@@ -447,7 +447,7 @@ async def test_wrap_node_binds_step_name_without_step_repo() -> None:
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/content/test_pipeline_progress.py -q` → FAIL (`seen == ["unknown"]`).
 
-- [ ] **Step 2: Implement** — in `pipeline.py`, add above `_wrap_node`:
+- [x] **Step 2: Implement** — in `pipeline.py`, add above `_wrap_node`:
 
 ```python
 def _bind_step_name(step_name: str, node_fn: object) -> object:
@@ -466,9 +466,9 @@ def _bind_step_name(step_name: str, node_fn: object) -> object:
 
 and change the early return in `_wrap_node` from `return node_fn` to `return _bind_step_name(f"content_{name}", node_fn)`.
 
-- [ ] **Step 3: Verify** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/content -q` → all pass (the FakeLLM graph tests are unaffected: a bound contextvar changes nothing when the LLM isn't tiered).
+- [x] **Step 3: Verify** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/content -q` → all pass (the FakeLLM graph tests are unaffected: a bound contextvar changes nothing when the LLM isn't tiered).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/agents/content/pipeline.py tests/unit/agents/content/test_pipeline_progress.py
@@ -485,7 +485,7 @@ git commit -m "feat(content): bind step name for tiering without a step repo (AU
 
 **Interfaces:** `LlmConfigResponse` gains `default_model: str = ""` and `model_by_step: dict[str, str] = {}`; both GET and PUT responses fill them from `request.app.state.settings` (`anthropic_model`, `llm_model_by_step`). `UpdateLlmConfigRequest` unchanged (fields are read-only). Decorator order on both routes fixed (route outermost).
 
-- [ ] **Step 1: Failing tests** — inside `TestLlmConfigEndpoints` (the class holding `test_get_llm_config_ok`):
+- [x] **Step 1: Failing tests** — inside `TestLlmConfigEndpoints` (the class holding `test_get_llm_config_ok`):
 
 ```python
     async def test_get_llm_config_includes_tiering_from_settings(
@@ -529,7 +529,7 @@ git commit -m "feat(content): bind step name for tiering without a step repo (AU
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_settings_endpoints.py -q` → the first fails (`KeyError: 'default_model'`).
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `src/api/schemas/settings.py`:
 
@@ -572,9 +572,9 @@ async def update_llm_config(...):
     return _llm_response(request, saved)
 ```
 
-- [ ] **Step 3: Verify** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_settings_endpoints.py -q` → all pass (existing LLM tests still pass because `model_dump()` of `LlmConfig` has no clashing keys).
+- [x] **Step 3: Verify** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_settings_endpoints.py -q` → all pass (existing LLM tests still pass because `model_dump()` of `LlmConfig` has no clashing keys).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/api/schemas/settings.py src/api/routers/settings_config.py tests/unit/api/test_settings_endpoints.py
@@ -594,7 +594,7 @@ git commit -m "feat(api): /settings/llm exposes default_model + model_by_step re
 - `ModelTieringCard({ defaultModel, modelByStep })` renders `data-testid="model-tiering-card"`: heading "Model tiering", the env var name, "Default model: {defaultModel}" (`data-testid="tiering-default-model"`), and either a table (`data-testid="tiering-row"` per entry, sorted by step) or the empty line "All steps use the default model." (`data-testid="tiering-empty"`).
 - `LlmConfigTab` renders `<ModelTieringCard defaultModel={config.defaultModel} modelByStep={config.modelByStep} />` at the bottom.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `model-tiering-card.test.tsx`:
 
@@ -652,7 +652,7 @@ describe("ModelTieringCard", () => {
 
 Run: `cd frontend && npx vitest run src/components/settings src/hooks/use-settings.test.ts` → the three new cases fail.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `types/settings.ts`:
 
@@ -731,9 +731,9 @@ export function ModelTieringCard({
         <ModelTieringCard defaultModel={config.defaultModel} modelByStep={config.modelByStep} />
 ```
 
-- [ ] **Step 3: Verify** — `cd frontend && npx vitest run && npx tsc --noEmit 2>&1 | grep -c "error TS"` → all green; the tsc count must be **≤ 13** (completing `mockConfig` may remove pre-existing errors — record the new number).
+- [x] **Step 3: Verify** — `cd frontend && npx vitest run && npx tsc --noEmit 2>&1 | grep -c "error TS"` → all green; the tsc count must be **≤ 13** (completing `mockConfig` may remove pre-existing errors — record the new number).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/types/settings.ts frontend/src/hooks/use-settings.ts frontend/src/hooks/use-settings.test.ts frontend/src/components/settings/model-tiering-card.tsx frontend/src/components/settings/model-tiering-card.test.tsx frontend/src/components/settings/llm-config-tab.tsx frontend/src/components/settings/llm-config-tab.test.tsx
@@ -744,11 +744,11 @@ git commit -m "feat(frontend): read-only model tiering card in Settings > LLM (A
 
 ### Task 6: Verification, live smoke, docs, PR
 
-- [ ] **Step 1: Backend gates** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q` (≥ 1795 + ~16); `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/`; `uv run mypy src/ --ignore-missing-imports 2>&1 | tail -1` (no new errors in touched files; baseline 116 in this venv).
-- [ ] **Step 2: Frontend gates** — `cd frontend && npx vitest run && npm run lint && npx tsc --noEmit 2>&1 | grep -c "error TS"` → green, 0 eslint errors, tsc ≤ 13.
-- [ ] **Step 3: Live smoke** (API in-process, same recipe as AUTHOR-009 — `--env-file D:/Workbench/github/cognify/.env`, `COGNIFY_DATABASE_URL=` blank, `COGNIFY_DEBUG=true`, `COGNIFY_MILVUS_URI=./smoke_milvus.db`, `COGNIFY_EMBEDDING_WARMUP=false`, plus `COGNIFY_LLM_MODEL_BY_STEP='{"section_regenerate":"claude-haiku-4-5-20251001"}'`): (a) boot log shows `llm_tiering_configured steps=['section_regenerate']`; (b) `GET /settings/llm` (admin) returns `default_model` + the map; (c) `POST /content/humanize-preview/stream` with a sloppy paragraph still reports `model=claude-sonnet-4-…` in its `pass` event (unmapped step → default); (d) run the same stream with the map key changed to a step that path uses — humanize preview binds no step, so instead verify routing with a mapped `content_queries` through a short outline-only session **only if** the stack is up; otherwise verify routing via the unit tests and record that the end-to-end model switch is deferred to the post-merge stack rebuild (check `llm_calls.model_name` for a `content_queries` row then).
-- [ ] **Step 4: Docs** — PROGRESS.md row → Done + RESUME item 12 (what shipped, the scope decision, smoke results, follow-ups: wire Primary/Drafting dropdowns or remove them; editable per-step map after AUTHOR-012; `settings_config.py` other routes still have the dead limiter order; `use-settings.ts` > 200 lines); BACKLOG.md row DONE + counts (Epic 11 Done 12 / Remaining 5 / ~28 SP; velocity 398 SP); CLAUDE.md status sentence + Next action (PUBLISH-002 or Phase C AUTHOR-011); tick this plan.
-- [ ] **Step 5: Commit + PR**
+- [x] **Step 1: Backend gates** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q` (≥ 1795 + ~16); `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/`; `uv run mypy src/ --ignore-missing-imports 2>&1 | tail -1` (no new errors in touched files; baseline 116 in this venv).
+- [x] **Step 2: Frontend gates** — `cd frontend && npx vitest run && npm run lint && npx tsc --noEmit 2>&1 | grep -c "error TS"` → green, 0 eslint errors, tsc ≤ 13.
+- [x] **Step 3: Live smoke** (API in-process, same recipe as AUTHOR-009 — `--env-file D:/Workbench/github/cognify/.env`, `COGNIFY_DATABASE_URL=` blank, `COGNIFY_DEBUG=true`, `COGNIFY_MILVUS_URI=./smoke_milvus.db`, `COGNIFY_EMBEDDING_WARMUP=false`, plus `COGNIFY_LLM_MODEL_BY_STEP='{"section_regenerate":"claude-haiku-4-5-20251001"}'`): (a) boot log shows `llm_tiering_configured steps=['section_regenerate']`; (b) `GET /settings/llm` (admin) returns `default_model` + the map; (c) `POST /content/humanize-preview/stream` with a sloppy paragraph still reports `model=claude-sonnet-4-…` in its `pass` event (unmapped step → default); (d) run the same stream with the map key changed to a step that path uses — humanize preview binds no step, so instead verify routing with a mapped `content_queries` through a short outline-only session **only if** the stack is up; otherwise verify routing via the unit tests and record that the end-to-end model switch is deferred to the post-merge stack rebuild (check `llm_calls.model_name` for a `content_queries` row then).
+- [x] **Step 4: Docs** — PROGRESS.md row → Done + RESUME item 12 (what shipped, the scope decision, smoke results, follow-ups: wire Primary/Drafting dropdowns or remove them; editable per-step map after AUTHOR-012; `settings_config.py` other routes still have the dead limiter order; `use-settings.ts` > 200 lines); BACKLOG.md row DONE + counts (Epic 11 Done 12 / Remaining 5 / ~28 SP; velocity 398 SP); CLAUDE.md status sentence + Next action (PUBLISH-002 or Phase C AUTHOR-011); tick this plan.
+- [x] **Step 5: Commit + PR**
 
 ```bash
 git add project-management/ CLAUDE.md docs/superpowers/plans/2026-08-28-author-010-model-tiering.md
