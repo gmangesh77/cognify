@@ -20,12 +20,17 @@ npm run e2e
 `playwright.config.ts` starts `npm run dev` on port 3000 if it isn't
 already running.
 
-- **Docker stack on 3000?** Set `PLAYWRIGHT_PORT=3100` (any free port).
-  The dev server is started on that port and `baseURL` follows, so
-  `reuseExistingServer` never silently tests the Docker build.
-- When Playwright owns the server it wipes `.next` first: the state a
-  killed `next dev` leaves behind can wedge the next run's first route
-  compile (Turbopack, observed on `/research/[id]`).
+- **Docker stack on 3000?** Set `PLAYWRIGHT_PORT=3100` (any free port):
+  `PLAYWRIGHT_PORT=3100 npm run e2e` (sh) or
+  `$env:PLAYWRIGHT_PORT=3100; npm run e2e` (PowerShell). The dev server is
+  started on that port and `baseURL` follows, so `reuseExistingServer`
+  never silently tests the Docker build.
+- When Playwright owns the server it wipes `.next/dev` first (Next 16's
+  dev output; `next build` output is untouched): the state a killed
+  `next dev` leaves behind can wedge the next run's first route compile
+  (Turbopack, observed on `/research/[id]`). This assumes no *other* local
+  `next dev` shares the checkout — the side-by-side case is the Docker
+  frontend.
 - The dev server gets `NEXT_PUBLIC_API_BASE_URL=/api/v1`, so every API
   call is a same-origin relative request that `page.route("**/api/v1/**")`
   intercepts before Next.js sees it — no CORS, no real backend.
@@ -48,14 +53,21 @@ should follow:
   `useSessionEvents` treats a stream that ends without a terminal `done`
   as a drop and reconnects after 1 s (any event resets its backoff), so
   the page keeps re-requesting the stream and picks up whichever phase the
-  mock is in. No streaming server needed.
+  mock is in. No streaming server needed. Two consequences: the connection
+  chip flips Live → Reconnecting… every second, so never assert on it; and
+  the research → outline-review transition is advanced by the client's
+  first `GET …/outline` (which only happens after it consumed the
+  `status_changed` frame), not by the stream being served — that keeps the
+  research frames non-vacuous even when React StrictMode aborts the first
+  mount's stream.
 - `support/create-article-fixtures.ts` — response fixtures typed with the
   app's own contracts (`@/types/*`, `@/lib/api/*`), so a backend-shape
   change fails `tsc` before it fails the browser run.
 
 Auth is cookie-presence only (`middleware.ts` checks `cognify_access_token`
 exists); the bearer token lives in `localStorage` under the same key.
-There is no `/auth/me` bootstrap to mock.
+There is no `/auth/me` bootstrap to mock (`smoke.spec.ts` still stubs it
+defensively; nothing requests it).
 
 `next dev` compiles routes on first hit (7–30 s cold), so the spec warms
 the dynamic routes in `beforeAll`; the timed flow then measures the app,

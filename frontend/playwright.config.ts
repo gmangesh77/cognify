@@ -1,13 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Playwright config (Phase 8 follow-up — VISUAL-011 / VISUAL-008).
+ * Playwright config (scaffold: Phase 8 follow-up; first journey: AUTHOR-014).
  *
- * Currently runs ONE smoke test that boots the Next.js dev server and
- * loads the dashboard. The deferred VISUAL-008 / VISUAL-011 E2E flows
- * (plan → render → refine; hover section → AI rewrite → save) need
- * backend mocks via `page.route()` and live next to this config when
- * implemented — see `tests/e2e/README.md`.
+ * Runs `tests/e2e/smoke.spec.ts` (dev server + browser + app shell) and
+ * `tests/e2e/create-article.spec.ts` (brief → outline gate → drafting →
+ * article page against a mocked backend). The deferred VISUAL-008 /
+ * VISUAL-011 flows (plan → render → refine; hover section → AI rewrite →
+ * save) should reuse the `tests/e2e/support/` mock pattern — see
+ * `tests/e2e/README.md`.
  *
  * Browser binaries are NOT pre-installed by `npm ci`. Run
  * `npx playwright install` once locally; CI does the same step in
@@ -17,7 +18,7 @@ import { defineConfig, devices } from "@playwright/test";
 // PLAYWRIGHT_PORT to run the E2E lane beside it (the dev server is
 // started on the same port so `reuseExistingServer` never picks up
 // the Docker build by accident).
-const port = Number(process.env.PLAYWRIGHT_PORT ?? 3000);
+const port = Number(process.env.PLAYWRIGHT_PORT) || 3000;
 const baseURL = `http://localhost:${port}`;
 
 export default defineConfig({
@@ -42,10 +43,12 @@ export default defineConfig({
   ],
   webServer: {
     // Playwright kills the dev server it spawned at the end of a run; the
-    // Turbopack state that leaves under `.next` can wedge the next run's
-    // first route compile (observed: `/research/[id]` never finished).
-    // Start from a clean cache whenever we own the server.
-    command: `node -e "require('fs').rmSync('.next',{recursive:true,force:true})" && npm run dev -- --port ${port}`,
+    // Turbopack state that leaves under `.next/dev` (Next 16 keeps dev output
+    // there, apart from `next build`) can wedge the next run's first route
+    // compile (observed: `/research/[id]` never finished). Start from a clean
+    // dev cache whenever we own the server. Assumes no other local `next dev`
+    // shares this checkout — the side-by-side case is the Docker frontend.
+    command: `node -e "require('fs').rmSync('.next/dev',{recursive:true,force:true})" && npm run dev -- --port ${port}`,
     url: baseURL,
     // Same-origin API base so every `apiClient` / SSE call is a relative
     // `/api/v1/...` request: no CORS preflight, and `page.route("**/api/v1/**")`

@@ -70,11 +70,20 @@ function outlineReply(backend: MockBackend): Reply {
   };
 }
 
-/** Serve the current phase; the research phase advances itself like the real pipeline. */
-function eventsReply(backend: MockBackend): Reply {
-  const body = streamBodyFor(backend.phase, backend.outline);
+/**
+ * The UI only asks for the outline once it has consumed the stream's
+ * `status_changed(awaiting_outline_review)` frame, so *this* request — not
+ * the stream being served — is the proof the research phase was observed.
+ * Until then every reconnect replays the research stream (idempotent for the
+ * reducer), which also survives React StrictMode aborting the first mount.
+ */
+function loadOutline(backend: MockBackend): Reply {
   if (backend.phase === "researching") backend.phase = "awaiting_outline_review";
-  return { contentType: "text/event-stream", body };
+  return outlineReply(backend);
+}
+
+function eventsReply(backend: MockBackend): Reply {
+  return { contentType: "text/event-stream", body: streamBodyFor(backend.phase, backend.outline) };
 }
 
 function saveOutline(backend: MockBackend, call: RecordedCall): Reply {
@@ -100,7 +109,7 @@ const ROUTES: Array<[string, string, Handler]> = [
   ["GET", SESSION, (b) => ({ body: sessionDetail(b.phase) })],
   ["GET", `${SESSION}/usage`, () => ({ body: USAGE })],
   ["GET", `${SESSION}/events`, eventsReply],
-  ["GET", `${SESSION}/outline`, outlineReply],
+  ["GET", `${SESSION}/outline`, loadOutline],
   ["PUT", `${SESSION}/outline`, saveOutline],
   ["POST", `${SESSION}/outline/approve`, approveOutline],
   ["GET", `${SESSION}/article`, () => ({ body: { article_id: ARTICLE_ID } })],

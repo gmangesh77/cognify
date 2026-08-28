@@ -67,7 +67,7 @@
 - [x] **Step 3: session page** — `expect(page).toHaveURL(/\/research\/sess-e2e-1$/)`; assert `POST /research/sessions` body (`topic_id`, `brief_id:"b1"`, `require_outline_approval:true`); badge text `Outline review`; step `Generate Outline` listed.
 - [x] **Step 4: outline review** — title input has `Zero Trust Architecture`; fill `Section 1 title` with `Getting Started`; click `Approve & write`; assert PUT body `sections[0].title === "Getting Started"` and approve call recorded.
 - [x] **Step 5: drafting** — badge `Generating Article`; text `Drafting 1 / 2 — Getting Started` (proves the edit reached the "backend"); step `Draft Sections`.
-- [x] **Step 6: completion** — `backend.completeArticle()`; badge `Article Ready`; click `View article`; `toHaveURL(/\/articles\/art-e2e-001$/)`; h1 = article title; h2 `Section one`.
+- [x] **Step 6: completion** — `backend.completeArticle()`; badge `Article Ready`; click `View article`; `toHaveURL(/\/articles\/art-e2e-001$/)`; h1 = article title; h2s `Getting Started` + `Deep Dive`.
 - [x] **Step 7: run** — `PLAYWRIGHT_PORT=3100 npx playwright test` → 2 passed; run it 3× to shake out timing flakes.
 
 ### Task 5: Docs + gates
@@ -75,4 +75,4 @@
 - [x] `frontend/tests/e2e/README.md`: document the new spec, `PLAYWRIGHT_PORT`, the phase-machine pattern and why finite SSE bodies work; keep the VISUAL-008/011 deferred list.
 - [x] `.github/workflows/e2e.yml` header comment mentions the create-article spec (job name → "Playwright suite").
 - [x] `npm run lint`, `npx tsc --noEmit` (no new errors vs the 13 pre-existing), `npx vitest run` (599, budget guard green). Playwright full suite 3× green on a Playwright-owned clean server (2 passed; 34 s / 49 s / 29 s incl. boot).
-- [ ] PROGRESS.md / BACKLOG.md / CLAUDE.md status; tick this plan; PR `AB#`-less (Epic 11 has no Azure Boards items).
+- [x] PROGRESS.md / BACKLOG.md / CLAUDE.md status; tick this plan; PR #86 (`AB#`-less — Epic 11 has no Azure Boards items), labelled `e2e`; lane green in CI (1m27s). Review (no Critical): `beforeAll` timeout raised + `/topics` warmed; `.next/dev` (not `.next`) wiped; research→review phase advanced by the client's outline GET (non-vacuous under StrictMode); test split into `test.step` helpers.

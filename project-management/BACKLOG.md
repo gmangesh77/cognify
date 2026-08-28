@@ -220,8 +220,8 @@ Per-phase acceptance criteria are in the plan §9. Feature flags default to curr
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
 | **Visual Generation Overhaul** | **8** | **8** | **0** | **0** |
-| **Supervised Authoring (Epic 11)** | **17** | **13** | **4** | **~26** |
-| **Total** | **74** | **69** | **5** | **~31** |
+| **Supervised Authoring (Epic 11)** | **17** | **14** | **3** | **23** |
+| **Total** | **74** | **70** | **4** | **28** |
 
 **Velocity update (2026-05-07)**: Epic 10 (Visual Generation Overhaul)
 fully shipped — VISUAL-004 through VISUAL-011 (89 SP) merged to
