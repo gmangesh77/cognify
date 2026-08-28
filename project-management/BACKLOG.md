@@ -195,7 +195,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | AUTHOR-008 | Length target + content type through outliner (word budgets) — **DONE** (PR #82 → develop `608f4fc`, 2026-08-25) | Should | 3 | B |
 | AUTHOR-009 | Humanize per-pass streaming + sentence-level accept/reject | Could | 3 | B |
 | AUTHOR-010 | Model tiering per step | Could | 2 | B |
-| INFRA-008 | Embedding warm-up w/ graceful degradation; live role re-check; shared toaster; split >200-line files — **DONE** (2026-08-28, `feature/INFRA-008-warmup-recheck-splits`; role drift logged not enforced — see PROGRESS) | Should | 4 | B |
+| INFRA-008 | Embedding warm-up w/ graceful degradation; live role re-check; shared toaster; split >200-line files — **DONE** (PR #83 → develop `372e635`, 2026-08-28; role drift logged not enforced — see PROGRESS) | Should | 4 | B |
 | AUTHOR-011 | Persona voice engine v1 (fingerprint → prompt → score → fix; flagged) | Could | 13 | C |
 | AUTHOR-012 | Prompt registry + per-user overrides + Settings tab | Could | 5 | C |
 | AUTHOR-013 | LinkedIn repurpose transformer + modal | Could | 5 | C |
