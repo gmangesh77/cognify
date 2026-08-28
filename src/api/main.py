@@ -37,6 +37,7 @@ from src.api.routers.auth import auth_router
 from src.api.routers.briefs import briefs_router
 from src.api.routers.canonical_articles import canonical_articles_router
 from src.api.routers.content import content_router
+from src.api.routers.content_humanize_stream import content_humanize_stream_router
 from src.api.routers.content_regenerate import content_regenerate_router
 from src.api.routers.health import health_router
 from src.api.routers.metrics import metrics_router
@@ -678,6 +679,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
     )
     app.include_router(
         content_router,
+        prefix=settings.api_v1_prefix,
+        tags=["content"],
+    )
+    app.include_router(
+        content_humanize_stream_router,
         prefix=settings.api_v1_prefix,
         tags=["content"],
     )
