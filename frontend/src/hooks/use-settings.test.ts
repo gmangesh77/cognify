@@ -29,7 +29,13 @@ const MOCK_API_KEYS = [
   { id: "k3", service: "openai", masked_key: "sk-••••••••9d1e", status: "active" },
   { id: "k4", service: "newsapi", masked_key: "news-••••••••3a7b", status: "active" },
 ];
-const MOCK_LLM = { primary_model: "claude-opus-4", drafting_model: "claude-sonnet-4", image_generation: "stable-diffusion-xl" };
+const MOCK_LLM = {
+  primary_model: "claude-opus-4",
+  drafting_model: "claude-sonnet-4",
+  image_generation: "stable-diffusion-xl",
+  default_model: "claude-sonnet-4-6",
+  model_by_step: { content_queries: "claude-haiku-4-5" },
+};
 const MOCK_SEO = { auto_meta_tags: true, keyword_optimization: true, auto_cover_images: true, include_citations: true, human_review_before_publish: true };
 const MOCK_GENERAL = { article_length_target: "3000-5000", content_tone: "professional" };
 
@@ -62,6 +68,13 @@ describe("useSettings", () => {
     const { result } = renderHook(() => useSettings());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.llmConfig.primaryModel).toBe("claude-opus-4");
+  });
+
+  it("maps model tiering fields from the API (AUTHOR-010)", async () => {
+    const { result } = renderHook(() => useSettings());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.llmConfig.defaultModel).toBe("claude-sonnet-4-6");
+    expect(result.current.llmConfig.modelByStep).toEqual({ content_queries: "claude-haiku-4-5" });
   });
 
   it("initializes with mock API keys", async () => {

@@ -24,18 +24,29 @@ def _get_repos(request: Request):  # type: ignore[no-untyped-def]
     return request.app.state.settings_repos
 
 
-@limiter.limit("30/minute")
+def _llm_response(request: Request, config: object) -> LlmConfigResponse:
+    """AUTHOR-010: DB-stored config + read-only env-driven tiering fields."""
+    settings = request.app.state.settings
+    return LlmConfigResponse(
+        **config.model_dump(),  # type: ignore[attr-defined]
+        default_model=settings.anthropic_model,
+        model_by_step=dict(settings.llm_model_by_step),
+    )
+
+
+# Route decorator OUTERMOST or slowapi never evaluates the limit (AUTHOR-006).
 @settings_config_router.get("/settings/llm", response_model=LlmConfigResponse)
+@limiter.limit("30/minute")
 async def get_llm_config(
     request: Request,
     user: TokenPayload = Depends(require_admin),
 ) -> LlmConfigResponse:
     config = await _get_repos(request).llm.get_or_create()
-    return LlmConfigResponse(**config.model_dump())
+    return _llm_response(request, config)
 
 
-@limiter.limit("30/minute")
 @settings_config_router.put("/settings/llm", response_model=LlmConfigResponse)
+@limiter.limit("30/minute")
 async def update_llm_config(
     request: Request,
     body: UpdateLlmConfigRequest,
@@ -55,7 +66,7 @@ async def update_llm_config(
         image_provider=saved.image_provider,
         image_model=saved.image_model,
     )
-    return LlmConfigResponse(**saved.model_dump())
+    return _llm_response(request, saved)
 
 
 def _refresh_visual_settings_overlay(request: Request, llm_cfg) -> None:  # type: ignore[no-untyped-def]

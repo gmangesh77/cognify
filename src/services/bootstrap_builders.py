@@ -35,18 +35,47 @@ class _NoOpOrchestrator:
         }
 
 
+def _anthropic(settings: Settings, model: str) -> BaseChatModel:
+    from langchain_anthropic import ChatAnthropic
+
+    return ChatAnthropic(
+        model=model,  # type: ignore[call-arg]
+        api_key=settings.anthropic_api_key,  # type: ignore[arg-type]
+        max_tokens=4096,
+    )
+
+
+def build_tiered_llm(settings: Settings) -> BaseChatModel:
+    """AUTHOR-010: one ChatAnthropic per distinct model id, routed per step.
+
+    Returns the plain default model when `llm_model_by_step` is empty so the
+    single-model behaviour stays byte-identical.
+    """
+    from src.utils.tiered_llm import KNOWN_LLM_STEPS, TieredChatModel
+
+    default = _anthropic(settings, settings.anthropic_model)
+    if not settings.llm_model_by_step:
+        return default
+    instances: dict[str, BaseChatModel] = {settings.anthropic_model: default}
+    by_step: dict[str, BaseChatModel] = {}
+    for step, model in settings.llm_model_by_step.items():
+        if step not in KNOWN_LLM_STEPS:
+            logger.warning("llm_tiering_unknown_step", step=step, model=model)
+        if model not in instances:
+            instances[model] = _anthropic(settings, model)
+        by_step[step] = instances[model]
+    logger.info(
+        "llm_tiering_configured", steps=sorted(by_step), models=sorted(instances)
+    )
+    return TieredChatModel(default=default, by_step=by_step)
+
+
 def _build_llm(
     settings: Settings,
     llm_call_repo: object | None = None,
 ) -> BaseChatModel:
-    """Build ChatAnthropic LLM instance from settings."""
-    from langchain_anthropic import ChatAnthropic
-
-    llm = ChatAnthropic(
-        model=settings.anthropic_model,  # type: ignore[call-arg]
-        api_key=settings.anthropic_api_key,  # type: ignore[arg-type]
-        max_tokens=4096,
-    )
+    """Build the (optionally tiered, optionally tracked) pipeline LLM."""
+    llm = build_tiered_llm(settings)
     if llm_call_repo is not None:
         from src.utils.tracked_llm import TrackedChatModel
 

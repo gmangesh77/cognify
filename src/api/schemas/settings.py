@@ -92,6 +92,9 @@ class LlmConfigResponse(BaseModel):
     image_generation: str
     image_provider: str
     image_model: str | None = None
+    # AUTHOR-010 — read-only, from COGNIFY_ANTHROPIC_MODEL / COGNIFY_LLM_MODEL_BY_STEP.
+    default_model: str = ""
+    model_by_step: dict[str, str] = {}
 
 
 # --- SEO defaults schemas ---

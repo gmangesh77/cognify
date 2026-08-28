@@ -115,6 +115,14 @@ class Settings(BaseSettings):
     # (mechanical pass always runs first; loop stops early at score >= 70
     # or when a pass changes nothing). The pipeline node stays single-pass.
     humanize_preview_max_passes: int = 2
+    # AUTHOR-010: route tracked pipeline steps to specific models. Keys are
+    # llm_calls.call_name values (content_outline, content_queries,
+    # content_draft, content_validate, content_citations, content_humanize,
+    # content_seo, content_charts, content_diagrams, plan_research,
+    # evaluate_completeness, section_regenerate, seo_regenerate); values are
+    # Anthropic model ids. Empty = every step uses `anthropic_model`.
+    # Env: COGNIFY_LLM_MODEL_BY_STEP='{"content_queries": "claude-haiku-4-5-20251001"}'
+    llm_model_by_step: dict[str, str] = {}
     embedding_version: str = "v1"
     # Encryption (Fernet key for API key encryption at rest)
     encryption_key: str = ""

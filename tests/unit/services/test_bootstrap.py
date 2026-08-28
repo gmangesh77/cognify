@@ -35,3 +35,70 @@ async def test_repos_are_bound_to_the_given_session_factory() -> None:
     assert ps.step_repo is not None
     assert ps.article_repo is not None
     assert ps.content_repos.drafts is not None
+
+
+# ---------------------------------------------------------------------------
+# AUTHOR-010 — model tiering builder
+# ---------------------------------------------------------------------------
+import pytest  # noqa: E402
+import structlog.testing  # noqa: E402
+
+from src.services.bootstrap_builders import _build_llm, build_tiered_llm  # noqa: E402
+from src.utils.tiered_llm import TieredChatModel  # noqa: E402
+from src.utils.tracked_llm import TrackedChatModel  # noqa: E402
+
+
+def _default_model() -> str:
+    return Settings(_env_file=None).anthropic_model
+
+
+class TestModelTiering:
+    def test_setting_parses_json_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv(
+            "COGNIFY_LLM_MODEL_BY_STEP", '{"content_queries": "claude-haiku-4-5"}'
+        )
+        settings = Settings(_env_file=None)
+        assert settings.llm_model_by_step == {"content_queries": "claude-haiku-4-5"}
+
+    def test_empty_map_builds_plain_model(self) -> None:
+        settings = Settings(_env_file=None, anthropic_api_key="k")
+        llm = build_tiered_llm(settings)
+        assert not isinstance(llm, TieredChatModel)
+        assert llm.model == settings.anthropic_model
+
+    def test_map_builds_tiered_model_sharing_instances(self) -> None:
+        settings = Settings(
+            _env_file=None,
+            anthropic_api_key="k",
+            llm_model_by_step={
+                "content_queries": "claude-haiku-4-5",
+                "content_validate": "claude-haiku-4-5",
+                "content_draft": _default_model(),
+            },
+        )
+        llm = build_tiered_llm(settings)
+        assert isinstance(llm, TieredChatModel)
+        assert llm.by_step["content_queries"] is llm.by_step["content_validate"]
+        assert llm.by_step["content_draft"] is llm.default
+        assert llm.default.model == settings.anthropic_model
+
+    def test_unknown_step_is_warned_but_kept(self) -> None:
+        settings = Settings(
+            _env_file=None,
+            anthropic_api_key="k",
+            llm_model_by_step={"nope": "claude-haiku-4-5"},
+        )
+        with structlog.testing.capture_logs() as logs:
+            llm = build_tiered_llm(settings)
+        assert isinstance(llm, TieredChatModel) and "nope" in llm.by_step
+        assert any(log["event"] == "llm_tiering_unknown_step" for log in logs)
+
+    def test_build_llm_wraps_tiered_in_tracker(self) -> None:
+        settings = Settings(
+            _env_file=None,
+            anthropic_api_key="k",
+            llm_model_by_step={"content_queries": "claude-haiku-4-5"},
+        )
+        llm = _build_llm(settings, llm_call_repo=object())
+        assert isinstance(llm, TrackedChatModel)
+        assert isinstance(llm.inner, TieredChatModel)

@@ -298,6 +298,50 @@ class TestLlmConfigEndpoints:
         assert resp.status_code == 200
         assert resp.json()["primary_model"] == "claude-opus-4-5"
 
+    async def test_get_llm_config_includes_tiering_from_settings(
+        self,
+        settings_client: httpx.AsyncClient,
+        settings_app,
+        auth_settings: Settings,
+    ) -> None:
+        # AUTHOR-010: read-only view of COGNIFY_ANTHROPIC_MODEL / _LLM_MODEL_BY_STEP.
+        settings_app.state.settings = auth_settings.model_copy(
+            update={"llm_model_by_step": {"content_queries": "claude-haiku-4-5"}}
+        )
+        settings_app.state.settings_repos.llm.get_or_create = AsyncMock(
+            return_value=LlmConfig()
+        )
+        resp = await settings_client.get(
+            "/api/v1/settings/llm", headers=make_auth_header("admin", auth_settings)
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["default_model"] == auth_settings.anthropic_model
+        assert body["model_by_step"] == {"content_queries": "claude-haiku-4-5"}
+
+    async def test_put_llm_config_ignores_tiering_fields(
+        self,
+        settings_client: httpx.AsyncClient,
+        settings_app,
+        auth_settings: Settings,
+    ) -> None:
+        settings_app.state.settings_repos.llm.get_or_create = AsyncMock(
+            return_value=LlmConfig()
+        )
+        settings_app.state.settings_repos.llm.update = AsyncMock(
+            return_value=LlmConfig()
+        )
+        resp = await settings_client.put(
+            "/api/v1/settings/llm",
+            json={
+                "model_by_step": {"content_draft": "x"},
+                "primary_model": "claude-opus-4",
+            },
+            headers=make_auth_header("admin", auth_settings),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["model_by_step"] == {}
+
 
 class TestSeoDefaultsEndpoints:
     """Tests for SEO defaults endpoints."""

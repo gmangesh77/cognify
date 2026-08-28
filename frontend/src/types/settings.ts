@@ -121,6 +121,9 @@ export interface LlmConfig {
   imageGeneration: ImageModel;
   imageProvider: ImageProvider;
   imageModel: string | null;
+  /** AUTHOR-010 — read-only, from COGNIFY_ANTHROPIC_MODEL / COGNIFY_LLM_MODEL_BY_STEP. */
+  defaultModel: string;
+  modelByStep: Record<string, string>;
 }
 
 // --- SEO ---

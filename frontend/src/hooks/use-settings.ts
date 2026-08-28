@@ -39,6 +39,8 @@ interface ApiLlmConfig {
   image_generation: string;
   image_provider: string;
   image_model: string | null;
+  default_model?: string;
+  model_by_step?: Record<string, string>;
 }
 
 interface ApiSeoDefaults {
@@ -84,6 +86,8 @@ function toLlmConfig(api: ApiLlmConfig): LlmConfig {
     imageGeneration: api.image_generation as ImageModel,
     imageProvider: (api.image_provider ?? "dalle_3") as LlmConfig["imageProvider"],
     imageModel: api.image_model ?? null,
+    defaultModel: api.default_model ?? "",
+    modelByStep: api.model_by_step ?? {},
   };
 }
 
@@ -157,6 +161,8 @@ const DEFAULT_LLM_CONFIG: LlmConfig = {
   imageGeneration: "stable-diffusion-xl",
   imageProvider: "dalle_3",
   imageModel: null,
+  defaultModel: "",
+  modelByStep: {},
 };
 
 const DEFAULT_SEO_DEFAULTS: SeoDefaults = {
