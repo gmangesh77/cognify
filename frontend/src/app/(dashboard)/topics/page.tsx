@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Zap, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toaster";
 import { Header } from "@/components/layout/header";
 import { TopicCard } from "@/components/topics/topic-card";
 import { FilterBar } from "@/components/topics/filter-bar";
@@ -33,9 +34,9 @@ export default function TopicsPage() {
     domainOptions,
   } = useTopicDiscovery();
 
-  const [toast, setToast] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const { handleConfirm, handleCreateAndGenerate } = useGenerateActions({ setToast });
+  const { handleConfirm, handleCreateAndGenerate } = useGenerateActions({ showToast });
 
   const isScanning = scanState.isScanning;
   const hasDomain = filters.domain !== "";
@@ -57,14 +58,13 @@ export default function TopicsPage() {
         keywords: data.keywords,
       });
       if (result.is_duplicate) {
-        setToast(`Similar topic already exists: "${result.topic.title}"`);
+        showToast(`Similar topic already exists: "${result.topic.title}"`);
       } else {
-        setToast(`Topic "${data.title}" created.`);
+        showToast(`Topic "${data.title}" created.`);
       }
     } catch {
-      setToast(`Failed to create topic.`);
+      showToast(`Failed to create topic.`);
     }
-    setTimeout(() => setToast(null), 5000);
   }
 
   function onCreateAndGenerate(data: CreateTopicData) {
@@ -151,14 +151,6 @@ export default function TopicsPage() {
         onCreateAndGenerate={onCreateAndGenerate}
       />
 
-      {toast && (
-        <div
-          role="status"
-          className="fixed bottom-6 right-6 z-50 rounded-lg bg-neutral-900 px-4 py-3 text-sm text-white shadow-lg"
-        >
-          {toast}
-        </div>
-      )}
     </div>
   );
 }

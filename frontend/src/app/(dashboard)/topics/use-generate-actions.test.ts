@@ -59,8 +59,8 @@ describe("useGenerateActions", () => {
         status: "planning",
         started_at: "",
       });
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       await act(async () => {
         await result.current.handleConfirm(rankedTopic, { target_audience: "devs" });
@@ -70,7 +70,7 @@ describe("useGenerateActions", () => {
         target_audience: "devs",
       });
       expect(push).toHaveBeenCalledWith("/research/s9");
-      expect(setToast).not.toHaveBeenCalledWith(expect.stringContaining("Check Research page"));
+      expect(showToast).not.toHaveBeenCalledWith(expect.stringContaining("Check Research page"));
     });
 
     it("shows a 'Starting research' toast synchronously, before createResearchSession resolves", async () => {
@@ -81,15 +81,15 @@ describe("useGenerateActions", () => {
             resolveSession = resolve;
           }),
       );
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       let confirmPromise!: Promise<void>;
       act(() => {
         confirmPromise = result.current.handleConfirm(rankedTopic);
       });
 
-      expect(setToast).toHaveBeenCalledWith(
+      expect(showToast).toHaveBeenCalledWith(
         expect.stringContaining(`Starting research for "${rankedTopic.title}"`),
       );
       expect(push).not.toHaveBeenCalled();
@@ -103,8 +103,8 @@ describe("useGenerateActions", () => {
     });
 
     it("shows a failure toast and does not navigate when the topic has no id", async () => {
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       await act(async () => {
         await result.current.handleConfirm({ ...rankedTopic, id: undefined });
@@ -112,20 +112,20 @@ describe("useGenerateActions", () => {
 
       expect(mockCreateResearchSession).not.toHaveBeenCalled();
       expect(push).not.toHaveBeenCalled();
-      expect(setToast).toHaveBeenCalledWith(expect.stringContaining("no ID"));
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining("no ID"));
     });
 
     it("shows a failure toast and does not navigate when the request fails", async () => {
       mockCreateResearchSession.mockRejectedValue(new Error("network error"));
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       await act(async () => {
         await result.current.handleConfirm(rankedTopic);
       });
 
       expect(push).not.toHaveBeenCalled();
-      expect(setToast).toHaveBeenCalledWith(expect.stringContaining("Failed to start research"));
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining("Failed to start research"));
     });
   });
 
@@ -141,8 +141,8 @@ describe("useGenerateActions", () => {
         status: "planning",
         started_at: "",
       });
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       await act(async () => {
         await result.current.handleCreateAndGenerate(createTopicData);
@@ -170,15 +170,15 @@ describe("useGenerateActions", () => {
         status: "planning",
         started_at: "",
       });
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       let generatePromise!: Promise<void>;
       act(() => {
         generatePromise = result.current.handleCreateAndGenerate(createTopicData);
       });
 
-      expect(setToast).toHaveBeenCalledWith(
+      expect(showToast).toHaveBeenCalledWith(
         expect.stringContaining(`Starting research for "${createTopicData.title}"`),
       );
       expect(push).not.toHaveBeenCalled();
@@ -206,8 +206,8 @@ describe("useGenerateActions", () => {
         status: "planning",
         started_at: "",
       });
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       await act(async () => {
         await result.current.handleCreateAndGenerate(createTopicData);
@@ -231,8 +231,8 @@ describe("useGenerateActions", () => {
         status: "planning",
         started_at: "",
       });
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       await act(async () => {
         await result.current.handleCreateAndGenerate({
@@ -258,8 +258,8 @@ describe("useGenerateActions", () => {
         status: "planning",
         started_at: "",
       });
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       await act(async () => {
         await result.current.handleCreateAndGenerate({
@@ -283,15 +283,15 @@ describe("useGenerateActions", () => {
 
     it("shows a failure toast and does not navigate when the request fails", async () => {
       mockCreateManualTopic.mockRejectedValue(new Error("boom"));
-      const setToast = vi.fn();
-      const { result } = renderHook(() => useGenerateActions({ setToast }));
+      const showToast = vi.fn();
+      const { result } = renderHook(() => useGenerateActions({ showToast }));
 
       await act(async () => {
         await result.current.handleCreateAndGenerate(createTopicData);
       });
 
       expect(push).not.toHaveBeenCalled();
-      expect(setToast).toHaveBeenCalledWith(expect.stringContaining("Failed to create topic"));
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining("Failed to create topic"));
     });
   });
 });
