@@ -2,15 +2,8 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import {
-  applyTonePreset,
-  rewriteSectionProse,
-} from "@/lib/api/content";
-import type {
-  SectionRewriteResponse,
-  TonePreset,
-  WordDiffEntry,
-} from "@/types/content";
+import { useAIRewrite } from "@/hooks/use-ai-rewrite";
+import type { TonePreset, WordDiffEntry } from "@/types/content";
 import { WordDiffView } from "./WordDiffView";
 
 /**
@@ -20,7 +13,8 @@ import { WordDiffView } from "./WordDiffView";
  * Free-text instruction OR one of the four tone presets. The diff
  * stays in front of the editor until they accept or reject. Tone
  * preset names are server-side templates — the frontend never ships
- * the prompt text (handoff brief gotcha 5).
+ * the prompt text (handoff brief gotcha 5). API calls live in
+ * `hooks/use-ai-rewrite.ts` (INFRA-008 split).
  */
 
 const TONE_PRESETS: { key: TonePreset; label: string }[] = [
@@ -41,18 +35,6 @@ export interface AIRewritePopoverProps {
   className?: string;
 }
 
-interface PopoverState {
-  busy: boolean;
-  error: string | null;
-  result: SectionRewriteResponse | null;
-}
-
-const INITIAL_STATE: PopoverState = {
-  busy: false,
-  error: null,
-  result: null,
-};
-
 export function AIRewritePopover({
   sectionId,
   scope,
@@ -64,50 +46,13 @@ export function AIRewritePopover({
   className,
 }: AIRewritePopoverProps) {
   const [instruction, setInstruction] = useState("");
-  const [state, setState] = useState<PopoverState>(INITIAL_STATE);
-
-  async function runRewrite(promptText: string) {
-    if (!promptText.trim()) return;
-    setState((s) => ({ ...s, busy: true, error: null }));
-    try {
-      const res = await rewriteSectionProse({
-        section_id: sectionId,
-        instruction: promptText.trim(),
-        scope,
-        paragraph_index: paragraphIndex,
-        current_markdown: currentMarkdown,
-        audience_persona: audiencePersona ?? undefined,
-      });
-      setState({ busy: false, error: null, result: res });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Rewrite failed";
-      setState({ busy: false, error: msg, result: null });
-    }
-  }
-
-  async function runPreset(preset: TonePreset) {
-    if (paragraphIndex === undefined) {
-      setState((s) => ({
-        ...s,
-        error: "Tone presets require a focused paragraph.",
-      }));
-      return;
-    }
-    setState((s) => ({ ...s, busy: true, error: null }));
-    try {
-      const res = await applyTonePreset({
-        section_id: sectionId,
-        paragraph_index: paragraphIndex,
-        preset,
-        current_markdown: currentMarkdown,
-        audience_persona: audiencePersona ?? undefined,
-      });
-      setState({ busy: false, error: null, result: res });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Preset failed";
-      setState({ busy: false, error: msg, result: null });
-    }
-  }
+  const { state, runRewrite, runPreset, reset } = useAIRewrite({
+    sectionId,
+    scope,
+    paragraphIndex,
+    currentMarkdown,
+    audiencePersona,
+  });
 
   function handleAccept() {
     if (!state.result) return;
@@ -115,7 +60,7 @@ export function AIRewritePopover({
   }
 
   function handleReject() {
-    setState(INITIAL_STATE);
+    reset();
     setInstruction("");
   }
 

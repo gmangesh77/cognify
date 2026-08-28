@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useOutlineReview } from "@/hooks/use-outline-review";
+import { newSection, reindex, swapSections } from "@/lib/research/outline-edit";
 import { OutlineSectionEditor } from "./outline-section-editor";
 import { OutlineRegeneratePanel } from "./outline-regenerate-panel";
 import type { ArticleOutline, OutlineSection } from "@/types/research";
@@ -11,33 +12,10 @@ interface OutlineReviewStepProps {
   sessionId: string;
 }
 
-/** AUTHOR-008: new sections inherit the outline's average word budget
- * (rounded to 50) so an added section doesn't skew a short/pillar plan. */
-function averageBudget(sections: OutlineSection[]): number {
-  if (sections.length === 0) return 300;
-  const avg =
-    sections.reduce((sum, s) => sum + s.target_word_count, 0) / sections.length;
-  return Math.max(50, Math.round(avg / 50) * 50);
-}
-
-function newSection(index: number, sections: OutlineSection[]): OutlineSection {
-  return {
-    index,
-    title: "New section",
-    description: "",
-    key_points: [],
-    target_word_count: averageBudget(sections),
-    relevant_facets: [],
-  };
-}
-
-function reindex(sections: OutlineSection[]): OutlineSection[] {
-  return sections.map((s, i) => ({ ...s, index: i }));
-}
-
 /** VISUAL-011-style gate step (AUTHOR-002): lets an editor review and edit
  * the LLM-generated outline before section drafting runs. Rendered by
- * SessionProgress while status === "awaiting_outline_review". */
+ * SessionProgress while status === "awaiting_outline_review". Pure list
+ * helpers live in `lib/research/outline-edit.ts` (INFRA-008 split). */
 export function OutlineReviewStep({ sessionId }: OutlineReviewStepProps) {
   const {
     outline,
@@ -82,11 +60,8 @@ export function OutlineReviewStep({ sessionId }: OutlineReviewStepProps) {
 
   function moveSection(index: number, direction: -1 | 1) {
     if (!local) return;
-    const target = index + direction;
-    if (target < 0 || target >= local.sections.length) return;
-    const sections = [...local.sections];
-    [sections[index], sections[target]] = [sections[target], sections[index]];
-    update({ sections: reindex(sections) });
+    const next = swapSections(local.sections, index, direction);
+    if (next !== local.sections) update({ sections: next });
   }
 
   function deleteSection(index: number) {
