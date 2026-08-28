@@ -111,6 +111,10 @@ class Settings(BaseSettings):
     # agents.content.length_budgets.DEFAULT_LENGTH_BUDGETS.
     # Env: COGNIFY_LENGTH_BUDGETS_JSON='{"long": {"total_max": 6000}}'
     length_budgets_json: dict[str, dict[str, int]] = {}
+    # AUTHOR-009: max LLM rewrite passes in the streaming humanize preview
+    # (mechanical pass always runs first; loop stops early at score >= 70
+    # or when a pass changes nothing). The pipeline node stays single-pass.
+    humanize_preview_max_passes: int = 2
     embedding_version: str = "v1"
     # Encryption (Fernet key for API key encryption at rest)
     encryption_key: str = ""
