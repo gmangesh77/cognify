@@ -44,3 +44,12 @@ class UserData(BaseModel):
     role: Role
     # INFRA-008: deactivated users are rejected by get_current_user / refresh.
     is_active: bool = True
+
+
+class UserActiveRequest(BaseModel):
+    is_active: bool
+
+
+class UserActiveResponse(BaseModel):
+    user_id: str
+    is_active: bool
