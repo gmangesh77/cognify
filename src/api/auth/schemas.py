@@ -42,3 +42,5 @@ class UserData(BaseModel):
     email: str
     password_hash: str
     role: Role
+    # INFRA-008: deactivated users are rejected by get_current_user / refresh.
+    is_active: bool = True

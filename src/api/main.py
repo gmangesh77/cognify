@@ -24,6 +24,7 @@ from src.api.auth.repository import (
     InMemoryUserRepository,
 )
 from src.api.auth.schemas import UserData
+from src.api.auth.user_status import UserStatusCache
 from src.api.errors import CognifyError, build_error_response
 from src.api.middleware.correlation_id import CorrelationIdMiddleware
 from src.api.middleware.request_logging import RequestLoggingMiddleware
@@ -379,6 +380,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.limiter = limiter
     app.state.refresh_repo = InMemoryRefreshTokenRepository()
     app.state.user_repo = InMemoryUserRepository(_seed_dev_users(settings))
+    app.state.user_status_cache = UserStatusCache(
+        ttl_seconds=settings.auth_recheck_ttl_seconds
+    )
     app.state.trend_registry = init_registry(settings)
     _init_research_service(app)
     app.state.brief_service = BriefService(InMemoryBriefRepository())

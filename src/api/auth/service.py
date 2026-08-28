@@ -69,6 +69,11 @@ class AuthService:
                 code="invalid_refresh_token",
                 message="User not found",
             )
+        if not user.is_active:
+            raise AuthenticationError(
+                code="user_inactive",
+                message="User account is deactivated",
+            )
         access_token = create_access_token(data.user_id, user.role, self._settings)
         new_refresh_token = create_refresh_token()
         expires_at = datetime.now(UTC) + timedelta(

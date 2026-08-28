@@ -199,3 +199,53 @@ class TestGetCurrentUser:
             headers={"Authorization": "Basic some-token"},
         )
         assert response.status_code == 401
+
+
+class TestUserStatusRecheck:
+    """INFRA-008 — deactivated users are rejected within the cache TTL."""
+
+    def _add_protected_route(self, auth_app: fastapi.FastAPI) -> None:
+        from src.api.dependencies import get_current_user
+
+        @auth_app.get("/api/v1/protected-recheck")
+        async def protected(
+            current_user: object = fastapi.Depends(get_current_user),
+        ) -> dict[str, str]:
+            return {"user_id": current_user.sub}  # type: ignore[union-attr]
+
+    async def test_inactive_user_gets_401_after_ttl(
+        self,
+        auth_app: fastapi.FastAPI,
+        auth_client: httpx.AsyncClient,
+        auth_settings: Settings,
+    ) -> None:
+        self._add_protected_route(auth_app)
+        now = [0.0]
+        auth_app.state.user_status_cache.clock = lambda: now[0]
+        token = create_access_token("user-1", "editor", auth_settings)
+        headers = {"Authorization": f"Bearer {token}"}
+        first = await auth_client.get("/api/v1/protected-recheck", headers=headers)
+        assert first.status_code == 200
+        auth_app.state.user_repo.set_active("user-1", False)
+        # Inside the TTL the cached "active" answer still wins…
+        now[0] = 10.0
+        second = await auth_client.get("/api/v1/protected-recheck", headers=headers)
+        assert second.status_code == 200
+        # …and after it the deactivation bites.
+        now[0] = 31.0
+        third = await auth_client.get("/api/v1/protected-recheck", headers=headers)
+        assert third.status_code == 401
+        assert third.json()["error"]["code"] == "user_inactive"
+
+    async def test_unknown_user_token_is_still_accepted(
+        self,
+        auth_app: fastapi.FastAPI,
+        auth_client: httpx.AsyncClient,
+        auth_settings: Settings,
+    ) -> None:
+        # Plan deviation #2: the seed repo is not authoritative for existence.
+        self._add_protected_route(auth_app)
+        token = create_access_token("someone-else", "viewer", auth_settings)
+        headers = {"Authorization": f"Bearer {token}"}
+        response = await auth_client.get("/api/v1/protected-recheck", headers=headers)
+        assert response.status_code == 200
