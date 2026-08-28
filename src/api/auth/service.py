@@ -26,6 +26,13 @@ class AuthService:
                 code="invalid_credentials",
                 message="Invalid email or password",
             )
+        if not user.is_active:
+            # INFRA-008: checked after the credential check so an inactive
+            # account is not distinguishable from a wrong password by probing.
+            raise AuthenticationError(
+                code="user_inactive",
+                message="User account is deactivated",
+            )
 
         access_token = create_access_token(user.id, user.role, self._settings)
         refresh_token = create_refresh_token()
