@@ -24,21 +24,21 @@ class TestMilvusRetriever:
         mock_milvus = AsyncMock()
         mock_milvus.search = AsyncMock(return_value=_make_chunk_results(3))
         mock_embedding = MagicMock()
-        mock_embedding.embed = MagicMock(return_value=[[0.1] * 384])
+        mock_embedding.try_embed = MagicMock(return_value=[[0.1] * 384])
 
         retriever = MilvusRetriever(mock_milvus, mock_embedding)
         results = await retriever.retrieve("AI security", "topic-1", top_k=3)
 
         assert len(results) == 3
         assert all(isinstance(r, ChunkResult) for r in results)
-        mock_embedding.embed.assert_called_once_with(["AI security"])
+        mock_embedding.try_embed.assert_called_once_with(["AI security"])
         mock_milvus.search.assert_called_once_with([0.1] * 384, "topic-1", 3)
 
     async def test_retrieve_empty_results(self) -> None:
         mock_milvus = AsyncMock()
         mock_milvus.search = AsyncMock(return_value=[])
         mock_embedding = MagicMock()
-        mock_embedding.embed = MagicMock(return_value=[[0.1] * 384])
+        mock_embedding.try_embed = MagicMock(return_value=[[0.1] * 384])
 
         retriever = MilvusRetriever(mock_milvus, mock_embedding)
         results = await retriever.retrieve("obscure query", "topic-1")
@@ -49,7 +49,7 @@ class TestMilvusRetriever:
         mock_milvus = AsyncMock()
         mock_milvus.search = AsyncMock(return_value=_make_chunk_results(2))
         mock_embedding = MagicMock()
-        mock_embedding.embed = MagicMock(return_value=[[0.1] * 384])
+        mock_embedding.try_embed = MagicMock(return_value=[[0.1] * 384])
 
         retriever = MilvusRetriever(mock_milvus, mock_embedding)
         results = await retriever.retrieve("query", "topic-1", top_k=2)
@@ -62,7 +62,19 @@ class TestMilvusRetriever:
     async def test_retrieve_empty_embedding(self) -> None:
         mock_milvus = AsyncMock()
         mock_embedding = MagicMock()
-        mock_embedding.embed = MagicMock(return_value=[])
+        mock_embedding.try_embed = MagicMock(return_value=[])
+
+        retriever = MilvusRetriever(mock_milvus, mock_embedding)
+        results = await retriever.retrieve("query", "topic-1")
+
+        assert results == []
+        mock_milvus.search.assert_not_called()
+
+    async def test_retrieve_returns_empty_while_embedding_warming(self) -> None:
+        # INFRA-008: try_embed() is None while the warm-up thread runs.
+        mock_milvus = AsyncMock()
+        mock_embedding = MagicMock()
+        mock_embedding.try_embed = MagicMock(return_value=None)
 
         retriever = MilvusRetriever(mock_milvus, mock_embedding)
         results = await retriever.retrieve("query", "topic-1")

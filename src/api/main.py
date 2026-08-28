@@ -164,6 +164,12 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     # tasks, shared by the research create/cancel/approve endpoints.
     app.state.session_tasks = SessionTaskRegistry()
 
+    # INFRA-008 — warm the embedding model on a daemon thread so the first
+    # dedup/RAG call never blocks the event loop on a model load (PR #72
+    # baked the weights into the image; this removes the first-call stall).
+    if settings.embedding_warmup:
+        _get_or_create_embedding_service(app).warm_up_in_background()
+
     # --- Build LLM + content deps (shared by DB and non-DB paths) ---
     content_deps = ContentDeps(settings=settings)
     if settings.anthropic_api_key:

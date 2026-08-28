@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
 import httpx
 import pytest
@@ -56,7 +57,7 @@ class TestHealthEndpoint:
     ) -> None:
         response = await health_client.get("/api/v1/health")
         checks = response.json()["checks"]
-        expected_keys = {"database", "redis", "milvus", "celery"}
+        expected_keys = {"database", "redis", "milvus", "celery", "embedding"}
         assert set(checks.keys()) == expected_keys
         for value in checks.values():
             assert value == "unavailable"
@@ -192,3 +193,28 @@ class TestReadinessEndpoint:
     ) -> None:
         response = await health_client.get("/api/v1/health/ready")
         assert response.json()["status"] == "unavailable"
+
+
+class TestEmbeddingHealthCheck:
+    """INFRA-008 — embedding check mirrors the warm-up state."""
+
+    async def test_reports_ok_when_model_loaded(
+        self, health_app: FastAPI, health_client: httpx.AsyncClient
+    ) -> None:
+        health_app.state.embedding_service = MagicMock(is_ready=True, is_warming=False)
+        response = await health_client.get("/api/v1/health")
+        assert response.json()["checks"]["embedding"] == "ok"
+
+    async def test_reports_degraded_while_warming(
+        self, health_app: FastAPI, health_client: httpx.AsyncClient
+    ) -> None:
+        health_app.state.embedding_service = MagicMock(is_ready=False, is_warming=True)
+        response = await health_client.get("/api/v1/health")
+        assert response.json()["checks"]["embedding"] == "degraded"
+
+    async def test_reports_unavailable_when_cold(
+        self, health_app: FastAPI, health_client: httpx.AsyncClient
+    ) -> None:
+        health_app.state.embedding_service = MagicMock(is_ready=False, is_warming=False)
+        response = await health_client.get("/api/v1/health")
+        assert response.json()["checks"]["embedding"] == "unavailable"
