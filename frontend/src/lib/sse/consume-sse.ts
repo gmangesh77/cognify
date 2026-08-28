@@ -1,6 +1,9 @@
 export interface ConsumeSseOptions {
   token?: string | null;
   signal?: AbortSignal;
+  /** AUTHOR-009: POST-SSE (JSON body). Default GET. */
+  method?: "GET" | "POST";
+  body?: unknown;
   onEvent: (type: string, data: unknown) => void;
 }
 
@@ -68,7 +71,13 @@ export async function consumeSse(url: string, opts: ConsumeSseOptions): Promise<
   const headers: Record<string, string> = { Accept: "text/event-stream" };
   if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
   try {
-    const res = await fetch(url, { headers, signal: opts.signal, credentials: "include" });
+    const init: RequestInit = { headers, signal: opts.signal, credentials: "include" };
+    if (opts.method === "POST") {
+      init.method = "POST";
+      headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(opts.body ?? {});
+    }
+    const res = await fetch(url, init);
     if (!res.ok || !res.body) throw new Error(`SSE request failed: ${res.status}`);
     await consumeBody(res.body, opts);
   } catch (err) {

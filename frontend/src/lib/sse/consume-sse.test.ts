@@ -70,3 +70,44 @@ describe("consumeSse", () => {
     await expect(p).resolves.toBeUndefined();
   });
 });
+
+describe("consumeSse POST support (AUTHOR-009)", () => {
+  it("POSTs a JSON body and dispatches frames", async () => {
+    const f = vi.fn<typeof fetch>(async () =>
+      new Response(
+        streamOf(['event: pass\ndata: {"index":0}\n\nevent: done\ndata: {"ok":true}\n\n']),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", f);
+    const seen: Array<[string, unknown]> = [];
+    await consumeSse("http://api/x", {
+      method: "POST",
+      body: { section_id: "a:0" },
+      token: "T",
+      onEvent: (t, d) => seen.push([t, d]),
+    });
+    const init = f.mock.calls[0][1] as RequestInit;
+    expect(init.method).toBe("POST");
+    expect(init.body).toBe(JSON.stringify({ section_id: "a:0" }));
+    expect(init.headers).toMatchObject({
+      "Content-Type": "application/json",
+      Authorization: "Bearer T",
+    });
+    expect(seen).toEqual([
+      ["pass", { index: 0 }],
+      ["done", { ok: true }],
+    ]);
+  });
+
+  it("defaults to GET with no body", async () => {
+    const f = vi.fn<typeof fetch>(
+      async () => new Response(streamOf(["event: a\ndata: 1\n\n"]), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", f);
+    await consumeSse("http://api/y", { onEvent: () => {} });
+    const init = f.mock.calls[0][1] as RequestInit;
+    expect(init.method ?? "GET").toBe("GET");
+    expect(init.body).toBeUndefined();
+  });
+});
