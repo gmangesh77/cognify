@@ -51,7 +51,7 @@
 - Produces: `EmbeddingService.is_ready -> bool`, `EmbeddingService.is_warming -> bool`, `EmbeddingService.warm_up_in_background() -> threading.Thread | None`, `EmbeddingService.try_embed(texts: list[str]) -> list[list[float]] | None`. `embed()` and `cosine_similarity_matrix()` unchanged.
 - Semantics: `try_embed` returns `None` **only** when a warm-up thread is alive and the model is not yet loaded; otherwise it behaves exactly like `embed()` (synchronous lazy load). `_load_model` is lock-guarded and a no-op when already loaded.
 
-- [ ] **Step 1: Write the failing tests** — append to `tests/unit/services/test_embeddings.py`:
+- [x] **Step 1: Write the failing tests** — append to `tests/unit/services/test_embeddings.py`:
 
 ```python
 import threading
@@ -137,12 +137,12 @@ class TestEmbeddingWarmUp:
         assert svc._model is sentinel
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `uv run pytest tests/unit/services/test_embeddings.py -q`
 Expected: 6 failures (`AttributeError: ... has no attribute 'is_ready'` etc.). The existing 4 tests still pass.
 
-- [ ] **Step 3: Implement** — replace `src/services/embeddings.py` with:
+- [x] **Step 3: Implement** — replace `src/services/embeddings.py` with:
 
 ```python
 import threading
@@ -239,12 +239,12 @@ class EmbeddingService:
         return similarity  # type: ignore[no-any-return]
 ```
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `uv run pytest tests/unit/services/test_embeddings.py -q`
 Expected: 10 passed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/embeddings.py tests/unit/services/test_embeddings.py
@@ -263,7 +263,7 @@ git commit -m "feat(embeddings): background warm-up + try_embed for graceful col
 - Consumes: `EmbeddingService.try_embed`, `is_ready`, `is_warming` (Task 1).
 - Produces: `Settings.embedding_warmup: bool = True` (`COGNIFY_EMBEDDING_WARMUP`); `DependencyChecks.embedding: CheckStatus` (`ok` = loaded, `degraded` = warming, `unavailable` = no service / cold); `_lifespan` calls `warm_up_in_background()` on the shared `app.state.embedding_service` when the flag is on.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 (a) `tests/unit/services/test_milvus_retriever.py` — change every `mock_embedding.embed = MagicMock(...)` to `mock_embedding.try_embed = MagicMock(...)` and every `mock_embedding.embed.assert_called_once_with(...)` to `mock_embedding.try_embed.assert_called_once_with(...)`, then add:
 
@@ -361,12 +361,12 @@ class TestEmbeddingWarmupAtBoot:
 
 Add `import pytest` and `from src.config.settings import Settings` at the top of `test_app.py` if absent (it already imports `create_app` and `Settings`).
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `uv run pytest tests/unit/services/test_milvus_retriever.py tests/unit/api/test_health.py tests/unit/api/test_app.py -q`
 Expected: the retriever tests fail (`try_embed` never called / `embed` called), health `expected_keys` and the 3 embedding checks fail, both boot tests fail (`Settings` has no field `embedding_warmup`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/config/settings.py` — directly under `embedding_model`:
 
@@ -457,12 +457,12 @@ and in `_run_checks` add `embedding=_check_embedding(request),` to the `Dependen
         _get_or_create_embedding_service(app).warm_up_in_background()
 ```
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `uv run pytest tests/unit/services/test_milvus_retriever.py tests/unit/api/test_health.py tests/unit/api/test_app.py tests/unit/services/test_embeddings.py -q`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/milvus_retriever.py src/api/routers/health.py src/config/settings.py src/api/main.py tests/unit/services/test_milvus_retriever.py tests/unit/api/test_health.py tests/unit/api/test_app.py
@@ -481,7 +481,7 @@ git commit -m "feat(rag): skip retrieval while embedding warms up; health embedd
 **Interfaces:**
 - Produces: `UserData.is_active: bool = True`; `UserRepository.set_active(user_id: str, is_active: bool) -> UserData | None` (Protocol + in-memory impl); `UserStatusCache(ttl_seconds: float = 30.0, clock=time.monotonic)` with `lookup(user_id, repo) -> UserData | None` and `invalidate(user_id) -> None`; `Settings.auth_recheck_ttl_seconds: float = 30.0` (`COGNIFY_AUTH_RECHECK_TTL_SECONDS`); `app.state.user_status_cache`; `AuthenticationError(code="user_inactive")` from both `get_current_user` and `AuthService.refresh`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 `tests/unit/api/test_user_status.py` (new):
 
@@ -624,12 +624,12 @@ Check the exact error envelope shape used by the other 401 tests in that module 
 
 Adapt the login email/password and user id to whatever `test_user` that class seeds (read the fixture at the top of the class before writing the test).
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `uv run pytest tests/unit/api/test_user_status.py tests/unit/api/test_auth_endpoints.py tests/unit/api/test_auth.py -q`
 Expected: import error on `src.api.auth.user_status`; `UserData` rejects `is_active`; `set_active` missing.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/api/auth/schemas.py` — extend `UserData`:
 
@@ -777,12 +777,12 @@ def _recheck_user_status(request: Request, payload: TokenPayload) -> TokenPayloa
 
 with `from src.api.auth.user_status import UserStatusCache` added to the imports.
 
-- [ ] **Step 4: Run the whole API suite to verify nothing regressed**
+- [x] **Step 4: Run the whole API suite to verify nothing regressed**
 
 Run: `uv run pytest tests/unit/api/ -q`
 Expected: all pass (every existing fixture seeds `user-1` active or leaves the repo empty — both are pass-through).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/auth/ src/api/dependencies.py src/api/main.py src/config/settings.py tests/unit/api/test_user_status.py tests/unit/api/test_auth_endpoints.py tests/unit/api/test_auth.py
@@ -801,7 +801,7 @@ git commit -m "feat(auth): is_active + 30s user-status re-check in get_current_u
 - Consumes: `UserRepository.set_active`, `UserStatusCache.invalidate`, `RefreshTokenRepository.revoke_all_for_user`, `require_admin` (Task 3 / existing).
 - Produces: `UserActiveRequest {is_active: bool}`, `UserActiveResponse {user_id: str, is_active: bool}`; 404 `NotFoundError` for unknown ids; deactivation invalidates the cache entry and revokes the user's refresh tokens; 10/min rate limit; route decorator outermost (slowapi lesson from AUTHOR-006).
 
-- [ ] **Step 1: Failing tests** — `tests/unit/api/test_user_active_endpoint.py`:
+- [x] **Step 1: Failing tests** — `tests/unit/api/test_user_active_endpoint.py`:
 
 ```python
 """INFRA-008 — admin toggles a user's active flag; access changes immediately."""
@@ -897,12 +897,12 @@ class TestSetUserActive:
         assert response.status_code == 404
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `uv run pytest tests/unit/api/test_user_active_endpoint.py -q`
 Expected: 4 failures with 404/405 from the missing route.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/api/auth/schemas.py` — append:
 
@@ -970,12 +970,12 @@ async def set_user_active(
 
 Check `NotFoundError.__init__` in `src/api/errors.py` for its keyword names before writing the raise (it may take `resource`/`resource_id` rather than `message`; use whatever it defines).
 
-- [ ] **Step 4: Run to verify they pass**
+- [x] **Step 4: Run to verify they pass**
 
 Run: `uv run pytest tests/unit/api/test_user_active_endpoint.py tests/unit/api/ -q`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/routers/auth.py src/api/auth/schemas.py tests/unit/api/test_user_active_endpoint.py
@@ -993,7 +993,7 @@ git commit -m "feat(auth): admin PATCH /auth/users/{id}/active with cache invali
 **Interfaces:**
 - Produces: `export type ShowToast = (message: string, ms?: number) => void`; `export const DEFAULT_TOAST_MS = 4000`; `export function ToastProvider({ children })`; `export function useToast(): { showToast: ShowToast }` (throws outside the provider so a missing mount fails loudly in tests).
 
-- [ ] **Step 1: Failing test** — `frontend/src/components/ui/toaster.test.tsx`:
+- [x] **Step 1: Failing test** — `frontend/src/components/ui/toaster.test.tsx`:
 
 ```tsx
 import { describe, it, expect, vi, afterEach } from "vitest";
@@ -1053,12 +1053,12 @@ describe("ToastProvider / useToast", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `cd frontend && npx vitest run src/components/ui/toaster.test.tsx`
 Expected: FAIL — cannot resolve `./toaster`.
 
-- [ ] **Step 3: Implement** — `frontend/src/components/ui/toaster.tsx`:
+- [x] **Step 3: Implement** — `frontend/src/components/ui/toaster.tsx`:
 
 ```tsx
 "use client";
@@ -1151,12 +1151,12 @@ import { ToastProvider } from "@/components/ui/toaster";
     </QueryClientProvider>
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `cd frontend && npx vitest run src/components/ui/toaster.test.tsx`
 Expected: 3 passed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/ui/toaster.tsx frontend/src/components/ui/toaster.test.tsx frontend/src/app/providers.tsx
@@ -1174,12 +1174,12 @@ git commit -m "feat(frontend): shared ToastProvider + useToast (INFRA-008)"
 - Consumes: `useToast`, `ShowToast` (Task 5).
 - Produces: `useGenerateActions({ showToast }: { showToast: ShowToast })` (was `{ setToast }`); `ArticleActionsDeps.showToast: ShowToast`. No page renders its own `role="status"` element any more.
 
-- [ ] **Step 1: Failing test** — in `use-generate-actions.test.ts` rename every `setToast` to `showToast` (variable names, the object passed to `useGenerateActions`, and the assertions). All existing `toHaveBeenCalledWith(<message>)` / `not.toHaveBeenCalledWith(...)` assertions stay as they are (the hook calls `showToast(message)` with a single argument).
+- [x] **Step 1: Failing test** — in `use-generate-actions.test.ts` rename every `setToast` to `showToast` (variable names, the object passed to `useGenerateActions`, and the assertions). All existing `toHaveBeenCalledWith(<message>)` / `not.toHaveBeenCalledWith(...)` assertions stay as they are (the hook calls `showToast(message)` with a single argument).
 
 Run: `cd frontend && npx vitest run "src/app/(dashboard)/topics/use-generate-actions.test.ts"`
 Expected: FAIL — the hook ignores `showToast` and calls the now-undefined `setToast`.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 `use-generate-actions.ts` — delete `TOAST_DURATION_MS` and the inner `showToast` function; change the args interface and every `setToast(...)` call:
 
@@ -1230,12 +1230,12 @@ export interface ArticleActionsDeps {
 }
 ```
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `cd frontend && npx vitest run && npx tsc --noEmit -p tsconfig.json 2>&1 | grep -c "error TS"`
 Expected: all Vitest suites pass; the `tsc` error count is unchanged from `develop` (13 pre-existing errors in untouched settings/test files — record the number you see before and after). Also: `grep -rn 'role="status"' frontend/src/app` must return nothing.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add "frontend/src/app/(dashboard)" frontend/src/hooks/use-article-actions.ts
@@ -1253,7 +1253,7 @@ git commit -m "refactor(frontend): pages use the shared useToast (INFRA-008)"
 **Interfaces:**
 - Produces: `useVisualStudio({ article, audiencePersona, focusSectionIndex })` returning `{ styles, pageDirection, setPageDirection, defaultStyleKey, setDefaultStyleKey, quality, setQuality, specs, lifecycles, planning, planError, totalCost, breakdown, focusedSectionTitle, renderedCount, canInsert, handlePlanVisuals, handleRenderSpec, skipSpec, readyVisuals }`; `export interface SpecLifecycle` moves to the hook file; `VisualStudioSections.tsx` exports `PanelHeader`, `PageArtDirectionField`, `DefaultStyleSection`, `RenderQualitySection`; `SpecListSection.tsx` exports `SpecListSection`. `VisualStudio.tsx` keeps exporting `VisualStudio`, `VisualStudioArticleContext`, `InsertedVisual`, `VisualStudioProps` unchanged so `VisualStudio.test.tsx` and `page.tsx` need no edits.
 
-- [ ] **Step 1: Write the budget test** — `frontend/src/file-size-budget.test.ts`:
+- [x] **Step 1: Write the budget test** — `frontend/src/file-size-budget.test.ts`:
 
 ```ts
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -1296,7 +1296,7 @@ describe("file size budget", () => {
 Run: `cd frontend && npx vitest run src/file-size-budget.test.ts`
 Expected: FAIL listing exactly the six files: `VisualStudio.tsx` 523, `SpecCard.tsx` 413, `SavedAssetGallery.tsx` 355, `ImageImportModal.tsx` 288, `AIRewritePopover.tsx` 219, `outline-review-step.tsx` 204. This test stays red until Task 10.
 
-- [ ] **Step 2: Extract the hook** — create `frontend/src/hooks/use-visual-studio.ts`. Move, verbatim, from `VisualStudio.tsx`: the `SpecLifecycle` interface (add `export`), every `useState`/`useEffect`/`useMemo` block and the `applyDefaultStyle`, `handlePlanVisuals`, `handleRenderSpec` functions from the component body (lines 93–232 on `develop`). Wrap them as:
+- [x] **Step 2: Extract the hook** — create `frontend/src/hooks/use-visual-studio.ts`. Move, verbatim, from `VisualStudio.tsx`: the `SpecLifecycle` interface (add `export`), every `useState`/`useEffect`/`useMemo` block and the `applyDefaultStyle`, `handlePlanVisuals`, `handleRenderSpec` functions from the component body (lines 93–232 on `develop`). Wrap them as:
 
 ```ts
 "use client";
@@ -1359,9 +1359,9 @@ export function useVisualStudio({ article, audiencePersona, focusSectionIndex }:
 
 The type-only circular import (`VisualStudio.tsx` ⇄ hook) is erased at compile time; if `eslint` flags `import/no-cycle`, move `VisualStudioArticleContext` and `InsertedVisual` into `frontend/src/types/visuals.ts` and re-export them from `VisualStudio.tsx` (`export type { VisualStudioArticleContext, InsertedVisual } from "@/types/visuals";`).
 
-- [ ] **Step 3: Extract the presentational sections** — create `VisualStudioSections.tsx` with `"use client";`, imports (`cn`, `QUALITY_LABELS`, `QUALITY_PRICE_USD`, `QUALITY_TO_PROVIDER`, `RenderQuality`, `VisualStylesResponse`, `StyleChipRail`, `UsageBadge`) and the four functions `PanelHeader`, `PageArtDirectionField`, `DefaultStyleSection`, `RenderQualitySection` moved verbatim (lines 321–463) with `export` added. Create `SpecListSection.tsx` with `"use client";`, imports (`cn`, `SpecCard`, `ImageSpec`, `SpecLifecycle` from the hook) and `SpecListSection` moved verbatim (lines 464–523) with `export`.
+- [x] **Step 3: Extract the presentational sections** — create `VisualStudioSections.tsx` with `"use client";`, imports (`cn`, `QUALITY_LABELS`, `QUALITY_PRICE_USD`, `QUALITY_TO_PROVIDER`, `RenderQuality`, `VisualStylesResponse`, `StyleChipRail`, `UsageBadge`) and the four functions `PanelHeader`, `PageArtDirectionField`, `DefaultStyleSection`, `RenderQualitySection` moved verbatim (lines 321–463) with `export` added. Create `SpecListSection.tsx` with `"use client";`, imports (`cn`, `SpecCard`, `ImageSpec`, `SpecLifecycle` from the hook) and `SpecListSection` moved verbatim (lines 464–523) with `export`.
 
-- [ ] **Step 4: Rewrite `VisualStudio.tsx`** to the three exported types (unchanged) plus:
+- [x] **Step 4: Rewrite `VisualStudio.tsx`** to the three exported types (unchanged) plus:
 
 ```tsx
 "use client";
@@ -1402,12 +1402,12 @@ export function VisualStudio({ article, audiencePersona, onInsertIntoArticle, on
 }
 ```
 
-- [ ] **Step 5: Verify behaviour is unchanged**
+- [x] **Step 5: Verify behaviour is unchanged**
 
 Run: `cd frontend && npx vitest run src/components/visuals && wc -l src/components/visuals/VisualStudio.tsx src/components/visuals/VisualStudioSections.tsx src/components/visuals/SpecListSection.tsx src/hooks/use-visual-studio.ts`
 Expected: `VisualStudio.test.tsx` passes unmodified; every listed file ≤ 200 lines.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/file-size-budget.test.ts frontend/src/hooks/use-visual-studio.ts frontend/src/components/visuals/VisualStudio.tsx frontend/src/components/visuals/VisualStudioSections.tsx frontend/src/components/visuals/SpecListSection.tsx
@@ -1425,7 +1425,7 @@ git commit -m "refactor(frontend): split VisualStudio into hook + sections; add 
 **Interfaces:**
 - Produces: `SpecCardMedia.tsx` exports `SpecMedia` (props `{ spec, state, render, generationEta?, errorMessage? }` exactly as today) and keeps the private `Spinner` + `aspectToStyle`; `SpecCardFooter.tsx` exports `SpecFooter` (props unchanged: `spec, state, refineNote, onRefineNoteChange, onPlan?, onRegenerate?, onEdit?, onRetryCheaper?, onSkip?, onRefine?`). `SpecCard.tsx` keeps `SpecCard`, `SpecCardProps`, `SpecHeader`, `StatePill`, `humanizeStyleKey`.
 
-- [ ] **Step 1: Move** `SpecMedia` (lines 159–271), `Spinner` (387–395) and `aspectToStyle` (397–406) verbatim into `SpecCardMedia.tsx` with header:
+- [x] **Step 1: Move** `SpecMedia` (lines 159–271), `Spinner` (387–395) and `aspectToStyle` (397–406) verbatim into `SpecCardMedia.tsx` with header:
 
 ```tsx
 "use client";
@@ -1448,12 +1448,12 @@ import type { ImageSpec, SpecCardState } from "@/types/visuals";
 
 In `SpecCard.tsx` delete the moved code, drop now-unused imports (`pickGeneratedImageSrc`, `RenderResponse` if unused), and add `import { SpecMedia } from "./SpecCardMedia";` and `import { SpecFooter } from "./SpecCardFooter";`.
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 Run: `cd frontend && npx vitest run src/components/visuals/SpecCard.test.tsx src/components/visuals/VisualStudio.test.tsx && wc -l src/components/visuals/SpecCard*.tsx`
 Expected: tests pass unmodified; each file ≤ 200 lines.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/components/visuals/SpecCard.tsx frontend/src/components/visuals/SpecCardMedia.tsx frontend/src/components/visuals/SpecCardFooter.tsx
@@ -1471,7 +1471,7 @@ git commit -m "refactor(frontend): split SpecCard media/footer (INFRA-008)"
 **Interfaces:**
 - Produces: `savedAssetFormat.ts` exports `humanize(key: string): string` and `aspectStyle(aspect: string): string` (bodies moved verbatim from `SavedAssetGallery.tsx` lines 339–355); `SavedAssetFacets.tsx` exports `RoleFilterRail`, `FacetSidebar` (and keeps `FacetSection`, `ROLE_FILTERS` private); `SavedAssetGrid.tsx` exports `AssetGrid`, `EmptyState`; `ImageUploadTab.tsx` exports `UploadTab` and owns `ACCEPTED_MIME`; `ImageFetchUrlTab.tsx` exports `FetchFromUrlTab`. Props of every moved component are unchanged.
 
-- [ ] **Step 1: Failing test for the pure helpers** — `frontend/src/lib/visuals/savedAssetFormat.test.ts`:
+- [x] **Step 1: Failing test for the pure helpers** — `frontend/src/lib/visuals/savedAssetFormat.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1492,18 +1492,18 @@ describe("savedAssetFormat", () => {
 
 Before writing the expectations, read the current `humanize` / `aspectStyle` bodies (lines 339–355) and mirror their exact behaviour (e.g. if `aspectStyle` returns a Tailwind class instead of a CSS value, assert that). Run the test; expected: FAIL (module missing).
 
-- [ ] **Step 2: Move code**
+- [x] **Step 2: Move code**
 
 `savedAssetFormat.ts`: the two helpers verbatim, exported. `SavedAssetFacets.tsx` (`"use client"`, imports `cn` + `humanize`): `ROLE_FILTERS`, `RoleFilterRail`, `FacetSidebar`, `FacetSection` (lines 160–272) verbatim; export the first two. `SavedAssetGrid.tsx` (`"use client"`, imports `cn`, `humanize`, `aspectStyle`, `SavedAssetItem`): `AssetGrid`, `EmptyState` (lines 273–338) verbatim, exported. `SavedAssetGallery.tsx`: delete moved code, import `RoleFilterRail`, `FacetSidebar` from `./SavedAssetFacets` and `AssetGrid`, `EmptyState` from `./SavedAssetGrid`; drop unused imports.
 
 `ImageUploadTab.tsx` (`"use client"`, imports `useState`, `cn` if used, `uploadBrandAsset`, `UploadResponse`): `ACCEPTED_MIME` + `UploadTab` (lines 133–211) verbatim, `UploadTab` exported. `ImageFetchUrlTab.tsx` (`"use client"`, imports `useState`, `cn` if used, `fetchImageFromUrl`, `FetchUrlResponse`): `FetchFromUrlTab` (lines 212–288) verbatim, exported. `ImageImportModal.tsx` keeps the modal shell + `TabBar`, imports the two tabs, drops unused imports.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run: `cd frontend && npx vitest run src/components/visuals src/lib/visuals && wc -l src/components/visuals/SavedAsset*.tsx src/components/visuals/Image*.tsx`
 Expected: `SavedAssetGallery.test.tsx` and `ImageImportModal.test.tsx` pass unmodified; helper test passes; each file ≤ 200 lines.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/lib/visuals/savedAssetFormat.ts frontend/src/lib/visuals/savedAssetFormat.test.ts frontend/src/components/visuals/SavedAssetGallery.tsx frontend/src/components/visuals/SavedAssetFacets.tsx frontend/src/components/visuals/SavedAssetGrid.tsx frontend/src/components/visuals/ImageImportModal.tsx frontend/src/components/visuals/ImageUploadTab.tsx frontend/src/components/visuals/ImageFetchUrlTab.tsx
@@ -1521,7 +1521,7 @@ git commit -m "refactor(frontend): split SavedAssetGallery and ImageImportModal 
 **Interfaces:**
 - Produces: `useAIRewrite({ sectionId, scope, paragraphIndex, currentMarkdown, audiencePersona })` returning `{ state, runRewrite(promptText: string): Promise<void>, runPreset(preset: TonePreset): Promise<void>, reset(): void }` with `state: { busy: boolean; error: string | null; result: SectionRewriteResponse | null }`; `outline-edit.ts` exports `averageBudget(sections)`, `newSection(index, sections)`, `reindex(sections)`, `swapSections(sections, index, direction: -1 | 1): OutlineSection[]` (returns the input unchanged when the target is out of range).
 
-- [ ] **Step 1: Failing test** — `frontend/src/lib/research/outline-edit.test.ts`:
+- [x] **Step 1: Failing test** — `frontend/src/lib/research/outline-edit.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1560,7 +1560,7 @@ describe("outline-edit helpers", () => {
 
 Run: `cd frontend && npx vitest run src/lib/research/outline-edit.test.ts` → FAIL (module missing).
 
-- [ ] **Step 2: Implement `outline-edit.ts`** — move `averageBudget`, `newSection`, `reindex` verbatim (with `export`), keep the AUTHOR-008 doc comment, and add:
+- [x] **Step 2: Implement `outline-edit.ts`** — move `averageBudget`, `newSection`, `reindex` verbatim (with `export`), keep the AUTHOR-008 doc comment, and add:
 
 ```ts
 /** Swap `index` with its neighbour in `direction`; returns the same array when out of range. */
@@ -1587,7 +1587,7 @@ In `outline-review-step.tsx` import the four helpers and simplify `moveSection`:
   }
 ```
 
-- [ ] **Step 3: Extract `useAIRewrite`** — `frontend/src/hooks/use-ai-rewrite.ts`:
+- [x] **Step 3: Extract `useAIRewrite`** — `frontend/src/hooks/use-ai-rewrite.ts`:
 
 ```ts
 "use client";
@@ -1634,12 +1634,12 @@ export function useAIRewrite({ sectionId, scope, paragraphIndex, currentMarkdown
 
 `AIRewritePopover.tsx`: delete `PopoverState`, `INITIAL_STATE`, `runRewrite`, `runPreset` and the `state` `useState`; keep `instruction` state; `const { state, runRewrite, runPreset, reset } = useAIRewrite({ sectionId, scope, paragraphIndex, currentMarkdown, audiencePersona });`; `handleReject` becomes `reset(); setInstruction("");`. Drop the now-unused `applyTonePreset` / `rewriteSectionProse` / `SectionRewriteResponse` imports. **`AIRewritePopover.test.tsx` mocks `@/lib/api/content`** — the hook imports from the same module path, so the mocks keep working; run it to confirm.
 
-- [ ] **Step 4: Verify — the budget test must now pass**
+- [x] **Step 4: Verify — the budget test must now pass**
 
 Run: `cd frontend && npx vitest run`
 Expected: every suite green, including `src/file-size-budget.test.ts` with `offenders = []`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/hooks/use-ai-rewrite.ts frontend/src/lib/research/outline-edit.ts frontend/src/lib/research/outline-edit.test.ts frontend/src/components/article/AIRewritePopover.tsx frontend/src/components/research/outline-review-step.tsx
@@ -1653,7 +1653,7 @@ git commit -m "refactor(frontend): extract useAIRewrite + outline-edit helpers; 
 **Files:**
 - Modify: `project-management/PROGRESS.md`, `project-management/BACKLOG.md`, `CLAUDE.md`, this plan (tick boxes)
 
-- [ ] **Step 1: Backend gates**
+- [x] **Step 1: Backend gates**
 
 ```bash
 COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q
@@ -1662,7 +1662,7 @@ uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/ && uv ru
 
 Expected: 0 failures (count ≥ 1701 + ~20 new); ruff/mypy clean. Fix with `uv run ruff format src/ tests/` if the format check fails.
 
-- [ ] **Step 2: Frontend gates**
+- [x] **Step 2: Frontend gates**
 
 ```bash
 cd frontend && npx vitest run && npm run lint && npx tsc --noEmit 2>&1 | grep -c "error TS"
@@ -1670,16 +1670,16 @@ cd frontend && npx vitest run && npm run lint && npx tsc --noEmit 2>&1 | grep -c
 
 Expected: all suites pass (≥ 557 + new); eslint clean for touched files; `tsc` error count equal to the `develop` baseline recorded in Task 6.
 
-- [ ] **Step 3: Live smoke (Docker, optional but recommended)** — `docker compose up --build -d api` from the main checkout on this branch, then: `curl -s localhost:8000/api/v1/health | jq .checks.embedding` shows `degraded` within the first seconds after boot and `ok` shortly after (with the baked HF cache this is < 1 s — check the api log for `embedding_warmup_started` → `embedding_model_loaded`); login as admin, `PATCH /api/v1/auth/users/user-3/active {"is_active": false}` → a viewer token for `user-3` gets 401 `user_inactive` on `/api/v1/articles`; reactivate → 200. In the dashboard: Settings → change a domain → toast appears bottom-right and disappears after 4 s; article page → Insert visuals toast still shows.
+- [x] **Step 3: Live smoke (Docker, optional but recommended)** — `docker compose up --build -d api` from the main checkout on this branch, then: `curl -s localhost:8000/api/v1/health | jq .checks.embedding` shows `degraded` within the first seconds after boot and `ok` shortly after (with the baked HF cache this is < 1 s — check the api log for `embedding_warmup_started` → `embedding_model_loaded`); login as admin, `PATCH /api/v1/auth/users/user-3/active {"is_active": false}` → a viewer token for `user-3` gets 401 `user_inactive` on `/api/v1/articles`; reactivate → 200. In the dashboard: Settings → change a domain → toast appears bottom-right and disappears after 4 s; article page → Insert visuals toast still shows.
 
-- [ ] **Step 4: Docs**
+- [x] **Step 4: Docs**
 
 - `PROGRESS.md`: Epic 11 table row INFRA-008 → `Done (2026-08-28, PR pending; …)` with the three deviations above; add a numbered entry to the RESUME block (what shipped, the deviations, the follow-ups: backend >200-line files, hooks/types over 200 lines, lifespan↔bootstrap convergence, dead `@limiter.limit` order sweep, real user table + enforced role re-check).
 - `BACKLOG.md`: INFRA-008 row `— **DONE** (2026-08-28)`; Epic 11 summary counts (Done 10 / Remaining 7 / ~33 SP); velocity `393 SP`.
 - `CLAUDE.md` Current Status: one sentence for INFRA-008 (warm-up + `/health.embedding`, `is_active` re-check + `PATCH /auth/users/{id}/active`, `useToast`, file-size budget test) and update **Next action** to AUTHOR-009/010 or PUBLISH-002.
 - Tick every checkbox in this plan.
 
-- [ ] **Step 5: Commit + PR**
+- [x] **Step 5: Commit + PR**
 
 ```bash
 git add project-management/ CLAUDE.md docs/superpowers/plans/2026-08-28-infra-008-warmup-recheck-toaster-splits.md
