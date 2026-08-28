@@ -99,6 +99,25 @@ class ContentState(TypedDict):
     structural_diagram_mode: NotRequired[str]
 
 
+def _bind_step_name(step_name: str, node_fn: object) -> object:
+    """AUTHOR-010: bind the tracker's step contextvar even with no step repo.
+
+    With a step repo, `_record_step` binds it; without one nothing did, so
+    `COGNIFY_LLM_MODEL_BY_STEP` routing silently fell back to the default
+    model in no-DB mode and the outline-only half-graph.
+    """
+    from src.utils.tracked_llm import current_step_name
+
+    async def bound(state: ContentState) -> dict:  # type: ignore[type-arg]
+        token = current_step_name.set(step_name)
+        try:
+            return await node_fn(state)  # type: ignore[misc, no-any-return]
+        finally:
+            current_step_name.reset(token)
+
+    return bound
+
+
 def _wrap_node(
     name: str,
     node_fn: object,
@@ -106,7 +125,7 @@ def _wrap_node(
 ) -> object:
     """Wrap a node function with step recording if deps are configured."""
     if deps is None or deps.step_repo is None:
-        return node_fn
+        return _bind_step_name(f"content_{name}", node_fn)
     step_repo = deps.step_repo
 
     async def wrapped(state: ContentState) -> dict:  # type: ignore[type-arg]
