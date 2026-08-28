@@ -181,7 +181,7 @@
 | AUTHOR-007 | Article status + filters + Resume | Done (2026-08-25, PR pending review; migration `d5e8f2a1c3b9`) | `feature/AUTHOR-007-status` | [plan](../docs/superpowers/plans/2026-08-25-author-007-article-status.md) | program plan §4.4; review §6 #10 |
 | AUTHOR-008 | Length + content type budgets | Done (PR #82 → develop `608f4fc`, 2026-08-25) | `feature/AUTHOR-008-length` | [plan](../docs/superpowers/plans/2026-08-25-author-008-length-budgets.md) | program plan §9 Phase B; review §6 #8 |
 | AUTHOR-009 | Humanize per-pass streaming + sentence-level accept/reject | Done (PR #84 → develop `1efcd11`, 2026-08-28; see RESUME item 11) | `feature/AUTHOR-009-humanize-stream` | [plan](../docs/superpowers/plans/2026-08-28-author-009-humanize-stream.md) (worktree `.claude/worktrees/author-009`) | program plan §9 Phase B; review §6 #9 |
-| AUTHOR-010 | Model tiering per step | Planned | — | program plan §5.8 | review §6 #14 |
+| AUTHOR-010 | Model tiering per step | In Progress (2026-08-28) | `feature/AUTHOR-010-model-tiering` | [plan](../docs/superpowers/plans/2026-08-28-author-010-model-tiering.md) (worktree `.claude/worktrees/author-010`) | program plan §5.8; review §6 #14 |
 | INFRA-008 | Warm-up, active-flag re-check, toaster, file splits | Done (PR #83 → develop `372e635`, 2026-08-28; role drift logged not enforced — see RESUME item 10) | `feature/INFRA-008-warmup-recheck-splits` | [plan](../docs/superpowers/plans/2026-08-28-infra-008-warmup-recheck-toaster-splits.md) | program plan §5.9–5.10; review §6 #15/#16 |
 | AUTHOR-011 | Persona voice engine v1 | Planned | — | program plan §5.11 | review §6 #12 |
 | AUTHOR-012 | Prompt registry + overrides | Planned | — | program plan §5.11 | review §6 #13 |
