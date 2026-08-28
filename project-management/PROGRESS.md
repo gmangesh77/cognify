@@ -182,7 +182,7 @@
 | AUTHOR-008 | Length + content type budgets | Done (PR #82 → develop `608f4fc`, 2026-08-25) | `feature/AUTHOR-008-length` | [plan](../docs/superpowers/plans/2026-08-25-author-008-length-budgets.md) | program plan §9 Phase B; review §6 #8 |
 | AUTHOR-009 | Humanize per-pass streaming | Planned | — | program plan §9 Phase B | review §6 #9 |
 | AUTHOR-010 | Model tiering per step | Planned | — | program plan §5.8 | review §6 #14 |
-| INFRA-008 | Warm-up, role re-check, toaster, file splits | Planned | — | program plan §5.9–5.10 | review §6 #15/#16 |
+| INFRA-008 | Warm-up, role re-check, toaster, file splits | In Progress (2026-08-28) | `feature/INFRA-008-warmup-recheck-splits` | [plan](../docs/superpowers/plans/2026-08-28-infra-008-warmup-recheck-toaster-splits.md) | program plan §5.9–5.10; review §6 #15/#16 |
 | AUTHOR-011 | Persona voice engine v1 | Planned | — | program plan §5.11 | review §6 #12 |
 | AUTHOR-012 | Prompt registry + overrides | Planned | — | program plan §5.11 | review §6 #13 |
 | AUTHOR-013 | LinkedIn repurpose | Planned | — | program plan §5.11 | review §6 #20 |
