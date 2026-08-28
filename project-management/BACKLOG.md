@@ -199,7 +199,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | AUTHOR-011 | Persona voice engine v1 (fingerprint → prompt → score → fix; flagged) | Could | 13 | C |
 | AUTHOR-012 | Prompt registry + per-user overrides + Settings tab | Could | 5 | C |
 | AUTHOR-013 | LinkedIn repurpose transformer + modal | Could | 5 | C |
-| AUTHOR-014 | Playwright create-article flow (mocked SSE) — **DONE** (2026-08-29, `feature/AUTHOR-014-playwright`: `create-article.spec.ts` + mock-backend phase machine; `PLAYWRIGHT_PORT`, same-origin API base, clean-`.next` spawn) | Should | 2 | C |
+| AUTHOR-014 | Playwright create-article flow (mocked SSE) — **DONE** (2026-08-29, PR #86: `create-article.spec.ts` + mock-backend phase machine; `PLAYWRIGHT_PORT`, same-origin API base, clean-`.next` spawn) | Should | 2 | C |
 
 Per-phase acceptance criteria are in the plan §9. Feature flags default to current behaviour (`COGNIFY_REQUIRE_OUTLINE_APPROVAL=false`).
 
