@@ -478,6 +478,60 @@ class TestInjectMetadataFallbackWithoutSpecs:
         twice = inject_visuals(article2, _ctx())
         assert _img_count(twice, "arch_diagram") == 1
 
+    def test_two_hintless_visuals_keep_article_order(self) -> None:
+        # Both land at the section end; the second must follow the first
+        # (a naive "insert after the last <p>" re-anchors before the
+        # previously inserted figure and reverses the order).
+        v1 = _planner_visual("first", section_index=0, anchor="between_paragraphs")
+        v2 = _planner_visual("second", section_index=0, anchor="between_paragraphs")
+        article = _article(image_specs=[], visuals=[v1, v2])
+        result = inject_visuals(article, _ctx())
+        assert result.find('data-spec-id="first"') < result.find(
+            'data-spec-id="second"'
+        )
+
+    def test_background_anchor_still_renders_a_visible_figure(self) -> None:
+        # `background` only emits a marker comment for planned specs; a
+        # paid-for persisted asset must not vanish from the published post.
+        visual = _planner_visual("bg_art", section_index=1, anchor="background")
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        assert 'data-spec-id="bg_art"' in result
+        assert "<img" in result.split('data-spec-id="bg_art"')[1][:200]
+        assert result.find('data-spec-id="bg_art"') > result.find("<h2>Architecture")
+
+    def test_duplicate_spec_id_publishes_the_latest_asset(self) -> None:
+        # Visual Studio regenerate + "Insert into article" appends a second
+        # asset under the same spec id — the newest render must win.
+        old = _planner_visual(
+            "concept_1", section_index=0, anchor="top", url="/v/old.png"
+        )
+        new = _planner_visual(
+            "concept_1", section_index=0, anchor="top", url="/v/new.png"
+        )
+        article = _article(image_specs=[], visuals=[old, new])
+        result = inject_visuals(article, _ctx())
+        assert "/v/new.png" in result
+        assert "/v/old.png" not in result
+        assert _img_count(result, "concept_1") == 1
+
+    def test_paragraph_index_beyond_section_falls_back_to_section_end(self) -> None:
+        visual = _planner_visual(
+            "late", section_index=1, anchor="between_paragraphs", paragraph_index=9
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        img_idx = result.find('data-spec-id="late"')
+        assert img_idx > result.find("Body of architecture")
+
+    def test_section_index_beyond_body_is_appended_not_lost(self) -> None:
+        visual = _planner_visual("orphan", section_index=7, anchor="between_paragraphs")
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        img_idx = result.find('data-spec-id="orphan"')
+        assert img_idx != -1
+        assert img_idx > result.find("Body of architecture")
+
     def test_legacy_chart_without_planner_metadata_keeps_old_path(self) -> None:
         # No spec_id, no section_index → still the legacy prepend behaviour.
         legacy = ImageAsset(

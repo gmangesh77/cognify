@@ -357,3 +357,8 @@ class TestBuildCoverMessages:
         flat = "\n".join(m.content for m in messages if isinstance(m.content, str))
         assert '"prompt"' in flat
         assert '"alt_text"' in flat
+        # The field list must not drag the SECTION preamble along — a cover
+        # message that says "return a JSON array (zero or more)" right before
+        # "return a JSON OBJECT" invites an empty-array reply.
+        assert "JSON array" not in flat
+        assert "JSON OBJECT" in flat

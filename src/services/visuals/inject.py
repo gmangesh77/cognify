@@ -26,24 +26,32 @@ import re
 from dataclasses import dataclass
 from typing import get_args
 
+import structlog
 from pydantic import ValidationError
 
 from src.models.content import CanonicalArticle, ImageAsset
-from src.models.visual import ImageAspectRatio, ImageRoleStyle, ImageSpec
+from src.models.visual import (
+    ImageAspectRatio,
+    ImageRoleStyle,
+    ImageSpec,
+    PlacementAnchor,
+)
+
+logger = structlog.get_logger()
 
 _H2_SPLIT_RE = re.compile(r"(<h2[^>]*>.*?</h2>)", flags=re.DOTALL | re.IGNORECASE)
 _P_SPLIT_RE = re.compile(r"(<p[^>]*>.*?</p>)", flags=re.DOTALL | re.IGNORECASE)
 
-_INLINE_ANCHORS: frozenset[str] = frozenset(
-    {
-        "top",
-        "before_heading",
-        "between_paragraphs",
-        "bottom_grid",
-        "background",
-        "column_split",
-    }
-)
+# Anchors a spec reconstructed from persisted metadata may keep. `cover` is
+# the transformer's job; `background` only emits a marker comment and
+# `column_split` renders a single spec — both would make an already-paid-for
+# image vanish from the published post, so they degrade to a visible figure
+# at the section end (`between_paragraphs` without a paragraph hint).
+_SYNTHESIZED_ANCHORS: frozenset[str] = frozenset(get_args(PlacementAnchor)) - {
+    "cover",
+    "background",
+    "column_split",
+}
 _VALID_ROLE_STYLES: frozenset[str] = frozenset(get_args(ImageRoleStyle))
 _VALID_ASPECTS: frozenset[str] = frozenset(get_args(ImageAspectRatio))
 
@@ -152,6 +160,22 @@ def inject_visuals(article: CanonicalArticle, ctx: InjectionContext) -> str:
 
     rendered = "".join(new_sections)
 
+    # Planner visuals whose section no longer exists in the body (sections
+    # dropped/merged after rendering): keep them visible at the end rather
+    # than losing a paid-for image, and say so.
+    for section_idx in sorted(k for k in planned if k >= len(sections)):
+        for asset in planned[section_idx]:
+            spec = _spec_for_asset(asset, spec_by_id)
+            if spec is None or _is_already_injected(rendered, spec.id):
+                continue
+            logger.warning(
+                "inject_visual_section_out_of_range",
+                spec_id=spec.id,
+                section_index=section_idx,
+                section_count=len(sections),
+            )
+            rendered = rendered + "\n" + _img_html(asset, spec, ctx)
+
     # Article-level legacy assets (source_section == -1) — prepend.
     for asset in legacy.get(-1, []):
         rendered = _legacy_figure_html(asset, ctx) + "\n" + rendered
@@ -175,9 +199,9 @@ def _synthesize_spec_from_metadata(asset: ImageAsset) -> ImageSpec | None:
     if not isinstance(section_index, int) or section_index < 0:
         return None
     anchor = meta.get("placement_anchor")
-    if anchor not in _INLINE_ANCHORS:
-        # Missing/unknown anchor (or a stray non-cover "cover"): render at
-        # the section end, mirroring the dashboard's placement.
+    if anchor not in _SYNTHESIZED_ANCHORS:
+        # Missing/unknown/non-visible anchor: render at the section end,
+        # mirroring the dashboard's placement.
         anchor = "between_paragraphs"
     paragraph_index = meta.get("paragraph_index")
     if not isinstance(paragraph_index, int) or paragraph_index < 1:
@@ -343,20 +367,17 @@ def _inject_between_paragraphs(
         para_index = spec.placement.paragraph_index
         p_iter = list(_P_SPLIT_RE.finditer(out))
         snippet = "\n" + _img_html(asset, spec, ctx) + "\n"
-        if para_index is None or para_index < 1:
-            # No paragraph hint (typical for specs reconstructed from
-            # persisted metadata): render at the section end, mirroring
-            # the dashboard's placement, instead of dropping the visual.
-            if p_iter:
-                end = p_iter[-1].end()
-                out = out[:end] + snippet + out[end:]
-            else:
-                out = out + snippet
-            continue
         # paragraph_index is 1-based: =1 means "after the first paragraph",
         # placing the visual between p[0] and p[1].
-        anchor_para = para_index - 1
-        if anchor_para >= len(p_iter):
+        anchor_para = (para_index or 0) - 1
+        if anchor_para < 0 or anchor_para >= len(p_iter):
+            # No paragraph hint (specs reconstructed from persisted
+            # metadata) or a hint past the section's paragraphs (planner
+            # counted markdown blocks, or the section was shortened): append
+            # at the section end, mirroring the dashboard, instead of
+            # dropping the visual. Appending keeps article order for
+            # multiple hint-less visuals in one section.
+            out = out + snippet
             continue
         end = p_iter[anchor_para].end()
         out = out[:end] + snippet + out[end:]
@@ -460,7 +481,10 @@ def _inject_column_split(
 
 
 def _find_asset(spec: ImageSpec, candidates: list[ImageAsset]) -> ImageAsset | None:
-    for asset in candidates:
+    # Latest render wins: Visual Studio regenerate + "Insert into article"
+    # appends a second asset under the same spec id, and the newest one is
+    # the one the editor accepted.
+    for asset in reversed(candidates):
         if (asset.metadata or {}).get("spec_id") == spec.id:
             return asset
     return None
