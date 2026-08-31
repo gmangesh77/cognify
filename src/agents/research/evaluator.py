@@ -12,6 +12,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
+from src.agents.prompts import render_prompt
 from src.models.research import (
     EvaluationResult,
     FacetFindings,
@@ -22,20 +23,6 @@ from src.utils.llm_json import parse_llm_json
 logger = structlog.get_logger()
 
 _MAX_ROUNDS = 2
-
-_SYSTEM_PROMPT = (
-    "You are a research completeness evaluator. Given a topic and "
-    "research findings, determine if the findings are sufficient for "
-    "a comprehensive article. Respond with valid JSON only."
-)
-
-_USER_TEMPLATE = (
-    "Topic: {title} ({domain})\n\n"
-    "Findings per facet:\n{findings_summary}\n\n"
-    "Are these findings sufficient? Identify weak facets by index.\n"
-    'Return JSON: {{"is_complete": bool, "weak_facets": [int], '
-    '"reasoning": "..."}}'
-)
 
 
 def _summarize_findings(findings: list[FacetFindings]) -> str:
@@ -87,12 +74,16 @@ async def evaluate_completeness(
     ctx: EvaluationContext, llm: BaseChatModel
 ) -> EvaluationResult:
     """Evaluate research completeness via LLM + guardrails."""
-    user_msg = _USER_TEMPLATE.format(
+    user_msg = render_prompt(
+        "evaluate_completeness.user",
         title=ctx.topic.title,
         domain=ctx.topic.domain,
         findings_summary=_summarize_findings(ctx.findings),
     )
-    messages = [SystemMessage(content=_SYSTEM_PROMPT), HumanMessage(content=user_msg)]
+    messages = [
+        SystemMessage(content=render_prompt("evaluate_completeness.system")),
+        HumanMessage(content=user_msg),
+    ]
     response = await llm.ainvoke(messages)
 
     try:
