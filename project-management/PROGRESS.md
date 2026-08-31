@@ -184,7 +184,7 @@
 | AUTHOR-010 | Model tiering per step | Done (PR #85 → develop `103db4e`, 2026-08-28; see RESUME item 12) | `feature/AUTHOR-010-model-tiering` | [plan](../docs/superpowers/plans/2026-08-28-author-010-model-tiering.md) (worktree `.claude/worktrees/author-010`) | program plan §5.8; review §6 #14 |
 | INFRA-008 | Warm-up, active-flag re-check, toaster, file splits | Done (PR #83 → develop `372e635`, 2026-08-28; role drift logged not enforced — see RESUME item 10) | `feature/INFRA-008-warmup-recheck-splits` | [plan](../docs/superpowers/plans/2026-08-28-infra-008-warmup-recheck-toaster-splits.md) | program plan §5.9–5.10; review §6 #15/#16 |
 | AUTHOR-011 | Persona voice engine v1 | Planned | — | program plan §5.11 | review §6 #12 |
-| AUTHOR-012 | Prompt registry + overrides | Planned | — | program plan §5.11 | review §6 #13 |
+| AUTHOR-012 | Prompt registry + global overrides + Settings Prompts tab | In Progress (started 2026-08-31; design approved: global admin-edited overrides, ~16 keys, contextvar-bound registry) | `feature/AUTHOR-012-prompt-registry` (worktree `.claude/worktrees/author-012-prompts`) | plan: pending | [spec](../docs/superpowers/specs/2026-08-31-author-012-prompt-registry-design.md); program plan §4.6, §5.11; review §6 #13 |
 | AUTHOR-013 | LinkedIn repurpose | Planned | — | program plan §5.11 | review §6 #20 |
 | AUTHOR-014 | Playwright create-article flow | Done (2026-08-29, PR #86 → develop `2312af4`, merged 2026-08-31) | `feature/AUTHOR-014-playwright` | [plan](../docs/superpowers/plans/2026-08-29-author-014-playwright-create-article.md) | program plan §7 |
 
