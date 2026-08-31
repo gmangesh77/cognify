@@ -24,12 +24,28 @@ from __future__ import annotations
 import html
 import re
 from dataclasses import dataclass
+from typing import get_args
+
+from pydantic import ValidationError
 
 from src.models.content import CanonicalArticle, ImageAsset
-from src.models.visual import ImageSpec
+from src.models.visual import ImageAspectRatio, ImageRoleStyle, ImageSpec
 
 _H2_SPLIT_RE = re.compile(r"(<h2[^>]*>.*?</h2>)", flags=re.DOTALL | re.IGNORECASE)
 _P_SPLIT_RE = re.compile(r"(<p[^>]*>.*?</p>)", flags=re.DOTALL | re.IGNORECASE)
+
+_INLINE_ANCHORS: frozenset[str] = frozenset(
+    {
+        "top",
+        "before_heading",
+        "between_paragraphs",
+        "bottom_grid",
+        "background",
+        "column_split",
+    }
+)
+_VALID_ROLE_STYLES: frozenset[str] = frozenset(get_args(ImageRoleStyle))
+_VALID_ASPECTS: frozenset[str] = frozenset(get_args(ImageAspectRatio))
 
 
 @dataclass(frozen=True)
@@ -92,13 +108,23 @@ def inject_visuals(article: CanonicalArticle, ctx: InjectionContext) -> str:
         if isinstance(spec_id, str) and spec_id in spec_by_id:
             section_index = spec_by_id[spec_id].placement.section_index
             planned.setdefault(section_index, []).append(asset)
+            continue
+        # `image_specs` are not persisted on canonical_articles, so at
+        # publish time the spec lookup is empty for every planner visual.
+        # Reconstruct the placement from the asset's own metadata (which
+        # the render node persists) — otherwise these visuals would fall
+        # through to the legacy bucket and be prepended to the article.
+        synthesized = _synthesize_spec_from_metadata(asset)
+        if synthesized is not None:
+            spec_by_id.setdefault(synthesized.id, synthesized)
+            planned.setdefault(synthesized.placement.section_index, []).append(asset)
+            continue
+        # Legacy chart/diagram path: route by metadata.source_section.
+        src_section = meta.get("source_section")
+        if isinstance(src_section, int):
+            legacy.setdefault(src_section, []).append(asset)
         else:
-            # Legacy chart/diagram path: route by metadata.source_section.
-            src_section = meta.get("source_section")
-            if isinstance(src_section, int):
-                legacy.setdefault(src_section, []).append(asset)
-            else:
-                legacy.setdefault(-1, []).append(asset)
+            legacy.setdefault(-1, []).append(asset)
 
     # Apply per-section injections in spec-anchor order.
     new_sections: list[str] = []
@@ -131,6 +157,60 @@ def inject_visuals(article: CanonicalArticle, ctx: InjectionContext) -> str:
         rendered = _legacy_figure_html(asset, ctx) + "\n" + rendered
 
     return rendered
+
+
+def _synthesize_spec_from_metadata(asset: ImageAsset) -> ImageSpec | None:
+    """Rebuild a minimal ImageSpec from a rendered asset's own metadata.
+
+    The render node persists `spec_id`, `placement_anchor`, `section_index`
+    (and, since VISUAL-013, `paragraph_index`/`heading_text`) on every
+    planner visual. Only the placement fields matter for injection — the
+    `prompt` is a placeholder because the image already exists.
+    """
+    meta = asset.metadata or {}
+    spec_id = meta.get("spec_id")
+    section_index = meta.get("section_index")
+    if not isinstance(spec_id, str) or not spec_id:
+        return None
+    if not isinstance(section_index, int) or section_index < 0:
+        return None
+    anchor = meta.get("placement_anchor")
+    if anchor not in _INLINE_ANCHORS:
+        # Missing/unknown anchor (or a stray non-cover "cover"): render at
+        # the section end, mirroring the dashboard's placement.
+        anchor = "between_paragraphs"
+    paragraph_index = meta.get("paragraph_index")
+    if not isinstance(paragraph_index, int) or paragraph_index < 1:
+        paragraph_index = None
+    heading_text = meta.get("heading_text")
+    if not isinstance(heading_text, str) or not heading_text:
+        heading_text = None
+    role_style = meta.get("role_style")
+    if role_style not in _VALID_ROLE_STYLES:
+        role_style = "feature_card"
+    aspect = meta.get("aspect_ratio")
+    if aspect not in _VALID_ASPECTS:
+        aspect = "16:9"
+    visual_style = meta.get("visual_style")
+    try:
+        return ImageSpec.model_validate(
+            {
+                "id": spec_id,
+                "role_style": role_style,
+                "visual_style": visual_style if isinstance(visual_style, str) else None,
+                "prompt": (asset.alt_text or asset.caption or "rendered visual")[:2000],
+                "alt_text": asset.alt_text or "",
+                "aspect_ratio": aspect,
+                "placement": {
+                    "anchor": anchor,
+                    "heading_text": heading_text,
+                    "paragraph_index": paragraph_index,
+                    "section_index": section_index,
+                },
+            }
+        )
+    except ValidationError:
+        return None
 
 
 def _split_into_sections(body_html: str) -> list[str]:
@@ -261,16 +341,24 @@ def _inject_between_paragraphs(
         if asset is None:
             continue
         para_index = spec.placement.paragraph_index
+        p_iter = list(_P_SPLIT_RE.finditer(out))
+        snippet = "\n" + _img_html(asset, spec, ctx) + "\n"
         if para_index is None or para_index < 1:
+            # No paragraph hint (typical for specs reconstructed from
+            # persisted metadata): render at the section end, mirroring
+            # the dashboard's placement, instead of dropping the visual.
+            if p_iter:
+                end = p_iter[-1].end()
+                out = out[:end] + snippet + out[end:]
+            else:
+                out = out + snippet
             continue
         # paragraph_index is 1-based: =1 means "after the first paragraph",
         # placing the visual between p[0] and p[1].
-        p_iter = list(_P_SPLIT_RE.finditer(out))
         anchor_para = para_index - 1
         if anchor_para >= len(p_iter):
             continue
         end = p_iter[anchor_para].end()
-        snippet = "\n" + _img_html(asset, spec, ctx) + "\n"
         out = out[:end] + snippet + out[end:]
     return out
 
