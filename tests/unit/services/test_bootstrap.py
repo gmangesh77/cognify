@@ -53,6 +53,14 @@ def _default_model() -> str:
 
 
 class TestModelTiering:
+    @pytest.fixture(autouse=True)
+    def _clean_tiering_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # tests/conftest import loads the repo .env into os.environ (the
+        # PR #55 leak), so a developer's real COGNIFY_LLM_MODEL_BY_STEP
+        # would flip these tests. Settings(_env_file=None) still reads
+        # os.environ — clear the key explicitly.
+        monkeypatch.delenv("COGNIFY_LLM_MODEL_BY_STEP", raising=False)
+
     def test_setting_parses_json_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv(
             "COGNIFY_LLM_MODEL_BY_STEP", '{"content_queries": "claude-haiku-4-5"}'

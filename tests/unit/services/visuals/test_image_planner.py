@@ -23,6 +23,7 @@ from src.services.visuals.image_planner import (
 )
 from tests.fixtures.visual_planner.planner_responses import (
     COVER_HERO_CTO_JSON,
+    COVER_HERO_DESCRIPTION_FIELD_JSON,
     COVER_HERO_GENERAL_JSON,
     CTO_CONCLUSION_EMPTY_JSON,
     CTO_DEEP_DIVE_JSON,
@@ -318,3 +319,46 @@ class TestPlanArticleCover:
         # Empty cover is unacceptable — the article needs a hero.
         assert cover.role_style == "hero"
         assert cover.placement.anchor == "cover"
+
+    async def test_description_field_is_accepted_as_prompt(self) -> None:
+        # Real Claude cover responses name the subject field "description"
+        # (the cover system prompt used to omit the field list, so the
+        # model invented its own name). This must NOT silently fall back
+        # to the generic hero — every article was getting the same cover.
+        cover = await plan_article_cover(
+            article_title=_article().title,
+            article_summary=_article().summary,
+            article_domain=_article().domain,
+            page_art_direction=None,
+            audience_persona="general_business",
+            llm=FakeListChatModel(responses=[COVER_HERO_DESCRIPTION_FIELD_JSON]),
+        )
+        assert not cover.id.startswith("fallback_")
+        assert cover.prompt.startswith("A dimly lit, focused workspace")
+        assert cover.placement.anchor == "cover"
+        assert cover.placement.section_index == -1
+
+
+class TestBuildCoverMessages:
+    def test_cover_system_message_spells_out_the_field_list(self) -> None:
+        # "Fields are the same as a section spec" is useless when the
+        # section field list is not in the message — the model invents
+        # field names ("description") and the cover silently degrades to
+        # the fallback. The cover system prompt must carry the shape.
+        from src.services.visuals.image_planner import build_cover_messages
+
+        messages = build_cover_messages(
+            article_title="The quiet refactor",
+            article_summary="A quiet refactor wins over a loud rewrite.",
+            article_domain="engineering",
+            page_art_direction=None,
+            audience_persona="general_business",
+        )
+        flat = "\n".join(m.content for m in messages if isinstance(m.content, str))
+        assert '"prompt"' in flat
+        assert '"alt_text"' in flat
+        # The field list must not drag the SECTION preamble along — a cover
+        # message that says "return a JSON array (zero or more)" right before
+        # "return a JSON OBJECT" invites an empty-array reply.
+        assert "JSON array" not in flat
+        assert "JSON OBJECT" in flat

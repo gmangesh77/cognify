@@ -263,6 +263,13 @@ class TestApiKeyEndpoints:
 class TestLlmConfigEndpoints:
     """Tests for LLM config endpoints."""
 
+    @pytest.fixture(autouse=True)
+    def _clean_tiering_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # tests/conftest import loads the repo .env into os.environ (the
+        # PR #55 leak), so a developer's real COGNIFY_LLM_MODEL_BY_STEP
+        # would leak into `auth_settings` and flip the tiering assertions.
+        monkeypatch.delenv("COGNIFY_LLM_MODEL_BY_STEP", raising=False)
+
     async def test_get_llm_config_ok(
         self,
         settings_client: httpx.AsyncClient,

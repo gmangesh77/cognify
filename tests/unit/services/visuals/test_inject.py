@@ -350,6 +350,199 @@ class TestInjectFallsBackOnUnplannedVisuals:
         assert img_idx > h2_idx
 
 
+def _planner_visual(
+    spec_id: str,
+    *,
+    section_index: int,
+    anchor: str,
+    paragraph_index: int | None = None,
+    role_style: str = "concept",
+    url: str = "/visuals/planned.png",
+) -> ImageAsset:
+    """A rendered planner visual as it comes back from the DB.
+
+    `canonical_articles` has no image_specs column, so at publish time the
+    only placement information is the asset's own metadata (exactly what
+    `image_render_node` persists).
+    """
+    metadata: dict[str, object] = {
+        "spec_id": spec_id,
+        "role_style": role_style,
+        "visual_style": "blueprint",
+        "aspect_ratio": "16:9",
+        "placement_anchor": anchor,
+        "section_index": section_index,
+        "provider": "dalle_3",
+        "model": "stub",
+        "prompt_used": "p",
+        "cost_usd": 0.0,
+        "generation_ms": 1,
+    }
+    if paragraph_index is not None:
+        metadata["paragraph_index"] = paragraph_index
+    return ImageAsset(
+        url=url,
+        caption="Caption " + spec_id,
+        alt_text="alt " + spec_id,
+        metadata=metadata,
+    )
+
+
+class TestInjectMetadataFallbackWithoutSpecs:
+    """Publish-time reality: `image_specs` are not persisted, so inject must
+    reconstruct placement from each asset's own metadata instead of dumping
+    every planner visual at the top of the article (the Ghost bug)."""
+
+    def test_between_paragraphs_visual_lands_in_its_section(self) -> None:
+        visual = _planner_visual(
+            "arch_diagram", section_index=1, anchor="between_paragraphs"
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        img_idx = result.find('data-spec-id="arch_diagram"')
+        arch_idx = result.find("<h2>Architecture")
+        assert img_idx != -1
+        # The visual belongs to section 1 — after its heading, not before
+        # the article body.
+        assert img_idx > arch_idx
+
+    def test_visual_is_not_prepended_before_first_section(self) -> None:
+        visual = _planner_visual(
+            "arch_diagram", section_index=1, anchor="between_paragraphs"
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        intro_idx = result.find("<h2>Intro")
+        img_idx = result.find('data-spec-id="arch_diagram"')
+        assert img_idx > intro_idx >= 0
+
+    def test_top_visual_lands_after_its_section_heading(self) -> None:
+        visual = _planner_visual("intro_card", section_index=0, anchor="top")
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        intro_section = result.split("<h2>Architecture</h2>")[0]
+        img_idx = intro_section.find('data-spec-id="intro_card"')
+        first_p = intro_section.find("<p>First paragraph")
+        assert img_idx != -1
+        assert intro_section.find("<h2>Intro") < img_idx < first_p
+
+    def test_metadata_paragraph_index_positions_mid_section(self) -> None:
+        visual = _planner_visual(
+            "mid_diagram",
+            section_index=0,
+            anchor="between_paragraphs",
+            paragraph_index=1,
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        intro_section = result.split("<h2>Architecture</h2>")[0]
+        first_p_end = intro_section.find("</p>", intro_section.find("First paragraph"))
+        img_idx = intro_section.find('data-spec-id="mid_diagram"')
+        second_p_start = intro_section.find("<p>Second paragraph")
+        assert first_p_end < img_idx < second_p_start
+
+    def test_between_paragraphs_without_index_appends_at_section_end(self) -> None:
+        # The persisted metadata has no paragraph_index — mirror the admin
+        # page, which renders such visuals at the end of their section.
+        visual = _planner_visual(
+            "end_diagram", section_index=0, anchor="between_paragraphs"
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        intro_section = result.split("<h2>Architecture</h2>")[0]
+        img_idx = intro_section.find('data-spec-id="end_diagram"')
+        third_p_end = intro_section.find("</p>", intro_section.find("Third paragraph"))
+        assert img_idx > third_p_end != -1
+
+    def test_cover_visual_still_not_inlined(self) -> None:
+        cover = _planner_visual(
+            "fallback_ab12cd34", section_index=-1, anchor="cover", role_style="hero"
+        )
+        inline = _planner_visual(
+            "arch_diagram", section_index=1, anchor="between_paragraphs"
+        )
+        article = _article(image_specs=[], visuals=[cover, inline])
+        result = inject_visuals(article, _ctx())
+        assert 'data-spec-id="fallback_ab12cd34"' not in result
+        assert 'data-spec-id="arch_diagram"' in result
+
+    def test_idempotent_on_second_pass(self) -> None:
+        visual = _planner_visual(
+            "arch_diagram", section_index=1, anchor="between_paragraphs"
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        once = inject_visuals(article, _ctx())
+        article2 = _article(
+            image_specs=[], visuals=[visual], body_html_sections=(once,)
+        )
+        twice = inject_visuals(article2, _ctx())
+        assert _img_count(twice, "arch_diagram") == 1
+
+    def test_two_hintless_visuals_keep_article_order(self) -> None:
+        # Both land at the section end; the second must follow the first
+        # (a naive "insert after the last <p>" re-anchors before the
+        # previously inserted figure and reverses the order).
+        v1 = _planner_visual("first", section_index=0, anchor="between_paragraphs")
+        v2 = _planner_visual("second", section_index=0, anchor="between_paragraphs")
+        article = _article(image_specs=[], visuals=[v1, v2])
+        result = inject_visuals(article, _ctx())
+        assert result.find('data-spec-id="first"') < result.find(
+            'data-spec-id="second"'
+        )
+
+    def test_background_anchor_still_renders_a_visible_figure(self) -> None:
+        # `background` only emits a marker comment for planned specs; a
+        # paid-for persisted asset must not vanish from the published post.
+        visual = _planner_visual("bg_art", section_index=1, anchor="background")
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        assert 'data-spec-id="bg_art"' in result
+        assert "<img" in result.split('data-spec-id="bg_art"')[1][:200]
+        assert result.find('data-spec-id="bg_art"') > result.find("<h2>Architecture")
+
+    def test_duplicate_spec_id_publishes_the_latest_asset(self) -> None:
+        # Visual Studio regenerate + "Insert into article" appends a second
+        # asset under the same spec id — the newest render must win.
+        old = _planner_visual(
+            "concept_1", section_index=0, anchor="top", url="/v/old.png"
+        )
+        new = _planner_visual(
+            "concept_1", section_index=0, anchor="top", url="/v/new.png"
+        )
+        article = _article(image_specs=[], visuals=[old, new])
+        result = inject_visuals(article, _ctx())
+        assert "/v/new.png" in result
+        assert "/v/old.png" not in result
+        assert _img_count(result, "concept_1") == 1
+
+    def test_paragraph_index_beyond_section_falls_back_to_section_end(self) -> None:
+        visual = _planner_visual(
+            "late", section_index=1, anchor="between_paragraphs", paragraph_index=9
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        img_idx = result.find('data-spec-id="late"')
+        assert img_idx > result.find("Body of architecture")
+
+    def test_section_index_beyond_body_is_appended_not_lost(self) -> None:
+        visual = _planner_visual("orphan", section_index=7, anchor="between_paragraphs")
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        img_idx = result.find('data-spec-id="orphan"')
+        assert img_idx != -1
+        assert img_idx > result.find("Body of architecture")
+
+    def test_legacy_chart_without_planner_metadata_keeps_old_path(self) -> None:
+        # No spec_id, no section_index → still the legacy prepend behaviour.
+        legacy = ImageAsset(
+            url="/charts/old.png",
+            metadata={"type": "chart"},
+        )
+        article = _article(image_specs=[], visuals=[legacy])
+        result = inject_visuals(article, _ctx())
+        assert result.find("/charts/old.png") < result.find("<h2>Intro")
+
+
 class TestInjectMultiSpecOrdering:
     def test_multiple_specs_in_one_section_preserve_order(self) -> None:
         specs = [

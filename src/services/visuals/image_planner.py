@@ -56,8 +56,10 @@ _PLANNER_SYSTEM_INTRO: str = (
     "monotonous. Return JSON only — no commentary, no markdown fences."
 )
 
-_PLANNER_OUTPUT_SHAPE: str = (
-    "Return a JSON array of objects (zero or more). Each object MUST have:\n"
+# The per-spec field list, shared by the section (array) and cover (single
+# object) messages. Keep it free of any array/section framing.
+_SPEC_FIELD_LIST: str = (
+    "Each spec object MUST have:\n"
     '  - "id": short string identifier (e.g. "intro_hero", "deep_concept_1")\n'
     '  - "role_style": one of hero | feature_card | concept | process_step | '
     "comparison_split | quote_card | stat_card | screenshot_mock | editorial "
@@ -81,11 +83,21 @@ _PLANNER_OUTPUT_SHAPE: str = (
     "(optional; NOT shown to readers — never put reader-facing text here)"
 )
 
+_PLANNER_OUTPUT_SHAPE: str = (
+    "Return a JSON array of objects (zero or more). " + _SPEC_FIELD_LIST
+)
+
+# The cover message MUST carry the field list itself. Before VISUAL-013 it
+# only said "fields are the same as a section spec" without including that
+# list — so the model invented its own field name for the subject
+# ("description") and every cover silently fell back to the generic hero.
 _COVER_OUTPUT_SHAPE: str = (
-    "Return a JSON OBJECT (not an array) describing exactly one cover "
-    'image. Fields are the same as a section spec, but "placement.anchor" '
-    'MUST be "cover" and "placement.section_index" MUST be -1. The role_style '
-    'should typically be "hero" unless the article asks for something else.'
+    _SPEC_FIELD_LIST + "\n\n"
+    "Return a single JSON OBJECT (not an array) describing exactly one cover "
+    "image, using exactly the fields above — the subject sentence goes in "
+    '"prompt". "placement.anchor" MUST be "cover" and '
+    '"placement.section_index" MUST be -1. The role_style should typically '
+    'be "hero" unless the article asks for something else.'
 )
 
 
@@ -260,6 +272,10 @@ async def plan_article_cover(
         data = data[0] if data else None
 
     if not isinstance(data, dict):
+        logger.warning(
+            "image_planner_cover_unexpected_shape",
+            actual_type=type(data).__name__,
+        )
         return _fallback_cover_spec()
 
     spec = _coerce_spec(data, fallback_section_index=-1, force_cover=True)
@@ -294,6 +310,28 @@ def _coerce_spec(
 
     raw_dict.setdefault("id", f"spec_{uuid.uuid4().hex[:8]}")
     if not raw_dict.get("prompt"):
+        # Models sometimes put the subject sentence under a different key
+        # (observed live: covers came back with "description"). Accept the
+        # common aliases rather than silently dropping the whole spec.
+        for alias in ("description", "subject"):
+            value = raw_dict.get(alias)
+            if isinstance(value, str) and value.strip():
+                raw_dict["prompt"] = value.strip()[:2000]
+                logger.info(
+                    "image_planner_prompt_alias_used",
+                    id=raw_dict.get("id"),
+                    alias=alias,
+                    force_cover=force_cover,
+                )
+                break
+    if not raw_dict.get("prompt"):
+        # This was a silent `return None` — the only unlogged failure path
+        # in the planner, which hid the all-fallback-heroes bug for months.
+        logger.warning(
+            "image_planner_spec_missing_prompt",
+            id=raw_dict.get("id"),
+            keys=sorted(raw_dict.keys()),
+        )
         return None
 
     try:
