@@ -104,6 +104,24 @@ COVER_HERO_GENERAL_JSON = """
 }
 """
 
+# What Claude ACTUALLY returns for covers: the subject lives in a field
+# called "description" (observed live on every article — the cover prompt
+# used to omit the field list, so the model invented its own name).
+COVER_HERO_DESCRIPTION_FIELD_JSON = """
+```json
+{
+  "id": "cover",
+  "placement": {"anchor": "cover", "section_index": -1},
+  "role_style": "hero",
+  "visual_style": "cinematic",
+  "aspect_ratio": "16:9",
+  "description": "A dimly lit, focused workspace with a real terminal window.",
+  "alt_text": "Engineer overseeing an autonomous process at a dim workspace",
+  "rationale": "Conveys controlled autonomy for the hero."
+}
+```
+"""
+
 COVER_HERO_CTO_JSON = """
 {
   "id": "article_cover",

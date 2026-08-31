@@ -81,11 +81,17 @@ _PLANNER_OUTPUT_SHAPE: str = (
     "(optional; NOT shown to readers — never put reader-facing text here)"
 )
 
+# The cover shape MUST repeat the full field list (`_PLANNER_OUTPUT_SHAPE`)
+# in its message. Before VISUAL-013 it only said "fields are the same as a
+# section spec" without including that spec — so the model invented its own
+# field name for the subject ("description") and every cover silently fell
+# back to the generic default hero.
 _COVER_OUTPUT_SHAPE: str = (
     "Return a JSON OBJECT (not an array) describing exactly one cover "
-    'image. Fields are the same as a section spec, but "placement.anchor" '
-    'MUST be "cover" and "placement.section_index" MUST be -1. The role_style '
-    'should typically be "hero" unless the article asks for something else.'
+    "image. Use exactly the fields listed above — the subject sentence "
+    'goes in "prompt". "placement.anchor" MUST be "cover" and '
+    '"placement.section_index" MUST be -1. The role_style should typically '
+    'be "hero" unless the article asks for something else.'
 )
 
 
@@ -160,6 +166,7 @@ def build_cover_messages(
         f"Persona visual register:\n{persona_register}\n\n"
         f"{catalogue}\n\n"
         f"{cliches}\n\n"
+        f"{_PLANNER_OUTPUT_SHAPE}\n\n"
         f"{_COVER_OUTPUT_SHAPE}"
     )
 
@@ -294,6 +301,22 @@ def _coerce_spec(
 
     raw_dict.setdefault("id", f"spec_{uuid.uuid4().hex[:8]}")
     if not raw_dict.get("prompt"):
+        # Models sometimes put the subject sentence under a different key
+        # (observed live: covers came back with "description"). Accept the
+        # common aliases rather than silently dropping the whole spec.
+        for alias in ("description", "subject"):
+            value = raw_dict.get(alias)
+            if isinstance(value, str) and value.strip():
+                raw_dict["prompt"] = value.strip()[:2000]
+                break
+    if not raw_dict.get("prompt"):
+        # This was a silent `return None` — the only unlogged failure path
+        # in the planner, which hid the all-fallback-heroes bug for months.
+        logger.warning(
+            "image_planner_spec_missing_prompt",
+            id=raw_dict.get("id"),
+            keys=sorted(raw_dict.keys()),
+        )
         return None
 
     try:
