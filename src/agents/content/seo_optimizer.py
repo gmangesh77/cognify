@@ -12,6 +12,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
+from src.agents.prompts import render_prompt
 from src.models.content import SEOMetadata, StructuredDataLD
 from src.models.content_pipeline import (
     AIDiscoverabilityResult,
@@ -29,34 +30,19 @@ AI_DISCLOSURE_TEXT = (
 
 _MAX_RETRIES = 2
 
-_SEO_SYSTEM = (
-    "You are an SEO specialist. Generate SEO metadata for an article. "
-    "Respond with valid JSON only: "
-    '{"title": "50-60 char", "description": "150-160 char", '
-    '"keywords": ["keyword1", "keyword2"]}'
-)
 
-_SEO_USER = (
-    "Generate SEO metadata for this article:\n\n"
-    "Title: {title}\n"
-    "Body (excerpt): {body_excerpt}\n\n"
-    "Requirements: title 50-60 chars, description 150-160 chars, "
-    "5-10 keywords. Return JSON only."
-)
-
-_DISCOVER_SYSTEM = (
-    "You are a content analyst. Extract a concise summary (1-2 sentences, "
-    "under 500 chars) and 3-5 key factual claims with citation references. "
-    "Respond with valid JSON only: "
-    '{"summary": "...", "key_claims": ["claim [1]", "claim [2]"]}'
-)
-
-_DISCOVER_USER = (
-    "Extract summary and key claims from this article:\n\n"
-    "{sections_text}\n\n"
-    "Citations available: {citations_text}\n"
-    "Return JSON only."
-)
+def _seo_messages(
+    title: str, body_text: str, extras: str
+) -> list[SystemMessage | HumanMessage]:
+    return [
+        SystemMessage(content=render_prompt("content_seo.system")),
+        HumanMessage(
+            content=render_prompt(
+                "content_seo.user", title=title, body_excerpt=body_text[:2000]
+            )
+            + extras
+        ),
+    ]
 
 
 async def _parse_seo_response(
@@ -146,16 +132,7 @@ async def generate_seo_metadata(
         )
     if content_tone:
         extras += f"\nContent tone: {content_tone}."
-    messages: list[SystemMessage | HumanMessage] = [
-        SystemMessage(content=_SEO_SYSTEM),
-        HumanMessage(
-            content=_SEO_USER.format(
-                title=article_title,
-                body_excerpt=body_text[:2000],
-            )
-            + extras
-        ),
-    ]
+    messages = _seo_messages(article_title, body_text, extras)
     return await _parse_seo_response(llm, messages)
 
 
@@ -182,9 +159,10 @@ async def generate_ai_discoverability(
     """Generate AI discoverability summary and key claims."""
     logger.info("ai_discoverability_generation_started")
     messages: list[SystemMessage | HumanMessage] = [
-        SystemMessage(content=_DISCOVER_SYSTEM),
+        SystemMessage(content=render_prompt("content_discover.system")),
         HumanMessage(
-            content=_DISCOVER_USER.format(
+            content=render_prompt(
+                "content_discover.user",
                 sections_text=_format_sections(drafts),
                 citations_text=_format_citations(citations),
             )

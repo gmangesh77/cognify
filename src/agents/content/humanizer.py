@@ -15,6 +15,7 @@ import structlog
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from src.agents.prompts import render_prompt
 from src.models.content_pipeline import SectionDraft, SlopScore
 from src.utils.markdown_structure import (
     MarkdownBlock,
@@ -29,17 +30,6 @@ from src.utils.markdown_structure import (
 logger = structlog.get_logger()
 
 _CITATION_RE = re.compile(r"\[(\d+)\]")
-
-_REWRITE_SYSTEM = (
-    "You are an editor making AI-generated text sound natural. "
-    "Rewrite the section to fix the listed issues. Keep all factual "
-    "claims and [N] citations exactly as they are. Do not change the "
-    "meaning. Only fix the writing style. "
-    "If the input contains the sentinel `<<<BLOCK>>>` between chunks, "
-    "preserve every sentinel verbatim and rewrite each chunk in place "
-    "— the rewrite must contain exactly the same number of sentinels "
-    "as the input."
-)
 
 
 def _replace_dashes(text: str) -> str:
@@ -146,7 +136,7 @@ async def rewrite_section(
     prose_payload = _payload_for_llm(rewritable)
     prompt = _build_rewrite_prompt(section, slop_score, prose_payload)
     messages = [
-        SystemMessage(content=_REWRITE_SYSTEM),
+        SystemMessage(content=render_prompt("content_humanize.system")),
         HumanMessage(content=prompt),
     ]
     response = await llm.ainvoke(messages)

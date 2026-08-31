@@ -19,6 +19,7 @@ from src.agents.content.length_budgets import (
     LengthBudget,
     content_type_guidance,
 )
+from src.agents.prompts import DEFAULT_PROMPTS, render_prompt
 from src.models.content_pipeline import ArticleOutline
 from src.models.research import FacetFindings, TopicInput
 from src.utils.llm_json import parse_llm_json
@@ -45,28 +46,8 @@ class OutlineContext:
     budget: LengthBudget | None = None
 
 
-_SYSTEM_PROMPT = (
-    "You are an expert content strategist. Generate a structured "
-    "article outline from research findings. The outline should have "
-    "sections with narrative flow: introduction, findings, "
-    "analysis, and conclusion. Follow the section count and word "
-    "budgets given in the requirements. "
-    "Do not use em-dashes. Use periods or commas instead. "
-    "Avoid formal transitions like moreover, furthermore, in conclusion. "
-    "Write in a natural conversational tone. Vary sentence length. "
-    "Be specific and concrete, not abstract. "
-    "Respond with valid JSON only."
-)
-
-_USER_TEMPLATE = (
-    "Generate an article outline for this topic:\n\n"
-    "Title: {title}\n"
-    "Description: {description}\n"
-    "Domain: {domain}\n\n"
-    "Research findings:\n{findings_summary}\n\n"
-    "{requirements}\n"
-    "Return JSON: {schema_hint}"
-)
+# Re-exported so existing prompt-regression tests keep importing from here.
+_SYSTEM_PROMPT = DEFAULT_PROMPTS["content_outline.system"].template
 
 
 def _requirements_block(ctx: OutlineContext | None) -> str:
@@ -139,7 +120,8 @@ async def generate_outline(
 ) -> ArticleOutline:
     """Generate an article outline from topic and findings."""
     logger.info("outline_generation_started", topic_title=topic.title)
-    user_msg = _USER_TEMPLATE.format(
+    user_msg = render_prompt(
+        "content_outline.user",
         title=topic.title,
         description=topic.description,
         domain=topic.domain,
@@ -154,7 +136,7 @@ async def generate_outline(
             "\n".join(context_lines) + "\n\nRequirements:\n",
         )
     messages = [
-        SystemMessage(content=_SYSTEM_PROMPT),
+        SystemMessage(content=render_prompt("content_outline.system")),
         HumanMessage(content=user_msg),
     ]
 
