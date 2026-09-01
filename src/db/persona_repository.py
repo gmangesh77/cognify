@@ -6,7 +6,7 @@ from typing import Protocol
 from uuid import UUID
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.db.persona_repository_memory import InMemoryPersonaRepository  # noqa: F401
@@ -102,12 +102,11 @@ class PgPersonaRepository:
 
     async def delete(self, persona_id: UUID) -> bool:
         async with self._sf() as db:
-            row = await db.get(PersonaRow, persona_id)
-            if row is None:
-                return False
-            await db.delete(row)
+            result = await db.execute(
+                delete(PersonaRow).where(PersonaRow.id == persona_id)
+            )
             await db.commit()
-            return True
+            return bool(getattr(result, "rowcount", 0))
 
     async def add_sample(self, persona_id: UUID, data: SampleCreate) -> PersonaSample:
         async with self._sf() as db:
@@ -121,12 +120,13 @@ class PgPersonaRepository:
 
     async def delete_sample(self, persona_id: UUID, sample_id: UUID) -> bool:
         async with self._sf() as db:
-            row = await db.get(PersonaSampleRow, sample_id)
-            if row is None or row.persona_id != persona_id:
-                return False
-            await db.delete(row)
+            stmt = delete(PersonaSampleRow).where(
+                PersonaSampleRow.id == sample_id,
+                PersonaSampleRow.persona_id == persona_id,
+            )
+            result = await db.execute(stmt)
             await db.commit()
-            return True
+            return bool(getattr(result, "rowcount", 0))
 
     async def list_samples(self, persona_id: UUID) -> list[PersonaSample]:
         async with self._sf() as db:
