@@ -7,12 +7,17 @@ export async function listPrompts(): Promise<PromptView[]> {
 }
 
 export async function updatePrompt(key: string, template: string): Promise<PromptView> {
-  const { data } = await apiClient.put<PromptView>(`/prompts/${key}`, { template });
+  const { data } = await apiClient.put<PromptView>(
+    `/prompts/${encodeURIComponent(key)}`,
+    { template },
+  );
   return data;
 }
 
 export async function resetPrompt(key: string): Promise<PromptView> {
-  const { data } = await apiClient.delete<PromptView>(`/prompts/${key}`);
+  const { data } = await apiClient.delete<PromptView>(
+    `/prompts/${encodeURIComponent(key)}`,
+  );
   return data;
 }
 

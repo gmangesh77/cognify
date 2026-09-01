@@ -64,6 +64,10 @@ class TestRules:
         out = validate_template("{title", _spec({"title"}))
         assert out and out[0].startswith("invalid template syntax")
 
+    def test_repeated_positional_placeholder_deduped(self) -> None:
+        out = validate_template("{} and {0} {title}", _spec({"title"}))
+        assert out.count("positional placeholders are not allowed") == 1
+
 
 class TestDefaultsSelfValidate:
     @pytest.mark.parametrize("key", sorted(DEFAULT_PROMPTS))

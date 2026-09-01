@@ -1541,7 +1541,7 @@ git commit -m "feat(prompts): GET/PUT/DELETE /prompts with validation + app wiri
 **Files:**
 - Modify: `src/services/pipeline_runner.py` (`PipelineDeps` + both runners), `src/services/bootstrap.py` (`PipelineServices.prompt_override_repo`), `src/tasks/pipeline_tasks.py:57-61`, `src/api/routers/research_pipeline.py:50-54`
 - Create: `src/api/prompt_scope.py`
-- Modify: `src/api/routers/content.py` (`section_rewrite`, `paragraph_tone`, `humanize_preview`), `src/api/routers/content_regenerate.py` (`section_regenerate`), `src/api/routers/article_metadata.py` (`regenerate_seo_field`), `src/api/routers/content_humanize_stream.py` (`gen()`), `src/api/routers/topics.py` (`analyze_topic`)
+- Modify: `src/api/routers/content.py` (`section_rewrite`, `paragraph_tone`, `humanize_preview`), `src/api/routers/content_regenerate.py` (`section_regenerate`), `src/api/routers/outline.py` (`regenerate_outline`), `src/api/routers/article_metadata.py` (`regenerate_seo_field`), `src/api/routers/content_humanize_stream.py` (`gen()`), `src/api/routers/topics.py` (`analyze_topic`)
 - Test: `tests/unit/services/test_pipeline_runner_prompts.py`, `tests/unit/api/test_prompt_scope.py`
 
 **Interfaces:**
@@ -1735,6 +1735,7 @@ Handlers — add `overrides: Mapping[str, str] = Depends(load_prompt_overrides)`
 - `content.py::paragraph_tone` — wrap **both** `expand_tone_preset(body.preset)` and the `await section_rewrite(request, rewrite, user, overrides)` call (pass the loaded mapping through; `section_rewrite`'s own bind is nested and harmless).
 - `content.py::humanize_preview` — wrap `await preview_humanization(...)`.
 - `content_regenerate.py::section_regenerate` — wrap `await service.regenerate(...)`.
+- `outline.py::regenerate_outline` — wrap `await gate.regenerate_outline(...)` (missed in the original pass; added final-review 2026-09-01).
 - `article_metadata.py::regenerate_seo_field` — wrap the `_regenerate_seo(...)` await.
 - `content_humanize_stream.py::gen()` — `with bind_prompt_overrides(overrides): async for frame in stream_humanization(...): yield frame` (bind inside the generator).
 - `topics.py::analyze_topic` — wrap `await analyzer.analyze(...)`.

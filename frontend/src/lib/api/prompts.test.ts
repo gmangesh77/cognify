@@ -39,6 +39,20 @@ describe("prompts api", () => {
     expect(apiClient.delete).toHaveBeenCalledWith("/prompts/content_outline.user");
   });
 
+  it("encodes a key that needs escaping in the URL path", async () => {
+    vi.mocked(apiClient.put).mockResolvedValue({ data: view });
+    vi.mocked(apiClient.delete).mockResolvedValue({ data: view });
+    await updatePrompt("content outline/user", "T");
+    expect(apiClient.put).toHaveBeenCalledWith(
+      "/prompts/content%20outline%2Fuser",
+      { template: "T" },
+    );
+    await resetPrompt("content outline/user");
+    expect(apiClient.delete).toHaveBeenCalledWith(
+      "/prompts/content%20outline%2Fuser",
+    );
+  });
+
   it("extractPromptViolations reads detail.violations on 422 only", () => {
     const err = { response: { status: 422, data: { detail: { violations: ["unknown variable {x}"] } } } };
     expect(extractPromptViolations(err)).toEqual(["unknown variable {x}"]);

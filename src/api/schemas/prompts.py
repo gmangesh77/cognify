@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from src.agents.prompts.validation import MAX_TEMPLATE_CHARS
+
 
 class PromptView(BaseModel):
     key: str
@@ -22,4 +24,4 @@ class PromptListResponse(BaseModel):
 
 
 class UpdatePromptRequest(BaseModel):
-    template: str = Field(min_length=1)
+    template: str = Field(min_length=1, max_length=MAX_TEMPLATE_CHARS)

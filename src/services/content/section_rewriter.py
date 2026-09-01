@@ -122,8 +122,9 @@ async def rewrite_section_prose(
         paragraph_index=paragraph_index,
         persona_register=persona_register,
     )
+    system_prompt = render_prompt("section_rewrite.system")
     messages = [
-        SystemMessage(content=render_prompt("section_rewrite.system")),
+        SystemMessage(content=system_prompt),
         HumanMessage(content=user_prompt),
     ]
     response = await llm.ainvoke(messages)
@@ -145,7 +146,7 @@ async def rewrite_section_prose(
         markdown_fragment=fragment,
         diff=diff,
         model=str(model_name),
-        prompt_used=render_prompt("section_rewrite.system"),
+        prompt_used=system_prompt,
         instruction=instruction,
         tokens_input=usage.get("input"),
         tokens_output=usage.get("output"),

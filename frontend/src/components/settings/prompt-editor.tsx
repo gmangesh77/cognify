@@ -28,6 +28,9 @@ export function PromptEditor({ prompt, canEdit, violations, saving, onSave, onRe
         <h3 className="font-mono text-sm font-semibold text-neutral-900">{prompt.key}</h3>
         <p className="text-xs text-neutral-500">{prompt.description}</p>
       </div>
+      <p className="text-xs text-neutral-500">
+        Use {"{variable}"} for the listed variables; write literal braces as {"{{"} and {"}}"}.
+      </p>
       <textarea
         value={draft}
         readOnly={!canEdit}

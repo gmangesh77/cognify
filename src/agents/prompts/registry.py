@@ -45,6 +45,9 @@ def register(*templates: PromptTemplate) -> None:
         if not spec.key.startswith(spec.step + "."):
             msg = f"prompt key {spec.key!r} must start with {spec.step!r}."
             raise ValueError(msg)
+        if spec.key in _REGISTRY:
+            msg = f"duplicate prompt key {spec.key!r}"
+            raise ValueError(msg)
         _REGISTRY[spec.key] = spec
 
 
@@ -60,11 +63,33 @@ def resolve_prompt(key: str) -> str:
 
 def render_prompt(key: str, **variables: object) -> str:
     """Resolve and `.format()` `key`. Zero-variable templates are returned
-    verbatim so literal braces (JSON examples) survive."""
-    template = resolve_prompt(key)
-    if not DEFAULT_PROMPTS[key].variables:
-        return template
-    return template.format(**variables)
+    verbatim so literal braces (JSON examples) survive.
+
+    A bound override that fails to format (e.g. a variable was renamed
+    after the override was saved) falls back to the default template —
+    the registry self-validation test guarantees defaults always format.
+    The default path is never guarded this way: a missing variable there
+    is a programming error and must raise.
+    """
+    spec = DEFAULT_PROMPTS[key]  # KeyError on unknown key -- deliberate
+    if not spec.variables:
+        return resolve_prompt(key)
+    overrides = current_prompt_overrides.get()
+    if key not in overrides:
+        return spec.template.format(**variables)
+    logger.info("prompt_override_applied", key=key)
+    return _render_override(key, overrides[key], spec.template, variables)
+
+
+def _render_override(
+    key: str, override: str, default: str, variables: dict[str, object]
+) -> str:
+    """`.format()` an override, falling back to `default` on stale variables."""
+    try:
+        return override.format(**variables)
+    except (KeyError, IndexError, ValueError) as exc:
+        logger.warning("prompt_override_render_failed", key=key, error=str(exc))
+        return default.format(**variables)
 
 
 @contextmanager

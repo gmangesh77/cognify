@@ -6,6 +6,7 @@ import httpx
 import pytest
 
 from src.agents.prompts import DEFAULT_PROMPTS
+from src.agents.prompts.validation import MAX_TEMPLATE_CHARS
 from src.config.settings import Settings
 from src.db.prompt_override_repository import InMemoryPromptOverrideRepository
 
@@ -96,6 +97,17 @@ class TestPut:
         violations = resp.json()["detail"]["violations"]
         assert "unknown variable {bogus}" in violations
         assert "missing required variable {domain}" in violations
+
+    async def test_oversized_template_rejected_by_schema(
+        self, client, auth_settings: Settings
+    ) -> None:
+        resp = await client.put(
+            f"/api/v1/prompts/{KEY}",
+            json={"template": "x" * (MAX_TEMPLATE_CHARS + 1)},
+            headers=make_auth_header("admin", auth_settings),
+        )
+        assert resp.status_code == 422
+        assert resp.json()["error"]["code"] == "validation_error"
 
     async def test_unknown_key_404(self, client, auth_settings: Settings) -> None:
         resp = await client.put(

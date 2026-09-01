@@ -5,10 +5,12 @@ from __future__ import annotations
 import pytest
 
 from src.agents.prompts.registry import (
+    _REGISTRY,
     DEFAULT_PROMPTS,
     PromptTemplate,
     bind_prompt_overrides,
     current_prompt_overrides,
+    register,
     render_prompt,
     resolve_prompt,
 )
@@ -73,3 +75,44 @@ class TestBind:
                 assert current_prompt_overrides.get()["a"] == "2"
             assert current_prompt_overrides.get()["a"] == "1"
         assert current_prompt_overrides.get() == {}
+
+
+class TestRenderOverrideFallback:
+    def test_override_with_unknown_placeholder_falls_back_to_default(self) -> None:
+        key = _probe().key
+        default = DEFAULT_PROMPTS[key].template
+        with bind_prompt_overrides({key: "OVERRIDE {sections_text} {typo_var}"}):
+            out = render_prompt(key, sections_text="S1")
+        assert out == default.format(sections_text="S1")
+
+    def test_default_path_missing_variable_still_raises(self) -> None:
+        with pytest.raises(KeyError):
+            render_prompt(_probe().key)
+
+
+class TestRegisterDuplicateGuard:
+    def test_duplicate_key_raises(self) -> None:
+        spec = PromptTemplate(
+            key="content_outline.__test_dup",
+            step="content_outline",
+            description="d",
+            template="x",
+            variables=frozenset(),
+        )
+        register(spec)
+        try:
+            with pytest.raises(ValueError, match="duplicate prompt key"):
+                register(spec)
+        finally:
+            del _REGISTRY[spec.key]
+
+    def test_bad_step_prefix_raises(self) -> None:
+        spec = PromptTemplate(
+            key="not_the_step.user",
+            step="content_outline",
+            description="d",
+            template="x",
+            variables=frozenset(),
+        )
+        with pytest.raises(ValueError, match="must start with"):
+            register(spec)

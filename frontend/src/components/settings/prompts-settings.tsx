@@ -30,9 +30,13 @@ export function PromptsSettings() {
 
   const handleReset = async () => {
     if (!selected) return;
-    await reset(selected.key);
-    setViolations([]);
-    showToast("Prompt reset to default");
+    try {
+      await reset(selected.key);
+      setViolations([]);
+      showToast("Prompt reset to default");
+    } catch {
+      showToast("Reset failed");
+    }
   };
 
   return (

@@ -49,6 +49,8 @@ def _placeholder_violations(
         if name == "" or name.isdigit():
             violations.append("positional placeholders are not allowed")
             continue
+        # Record before the format-spec check so a badly-formatted named
+        # placeholder isn't ALSO reported as a missing required variable.
         seen.add(name)
         if fmt or conversion:
             msg = _format_spec_message(name, fmt, conversion)
@@ -58,4 +60,4 @@ def _placeholder_violations(
             violations.append(f"unknown variable {{{name}}}")
     for missing in sorted(spec.variables - seen):
         violations.append(f"missing required variable {{{missing}}}")
-    return violations
+    return list(dict.fromkeys(violations))

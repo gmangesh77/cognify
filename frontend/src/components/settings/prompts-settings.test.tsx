@@ -10,7 +10,7 @@ vi.mock("@/hooks/use-prompts", () => ({
     prompts: [{
       key: "content_outline.user", step: "content_outline", description: "d",
       variables: ["title"], default_template: "D {title}", template: "D {title}",
-      is_overridden: false, updated_by: null, updated_at: null,
+      is_overridden: true, updated_by: null, updated_at: null,
     }],
     isLoading: false, error: null, save, reset, isSaving: false,
   }),
@@ -39,5 +39,15 @@ describe("PromptsSettings", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("missing required variable {title}")).toBeInTheDocument();
     expect(showToast).not.toHaveBeenCalled();
+  });
+
+  it("toasts failure and does not toast success when reset rejects", async () => {
+    reset.mockRejectedValue(new Error("network error"));
+    render(<PromptsSettings />);
+    fireEvent.click(screen.getByText("content_outline.user"));
+    fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
+    await waitFor(() => expect(reset).toHaveBeenCalledWith("content_outline.user"));
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith("Reset failed"));
+    expect(showToast).not.toHaveBeenCalledWith("Prompt reset to default");
   });
 });
