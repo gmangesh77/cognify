@@ -1,5 +1,6 @@
 from starlette.status import (
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
     HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_429_TOO_MANY_REQUESTS,
 )
@@ -7,6 +8,7 @@ from starlette.status import (
 from src.api.errors import (
     CognifyError,
     CognifyValidationError,
+    ConflictError,
     NotFoundError,
     RateLimitError,
     ServiceUnavailableError,
@@ -40,6 +42,17 @@ class TestCognifyErrors:
         err = ServiceUnavailableError(message="Model unavailable")
         assert err.status_code == 503
         assert err.code == "service_unavailable"
+
+    def test_conflict_error(self) -> None:
+        err = ConflictError()
+        assert err.status_code == HTTP_409_CONFLICT
+        assert err.code == "conflict"
+
+    def test_conflict_error_custom_code(self) -> None:
+        err = ConflictError(code="persona_not_ready", message="Not ready")
+        assert err.status_code == HTTP_409_CONFLICT
+        assert err.code == "persona_not_ready"
+        assert err.message == "Not ready"
 
     def test_service_unavailable_custom_code(self) -> None:
         err = ServiceUnavailableError(

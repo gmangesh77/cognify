@@ -43,6 +43,7 @@ from src.api.routers.health import health_router
 from src.api.routers.metrics import metrics_router
 from src.api.routers.oauth import oauth_router
 from src.api.routers.outline import outline_router
+from src.api.routers.personas import personas_router
 from src.api.routers.pipeline_debug import pipeline_debug_router
 from src.api.routers.prompts import prompts_router
 from src.api.routers.publishing import publishing_router
@@ -57,6 +58,7 @@ from src.config.settings import Settings
 from src.db.engine import create_async_engine as create_db_engine
 from src.db.engine import get_session_factory
 from src.db.llm_call_repository import PgLlmCallRepository
+from src.db.persona_repository import InMemoryPersonaRepository
 from src.db.prompt_override_repository import InMemoryPromptOverrideRepository
 from src.db.repositories import (
     PgAgentStepRepository,
@@ -86,6 +88,7 @@ from src.services.content_repositories import (
     InMemoryArticleDraftRepository,
     InMemoryArticleRepository,
 )
+from src.services.persona.service import PersonaService
 from src.services.research import (
     InMemoryAgentStepRepository,
     InMemoryResearchSessionRepository,
@@ -283,6 +286,16 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         from src.db.prompt_override_repository import PgPromptOverrideRepository
 
         app.state.prompt_override_repo = PgPromptOverrideRepository(sf)
+        # AUTHOR-011 — persona voice engine. Lazy import: API boots before
+        # migration. Embedding access stays lazy (`_get_or_create_...`) so
+        # this works whether or not the model has warmed up yet.
+        from src.db.persona_repository import PgPersonaRepository
+
+        app.state.persona_repo = PgPersonaRepository(sf)
+        app.state.persona_service = PersonaService(
+            app.state.persona_repo,
+            embed=lambda texts: _get_or_create_embedding_service(app).try_embed(texts),
+        )
         # Resolve API keys: DB overrides .env
         resolver = ApiKeyResolver(api_key_repo, settings)
         resolved = await resolver.resolve_all()
@@ -394,6 +407,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     _init_research_service(app)
     app.state.brief_service = BriefService(InMemoryBriefRepository())
     app.state.prompt_override_repo = InMemoryPromptOverrideRepository()
+    app.state.persona_repo = InMemoryPersonaRepository()
+    app.state.persona_service = PersonaService(
+        app.state.persona_repo,
+        embed=lambda texts: _get_or_create_embedding_service(app).try_embed(texts),
+    )
 
     _register_exception_handlers(app)
     _register_middleware(app, settings)
@@ -668,6 +686,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         prompts_router,
         prefix=settings.api_v1_prefix,
         tags=["prompts"],
+    )
+    app.include_router(
+        personas_router,
+        prefix=settings.api_v1_prefix,
+        tags=["personas"],
     )
     app.include_router(
         publishing_router,
