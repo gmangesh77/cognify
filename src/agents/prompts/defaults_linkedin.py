@@ -52,8 +52,7 @@ register(
         step="linkedin_repurpose",
         description="LinkedIn repurpose: retry suffix when over the char limit",
         template=(
-            "The previous draft was too long. Keep the total under 2,600 "
-            "characters."
+            "The previous draft was too long. Keep the total under 2,600 characters."
         ),
         variables=frozenset(),
     ),

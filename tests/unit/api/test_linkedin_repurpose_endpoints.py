@@ -124,7 +124,8 @@ class TestRepurposeEndpoint:
     async def test_404_unknown_article(
         self, app: FastAPI, client: httpx.AsyncClient, auth_settings: Settings
     ) -> None:
-        content_service = _content_service(llm=FakeListChatModel(responses=[VALID_JSON]))
+        llm = FakeListChatModel(responses=[VALID_JSON])
+        content_service = _content_service(llm=llm)
         content_service.get_article = AsyncMock(
             side_effect=NotFoundError("Article not found")
         )
