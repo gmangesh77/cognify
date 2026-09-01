@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import structlog
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
 from src.agents.content.pipeline import _extract_output
@@ -53,14 +54,14 @@ def _fingerprint() -> VoiceFingerprint:
     return VoiceFingerprint(dims=dims, sample_count=8)
 
 
-def _section(index: int, title: str, body: str) -> SectionDraft:
+def _section(index: int, title: str, body: str, word_count: int = 90) -> SectionDraft:
     # word_count is a plain int field, decoupled from actual token count —
     # SHORT_SECTION_WORDS gating only cares about this value.
     return SectionDraft(
         section_index=index,
         title=title,
         body_markdown=body,
-        word_count=90,
+        word_count=word_count,
         citations_used=[],
     )
 
@@ -80,6 +81,13 @@ class _CountingLLM:
     async def ainvoke(self, messages: object) -> object:
         self.call_count += 1
         return await self.inner.ainvoke(messages)  # type: ignore[arg-type]
+
+
+class _RaisingLLM:
+    """A `.ainvoke` that always raises — for the never-fail-the-run tests."""
+
+    async def ainvoke(self, messages: object) -> object:
+        raise RuntimeError("llm boom")
 
 
 class TestScoreVoiceNode:
@@ -114,6 +122,21 @@ class TestScoreVoiceNode:
             "1": score_text(WEAK_TEXT, fp).score,
         }
         assert result["voice_match_score"] is not None
+
+    async def test_node_level_exception_returns_empty_dict_and_logs(self) -> None:
+        """Review item 4c: a malformed draft dict raises inside
+        `_coerce_drafts`; the node must catch it, log, and return {}."""
+        node = make_score_voice_node()
+        state = {
+            "section_drafts": [{"not": "a valid section draft"}],
+            "voice_fingerprint": _fingerprint(),
+            "status": "ok",
+        }
+        with structlog.testing.capture_logs() as logs:
+            result = await node(state)
+        assert result == {}
+        failed = [e for e in logs if e["event"] == "voice_score_failed"]
+        assert len(failed) == 1
 
 
 class TestFixVoiceNode:
@@ -155,6 +178,75 @@ class TestFixVoiceNode:
         assert llm.call_count == 0
         assert result["section_drafts"][0].body_markdown == MATCH_TEXT
         assert result["section_drafts"][1].body_markdown == MATCH_TEXT
+
+    async def test_skips_short_section_even_below_threshold(self) -> None:
+        """Review item 4a: a short, weak-scoring section is never rewritten."""
+        fp = _fingerprint()
+        llm = _CountingLLM(FakeListChatModel(responses=[]))
+        node = make_fix_voice_node(llm, 70)  # type: ignore[arg-type]
+        short_weak = _section(0, "A", WEAK_TEXT, word_count=10)
+        state = {
+            "section_drafts": [short_weak],
+            "voice_fingerprint": fp,
+            "voice_block": "",
+            "status": "ok",
+        }
+        result = await node(state)
+        assert llm.call_count == 0
+        assert result["section_drafts"][0].body_markdown == WEAK_TEXT
+
+    async def test_llm_failure_keeps_original_and_still_returns_scores(self) -> None:
+        """Review item 4b: llm.ainvoke raising -> voice_fix_failed, original
+        draft kept, node still returns scores (never fails the run)."""
+        fp = _fingerprint()
+        node = make_fix_voice_node(_RaisingLLM(), 70)  # type: ignore[arg-type]
+        state = {
+            "section_drafts": [_section(0, "A", WEAK_TEXT)],
+            "voice_fingerprint": fp,
+            "voice_block": "",
+            "status": "ok",
+        }
+        with structlog.testing.capture_logs() as logs:
+            result = await node(state)
+        assert result["section_drafts"][0].body_markdown == WEAK_TEXT
+        assert result["voice_scores_by_section"] == {
+            "0": score_text(WEAK_TEXT, fp).score
+        }
+        failed = [e for e in logs if e["event"] == "voice_fix_failed"]
+        assert len(failed) == 1
+        assert failed[0]["section_index"] == 0
+
+    async def test_node_level_exception_returns_empty_dict_and_logs(self) -> None:
+        """Review item 4c: a malformed draft dict raises inside
+        `_coerce_drafts`; the node must catch it, log, and return {}."""
+        node = make_fix_voice_node(_RaisingLLM(), 70)  # type: ignore[arg-type]
+        state = {
+            "section_drafts": [{"not": "a valid section draft"}],
+            "voice_fingerprint": _fingerprint(),
+            "status": "ok",
+        }
+        with structlog.testing.capture_logs() as logs:
+            result = await node(state)
+        assert result == {}
+        failed = [e for e in logs if e["event"] == "voice_fix_failed"]
+        assert len(failed) == 1
+
+    async def test_rewritten_word_count_is_recomputed(self) -> None:
+        """Review item 4d."""
+        fp = _fingerprint()
+        llm = _CountingLLM(FakeListChatModel(responses=[MATCH_TEXT]))
+        node = make_fix_voice_node(llm, 70)  # type: ignore[arg-type]
+        state = {
+            "section_drafts": [_section(0, "A", WEAK_TEXT, word_count=90)],
+            "voice_fingerprint": fp,
+            "voice_block": "",
+            "status": "ok",
+        }
+        result = await node(state)
+        rewritten = result["section_drafts"][0]
+        assert rewritten.body_markdown == MATCH_TEXT
+        assert rewritten.word_count == len(MATCH_TEXT.split())
+        assert rewritten.word_count != 90
 
     async def test_noop_without_fingerprint(self) -> None:
         llm = _CountingLLM(FakeListChatModel(responses=[]))
@@ -212,17 +304,39 @@ class TestFixVoiceNode:
 class TestVoiceRouter:
     def test_routes_to_fix_when_any_section_below_threshold(self) -> None:
         router = make_voice_router(70)
-        state = {"voice_scores_by_section": {"0": 50, "1": 90}}
+        state = {
+            "voice_scores_by_section": {"0": 50, "1": 90},
+            "section_drafts": [
+                _section(0, "A", WEAK_TEXT),
+                _section(1, "B", MATCH_TEXT),
+            ],
+        }
         assert router(state) == "fix_voice_deviations"
 
     def test_routes_to_seo_when_all_sections_at_or_above_threshold(self) -> None:
         router = make_voice_router(70)
-        state = {"voice_scores_by_section": {"0": 70, "1": 90}}
+        state = {
+            "voice_scores_by_section": {"0": 70, "1": 90},
+            "section_drafts": [
+                _section(0, "A", MATCH_TEXT),
+                _section(1, "B", MATCH_TEXT),
+            ],
+        }
         assert router(state) == "seo_optimize"
 
     def test_routes_to_seo_when_no_scores_present(self) -> None:
         router = make_voice_router(70)
         assert router({}) == "seo_optimize"
+
+    def test_routes_to_seo_when_weak_section_is_too_short(self) -> None:
+        """Review item 3: a short section that scored below threshold must
+        not route through a no-op fix_voice_deviations step."""
+        router = make_voice_router(70)
+        state = {
+            "voice_scores_by_section": {"0": 20},
+            "section_drafts": [_section(0, "A", WEAK_TEXT, word_count=10)],
+        }
+        assert router(state) == "seo_optimize"
 
 
 class TestExtractOutputVoiceMatchScore:

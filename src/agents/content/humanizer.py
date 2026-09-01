@@ -133,7 +133,7 @@ async def rewrite_section(
         )
         return section
 
-    prose_payload = _payload_for_llm(rewritable)
+    prose_payload = payload_for_llm(rewritable)
     prompt = _build_rewrite_prompt(section, slop_score, prose_payload)
     messages = [
         SystemMessage(content=render_prompt("content_humanize.system")),
@@ -142,7 +142,7 @@ async def rewrite_section(
     response = await llm.ainvoke(messages)
     new_text = str(response.content).strip()
 
-    rebuilt = _slot_back(blocks, rewritable, new_text)
+    rebuilt = slot_back(blocks, rewritable, new_text)
     new_body = reassemble(rebuilt)
 
     if originals and not _citations_preserved(new_body, originals):
@@ -159,7 +159,7 @@ async def rewrite_section(
 _BLOCK_DELIM = "\n\n<<<BLOCK>>>\n\n"
 
 
-def _payload_for_llm(rewritable: list[tuple[int, MarkdownBlock]]) -> str:
+def payload_for_llm(rewritable: list[tuple[int, MarkdownBlock]]) -> str:
     """Concatenate prose blocks with a sentinel the LLM is told to keep."""
     parts: list[str] = []
     for _, block in rewritable:
@@ -168,7 +168,7 @@ def _payload_for_llm(rewritable: list[tuple[int, MarkdownBlock]]) -> str:
     return _BLOCK_DELIM.join(parts)
 
 
-def _slot_back(
+def slot_back(
     blocks: list[MarkdownBlock],
     rewritable: list[tuple[int, MarkdownBlock]],
     rewritten_payload: str,
@@ -195,9 +195,5 @@ def _slot_back(
         out[idx] = replace_humanized_text(original_block, new_text.strip(), markers)
     return out
 
-
-# AUTHOR-011: public aliases so voice_nodes.py can reuse this splitting.
-payload_for_llm = _payload_for_llm
-slot_back = _slot_back
 
 __all__ = ["fix_mechanical", "payload_for_llm", "rewrite_section", "slot_back"]

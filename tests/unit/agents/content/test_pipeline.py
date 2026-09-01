@@ -524,3 +524,105 @@ class TestVoiceEngineWiring:
         )
         assert result["status"] != "failed"
         assert "voice_match_score" not in result
+
+    async def test_full_run_with_persona_runs_fix_then_seo(self) -> None:
+        """Flag on, a fingerprint in state, one section scores below
+        threshold: fix_voice_deviations fires once then seo_optimize runs
+        (review item 4e — L-007: one extra response for the fix call)."""
+        from src.config.settings import Settings
+        from src.models.content_pipeline import ArticleOutline
+        from src.models.persona import DimStat, VoiceFingerprint
+        from src.services.persona.fingerprint import DIMENSIONS, text_features
+
+        # Matches its own fingerprint (score 100); structurally opposite of
+        # WEAK_TEXT so the two sections land on either side of a threshold.
+        match_text = (
+            "The team ships fast. Users see results daily. Small changes "
+            "compound over time. This works well for us. The plan stays "
+            "simple. Feedback drives every decision. We track outcomes "
+            "closely. Results matter more than talk. The process stays "
+            "lean. Teams move quickly here. Progress happens every week. "
+            "Quality remains the top goal. The roadmap stays clear. New "
+            "ideas ship weekly."
+        )
+        weak_text = (
+            "I think, perhaps, that we're clearly onto something absolutely "
+            "remarkable here; isn't that fascinating? I'm not entirely "
+            "sure, but I believe, quite honestly, that this approach, which "
+            "I've been mulling over for weeks, might possibly, in some way, "
+            "eventually work out; don't you think? I'm hopeful, cautiously, "
+            "that we'll see results, although I could be wrong about "
+            "several of these rather speculative assumptions, couldn't I?"
+        )
+        feats = text_features(match_text)
+        fp = VoiceFingerprint(
+            dims={
+                name: DimStat(
+                    mean=feats[name],
+                    stddev=max(0.5, abs(feats[name]) * 0.15),
+                    confidence=1.0,
+                )
+                for name in DIMENSIONS
+            },
+            sample_count=8,
+        )
+        outline = ArticleOutline.model_validate(
+            {
+                "title": "Test Article",
+                "content_type": "article",
+                "sections": [
+                    {
+                        "index": 0,
+                        "title": "Match",
+                        "description": "D",
+                        "key_points": ["P"],
+                        "target_word_count": 50,
+                        "relevant_facets": [0],
+                    },
+                    {
+                        "index": 1,
+                        "title": "Weak",
+                        "description": "D",
+                        "key_points": ["P"],
+                        "target_word_count": 50,
+                        "relevant_facets": [0],
+                    },
+                ],
+                "total_target_words": 100,
+                "reasoning": "Simple structure",
+            }
+        )
+        responses = [
+            _queries_json(2),
+            match_text,  # draft section 0 (matches the fingerprint)
+            weak_text,  # draft section 1 (scores below threshold)
+            match_text,  # fix_voice_deviations rewrite of section 1
+            _seo_json(),
+            _discoverability_json(),
+            json.dumps({"charts": []}),
+            json.dumps({"diagrams": []}),
+            "no changes",  # padding for any extra LLM calls (e.g. illustration path)
+            "no changes",
+        ]
+        llm = FakeListChatModel(responses=responses)
+        settings = Settings(
+            _env_file=None, enable_voice_engine=True, enable_image_planner=False
+        )
+        graph = build_content_graph(llm, settings=settings)
+        result = await graph.ainvoke(
+            {
+                "topic": _make_topic(),
+                "research_plan": _make_plan(),
+                "findings": _make_findings(),
+                "session_id": uuid4(),
+                "outline": outline,
+                "status": "outline_complete",
+                "error": None,
+                "voice_fingerprint": fp,
+            }
+        )
+        assert result["status"] != "failed"
+        assert result["voice_match_score"] is not None
+        assert result["voice_scores_by_section"]["1"] > 59  # was below threshold
+        drafts = {d.section_index: d for d in result["section_drafts"]}
+        assert drafts[1].body_markdown == match_text  # rewritten, kept (scored higher)

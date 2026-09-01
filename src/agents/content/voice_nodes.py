@@ -1,12 +1,10 @@
 """Voice-match scoring + fix graph nodes (AUTHOR-011, spec §4.5).
 
-`score_voice` is pure — it scores every section against the persona's
-fingerprint and never calls an LLM. `fix_voice_deviations` runs ONE
-targeted rewrite per section that scored below threshold (mirrors
-`humanize_node`'s single-pass-per-section shape), reusing the humanizer's
-sentinel block splitting so structure (headings, lists, code, citations)
-survives untouched. Both nodes are no-ops without a persona fingerprint
-and are only added to the graph when `settings.enable_voice_engine`.
+`score_voice` is pure — scores every section against the persona's
+fingerprint, no LLM. `fix_voice_deviations` runs ONE targeted rewrite per
+weak section (mirrors `humanize_node`), reusing the humanizer's sentinel
+block splitting. Both nodes are no-ops without a fingerprint, never fail
+the run (spec §4), and are only added to the graph when the flag is on.
 """
 
 from __future__ import annotations
@@ -46,41 +44,56 @@ def _coerce_drafts(raw: Sequence[object]) -> list[SectionDraft]:
     ]
 
 
+def _needs_fix(draft: SectionDraft, score: int, threshold: int) -> bool:
+    """Shared by the router and fix loop so they can't drift."""
+    return score < threshold and draft.word_count >= SHORT_SECTION_WORDS
+
+
+async def _run_score_voice(state: ContentState) -> dict[str, object]:
+    fp = state.get("voice_fingerprint")
+    if not fp or state.get("status") == "failed":
+        return {}
+    drafts = _coerce_drafts(state.get("section_drafts", []))
+    by_section, overall = score_sections(drafts, fp)
+    logger.info("voice_scored", overall=overall, sections=len(by_section))
+    return {"voice_scores_by_section": by_section, "voice_match_score": overall}
+
+
 def make_score_voice_node() -> Any:  # noqa: ANN401
     """Factory: pure per-section + overall voice-match scoring."""
 
     async def score_voice_node(state: ContentState) -> dict[str, object]:
-        fp = state.get("voice_fingerprint")
-        if not fp or state.get("status") == "failed":
+        try:
+            return await _run_score_voice(state)
+        except Exception as exc:  # noqa: BLE001 — never let scoring fail the run
+            logger.error("voice_score_failed", error=str(exc))
             return {}
-        drafts = _coerce_drafts(state.get("section_drafts", []))
-        by_section, overall = score_sections(drafts, fp)
-        logger.info("voice_scored", overall=overall, sections=len(by_section))
-        return {"voice_scores_by_section": by_section, "voice_match_score": overall}
 
     return score_voice_node
 
 
 def make_voice_router(threshold: int) -> Callable[[dict[str, object]], str]:
-    """`fix_voice_deviations` if any section scored below `threshold`.
-
-    Typed on plain `dict[str, object]`, not `ContentState`: langgraph's
-    `add_conditional_edges` resolves the router's annotations at runtime
-    via `get_type_hints()`, which raises `NameError` on `ContentState`
-    here — it only exists under `TYPE_CHECKING` in this module, and
-    importing it for real would be circular with `pipeline.py` (which
-    imports this module for the node factories). `ContentState` is
-    TypedDict-shaped, so `dict[str, object]` is a safe, compatible
-    supertype for a router that only reads one known key.
+    """`fix_voice_deviations` only if `_needs_fix` is true for some section
+    — a short, weak-scoring section the fix loop skips must not still
+    route through a no-op fix step. Typed on `dict[str, object]`, not
+    `ContentState`: langgraph's `add_conditional_edges` resolves the
+    router's annotations via `get_type_hints()` at runtime, raising
+    `NameError` on `ContentState` — it only exists under `TYPE_CHECKING`
+    here, and a real import would be circular with `pipeline.py`.
     """
 
     def _route(state: dict[str, object]) -> str:
         scores = state.get("voice_scores_by_section")
-        if isinstance(scores, dict) and any(
-            score < threshold for score in scores.values()
-        ):
-            return "fix_voice_deviations"
-        return "seo_optimize"
+        raw_drafts = state.get("section_drafts")
+        if not isinstance(scores, dict) or not isinstance(raw_drafts, list):
+            return "seo_optimize"
+        by_index = {str(d.section_index): d for d in _coerce_drafts(raw_drafts)}
+        weak = any(
+            _needs_fix(by_index[key], score, threshold)
+            for key, score in scores.items()
+            if key in by_index and isinstance(score, int)
+        )
+        return "fix_voice_deviations" if weak else "seo_optimize"
 
     return _route
 
@@ -96,9 +109,8 @@ async def _rewrite_for_voice(
     score: VoiceScore,
 ) -> SectionDraft | None:
     """One LLM pass targeting `score`'s named deviations. None = no change made."""
-    # Local import: `section_rewriter` sits behind `services.content.__init__`,
-    # which imports `pipeline.py`, which imports this module — a module-level
-    # import here would be circular.
+    # Local import: services.content.__init__ imports pipeline.py, which
+    # imports this module — a module-level import here would be circular.
     from src.services.content.section_rewriter import strip_fences
 
     blocks = parse_markdown_blocks(section.body_markdown)
@@ -137,7 +149,7 @@ async def _fix_one_section(
 ) -> SectionDraft:
     """Score `section`; rewrite once if weak; keep whichever body scores higher."""
     original_score = score_text(section.body_markdown, fp)
-    if original_score.score >= threshold or section.word_count < SHORT_SECTION_WORDS:
+    if not _needs_fix(section, original_score.score, threshold):
         return section
     try:
         rewritten = await _rewrite_for_voice(section, llm, voice_block, original_score)
@@ -152,25 +164,35 @@ async def _fix_one_section(
     return rewritten if new_score.score > original_score.score else section
 
 
+async def _run_fix_voice(
+    state: ContentState, llm: BaseChatModel, threshold: int
+) -> dict[str, object]:
+    fp = state.get("voice_fingerprint")
+    if not fp or state.get("status") == "failed":
+        return {}
+    drafts = _coerce_drafts(state.get("section_drafts", []))
+    voice_block = state.get("voice_block") or ""
+    updated = [
+        await _fix_one_section(section, fp, llm, threshold, voice_block)
+        for section in drafts
+    ]
+    by_section, overall = score_sections(updated, fp)
+    logger.info("voice_fix_complete", overall=overall, sections=len(by_section))
+    return {
+        "section_drafts": updated,
+        "voice_scores_by_section": by_section,
+        "voice_match_score": overall,
+    }
+
+
 def make_fix_voice_node(llm: BaseChatModel, threshold: int) -> Any:  # noqa: ANN401
     """Factory: one targeted rewrite per section scoring below `threshold`."""
 
     async def fix_voice_node(state: ContentState) -> dict[str, object]:
-        fp = state.get("voice_fingerprint")
-        if not fp or state.get("status") == "failed":
+        try:
+            return await _run_fix_voice(state, llm, threshold)
+        except Exception as exc:  # noqa: BLE001 — never let the fix pass fail the run
+            logger.error("voice_fix_failed", error=str(exc))
             return {}
-        drafts = _coerce_drafts(state.get("section_drafts", []))
-        voice_block = state.get("voice_block") or ""
-        updated = [
-            await _fix_one_section(section, fp, llm, threshold, voice_block)
-            for section in drafts
-        ]
-        by_section, overall = score_sections(updated, fp)
-        logger.info("voice_fix_complete", overall=overall, sections=len(by_section))
-        return {
-            "section_drafts": updated,
-            "voice_scores_by_section": by_section,
-            "voice_match_score": overall,
-        }
 
     return fix_voice_node
