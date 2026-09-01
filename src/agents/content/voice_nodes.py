@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 import structlog
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
 from src.agents.content.humanizer import payload_for_llm, slot_back
 from src.agents.prompts import render_prompt
@@ -111,9 +111,7 @@ class _FixRun:
     threshold: int
 
 
-def _fix_messages(
-    run: _FixRun, score: VoiceScore, payload: str
-) -> list[SystemMessage | HumanMessage]:
+def _fix_messages(run: _FixRun, score: VoiceScore, payload: str) -> list[BaseMessage]:
     """System + user messages for one voice-fix pass (registry keys, L-014)."""
     user = render_prompt(
         "voice.fix.user",
@@ -131,8 +129,7 @@ async def _rewrite_for_voice(
     run: _FixRun, section: SectionDraft, score: VoiceScore
 ) -> SectionDraft | None:
     """One LLM pass targeting `score`'s named deviations. None = no change made."""
-    # Local import: services.content.__init__ imports pipeline.py, which
-    # imports this module — a module-level import here would be circular.
+    # Local import: pipeline.py imports this module (module-level would be circular).
     from src.services.content.section_rewriter import strip_fences
 
     blocks = parse_markdown_blocks(section.body_markdown)
