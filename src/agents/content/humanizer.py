@@ -194,3 +194,10 @@ def _slot_back(
         _, markers = strip_inline_markdown(original_prose)
         out[idx] = replace_humanized_text(original_block, new_text.strip(), markers)
     return out
+
+
+# AUTHOR-011: public aliases so voice_nodes.py can reuse this splitting.
+payload_for_llm = _payload_for_llm
+slot_back = _slot_back
+
+__all__ = ["fix_mechanical", "payload_for_llm", "rewrite_section", "slot_back"]

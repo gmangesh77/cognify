@@ -19,8 +19,7 @@ import structlog
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from src.agents.content.humanizer import _payload_for_llm as payload_for_llm
-from src.agents.content.humanizer import _slot_back as slot_back
+from src.agents.content.humanizer import payload_for_llm, slot_back
 from src.agents.prompts import render_prompt
 from src.models.content_pipeline import SectionDraft
 from src.models.persona import VoiceFingerprint, VoiceScore
