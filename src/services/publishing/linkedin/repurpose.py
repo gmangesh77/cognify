@@ -80,7 +80,8 @@ async def repurpose_to_linkedin(
     truncated = False
 
     if len(text) > MAX_POST_CHARS:
-        shorter_prompt = user_prompt + "\n\n" + render_prompt("linkedin_repurpose.shorter")
+        shorter_suffix = render_prompt("linkedin_repurpose.shorter")
+        shorter_prompt = f"{user_prompt}\n\n{shorter_suffix}"
         raw = await _draft_with_parse_retry(llm, system_prompt, shorter_prompt)
         hashtags, text = _assemble(raw)
         if len(text) > MAX_POST_CHARS:

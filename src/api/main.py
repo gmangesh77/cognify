@@ -468,6 +468,9 @@ def _init_publishing_service(
             LinkedInAdapter,
             LinkedInCredentials,
         )
+        from src.services.publishing.linkedin.post_transformer import (
+            LinkedInPostTransformer,
+        )
         from src.services.publishing.linkedin.transformer import LinkedInTransformer
 
         creds = LinkedInCredentials(
@@ -477,11 +480,11 @@ def _init_publishing_service(
             client_id=settings.linkedin_client_id,
             client_secret=settings.linkedin_client_secret,
         )
-        pair = PlatformPair(
-            transformer=LinkedInTransformer(),
-            adapter=LinkedInAdapter(creds),
-        )
-        svc.register("linkedin", pair)
+        adapter = LinkedInAdapter(creds)
+        svc.register("linkedin", PlatformPair(LinkedInTransformer(), adapter))
+        # linkedin_post: repurposed standalone posts (AUTHOR-013), shares
+        # the same adapter/credentials as the `linkedin` platform.
+        svc.register("linkedin_post", PlatformPair(LinkedInPostTransformer(), adapter))
     app.state.publishing_service = svc
     logger.info("publishing_service_initialized", platforms=list(svc._platforms.keys()))
 
