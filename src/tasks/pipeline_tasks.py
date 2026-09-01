@@ -58,6 +58,7 @@ async def _with_services(run: Callable[[PipelineDeps], Awaitable[None]]) -> None
             research_svc=services.research_service,
             content_svc=services.content_service,
             outline_gate=services.outline_gate,
+            prompt_overrides=services.prompt_override_repo.load_all,
         )
         await run(deps)
     finally:

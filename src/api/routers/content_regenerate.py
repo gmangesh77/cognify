@@ -16,6 +16,7 @@ no longer has. A `spec_id` violation only arises on the accept side
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -25,8 +26,10 @@ from fastapi import status as http_status
 from langchain_core.language_models import BaseChatModel
 from pydantic import BaseModel, Field
 
+from src.agents.prompts import bind_prompt_overrides
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above
+from src.api.prompt_scope import load_prompt_overrides
 from src.api.rate_limiter import limiter
 from src.api.routers.content_shared import (
     WordDiffEntry,
@@ -96,11 +99,13 @@ async def section_regenerate(
     request: Request,
     body: SectionRegenerateRequest,
     user: TokenPayload = Depends(require_editor_or_above),
+    overrides: Mapping[str, str] = Depends(load_prompt_overrides),
 ) -> SectionRegenerateResponse:
     """Redraft one section; returns candidate markdown + diff (body untouched)."""
     service = _get_regenerate_service(request)
     try:
-        result = await service.regenerate(_command(body, user))
+        with bind_prompt_overrides(overrides):
+            result = await service.regenerate(_command(body, user))
     except _REGENERATE_ERRORS as exc:
         raise _map_regenerate_error(exc) from exc
     return _to_response(body, result)

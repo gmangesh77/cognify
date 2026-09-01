@@ -7,15 +7,17 @@ Preview-only: the client stages the resolved markdown through
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi import status as http_status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from src.agents.prompts import bind_prompt_overrides
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above
+from src.api.prompt_scope import load_prompt_overrides
 from src.api.rate_limiter import limiter
 from src.api.routers.content import _get_content_llm
 from src.services.content.humanize_stream import stream_humanization
@@ -55,6 +57,7 @@ async def humanize_preview_stream(
     request: Request,
     body: HumanizeStreamRequest,
     user: TokenPayload = Depends(require_editor_or_above),
+    overrides: Mapping[str, str] = Depends(load_prompt_overrides),
 ) -> StreamingResponse:
     """Emit `pass` events (score per pass), then `done` with sentence segments.
 
@@ -66,17 +69,20 @@ async def humanize_preview_stream(
     max_passes = request.app.state.settings.humanize_preview_max_passes
 
     async def gen() -> AsyncIterator[str]:
-        events = stream_humanization(
-            section_index=section_index,
-            title=body.title,
-            markdown=body.current_markdown,
-            llm=llm,
-            max_llm_passes=max_passes,
-        )
-        async for event in events:
-            if await request.is_disconnected():
-                return
-            yield event.to_sse()
+        # Bound INSIDE the generator (AUTHOR-012): a StreamingResponse body
+        # runs after dependency teardown, so binding above would be a no-op.
+        with bind_prompt_overrides(overrides):
+            events = stream_humanization(
+                section_index=section_index,
+                title=body.title,
+                markdown=body.current_markdown,
+                llm=llm,
+                max_llm_passes=max_passes,
+            )
+            async for event in events:
+                if await request.is_disconnected():
+                    return
+                yield event.to_sse()
 
     return StreamingResponse(
         gen(), media_type="text/event-stream", headers=_SSE_HEADERS

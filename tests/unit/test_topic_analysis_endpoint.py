@@ -48,6 +48,7 @@ async def test_analyze_topic_endpoint() -> None:
             request=_make_mock_request(),
             body=AnalyzeTopicRequest(title="Zero Trust Architecture"),
             user=MagicMock(),
+            overrides={},
         )
 
     assert result.domain == "cybersecurity"
@@ -94,6 +95,7 @@ async def test_analyze_topic_calls_analyzer_with_title() -> None:
             request=_make_mock_request(),
             body=AnalyzeTopicRequest(title="My Custom Topic"),
             user=MagicMock(),
+            overrides={},
         )
 
         instance.analyze.assert_called_once()

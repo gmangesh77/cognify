@@ -14,12 +14,14 @@ FastAPI router modules. Two entry points:
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from uuid import UUID
 
 import structlog
+
+from src.agents.prompts import bind_prompt_overrides
 
 if TYPE_CHECKING:
     from src.models.research import TopicInput
@@ -28,6 +30,8 @@ if TYPE_CHECKING:
     from src.services.research import ResearchService, SessionDetail
 
 logger = structlog.get_logger()
+
+PromptOverridesLoader = Callable[[], Awaitable[Mapping[str, str]]]
 
 
 class PipelineCancelled(Exception):
@@ -68,6 +72,19 @@ class PipelineDeps:
     research_svc: ResearchService
     content_svc: ContentService | None
     outline_gate: OutlineGateService | None
+    # AUTHOR-012 — loads the global prompt overrides once per run.
+    prompt_overrides: PromptOverridesLoader | None = None
+
+
+async def _load_prompt_overrides(deps: PipelineDeps) -> Mapping[str, str]:
+    """One snapshot per run; a store outage must never block generation."""
+    if deps.prompt_overrides is None:
+        return {}
+    try:
+        return dict(await deps.prompt_overrides())
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("prompt_overrides_unavailable", error=str(exc))
+        return {}
 
 
 async def _run_full_pipeline(
@@ -75,46 +92,66 @@ async def _run_full_pipeline(
     session_id: UUID,
     topic: TopicInput,
 ) -> None:
-    """Research → (outline gate) → content generation pipeline."""
-    try:
-        await deps.research_svc.run_and_finalize(session_id, topic)
-        detail = await deps.research_svc.get_session(session_id)
-        if not _content_ready(detail, deps):
+    """Research → (outline gate) → content generation pipeline.
+
+    One prompt-override snapshot is loaded and bound for the whole run
+    (AUTHOR-012) — never re-read mid-run.
+    """
+    overrides = await _load_prompt_overrides(deps)
+    with bind_prompt_overrides(overrides):
+        try:
+            await _full_pipeline_body(deps, session_id, topic)
+        except asyncio.CancelledError:
+            await deps.research_svc.update_session_status(session_id, "cancelled")
+            raise
+
+
+async def _full_pipeline_body(
+    deps: PipelineDeps,
+    session_id: UUID,
+    topic: TopicInput,
+) -> None:
+    await deps.research_svc.run_and_finalize(session_id, topic)
+    detail = await deps.research_svc.get_session(session_id)
+    if not _content_ready(detail, deps):
+        return
+    if detail.session.require_outline_approval:
+        if deps.outline_gate is not None:
+            await _run_outline_gate(deps, session_id)
             return
-        if detail.session.require_outline_approval:
-            if deps.outline_gate is not None:
-                await _run_outline_gate(deps, session_id)
-                return
-            logger.warning(
-                "outline_gate_not_configured",
-                session_id=str(session_id),
-                reason=(
-                    "require_outline_approval is set but no outline_gate is "
-                    "configured for this deployment -- falling through to "
-                    "the full pipeline without an outline review stop."
-                ),
-            )
-        await _drive_to_completion(
-            deps.research_svc,
-            session_id,
-            lambda: deps.content_svc.generate_full_article(session_id),  # type: ignore[union-attr]
+        logger.warning(
+            "outline_gate_not_configured",
+            session_id=str(session_id),
+            reason=(
+                "require_outline_approval is set but no outline_gate is "
+                "configured for this deployment -- falling through to "
+                "the full pipeline without an outline review stop."
+            ),
         )
-    except asyncio.CancelledError:
-        await deps.research_svc.update_session_status(session_id, "cancelled")
-        raise
+    await _drive_to_completion(
+        deps.research_svc,
+        session_id,
+        lambda: deps.content_svc.generate_full_article(session_id),  # type: ignore[union-attr]
+    )
 
 
 async def _run_drafting_pipeline(deps: PipelineDeps, session_id: UUID) -> None:
-    """Resume the pipeline from an editor-approved outline."""
-    try:
-        await _drive_to_completion(
-            deps.research_svc,
-            session_id,
-            lambda: deps.outline_gate.generate_from_outline(session_id),  # type: ignore[union-attr]
-        )
-    except asyncio.CancelledError:
-        await deps.research_svc.update_session_status(session_id, "cancelled")
-        raise
+    """Resume the pipeline from an editor-approved outline.
+
+    One prompt-override snapshot is loaded and bound for the whole run
+    (AUTHOR-012).
+    """
+    overrides = await _load_prompt_overrides(deps)
+    with bind_prompt_overrides(overrides):
+        try:
+            await _drive_to_completion(
+                deps.research_svc,
+                session_id,
+                lambda: deps.outline_gate.generate_from_outline(session_id),  # type: ignore[union-attr]
+            )
+        except asyncio.CancelledError:
+            await deps.research_svc.update_session_status(session_id, "cancelled")
+            raise
 
 
 def _content_ready(detail: SessionDetail, deps: PipelineDeps) -> bool:

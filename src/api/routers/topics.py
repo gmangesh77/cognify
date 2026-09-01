@@ -1,9 +1,13 @@
+from collections.abc import Mapping
+
 import structlog
 from fastapi import APIRouter, Depends, Request
 
+from src.agents.prompts import bind_prompt_overrides
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above, require_role
 from src.api.errors import NotFoundError, ServiceUnavailableError
+from src.api.prompt_scope import load_prompt_overrides
 from src.api.rate_limiter import limiter
 from src.api.schemas.topic_analysis import (
     AnalyzeTopicRequest,
@@ -130,6 +134,7 @@ async def analyze_topic(
     request: Request,
     body: AnalyzeTopicRequest,
     user: TokenPayload = Depends(require_editor_or_above),
+    overrides: Mapping[str, str] = Depends(load_prompt_overrides),
 ) -> TopicAnalysisResult:
     llm = getattr(request.app.state, "drafting_llm", None)
     if llm is None:
@@ -141,12 +146,13 @@ async def analyze_topic(
     if domain_repo is not None:
         domains = await domain_repo.list_domain_names()
     analyzer = TopicAnalyzer(llm=llm)
-    return await analyzer.analyze(
-        title=body.title,
-        configured_domains=domains or None,
-        regenerate_field=body.regenerate_field,
-        current_values=body.current_values,
-    )
+    with bind_prompt_overrides(overrides):
+        return await analyzer.analyze(
+            title=body.title,
+            configured_domains=domains or None,
+            regenerate_field=body.regenerate_field,
+            current_values=body.current_values,
+        )
 
 
 @limiter.limit("10/minute")
