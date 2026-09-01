@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -102,11 +103,18 @@ def _deviation_block(score: VoiceScore) -> str:
     return "\n".join(f"- {d.message}" for d in score.deviations[:5])
 
 
+@dataclass(frozen=True)
+class _FixRun:
+    """Per-run invariants shared by every section in one fix pass."""
+
+    llm: BaseChatModel
+    fp: VoiceFingerprint
+    voice_block: str
+    threshold: int
+
+
 async def _rewrite_for_voice(
-    section: SectionDraft,
-    llm: BaseChatModel,
-    voice_block: str,
-    score: VoiceScore,
+    run: _FixRun, section: SectionDraft, score: VoiceScore
 ) -> SectionDraft | None:
     """One LLM pass targeting `score`'s named deviations. None = no change made."""
     # Local import: services.content.__init__ imports pipeline.py, which
@@ -123,13 +131,13 @@ async def _rewrite_for_voice(
         HumanMessage(
             content=render_prompt(
                 "voice.fix.user",
-                voice_block=voice_block,
+                voice_block=run.voice_block,
                 deviations=_deviation_block(score),
                 section_text=payload_for_llm(rewritable),
             )
         ),
     ]
-    response = await llm.ainvoke(messages)
+    response = await run.llm.ainvoke(messages)
     new_text = strip_fences(str(response.content).strip())
     new_body = reassemble(slot_back(blocks, rewritable, new_text))
     if originals and not originals.issubset(set(_CITATION_RE.findall(new_body))):
@@ -140,19 +148,13 @@ async def _rewrite_for_voice(
     )
 
 
-async def _fix_one_section(
-    section: SectionDraft,
-    fp: VoiceFingerprint,
-    llm: BaseChatModel,
-    threshold: int,
-    voice_block: str,
-) -> SectionDraft:
+async def _fix_one_section(run: _FixRun, section: SectionDraft) -> SectionDraft:
     """Score `section`; rewrite once if weak; keep whichever body scores higher."""
-    original_score = score_text(section.body_markdown, fp)
-    if not _needs_fix(section, original_score.score, threshold):
+    original_score = score_text(section.body_markdown, run.fp)
+    if not _needs_fix(section, original_score.score, run.threshold):
         return section
     try:
-        rewritten = await _rewrite_for_voice(section, llm, voice_block, original_score)
+        rewritten = await _rewrite_for_voice(run, section, original_score)
     except Exception as exc:  # noqa: BLE001 — never let one section fail the run
         logger.warning(
             "voice_fix_failed", section_index=section.section_index, error=str(exc)
@@ -160,7 +162,7 @@ async def _fix_one_section(
         return section
     if rewritten is None:
         return section
-    new_score = score_text(rewritten.body_markdown, fp)
+    new_score = score_text(rewritten.body_markdown, run.fp)
     return rewritten if new_score.score > original_score.score else section
 
 
@@ -172,10 +174,8 @@ async def _run_fix_voice(
         return {}
     drafts = _coerce_drafts(state.get("section_drafts", []))
     voice_block = state.get("voice_block") or ""
-    updated = [
-        await _fix_one_section(section, fp, llm, threshold, voice_block)
-        for section in drafts
-    ]
+    run = _FixRun(llm=llm, fp=fp, voice_block=voice_block, threshold=threshold)
+    updated = [await _fix_one_section(run, section) for section in drafts]
     by_section, overall = score_sections(updated, fp)
     logger.info("voice_fix_complete", overall=overall, sections=len(by_section))
     return {
