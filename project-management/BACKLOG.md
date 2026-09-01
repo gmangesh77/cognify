@@ -197,7 +197,7 @@ Per-phase acceptance criteria are documented in the implementation plan (§11). 
 | AUTHOR-010 | Model tiering per step — **DONE** (PR #85 → develop `103db4e`, 2026-08-28; `COGNIFY_LLM_MODEL_BY_STEP` + read-only Settings card) | Could | 2 | B |
 | INFRA-008 | Embedding warm-up w/ graceful degradation; live role re-check; shared toaster; split >200-line files — **DONE** (PR #83 → develop `372e635`, 2026-08-28; role drift logged not enforced — see PROGRESS) | Should | 4 | B |
 | AUTHOR-011 | Persona voice engine v1 (fingerprint → prompt → score → fix; flagged) | Could | 13 | C |
-| AUTHOR-012 | Prompt registry + per-user overrides + Settings tab | Could | 5 | C |
+| AUTHOR-012 | Prompt registry + global overrides + Settings tab — **DONE** (2026-09-01, `feature/AUTHOR-012-prompt-registry`; global admin-edited overrides, 28 keys, Settings Prompts tab) | Could | 5 | C |
 | AUTHOR-013 | LinkedIn repurpose transformer + modal | Could | 5 | C |
 | AUTHOR-014 | Playwright create-article flow (mocked SSE) — **DONE** (2026-08-29, PR #86: `create-article.spec.ts` + mock-backend phase machine; `PLAYWRIGHT_PORT`, same-origin API base, clean-`.next` spawn) | Should | 2 | C |
 
@@ -220,8 +220,8 @@ Per-phase acceptance criteria are in the plan §9. Feature flags default to curr
 | API & Auth | 3 | 3 | 0 | 0 |
 | Infrastructure | 5 | 5 | 0 | 0 |
 | **Visual Generation Overhaul** | **8** | **8** | **0** | **0** |
-| **Supervised Authoring (Epic 11)** | **17** | **14** | **3** | **23** |
-| **Total** | **74** | **70** | **4** | **28** |
+| **Supervised Authoring (Epic 11)** | **17** | **15** | **2** | **18** |
+| **Total** | **74** | **71** | **3** | **23** |
 
 **Velocity update (2026-05-07)**: Epic 10 (Visual Generation Overhaul)
 fully shipped — VISUAL-004 through VISUAL-011 (89 SP) merged to
@@ -231,4 +231,4 @@ follow-ups (INFRA-006, CONTENT-007, DASH-007, Playwright scaffold,
 The only remaining ticket in the entire backlog is PUBLISH-002
 (5 SP, WordPress integration).
 
-**Velocity**: 395 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21; AUTHOR-005 = 3 SP, INFRA-007 = 5 SP and AUTHOR-006 = 5 SP on 2026-08-24; AUTHOR-007 = 3 SP and AUTHOR-008 = 3 SP on 2026-08-25; INFRA-008 = 4 SP, AUTHOR-009 = 3 SP and AUTHOR-010 = 2 SP on 2026-08-28; AUTHOR-014 = 2 SP on 2026-08-29). Remaining: PUBLISH-002 (5 SP) + Epic 11 Phase C (AUTHOR-011/012/013, 23 SP).
+**Velocity**: 395 SP completed across 12 epics (Epic 11: ADR-006/007 + AUTHOR-001 + AUTHOR-002 = 17 SP on 2026-08-19; AUTHOR-003 = 5 SP and AUTHOR-004 = 5 SP on 2026-08-21; AUTHOR-005 = 3 SP, INFRA-007 = 5 SP and AUTHOR-006 = 5 SP on 2026-08-24; AUTHOR-007 = 3 SP and AUTHOR-008 = 3 SP on 2026-08-25; INFRA-008 = 4 SP, AUTHOR-009 = 3 SP and AUTHOR-010 = 2 SP on 2026-08-28; AUTHOR-014 = 2 SP on 2026-08-29; AUTHOR-012 = 5 SP on 2026-09-01). Remaining: PUBLISH-002 (5 SP) + AUTHOR-011 (13 SP) + AUTHOR-013 (5 SP) = 23 SP.

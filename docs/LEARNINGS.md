@@ -246,3 +246,19 @@ SELECT id, jsonb_path_query(visuals, '$[*].metadata.section_index') FROM canonic
 ```
 
 **Related, NOT fixed here:** `CanonicalArticle.provenance.research_session_id` is the TOPIC id (`graph_state.build_initial_state` sets `state["session_id"] = topic.id`; `seo_node` copies it into provenance). Never key a lookup on it — AUTHOR-004 resolves context through `ArticleDraftRepository.find_by_article_id` + `draft.session_id`. AUTHOR-001's `articles.find_by_session` (`src/api/routers/session_events.py`) depends on the current value, so the source fix is a separate ticket. Regression tests: `tests/unit/services/content/test_section_history.py`, `tests/unit/api/test_content_regenerate_endpoint.py` (round-trip with specs on k and k+1; 422 on both calls).
+
+---
+
+## L-014: Prompts are registry keys
+
+**Issue** (AUTHOR-012): before the prompt registry, every LLM call site defined its own module-level constant (`_SYSTEM_PROMPT`, `_USER_TEMPLATE`, `_PROMPT_TEMPLATE`, …) and formatted it inline. That made an admin-editable prompt catalogue impossible without touching ~20 call sites, and gave every constant its own ad hoc variable contract.
+
+**Rule**: never add a new module-level prompt constant. Register a `PromptTemplate` in the matching `src/agents/prompts/defaults_*.py` (`defaults_content.py` / `defaults_content_post.py` / `defaults_research.py` / `defaults_editing.py`) and call `render_prompt(key, **variables)` at the call site instead of `_CONST.format(...)`. Declare `variables` exactly — a parametrized test enforces that every registered template's placeholders match its declared variable set, so a mismatch fails CI, not production. Zero-variable templates (`variables=frozenset()`) are returned verbatim by `resolve_prompt()` — literal `{`/`}` in their text is fine; templates with variables go through `.format(**variables)`, so a literal brace in one of those must be escaped (`{{`/`}}`).
+
+Overrides are **one snapshot per pipeline run / per request**, bound via `bind_prompt_overrides()` (a contextvar, same mechanism `TieredChatModel` uses for `current_step_name`). An admin edit through `PUT /api/v1/prompts/{key}` therefore applies to the *next* run — never retroactively, never mid-flight — so there is no need to guard against a prompt changing under a running pipeline.
+
+**Grep check**:
+```bash
+grep -rn "_SYSTEM_PROMPT\|_USER_TEMPLATE\|_PROMPT_TEMPLATE" src/agents src/services | grep -v prompts/defaults
+```
+Expected hits: a small number of intentionally-kept aliases (e.g. `section_prompt.SYSTEM_PROMPT` referenced by existing tests) and the image-planner/prompt-composer catalogues, which are structured data (style tables, cliché lists), not text templates, and are deliberately out of the registry's scope. Any other hit is a bug — migrate it into a `defaults_*.py` module.

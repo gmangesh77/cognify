@@ -22,7 +22,7 @@ genuinely new; the plan's acceptance criterion is:
 | Decision | Choice | Why |
 |---|---|---|
 | Override scope | **Global, admin-edited** (one override per key for the install; editors read-only) | No user table yet — only three seeded dev users. Matches how LLM/SEO settings work. A per-user tier can be layered on later. |
-| Prompt scope (v1) | **Pipeline + research + editing prompts** (~16 keys) | The prompts editors touch most (AI rewrite, tone presets, topic analyzer) are included; the image planner / prompt composer are structured catalogues (style tables, cliché lists), not text templates — VISUAL-013 showed how easily an edit there silently degrades output. |
+| Prompt scope (v1) | **Pipeline + research + editing prompts** (28 keys, shipped — see §3.2) | The prompts editors touch most (AI rewrite, tone presets, topic analyzer) are included; the image planner / prompt composer are structured catalogues (style tables, cliché lists), not text templates — VISUAL-013 showed how easily an edit there silently degrades output. |
 | Runtime resolution | **Contextvar-bound registry** (approach A) | Zero signature churn across ~20 sites, deterministic per run, identical in the Celery worker; same mechanism `TieredChatModel` already uses (`current_step_name`). |
 
 Rejected: explicit `PromptSet` injection through every constructor (B — ~20
@@ -71,7 +71,8 @@ never a silent default.
 | `content_diagrams.prompt` | `diagram_generator._PROMPT_TEMPLATE` | `sections_text` |
 | `plan_research.system` / `.user` | `research/planner._SYSTEM_PROMPT` / `_USER_TEMPLATE` | — / `title, description, domain, context_block` |
 | `evaluate_completeness.system` / `.user` | `research/evaluator._SYSTEM_PROMPT` / `_USER_TEMPLATE` | — / `title, domain, findings_summary` |
-| `research_claims.system` / `.user` | `web_search._CLAIMS_*` and `literature_review._CLAIMS_*` (one shared pair; the two modules differ only in the variable name — normalised to `snippets`) | — / `title, snippets` |
+| `research_web_claims.system` / `.user` | `web_search._CLAIMS_*` | — / `title, snippets` |
+| `research_literature_claims.system` / `.user` | `literature_review._CLAIMS_*` | — / `title, abstracts` |
 | `section_rewrite.system` | `section_rewriter._REWRITER_SYSTEM` | — |
 | `section_rewrite.tone.shorter` … `.more_authoritative` | `section_rewriter.TONE_PRESETS[…]` | — |
 | `topic_analyze.system` / `.full` / `.regenerate` | `topic_analyzer._SYSTEM_PROMPT` / `_FULL_ANALYSIS_TEMPLATE` / `_REGENERATE_TEMPLATE` | — / `title, domains_section, valid_tones` / `field, title, current_json` |
@@ -85,6 +86,16 @@ parser, not editorial text.
 Migrating a call site means replacing `_CONST.format(...)` with
 `render_prompt("key", ...)` and deleting the constant. Behaviour is
 byte-identical when no override exists (see tests §7).
+
+**As shipped**, the table above resolves to **28 registered keys** (content
+12, research 8 — the `research_web_claims.*` / `research_literature_claims.*`
+split above — editing 8: `section_rewrite.system` + the 4
+`section_rewrite.tone.*` presets + `topic_analyze.system/.full/.regenerate`),
+across `src/agents/prompts/{registry,validation,defaults_content,
+defaults_content_post,defaults_research,defaults_editing}.py`.
+`defaults_content_post.py` exists purely to keep `defaults_content.py` under
+the 200-line file budget — both modules register `content_*` keys and are
+imported together.
 
 ### 3.3 `validation.py`
 

@@ -54,7 +54,7 @@
 **Interfaces:**
 - Produces: `PromptTemplate(key, step, description, template, variables: frozenset[str])`; `DEFAULT_PROMPTS: Mapping[str, PromptTemplate]` (filled by Tasks 3–5; Task 1 seeds it with one probe key that Task 3 replaces); `current_prompt_overrides: ContextVar[Mapping[str, str]]`; `resolve_prompt(key) -> str`; `render_prompt(key, **variables: object) -> str`; `bind_prompt_overrides(overrides) -> ContextManager[None]`; `register(*templates)` (module-internal helper used by the defaults modules).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/unit/agents/prompts/test_registry.py
@@ -135,12 +135,12 @@ class TestBind:
         assert current_prompt_overrides.get() == {}
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/prompts/test_registry.py -q`
 Expected: FAIL — `ModuleNotFoundError: src.agents.prompts`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/agents/prompts/__init__.py
@@ -288,12 +288,12 @@ def bind_prompt_overrides(overrides: Mapping[str, str]) -> Iterator[None]:
         current_prompt_overrides.reset(token)
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/prompts/test_registry.py -q`
 Expected: 9 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/agents/prompts tests/unit/agents/prompts
@@ -312,7 +312,7 @@ git commit -m "feat(prompts): registry core — PromptTemplate, contextvar overr
 - Consumes: `PromptTemplate`, `DEFAULT_PROMPTS` (Task 1)
 - Produces: `validate_template(template: str, spec: PromptTemplate) -> list[str]` (empty list = valid); `MAX_TEMPLATE_CHARS = 20_000`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/unit/agents/prompts/test_validation.py
@@ -386,12 +386,12 @@ class TestDefaultsSelfValidate:
         assert validate_template(spec.template, spec) == []
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/prompts/test_validation.py -q`
 Expected: FAIL — `ModuleNotFoundError: src.agents.prompts.validation`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/agents/prompts/validation.py
@@ -449,12 +449,12 @@ def _placeholder_violations(
 
 (`_placeholder_violations` is 19 lines; keep it that way — split the format-spec line into a helper if you add anything.)
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/prompts -q`
 Expected: all pass (the parametrized self-validation runs once per registered key)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/agents/prompts/validation.py tests/unit/agents/prompts/test_validation.py
@@ -474,7 +474,7 @@ git commit -m "feat(prompts): save-time template validation (AUTHOR-012)"
 - Consumes: `register`, `render_prompt`, `DEFAULT_PROMPTS` (Task 1)
 - Produces: keys `content_outline.system/.user`, `content_queries.system/.user`, `content_draft.system`, `content_humanize.system`, `content_seo.system/.user`, `content_discover.system/.user`, `content_charts.prompt`, `content_diagrams.prompt`. Module constants `outline_generator._SYSTEM_PROMPT`, `section_prompt.SYSTEM_PROMPT`, `section_drafter._SYSTEM_PROMPT` remain importable (aliases of the registry default) because `tests/unit/agents/content/test_prompt_updates.py` and `test_section_prompt.py` import them.
 
-- [ ] **Step 1: Capture the goldens BEFORE touching the constants — write the failing test**
+- [x] **Step 1: Capture the goldens BEFORE touching the constants — write the failing test**
 
 The test renders each prompt through the registry and compares against the literal strings that exist today. Copy each expected string verbatim from the source lines listed above (they are the current constants — do not retype from memory; use the file).
 
@@ -582,12 +582,12 @@ class TestOverridesReachCallSites:
 
 If `ArticleOutline` / `OutlineSection` field names differ from the above, read `src/models/content_pipeline.py` and adjust the fixture — the assertion is on the rendered prefix only.
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/content/test_prompt_registry_migration.py -q`
 Expected: FAIL — `KeyError: 'content_outline.system'` (only the Task 1 probe keys exist) and `AttributeError: _build_user_message`
 
-- [ ] **Step 3: Register the defaults (`defaults_content.py`)**
+- [x] **Step 3: Register the defaults (`defaults_content.py`)**
 
 Replace the Task 1 stub. For each entry, the `template` literal is the **exact** current constant copied from the source file (the Task 1 probe text for `content_queries.*` is replaced by the real literals from `query_generator.py:18-30`):
 
@@ -685,7 +685,7 @@ register(
 
 `<verbatim X>` means: open the source file and paste the exact parenthesised string literal — including the `{{`/`}}` escapes in `content_queries.user`. If `defaults_content.py` exceeds 200 lines, move the four `content_seo.*`/`content_discover.*` entries plus charts/diagrams into `defaults_content_post.py` and import it from `src/agents/prompts/__init__.py` the same way.
 
-- [ ] **Step 4: Switch each call site to the registry**
+- [x] **Step 4: Switch each call site to the registry**
 
 `outline_generator.py`:
 ```python
@@ -735,12 +735,12 @@ def _build_prompt(section_drafts: list[SectionDraft]) -> str:
 ```
 and call it from `propose_charts` / `propose_diagrams`. Leave `_SPEC_MERMAID_TEMPLATE` untouched (image-planner path, out of scope).
 
-- [ ] **Step 5: Run the migration test + every existing content test**
+- [x] **Step 5: Run the migration test + every existing content test**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/content tests/unit/agents/prompts tests/unit/services/content -q`
 Expected: all pass, including `test_prompt_updates.py` and `test_section_prompt.py` unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/agents/prompts/defaults_content.py src/agents/content tests/unit/agents/content/test_prompt_registry_migration.py
@@ -758,7 +758,7 @@ git commit -m "refactor(prompts): content-pipeline prompts read from the registr
 **Interfaces:**
 - Produces: keys `plan_research.system/.user` (user vars `title, description, domain, context_block`), `evaluate_completeness.system/.user` (`title, domain, findings_summary`), `research_web_claims.system/.user` (`title, snippets`), `research_literature_claims.system/.user` (`title, abstracts`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/unit/agents/research/test_prompt_registry_migration.py
@@ -819,12 +819,12 @@ class TestOverrideReachesPlanner:
             assert _build_user_message(topic) == "OVR T"
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents/research/test_prompt_registry_migration.py -q`
 Expected: FAIL — `KeyError: 'plan_research.user'`
 
-- [ ] **Step 3: Register + migrate**
+- [x] **Step 3: Register + migrate**
 
 `defaults_research.py`: eight `PromptTemplate` entries, `template=<verbatim>` from the lines listed under **Files** (same `register(...)` shape as Task 3; steps `plan_research`, `evaluate_completeness`, `research_web_claims`, `research_literature_claims`; descriptions: "Research planner: system role / topic + context", "Completeness evaluator: system role / findings per facet", "Web-search claim extraction: system role / search snippets", "Literature-review claim extraction: system role / paper abstracts").
 
@@ -843,12 +843,12 @@ and `messages = [SystemMessage(content=render_prompt("plan_research.system")), H
 
 `web_search.py:126-128`: `msg = render_prompt("research_web_claims.user", title=_sanitize(title), snippets=snippets)`; `SystemMessage(content=render_prompt("research_web_claims.system"))`. `literature_review.py:131-133`: same with `research_literature_claims.*` and `abstracts=abstracts`. Delete the four `_CLAIMS_*` constants.
 
-- [ ] **Step 4: Run**
+- [x] **Step 4: Run**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/agents -q`
 Expected: all pass
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/agents/prompts/defaults_research.py src/agents/research tests/unit/agents/research/test_prompt_registry_migration.py
@@ -867,7 +867,7 @@ git commit -m "refactor(prompts): research prompts read from the registry (AUTHO
 - Produces: keys `section_rewrite.system`, `section_rewrite.tone.{shorter,more_concrete,more_conversational,more_authoritative}`, `topic_analyze.system`, `topic_analyze.full` (`title, domains_section, valid_tones`), `topic_analyze.regenerate` (`field, title, current_json`).
 - `TONE_PRESETS` stays exported from `section_rewriter` as `dict[TonePreset, str]` of the registry **defaults** (tests import it); `expand_tone_preset(preset)` now resolves through the registry at call time.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # tests/unit/services/test_prompt_registry_editing.py
@@ -915,12 +915,12 @@ class TestTopicAnalyzer:
 
 If `TopicAnalysisResult` requires other fields, read `src/api/schemas/topic_analysis.py` and fill them — the assertion is only on the prefix.
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/test_prompt_registry_editing.py -q`
 Expected: FAIL — `KeyError: 'section_rewrite.tone.shorter'`
 
-- [ ] **Step 3: Register + migrate**
+- [x] **Step 3: Register + migrate**
 
 `defaults_editing.py`: register `section_rewrite.system` (verbatim `_REWRITER_SYSTEM`, no variables), the four `section_rewrite.tone.<name>` keys (verbatim `TONE_PRESETS[<name>]`, no variables, description "Tone preset: <name>"), `topic_analyze.system` (verbatim `_SYSTEM_PROMPT`), `topic_analyze.full` (verbatim `_FULL_ANALYSIS_TEMPLATE`, vars `title, domains_section, valid_tones`), `topic_analyze.regenerate` (verbatim `_REGENERATE_TEMPLATE`, vars `field, title, current_json`).
 
@@ -939,12 +939,12 @@ Delete the literal dict and `_REWRITER_SYSTEM`; line 149 → `SystemMessage(cont
 
 `topic_analyzer.py`: delete the three constants; `_build_prompt` uses `render_prompt("topic_analyze.regenerate", field=…, title=…, current_json=…)` and `render_prompt("topic_analyze.full", title=…, domains_section=…, valid_tones=VALID_TONES)`; `analyze()` uses `SystemMessage(content=render_prompt("topic_analyze.system"))`.
 
-- [ ] **Step 4: Run**
+- [x] **Step 4: Run**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services tests/unit/api/test_content_endpoints.py tests/unit/api/test_topics_endpoints.py -q` (use whatever the existing content/topic endpoint test files are named — `ls tests/unit/api | grep -E "content|topic"`)
 Expected: all pass
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/agents/prompts/defaults_editing.py src/services/content/section_rewriter.py src/services/topic_analyzer.py tests/unit/services/test_prompt_registry_editing.py
@@ -963,7 +963,7 @@ git commit -m "refactor(prompts): rewrite, tone presets and topic analyzer read 
 **Interfaces:**
 - Produces: `PromptOverride(key: str, template: str, updated_by: str, updated_at: datetime)`; `PromptOverrideRepository` Protocol with `load_all() -> dict[str, str]`, `get(key) -> PromptOverride | None`, `upsert(key, template, updated_by) -> PromptOverride` (keyword-only after `key`), `delete(key) -> bool`; `PgPromptOverrideRepository(sf)`, `InMemoryPromptOverrideRepository()`.
 
-- [ ] **Step 1: Write the failing unit test (in-memory repo — the Pg repo shares the contract)**
+- [x] **Step 1: Write the failing unit test (in-memory repo — the Pg repo shares the contract)**
 
 ```python
 # tests/unit/db/test_prompt_override_repository.py
@@ -1001,12 +1001,12 @@ class TestInMemoryPromptOverrideRepository:
         assert await repo.get("k.system") is None
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/db/test_prompt_override_repository.py -q`
 Expected: FAIL — `ModuleNotFoundError`
 
-- [ ] **Step 3: Implement model, table, repos, migration**
+- [x] **Step 3: Implement model, table, repos, migration**
 
 ```python
 # src/models/prompt_override.py
@@ -1232,12 +1232,12 @@ async def test_prompt_override_round_trip(sf: async_sessionmaker[AsyncSession]) 
     assert await repo.delete("it.system") is False
 ```
 
-- [ ] **Step 4: Run**
+- [x] **Step 4: Run**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/db/test_prompt_override_repository.py -q` → 3 passed.
 Then, with the Docker postgres up: `uv run alembic upgrade head` (from the worktree, `COGNIFY_DATABASE_URL` pointing at localhost — the main checkout `.env` already does) and `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/integration/db/test_pg_prompt_overrides.py -q -m integration` → 1 passed. Also `uv run alembic downgrade -1 && uv run alembic upgrade head` once to prove the downgrade.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/models/prompt_override.py src/db/tables_prompt_overrides.py src/db/tables.py src/db/prompt_override_repository.py alembic/versions/e2a7c4d9b1f3_add_prompt_overrides.py tests/unit/db/test_prompt_override_repository.py tests/integration/db/test_pg_prompt_overrides.py
@@ -1257,7 +1257,7 @@ git commit -m "feat(prompts): prompt_overrides table, migration e2a7c4d9b1f3, Pg
 - Consumes: `DEFAULT_PROMPTS`, `validate_template`, `PromptOverrideRepository`
 - Produces: `PromptView`, `PromptListResponse`, `UpdatePromptRequest`; routes `GET /prompts`, `GET /prompts/{key}`, `PUT /prompts/{key}`, `DELETE /prompts/{key}`; `app.state.prompt_override_repo`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/unit/api/test_prompts_endpoints.py
@@ -1372,12 +1372,12 @@ class TestRateLimit:
         assert codes[-1] == 429
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_prompts_endpoints.py -q`
 Expected: FAIL — 404s (router not registered) / import errors
 
-- [ ] **Step 3: Implement schemas, router, wiring**
+- [x] **Step 3: Implement schemas, router, wiring**
 
 ```python
 # src/api/schemas/prompts.py
@@ -1522,12 +1522,12 @@ Wiring in `src/api/main.py`:
 - DB branch (after line 279): `from src.db.prompt_override_repository import PgPromptOverrideRepository` + `app.state.prompt_override_repo = PgPromptOverrideRepository(sf)`.
 - `create_app` (after line 389): `app.state.prompt_override_repo = InMemoryPromptOverrideRepository()` (import from the same module) — the DB branch replaces it at lifespan.
 
-- [ ] **Step 4: Run**
+- [x] **Step 4: Run**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_prompts_endpoints.py tests/unit/api -q`
 Expected: all pass (the 429 test relies on the `reset_rate_limiter` autouse fixture in `tests/unit/api/conftest.py`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/api/schemas/prompts.py src/api/routers/prompts.py src/api/main.py tests/unit/api/test_prompts_endpoints.py
@@ -1547,7 +1547,7 @@ git commit -m "feat(prompts): GET/PUT/DELETE /prompts with validation + app wiri
 **Interfaces:**
 - Produces: `PipelineDeps.prompt_overrides: PromptOverridesLoader | None = None` where `PromptOverridesLoader = Callable[[], Awaitable[Mapping[str, str]]]`; `load_prompt_overrides(request) -> Mapping[str, str]` FastAPI dependency (never raises — logs `prompt_overrides_unavailable` and returns `{}`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/unit/services/test_pipeline_runner_prompts.py
@@ -1643,12 +1643,12 @@ async def test_repo_error_returns_empty() -> None:
     assert await load_prompt_overrides(request) == {}
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/test_pipeline_runner_prompts.py tests/unit/api/test_prompt_scope.py -q`
 Expected: FAIL — `TypeError: unexpected keyword 'prompt_overrides'` / `ModuleNotFoundError: src.api.prompt_scope`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/services/pipeline_runner.py`:
 ```python
@@ -1741,12 +1741,12 @@ Handlers — add `overrides: Mapping[str, str] = Depends(load_prompt_overrides)`
 
 The `Depends` dependency exceeds the 3-param rule on some handlers only nominally (FastAPI injections don't count against it in this repo — `section_rewrite` already has 3 injected params); keep the signature order `request, body, user, overrides`.
 
-- [ ] **Step 4: Run**
+- [x] **Step 4: Run**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services tests/unit/api tests/unit/tasks -q` (skip `tests/unit/tasks` if it does not exist)
 Expected: all pass
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/services/pipeline_runner.py src/services/bootstrap.py src/tasks/pipeline_tasks.py src/api/routers src/api/prompt_scope.py tests/unit/services/test_pipeline_runner_prompts.py tests/unit/api/test_prompt_scope.py
@@ -1765,7 +1765,7 @@ git commit -m "feat(prompts): bind override snapshot per pipeline run and per LL
 **Interfaces:**
 - Produces: `PromptView` TS type (snake_case, mirrors the API); `listPrompts(): Promise<PromptView[]>`, `updatePrompt(key, template)`, `resetPrompt(key)`, `extractPromptViolations(err): string[]`; `usePrompts() → { prompts, isLoading, error, save(key, template), reset(key) }` (mutations invalidate `["prompts"]`); `currentRole(): "admin" | "editor" | "viewer" | null` (decodes the JWT payload in `localStorage.cognify_access_token`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 // frontend/src/lib/api/prompts.test.ts
@@ -1881,12 +1881,12 @@ describe("usePrompts", () => {
 
 Update `settings-nav.test.tsx`: rename the first test to "renders all 7 tab items" and add `expect(screen.getByText("Prompts")).toBeInTheDocument();` (the existing test says 5 but lists 6 tabs — leave the others, add Prompts).
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `cd frontend && npx vitest run src/lib/api/prompts.test.ts src/lib/auth/role.test.ts src/hooks/use-prompts.test.tsx src/components/settings/settings-nav.test.tsx`
 Expected: FAIL — cannot resolve `./prompts`, `./role`, `./use-prompts`; nav test misses "Prompts"
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```ts
 // frontend/src/types/prompts.ts
@@ -1988,12 +1988,12 @@ export function usePrompts() {
 
 `types/settings.ts`: add `| "prompts"` to `SettingsTab`. `settings-nav.tsx`: import `FileText` from lucide-react and add `{ key: "prompts", label: "Prompts", icon: FileText }` after the `llm` entry.
 
-- [ ] **Step 4: Run**
+- [x] **Step 4: Run**
 
 Run: the same vitest command as Step 2
 Expected: all pass
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/types/prompts.ts frontend/src/types/settings.ts frontend/src/lib/api/prompts.ts frontend/src/lib/api/prompts.test.ts frontend/src/lib/auth frontend/src/hooks/use-prompts.ts frontend/src/hooks/use-prompts.test.tsx frontend/src/components/settings/settings-nav.tsx frontend/src/components/settings/settings-nav.test.tsx
@@ -2014,7 +2014,7 @@ git commit -m "feat(frontend): prompts API module, usePrompts hook, role helper,
 - `PromptEditor({ prompt, canEdit, violations, saving, onSave(template), onReset() })`.
 - `PromptsSettings()` — container: `usePrompts()`, selection state, `currentRole() === "admin"`, `useToast`, maps 422 to violations.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```tsx
 // frontend/src/components/settings/prompts-tab.test.tsx
@@ -2137,12 +2137,12 @@ describe("PromptsSettings", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `cd frontend && npx vitest run src/components/settings/prompts-tab.test.tsx src/components/settings/prompt-editor.test.tsx src/components/settings/prompts-settings.test.tsx`
 Expected: FAIL — modules not found
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```tsx
 // frontend/src/components/settings/prompts-tab.tsx
@@ -2336,12 +2336,12 @@ export function PromptsSettings() {
 
 `settings/page.tsx`: import `PromptsSettings` and add `{activeTab === "prompts" && <PromptsSettings />}` after the `llm` block.
 
-- [ ] **Step 4: Run the whole frontend suite + lint + size budget**
+- [x] **Step 4: Run the whole frontend suite + lint + size budget**
 
 Run: `cd frontend && npx vitest run && npx eslint src --max-warnings=5 && npx tsc --noEmit | tail -3`
 Expected: all Vitest green (incl. `file-size-budget.test.ts`); eslint 0 errors; `tsc` at the 13-error baseline (no new errors).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/settings frontend/src/app/\(dashboard\)/settings/page.tsx
@@ -2354,7 +2354,7 @@ git commit -m "feat(frontend): Settings → Prompts tab with editor, reset and v
 
 **Files:** none new.
 
-- [ ] **Step 1: Backend gates**
+- [x] **Step 1: Backend gates**
 
 Run:
 ```bash
@@ -2364,7 +2364,7 @@ uv run mypy src/ --ignore-missing-imports | tail -1
 ```
 Expected: 0 failures; ruff clean; mypy error count ≤ the develop baseline (116) with none in new files (`mypy src/agents/prompts src/api/routers/prompts.py src/api/prompt_scope.py src/db/prompt_override_repository.py`).
 
-- [ ] **Step 2: Live smoke (stack up on the main checkout's images is fine — run the API in-process from the worktree against the Docker DB, as the AUTHOR-010 smoke did)**
+- [x] **Step 2: Live smoke (stack up on the main checkout's images is fine — run the API in-process from the worktree against the Docker DB, as the AUTHOR-010 smoke did)**
 
 1. `uv run alembic upgrade head` (→ `e2a7c4d9b1f3`).
 2. Start the API: `uv run uvicorn src.api.main:app --port 8010 --env-file D:/Workbench/github/cognify/.env`.
@@ -2375,7 +2375,7 @@ Expected: 0 failures; ruff clean; mypy error count ≤ the develop baseline (116
 7. Browser: Settings → Prompts renders the grouped list; as admin edit + save shows the "Prompt saved" toast; an invalid edit shows the violation list inline; Reset removes the badge. Log in as `editor@cognify.dev` → textarea read-only, "Only admins can edit prompts."
 Record outcomes (session ids, counts) in the PR body.
 
-- [ ] **Step 3: Commit any fixes**
+- [x] **Step 3: Commit any fixes**
 
 ```bash
 git commit -am "fix(prompts): smoke findings (AUTHOR-012)"   # only if something needed fixing
@@ -2389,7 +2389,7 @@ git commit -am "fix(prompts): smoke findings (AUTHOR-012)"   # only if something
 - Modify: `docs/superpowers/specs/2026-08-31-author-012-prompt-registry-design.md` §3.2 (replace the shared `research_claims` row with `research_web_claims.*` (`title, snippets`) and `research_literature_claims.*` (`title, abstracts`); total 18 key groups), `project-management/PROGRESS.md` (AUTHOR-012 row → Done with PR number; RESUME block: one paragraph with the smoke record and the follow-ups), `project-management/BACKLOG.md` (AUTHOR-012 row → DONE; summary table 15/17 done, remaining 18 SP), `CLAUDE.md` (Epic 11 paragraph: one sentence on the registry + `/prompts` + Prompts tab; "Next action"), `docs/LEARNINGS.md` (add **L-014**: "Prompts are registry keys — never add a new module-level prompt constant; register a `PromptTemplate` and call `render_prompt`; zero-variable templates are returned verbatim; overrides are one snapshot per run"), `.claude/rules/` untouched.
 - Plan checkboxes ticked.
 
-- [ ] **Step 1: Edit the docs listed above**
+- [x] **Step 1: Edit the docs listed above**
 - [ ] **Step 2: Commit and push, open the PR against `develop`**
 
 ```bash
