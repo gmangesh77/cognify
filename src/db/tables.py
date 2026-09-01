@@ -19,12 +19,21 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.base import Base, TimestampMixin, UUIDMixin
+
+# tables_personas MUST import before tables_briefs: briefs.py adds a FK to
+# personas, so personas needs to register on Base.metadata first.
+# isort: off
+from src.db.tables_personas import (
+    PersonaRow,  # noqa: F401 — registers table on Base.metadata
+    PersonaSampleRow,  # noqa: F401 — registers table on Base.metadata
+)
 from src.db.tables_briefs import (
     BriefRow,  # noqa: F401 — registers table on Base.metadata
 )
 from src.db.tables_prompt_overrides import (
     PromptOverrideRow,  # noqa: F401 — registers table on Base.metadata
 )
+# isort: on
 
 __all__ = [
     "TopicRow",
@@ -107,6 +116,12 @@ class ResearchSessionRow(Base, UUIDMixin, TimestampMixin):
     content_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     length_target: Mapped[str | None] = mapped_column(String(20), nullable=True)
     audience_persona: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # AUTHOR-011 — measured voice persona (separate from audience_persona).
+    voice_persona_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("personas.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     steps: Mapped[list["AgentStepRow"]] = relationship(
         back_populates="session",
@@ -216,6 +231,17 @@ class CanonicalArticleRow(Base, UUIDMixin, TimestampMixin):
     visuals: Mapped[list] = mapped_column(JSONB, default=list)
     provenance: Mapped[dict] = mapped_column(JSONB)
     authors: Mapped[list] = mapped_column(JSONB, default=list)
+    # AUTHOR-011 — voice engine outputs (+ the audience_persona column the
+    # model has carried since VISUAL-005 without ever being persisted).
+    audience_persona: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    voice_persona_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("personas.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    voice_match_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    voice_scores_by_section: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    few_shot_sample_ids: Mapped[list] = mapped_column(JSONB, default=list)
 
 
 class DomainConfigRow(Base, UUIDMixin, TimestampMixin):

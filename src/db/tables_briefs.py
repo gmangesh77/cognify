@@ -5,8 +5,11 @@ Lives in its own module because `src/db/tables.py` is already over the
 for Alembic and `create_all`.
 """
 
-from sqlalchemy import Boolean, String, Text
+import uuid
+
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.db.base import Base, TimestampMixin, UUIDMixin
@@ -30,3 +33,9 @@ class BriefRow(Base, UUIDMixin, TimestampMixin):
     )
     audience_persona: Mapped[str | None] = mapped_column(String(100), nullable=True)
     require_outline_approval: Mapped[bool] = mapped_column(Boolean, default=False)
+    # AUTHOR-011 — measured voice persona (separate from audience_persona).
+    voice_persona_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("personas.id", ondelete="SET NULL"),
+        nullable=True,
+    )
