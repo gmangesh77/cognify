@@ -130,3 +130,11 @@ class CanonicalArticle(BaseModel):
     image_specs: list[ImageSpec] = Field(default_factory=list)
     page_art_direction: str | None = None
     audience_persona: str | None = None
+
+    # AUTHOR-011 — persona voice engine v1 outputs. Optional and
+    # default-empty/None so articles persisted before this field was added
+    # still validate.
+    voice_persona_id: UUID | None = None
+    voice_match_score: int | None = None
+    voice_scores_by_section: dict[str, int] | None = None
+    few_shot_sample_ids: list[UUID] = Field(default_factory=list)

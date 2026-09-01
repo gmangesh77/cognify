@@ -39,3 +39,28 @@ def test_build_initial_state_seeds_content_type_and_length_target() -> None:
 
     assert state["content_type"] == "how-to"
     assert state["length_target"] == "pillar"
+
+
+def test_build_initial_state_seeds_voice_persona_id() -> None:
+    topic_id = uuid4()
+    voice_persona_id = uuid4()
+    session = ResearchSession(
+        topic_id=topic_id,
+        started_at=datetime.now(UTC),
+        voice_persona_id=voice_persona_id,
+    )
+    topic = TopicInput(id=topic_id, title="t", description="d", domain="tech")
+
+    state = build_initial_state(session, topic, [])
+
+    assert state["voice_persona_id"] == voice_persona_id
+
+
+def test_build_initial_state_voice_persona_id_defaults_to_none() -> None:
+    topic_id = uuid4()
+    session = ResearchSession(topic_id=topic_id, started_at=datetime.now(UTC))
+    topic = TopicInput(id=topic_id, title="t", description="d", domain="tech")
+
+    state = build_initial_state(session, topic, [])
+
+    assert state["voice_persona_id"] is None

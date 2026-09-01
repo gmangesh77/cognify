@@ -3,6 +3,7 @@ from starlette.status import (
     HTTP_401_UNAUTHORIZED,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
     HTTP_422_UNPROCESSABLE_CONTENT,
     HTTP_429_TOO_MANY_REQUESTS,
     HTTP_503_SERVICE_UNAVAILABLE,
@@ -88,6 +89,19 @@ class AuthorizationError(CognifyError):
         super().__init__(
             status_code=HTTP_403_FORBIDDEN,
             code="insufficient_permissions",
+            message=message,
+        )
+
+
+class ConflictError(CognifyError):
+    def __init__(
+        self,
+        code: str = "conflict",
+        message: str = "Conflict",
+    ) -> None:
+        super().__init__(
+            status_code=HTTP_409_CONFLICT,
+            code=code,
             message=message,
         )
 

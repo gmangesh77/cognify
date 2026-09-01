@@ -10,11 +10,13 @@ from uuid import uuid4
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from src.db import tables  # noqa: F401 — registers all table models on Base.metadata
 from src.db.base import Base
 from src.db.engine import create_async_engine, get_session_factory
+from src.db.persona_repository import PgPersonaRepository
 from src.db.repositories import (
     PgAgentStepRepository,
     PgArticleDraftRepository,
@@ -32,6 +34,7 @@ from src.models.content import (
     StructuredDataLD,
 )
 from src.models.content_pipeline import ArticleDraft, DraftStatus
+from src.models.persona import Persona, PersonaCreate
 from src.models.research import TopicInput
 from src.models.research_db import AgentStep, ResearchSession
 
@@ -84,6 +87,23 @@ async def _seed_session(
         started_at=datetime.now(UTC),
     )
     return await repo.create(session)
+
+
+async def _seed_persona(sf: async_sessionmaker[AsyncSession]) -> Persona:
+    """Create a persona row for FK-target tests; caller must delete it."""
+    repo = PgPersonaRepository(sf)
+    return await repo.create(
+        "it-article-voice", PersonaCreate(name="Voice Test Persona")
+    )
+
+
+async def _delete_persona(
+    sf: async_sessionmaker[AsyncSession], persona_id: object
+) -> None:
+    async with sf() as db:
+        stmt = text("DELETE FROM personas WHERE id = :id")
+        await db.execute(stmt, {"id": persona_id})
+        await db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -228,6 +248,41 @@ class TestPgResearchSessionRepository:
         result = await repo.update(updated)
 
         assert result.agent_plan == plan
+
+    async def test_voice_persona_id_round_trips_as_none(
+        self, session_factory: async_sessionmaker[AsyncSession]
+    ) -> None:
+        # No persona row seeded here (FK) — round-trip the unset/NULL case.
+        topic = await _seed_topic(session_factory)
+        session = await _seed_session(session_factory, topic.id)
+        repo = PgResearchSessionRepository(session_factory)
+
+        assert session.voice_persona_id is None
+        created = await repo.get(session.id)
+        assert created is not None
+        assert created.voice_persona_id is None
+
+        result = await repo.update(session.model_copy())
+        assert result.voice_persona_id is None
+
+    async def test_voice_persona_id_round_trips_as_set(
+        self, session_factory: async_sessionmaker[AsyncSession]
+    ) -> None:
+        persona = await _seed_persona(session_factory)
+        try:
+            topic = await _seed_topic(session_factory)
+            session = await _seed_session(session_factory, topic.id)
+            repo = PgResearchSessionRepository(session_factory)
+
+            updated = session.model_copy(update={"voice_persona_id": persona.id})
+            result = await repo.update(updated)
+            assert result.voice_persona_id == persona.id
+
+            fetched = await repo.get(session.id)
+            assert fetched is not None
+            assert fetched.voice_persona_id == persona.id
+        finally:
+            await _delete_persona(session_factory, persona.id)
 
 
 # ---------------------------------------------------------------------------
@@ -652,3 +707,40 @@ class TestPgArticleRepository:
         assert found.article_id == article.id
         assert found.session_id == session.id
         assert await drafts.find_by_article_id(uuid4()) is None
+
+    async def test_voice_fields_roundtrip(
+        self, session_factory: async_sessionmaker[AsyncSession]
+    ) -> None:
+        """AUTHOR-011 gap fix: audience_persona + voice fields now persist."""
+        persona = await _seed_persona(session_factory)
+        try:
+            topic = await _seed_topic(session_factory)
+            session = await _seed_session(session_factory, topic.id)
+            repo = PgArticleRepository(session_factory)
+
+            sample_id = uuid4()
+            article = _make_canonical_article(session.id).model_copy(
+                update={
+                    "audience_persona": "general_business",
+                    "voice_persona_id": persona.id,
+                    "voice_match_score": 88,
+                    "voice_scores_by_section": {"0": 88},
+                    "few_shot_sample_ids": [sample_id],
+                }
+            )
+            created = await repo.create(article)
+            assert created.audience_persona == "general_business"
+            assert created.voice_persona_id == persona.id
+            assert created.voice_match_score == 88
+            assert created.voice_scores_by_section == {"0": 88}
+            assert created.few_shot_sample_ids == [sample_id]
+
+            fetched = await repo.get(article.id)
+            assert fetched is not None
+            assert fetched.audience_persona == "general_business"
+            assert fetched.voice_persona_id == persona.id
+            assert fetched.voice_match_score == 88
+            assert fetched.voice_scores_by_section == {"0": 88}
+            assert fetched.few_shot_sample_ids == [sample_id]
+        finally:
+            await _delete_persona(session_factory, persona.id)

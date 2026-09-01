@@ -11,6 +11,7 @@ import { ApiKeysTab } from "@/components/settings/api-keys-tab";
 import { SeoDefaultsTab } from "@/components/settings/seo-defaults-tab";
 import { GeneralTab } from "@/components/settings/general-tab";
 import { PromptsSettings } from "@/components/settings/prompts-settings";
+import { PersonasSettings } from "@/components/settings/personas-settings";
 import { useToast } from "@/components/ui/toaster";
 import { useSettings } from "@/hooks/use-settings";
 import type { SettingsTab } from "@/types/settings";
@@ -77,6 +78,8 @@ function SettingsContent() {
           )}
 
           {activeTab === "prompts" && <PromptsSettings />}
+
+          {activeTab === "personas" && <PersonasSettings />}
 
           {activeTab === "visuals" && (
             <VisualsTab

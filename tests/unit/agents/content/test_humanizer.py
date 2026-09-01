@@ -3,7 +3,12 @@
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
-from src.agents.content.humanizer import fix_mechanical, rewrite_section
+from src.agents.content.humanizer import (
+    fix_mechanical,
+    payload_for_llm,
+    rewrite_section,
+    slot_back,
+)
 from src.models.content_pipeline import (
     SectionDraft,
     SlopScore,
@@ -148,3 +153,10 @@ class TestStructureAwareRewrite:
         llm = FakeListChatModel(responses=["unused"])
         result = await rewrite_section(section, _make_score(), llm)
         assert result.body_markdown == section.body_markdown
+
+
+class TestPublicAliases:
+    def test_payload_for_llm_and_slot_back_are_importable(self) -> None:
+        """AUTHOR-011: voice_nodes.py reuses these via the public aliases."""
+        assert callable(payload_for_llm)
+        assert callable(slot_back)

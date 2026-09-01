@@ -52,6 +52,7 @@ class BriefFields(BaseModel):
     length_target: LengthTarget = "medium"
     structural_diagram_mode: DiagramMode = "illustration"
     audience_persona: str | None = None
+    voice_persona_id: UUID | None = None
     require_outline_approval: bool = False
 
     _tone = field_validator("content_tone")(check_tone)
@@ -76,6 +77,7 @@ class BriefUpdate(BaseModel):
     length_target: LengthTarget | None = None
     structural_diagram_mode: DiagramMode | None = None
     audience_persona: str | None = None
+    voice_persona_id: UUID | None = None
     require_outline_approval: bool | None = None
 
     _tone = field_validator("content_tone")(check_tone)

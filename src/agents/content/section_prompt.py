@@ -42,6 +42,8 @@ def build_system_prompt(section: OutlineSection, ctx: DraftingContext) -> str:
             f"\nEnsure these key topics are referenced naturally: "
             f"{', '.join(ctx.keywords)}."
         )
+    if ctx.voice_block:
+        system += "\n\n" + ctx.voice_block
     return system
 
 

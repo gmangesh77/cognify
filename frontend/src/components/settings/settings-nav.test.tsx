@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SettingsNav } from "./settings-nav";
 
 describe("SettingsNav", () => {
-  it("renders all 7 tab items", () => {
+  it("renders all 8 tab items", () => {
     render(<SettingsNav activeTab="domains" onTabChange={vi.fn()} />);
     expect(screen.getByText("Domains")).toBeInTheDocument();
     expect(screen.getByText("LLM Configuration")).toBeInTheDocument();
@@ -11,6 +11,7 @@ describe("SettingsNav", () => {
     expect(screen.getByText("SEO Defaults")).toBeInTheDocument();
     expect(screen.getByText("General")).toBeInTheDocument();
     expect(screen.getByText("Prompts")).toBeInTheDocument();
+    expect(screen.getByText("Personas")).toBeInTheDocument();
   });
 
   it("highlights the active tab", () => {

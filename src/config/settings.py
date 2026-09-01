@@ -119,8 +119,9 @@ class Settings(BaseSettings):
     # llm_calls.call_name values (content_outline, content_queries,
     # content_draft, content_validate, content_citations, content_humanize,
     # content_seo, content_charts, content_diagrams, plan_research,
-    # evaluate_completeness, section_regenerate, seo_regenerate); values are
-    # Anthropic model ids. Empty = every step uses `anthropic_model`.
+    # evaluate_completeness, section_regenerate, seo_regenerate,
+    # content_score_voice, content_fix_voice); values are Anthropic model
+    # ids. Empty = every step uses `anthropic_model`.
     # Env: COGNIFY_LLM_MODEL_BY_STEP='{"content_queries": "claude-haiku-4-5-20251001"}'
     llm_model_by_step: dict[str, str] = {}
     embedding_version: str = "v1"
@@ -206,6 +207,10 @@ class Settings(BaseSettings):
     # auto-continuing into article generation. Per-session override via
     # CreateResearchSessionRequest.require_outline_approval.
     require_outline_approval: bool = False
+    # Persona voice engine (AUTHOR-011). Off by default: with False the
+    # score_voice / fix_voice_deviations nodes are not added to the graph.
+    enable_voice_engine: bool = False
+    voice_fix_threshold: int = 70  # sections scoring below get ONE fix pass
     # Task dispatch (INFRA-007) — "inprocess" runs pipelines on the API
     # event loop (today's behaviour); "celery" enqueues to the worker.
     # Literal so a typo fails at boot instead of silently running inprocess.

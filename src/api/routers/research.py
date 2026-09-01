@@ -198,6 +198,7 @@ async def get_research_session(
         brief_id=s.brief_id,
         content_type=s.content_type,
         length_target=s.length_target,
+        voice_persona_id=s.voice_persona_id,
     )
 
 

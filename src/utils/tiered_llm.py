@@ -34,6 +34,8 @@ KNOWN_LLM_STEPS: frozenset[str] = frozenset(
         "evaluate_completeness",
         "section_regenerate",
         "seo_regenerate",
+        "content_score_voice",
+        "content_fix_voice",
     }
 )
 

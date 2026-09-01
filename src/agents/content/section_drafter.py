@@ -43,6 +43,7 @@ class DraftingContext:
     preferred_angle: str | None = None
     keywords: list[str] | None = None
     instruction: str | None = None
+    voice_block: str | None = None
 
 
 @dataclass(frozen=True)

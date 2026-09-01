@@ -30,3 +30,22 @@ def test_create_to_row_and_back() -> None:
     assert brief.length_target == "short"
     assert brief.content_type == "how-to"
     assert brief.owner_id == "user-1"
+
+
+def test_voice_persona_id_round_trips() -> None:
+    voice_persona_id = uuid4()
+    data = BriefCreate(name="n", voice_persona_id=voice_persona_id)
+    row = brief_create_to_row("user-1", data)
+    row.id = uuid4()
+    row.created_at = row.updated_at = datetime.now(UTC)
+    brief = row_to_brief(row)
+    assert brief.voice_persona_id == voice_persona_id
+
+
+def test_voice_persona_id_defaults_to_none() -> None:
+    data = BriefCreate(name="n")
+    row = brief_create_to_row("user-1", data)
+    row.id = uuid4()
+    row.created_at = row.updated_at = datetime.now(UTC)
+    brief = row_to_brief(row)
+    assert brief.voice_persona_id is None

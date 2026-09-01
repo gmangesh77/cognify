@@ -78,6 +78,21 @@ class TestSystemPrompt:
         assert "Lead with the metric" not in system
         assert "Editor instruction" not in system
 
+    def test_voice_block_appended_when_present(self) -> None:
+        ctx = DraftingContext(
+            retriever=None,
+            topic_id="topic-1",
+            llm=None,  # type: ignore[arg-type]
+            prior_drafts=[],
+            voice_block="Voice. Write like this author.",
+        )
+        system = build_system_prompt(_section(), ctx)
+        assert system.endswith("\n\nVoice. Write like this author.")
+
+    def test_voice_block_absent_when_none(self) -> None:
+        system = build_system_prompt(_section(), _ctx())
+        assert "Voice." not in system
+
 
 class TestUserPrompt:
     def test_prior_sections_use_first_sentence(self) -> None:

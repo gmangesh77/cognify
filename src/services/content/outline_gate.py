@@ -85,6 +85,11 @@ class OutlineGateService:
         findings = self._content._reconstruct_findings(session)
         topic = self._content._build_topic_input(session)
         state = build_initial_state(session, topic, findings)
+        # Also runs on the stop-after-outline path (`generate_outline_only`
+        # / `regenerate_outline`), which never drafts — an accepted, small
+        # extra persona lookup so this one shared prep step never drifts
+        # from `generate_from_outline`'s (the path that does draft).
+        state.update(await self._content._voice_state(session, topic))
         return session, state
 
     async def _run_graph(
