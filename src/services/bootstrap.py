@@ -40,6 +40,7 @@ from src.services.bootstrap_builders import (
     _build_real_orchestrator,
     _NoOpOrchestrator,
     _try_build_retriever_from_settings,
+    build_embedding_service,
 )
 from src.services.content import ContentService
 from src.services.content.outline_gate import OutlineGateService
@@ -129,7 +130,16 @@ async def build_pipeline_services(
         topics=PgTopicRepository(sf),
     )
     orchestrator: object = _NoOpOrchestrator()
-    content_deps = ContentDeps(settings=settings)
+    # AUTHOR-011 — shared by both content_deps below, so the persona repo
+    # and embedding service are always available for voice resolution,
+    # whether or not the LLM/retriever build succeeds.
+    persona_repo = PgPersonaRepository(sf)
+    embedding_service = build_embedding_service(settings)
+    content_deps = ContentDeps(
+        settings=settings,
+        persona_repo=persona_repo,
+        embedding_service=embedding_service,
+    )
     if settings.anthropic_api_key:
         try:
             orchestrator = _build_real_orchestrator(
@@ -137,7 +147,13 @@ async def build_pipeline_services(
             )
             llm = _build_llm(settings, llm_call_repo=llm_call_repo)
             retriever = _try_build_retriever_from_settings(settings)
-            content_deps = ContentDeps(llm=llm, retriever=retriever, settings=settings)
+            content_deps = ContentDeps(
+                llm=llm,
+                retriever=retriever,
+                settings=settings,
+                persona_repo=persona_repo,
+                embedding_service=embedding_service,
+            )
         except Exception as exc:
             logger.error("pipeline_llm_init_failed", error=str(exc))
     article_repo = PgArticleRepository(sf)
@@ -160,5 +176,5 @@ async def build_pipeline_services(
         content_repos=content_repos,
         article_repo=article_repo,
         prompt_override_repo=PgPromptOverrideRepository(sf),
-        persona_repo=PgPersonaRepository(sf),
+        persona_repo=persona_repo,
     )

@@ -153,6 +153,7 @@ def _make_draft_ctx(deps: _DraftDeps, drafts: list[SectionDraft]) -> DraftingCon
         content_tone=deps.state.get("content_tone"),
         preferred_angle=deps.state.get("preferred_angle"),
         keywords=deps.state.get("keywords"),
+        voice_block=deps.state.get("voice_block"),
     )
 
 

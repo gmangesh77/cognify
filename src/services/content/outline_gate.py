@@ -85,6 +85,7 @@ class OutlineGateService:
         findings = self._content._reconstruct_findings(session)
         topic = self._content._build_topic_input(session)
         state = build_initial_state(session, topic, findings)
+        state.update(await self._content._voice_state(session, topic))
         return session, state
 
     async def _run_graph(

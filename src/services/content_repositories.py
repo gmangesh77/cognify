@@ -3,8 +3,10 @@
 Extracted from content.py to keep file sizes under 200 lines.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
 from langchain_core.language_models import BaseChatModel
@@ -14,6 +16,10 @@ from src.models.content import CanonicalArticle, ImageAsset
 from src.models.content_pipeline import ArticleDraft
 from src.models.research_db import ResearchSession
 from src.services.milvus_retriever import MilvusRetriever
+
+if TYPE_CHECKING:
+    from src.db.persona_repository import PersonaRepository
+    from src.services.embeddings import EmbeddingService
 
 
 class ArticleDraftRepository(Protocol):
@@ -157,6 +163,10 @@ class ContentDeps:
     llm: BaseChatModel | None = None
     retriever: MilvusRetriever | None = None
     settings: Settings | None = None
+    # AUTHOR-011 — voice-persona resolution (Task 9); both optional so
+    # every existing construction site stays byte-identical.
+    persona_repo: PersonaRepository | None = None
+    embedding_service: EmbeddingService | None = None
 
 
 def aggregate_citations(

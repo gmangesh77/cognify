@@ -178,7 +178,13 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         _get_or_create_embedding_service(app).warm_up_in_background()
 
     # --- Build LLM + content deps (shared by DB and non-DB paths) ---
-    content_deps = ContentDeps(settings=settings)
+    # AUTHOR-011 — `create_app()` always seeds `app.state.persona_repo`
+    # (in-memory or PG) before lifespan runs, so it's safe here too.
+    content_deps = ContentDeps(
+        settings=settings,
+        persona_repo=app.state.persona_repo,
+        embedding_service=_get_or_create_embedding_service(app),
+    )
     if settings.anthropic_api_key:
         try:
             llm = _build_llm(settings)
@@ -187,6 +193,8 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                 llm=llm,
                 retriever=retriever,
                 settings=settings,
+                persona_repo=app.state.persona_repo,
+                embedding_service=_get_or_create_embedding_service(app),
             )
             app.state.drafting_llm = llm
             logger.info(
@@ -316,6 +324,8 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                         llm=llm,
                         retriever=retriever,
                         settings=settings,
+                        persona_repo=app.state.persona_repo,
+                        embedding_service=_get_or_create_embedding_service(app),
                     )
                     app.state.content_service = ContentService(
                         repos=content_repos,
