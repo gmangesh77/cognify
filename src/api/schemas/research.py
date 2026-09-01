@@ -35,6 +35,7 @@ class CreateResearchSessionRequest(BaseModel):
     content_type: ContentType | None = None
     length_target: LengthTarget | None = None
     audience_persona: str | None = None
+    voice_persona_id: UUID | None = None
 
     _tone = field_validator("content_tone")(check_tone)
     _persona = field_validator("audience_persona")(check_persona)
@@ -72,6 +73,7 @@ class ResearchSessionResponse(BaseModel):
     brief_id: UUID | None = None
     content_type: str | None = None
     length_target: str | None = None
+    voice_persona_id: UUID | None = None
 
 
 class ResearchSessionSummary(BaseModel):

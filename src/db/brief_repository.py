@@ -36,6 +36,7 @@ def _row_fields(row: BriefRow) -> dict[str, object]:
         length_target=row.length_target,
         structural_diagram_mode=row.structural_diagram_mode,
         audience_persona=row.audience_persona,
+        voice_persona_id=row.voice_persona_id,
         require_outline_approval=row.require_outline_approval,
         created_at=row.created_at,
         updated_at=row.updated_at,

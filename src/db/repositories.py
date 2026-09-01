@@ -89,6 +89,7 @@ class PgResearchSessionRepository:
                 content_type=session.content_type,
                 length_target=session.length_target,
                 audience_persona=session.audience_persona,
+                voice_persona_id=session.voice_persona_id,
             )
             db.add(row)
             await db.commit()
@@ -136,6 +137,7 @@ class PgResearchSessionRepository:
             row.content_type = session.content_type
             row.length_target = session.length_target
             row.audience_persona = session.audience_persona
+            row.voice_persona_id = session.voice_persona_id
             await db.commit()
             await db.refresh(row)
             updated = self._to_model(row)
@@ -214,6 +216,7 @@ class PgResearchSessionRepository:
             content_type=row.content_type,
             length_target=row.length_target,
             audience_persona=row.audience_persona,
+            voice_persona_id=row.voice_persona_id,
         )
 
 

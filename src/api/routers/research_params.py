@@ -26,6 +26,7 @@ _INLINE_FIELDS = (
     "require_outline_approval",
     "length_target",
     "audience_persona",
+    "voice_persona_id",
 )
 
 
@@ -72,5 +73,6 @@ def inline_brief_create(
         length_target=body.length_target or "medium",
         structural_diagram_mode=body.structural_diagram_mode or "illustration",
         audience_persona=body.audience_persona,
+        voice_persona_id=body.voice_persona_id,
         require_outline_approval=default_gate if gate is None else gate,
     )

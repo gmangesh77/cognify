@@ -93,6 +93,8 @@ class ContentState(TypedDict):
     image_specs: NotRequired[list[ImageSpec]]
     page_art_direction: NotRequired[str | None]
     audience_persona: NotRequired[str | None]
+    # AUTHOR-011 — measured voice persona (separate from audience_persona).
+    voice_persona_id: NotRequired[UUID | None]
     # AUTHOR-003 — denormalised Brief id, threaded through for Provenance (Task 7).
     brief_id: NotRequired[UUID | None]
     # VISUAL-012 — "illustration" (diffusion) or "mermaid" for structural diagrams.

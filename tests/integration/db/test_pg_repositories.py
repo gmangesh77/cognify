@@ -229,6 +229,22 @@ class TestPgResearchSessionRepository:
 
         assert result.agent_plan == plan
 
+    async def test_voice_persona_id_round_trips_as_none(
+        self, session_factory: async_sessionmaker[AsyncSession]
+    ) -> None:
+        # No persona row seeded here (FK) — round-trip the unset/NULL case.
+        topic = await _seed_topic(session_factory)
+        session = await _seed_session(session_factory, topic.id)
+        repo = PgResearchSessionRepository(session_factory)
+
+        assert session.voice_persona_id is None
+        created = await repo.get(session.id)
+        assert created is not None
+        assert created.voice_persona_id is None
+
+        result = await repo.update(session.model_copy())
+        assert result.voice_persona_id is None
+
 
 # ---------------------------------------------------------------------------
 # TestPgAgentStepRepository

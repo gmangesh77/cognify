@@ -49,6 +49,7 @@ def build_initial_state(
         # surface these via the Settings UI; until then they default to
         # None and the planner falls back to general_business.
         "audience_persona": session.audience_persona,
+        "voice_persona_id": session.voice_persona_id,
         "brief_id": session.brief_id,
         "page_art_direction": None,
         "image_specs": [],

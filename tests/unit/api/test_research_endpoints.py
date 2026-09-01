@@ -361,3 +361,25 @@ class TestCreateSessionFromBrief:
             headers=headers,
         )
         assert resp.status_code == 422
+
+
+class TestCreateSessionVoicePersona:
+    async def test_voice_persona_id_reaches_session_and_is_echoed(
+        self,
+        research_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        test_topic_id: str,
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        voice_persona_id = str(uuid4())
+        resp = await research_client.post(
+            "/api/v1/research/sessions",
+            json={"topic_id": test_topic_id, "voice_persona_id": voice_persona_id},
+            headers=headers,
+        )
+        assert resp.status_code == 201, resp.text
+        session_id = resp.json()["session_id"]
+        detail = await research_client.get(
+            f"/api/v1/research/sessions/{session_id}", headers=headers
+        )
+        assert detail.json()["voice_persona_id"] == voice_persona_id
