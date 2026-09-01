@@ -6,6 +6,7 @@ import pytest
 
 from src.services.persona.fingerprint import (
     CONFIDENCE_FULL_N,
+    DIM_LABELS,
     DIMENSIONS,
     MIN_SAMPLES,
     InsufficientSamples,
@@ -77,6 +78,9 @@ class TestTextFeatures:
 
     def test_empty_text_is_all_zero(self) -> None:
         assert all(v == 0.0 for v in text_features("").values())
+
+    def test_dim_labels_importable_and_complete(self) -> None:
+        assert set(DIM_LABELS.keys()) == set(DIMENSIONS)
 
 
 class TestBuildFingerprint:

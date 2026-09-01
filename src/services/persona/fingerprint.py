@@ -10,12 +10,21 @@ from src.services.persona.lexicon import (
     _BOOSTERS,
     _FIRST_PERSON,
     _HEDGES,
+    DIM_LABELS,
 )
 from src.utils.markdown_structure import (
     extract_humanizable_text,
     humanizable_blocks,
     parse_markdown_blocks,
 )
+
+__all__ = [
+    "DIMENSIONS",
+    "DIM_LABELS",
+    "InsufficientSamples",
+    "build_fingerprint",
+    "text_features",
+]
 
 MIN_SAMPLES = 5
 MIN_SAMPLE_WORDS = 150
@@ -98,11 +107,32 @@ def _paragraph_len_mean(prose: str) -> float:
     return statistics.fmean(len(_WORD_RE.findall(p)) for p in paras)
 
 
+def _lexical_features(prose: str, words: list[str], n: int) -> dict[str, float]:
+    """Lexical features: contractions, hedges, boosters, first-person, TTR."""
+    lowered = [w.lower() for w in words]
+    return {
+        "contraction_rate": _per(len(_CONTRACTION_RE.findall(prose)), n, 100),
+        "hedge_rate": _per(sum(w in _HEDGES for w in lowered), n, 100),
+        "booster_rate": _per(sum(w in _BOOSTERS for w in lowered), n, 100),
+        "ttr": _ttr(words),
+        "first_person_rate": _per(sum(w in _FIRST_PERSON for w in lowered), n, 100),
+    }
+
+
+def _punct_features(prose: str, n: int) -> dict[str, float]:
+    """Punctuation features: comma, semicolon, dash, question rates."""
+    return {
+        "punct_comma_per_1k": _per(prose.count(","), n, 1000),
+        "punct_semicolon_per_1k": _per(prose.count(";"), n, 1000),
+        "punct_dash_per_1k": _per(len(_DASH_RE.findall(prose)), n, 1000),
+        "punct_question_per_1k": _per(prose.count("?"), n, 1000),
+    }
+
+
 def text_features(text: str) -> dict[str, float]:
     """All DIMENSIONS for one text (zeros for empty input)."""
     prose = _prose(text)
     words = _WORD_RE.findall(prose)
-    lowered = [w.lower() for w in words]
     sentences = _sentences(prose)
     n = len(words)
     mean_len, std_len = _sentence_stats(sentences)
@@ -110,16 +140,9 @@ def text_features(text: str) -> dict[str, float]:
         "sentence_len_mean": mean_len,
         "sentence_len_std": std_len,
         "fk_grade": max(_fk_grade(words, sentences), 0.0),
-        "ttr": _ttr(words),
-        "contraction_rate": _per(len(_CONTRACTION_RE.findall(prose)), n, 100),
-        "hedge_rate": _per(sum(w in _HEDGES for w in lowered), n, 100),
-        "booster_rate": _per(sum(w in _BOOSTERS for w in lowered), n, 100),
-        "punct_comma_per_1k": _per(prose.count(","), n, 1000),
-        "punct_semicolon_per_1k": _per(prose.count(";"), n, 1000),
-        "punct_dash_per_1k": _per(len(_DASH_RE.findall(prose)), n, 1000),
-        "punct_question_per_1k": _per(prose.count("?"), n, 1000),
         "paragraph_len_mean": _paragraph_len_mean(prose),
-        "first_person_rate": _per(sum(w in _FIRST_PERSON for w in lowered), n, 100),
+        **_lexical_features(prose, words, n),
+        **_punct_features(prose, n),
     }
 
 
