@@ -5,6 +5,7 @@ from src.agents.prompts import (  # noqa: F401 — registration side effects
     defaults_content,
     defaults_content_post,
     defaults_editing,
+    defaults_linkedin,
     defaults_research,
 )
 from src.agents.prompts.registry import (
