@@ -262,3 +262,18 @@ Overrides are **one snapshot per pipeline run / per request**, bound via `bind_p
 grep -rn "_SYSTEM_PROMPT\|_USER_TEMPLATE\|_PROMPT_TEMPLATE" src/agents src/services | grep -v prompts/defaults
 ```
 Expected hits: a small number of intentionally-kept aliases (e.g. `section_prompt.SYSTEM_PROMPT` referenced by existing tests) and the image-planner/prompt-composer catalogues, which are structured data (style tables, cliché lists), not text templates, and are deliberately out of the registry's scope. Any other hit is a bug — migrate it into a `defaults_*.py` module.
+
+---
+
+## L-015: Model fields are not columns
+
+**Issue** (AUTHOR-011): `CanonicalArticle.audience_persona` was added to the Pydantic model but the article repository's `create()` / `_to_model()` never mapped a matching column. The field silently round-tripped to `None` on every read — three tickets (AUTHOR-002/003 era through AUTHOR-011) shipped code that set it on the model without anyone noticing it never reached the database, because nothing errored: Pydantic happily accepts and returns `None` for an unset optional field.
+
+**Rule**: a new field on a Pydantic model that is meant to persist is not done until it has (1) a column on the table (`src/db/tables*.py`), (2) an explicit assignment in the repository's `create()` (and `update()` if the field is mutable), (3) an explicit read in `_to_model()`, and (4) a PG integration test that round-trips a **non-null** value through create → read and asserts it survives. A model field with no matching repository code is not "not yet wired" — it is a silent data-loss bug, because the ORM layer never raises on an unmapped Pydantic field.
+
+**Grep check** (compare model field names against `_to_model` kwargs when adding a field):
+```bash
+python -c "import re,sys; m=open('src/models/content.py').read(); print(re.findall(r'^\s*(\w+):\s', m, re.M))"
+grep -n "_to_model\|def create" src/db/repositories.py
+```
+Any model field not named in both the `create()` insert and the `_to_model()` return is unmapped — fix before merging, never "in a follow-up".

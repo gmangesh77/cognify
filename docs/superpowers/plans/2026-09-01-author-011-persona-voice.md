@@ -54,7 +54,7 @@
 **Interfaces:**
 - Produces: `Settings.enable_voice_engine: bool = False`, `Settings.voice_fix_threshold: int = 70`; models listed in the file table; `text_features(text: str) -> dict[str, float]` (13 keys = `DIMENSIONS`); `build_fingerprint(samples: list[str]) -> VoiceFingerprint` raising `InsufficientSamples`; `DIM_LABELS: dict[str, str]`; constants `MIN_SAMPLES`, `MIN_SAMPLE_WORDS`, `CONFIDENCE_FULL_N`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/unit/services/persona/test_fingerprint.py
@@ -159,12 +159,12 @@ class TestBuildFingerprint:
         assert tight.dims["sentence_len_mean"].confidence >= wild.dims["sentence_len_mean"].confidence
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/persona/test_fingerprint.py -q`
 Expected: FAIL — `ModuleNotFoundError: src.services.persona`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/config/settings.py` — after line 208 (`require_outline_approval: bool = False`):
 ```python
@@ -424,11 +424,11 @@ def build_fingerprint(samples: list[str]) -> VoiceFingerprint:
 
 If `fingerprint.py` exceeds 200 lines, move `DIM_LABELS` + the word sets into `src/services/persona/lexicon.py` and import them.
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/persona -q` → all pass. Then `uv run ruff check src/services/persona src/models/persona.py tests/unit/services/persona && uv run ruff format src/services/persona src/models/persona.py tests/unit/services/persona` and `uv run mypy src/services/persona src/models/persona.py --ignore-missing-imports` (0 errors).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/config/settings.py src/models/persona.py src/services/persona tests/unit/services/persona
@@ -447,7 +447,7 @@ git commit -m "feat(persona): voice engine flag, persona models, stdlib stylomet
 **Interfaces:**
 - Produces: `score_text(text: str, fp: VoiceFingerprint) -> VoiceScore`; `band_for(score: int) -> VoiceBand` (`>=80 match`, `>=60 close`, else `off_voice`); `score_sections(sections: list[SectionDraft], fp) -> tuple[dict[str, int], int | None]` — per-section scores keyed by `str(section_index)` (JSON-friendly) and the word-weighted article mean over sections with ≥ `SHORT_SECTION_WORDS` words (`None` when none qualify). Constants `MIN_CONFIDENCE = 0.5`, `DEVIATION_Z = 1.5`, `SHORT_SECTION_WORDS = 60`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/unit/services/persona/test_scoring.py
@@ -527,9 +527,9 @@ class TestScoreSections:
         assert score_sections(sections, _fp())[1] is None
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/persona/test_scoring.py -q` → `ModuleNotFoundError`.
+- [x] **Step 2: Run to verify it fails** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/persona/test_scoring.py -q` → `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/services/persona/scoring.py
@@ -613,8 +613,8 @@ def score_sections(
 
 Add `score_text`, `score_sections`, `band_for` to `src/services/persona/__init__.py` exports.
 
-- [ ] **Step 4: Run** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/persona -q`; ruff/mypy on the package.
-- [ ] **Step 5: Commit** — `git commit -m "feat(persona): confidence-weighted voice scoring + bands (AUTHOR-011)"`
+- [x] **Step 4: Run** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/persona -q`; ruff/mypy on the package.
+- [x] **Step 5: Commit** — `git commit -m "feat(persona): confidence-weighted voice scoring + bands (AUTHOR-011)"`
 
 ---
 
@@ -632,7 +632,7 @@ Add `score_text`, `score_sections`, `band_for` to `src/services/persona/__init__
 - `build_voice_block(fp: VoiceFingerprint, samples: list[PersonaSample]) -> str`.
 - Registry keys (step `voice`): `voice.block_intro` (no vars), `voice.dim_line` (`label, target, low, high`), `voice.samples_intro` (no vars), `voice.fix.system` (no vars), `voice.fix.user` (`voice_block, deviations, section_text`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # tests/unit/services/persona/test_few_shot.py
@@ -739,9 +739,9 @@ class TestBuildVoiceBlock:
         assert DEFAULT_PROMPTS["voice.fix.user"].variables == frozenset({"voice_block", "deviations", "section_text"})
 ```
 
-- [ ] **Step 2: Run to verify it fails** — both files: `ModuleNotFoundError` / `KeyError`.
+- [x] **Step 2: Run to verify it fails** — both files: `ModuleNotFoundError` / `KeyError`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/agents/prompts/defaults_voice.py
@@ -908,8 +908,8 @@ def build_voice_block(fp: VoiceFingerprint, samples: list[PersonaSample]) -> str
 ```
 Export `pick_samples`, `PickResult`, `excerpt`, `build_voice_block` from `src/services/persona/__init__.py`.
 
-- [ ] **Step 4: Run** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/persona tests/unit/agents/prompts -q` (the registry self-validation test now covers the 5 new keys); ruff + mypy on the touched modules.
-- [ ] **Step 5: Commit** — `git commit -m "feat(persona): few-shot cosine picker, voice prompt block, voice.* registry keys (AUTHOR-011)"`
+- [x] **Step 4: Run** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/services/persona tests/unit/agents/prompts -q` (the registry self-validation test now covers the 5 new keys); ruff + mypy on the touched modules.
+- [x] **Step 5: Commit** — `git commit -m "feat(persona): few-shot cosine picker, voice prompt block, voice.* registry keys (AUTHOR-011)"`
 
 ---
 
@@ -924,7 +924,7 @@ Export `pick_samples`, `PickResult`, `excerpt`, `build_voice_block` from `src/se
 - `PersonaRepository` Protocol: `create(owner_id: str, data: PersonaCreate) -> Persona`; `get(persona_id: UUID) -> Persona | None`; `list() -> list[Persona]`; `update(persona_id, data: PersonaUpdate) -> Persona | None`; `delete(persona_id) -> bool`; `add_sample(persona_id, data: SampleCreate) -> PersonaSample` (computes `word_count`); `delete_sample(persona_id, sample_id) -> bool`; `list_samples(persona_id) -> list[PersonaSample]`; `set_fingerprint(persona_id, fp: VoiceFingerprint | None) -> Persona | None` (also updates `sample_count`); `set_sample_embedding(sample_id, vec: list[float]) -> None`. `PgPersonaRepository(sf)`, `InMemoryPersonaRepository()`.
 - Row columns (new): `research_sessions.voice_persona_id uuid null FK personas ON DELETE SET NULL`, `briefs.voice_persona_id` (same), `canonical_articles.voice_persona_id` (same) + `voice_match_score float null` + `voice_scores_by_section jsonb null` + `few_shot_sample_ids jsonb not null default '[]'` + `audience_persona varchar(100) null`.
 
-- [ ] **Step 1: Write the failing unit test** (in-memory; the PG test mirrors it)
+- [x] **Step 1: Write the failing unit test** (in-memory; the PG test mirrors it)
 
 ```python
 # tests/unit/db/test_persona_repository.py
@@ -976,9 +976,9 @@ class TestInMemoryPersonaRepository:
         assert await repo.set_fingerprint(uuid4(), _fp()) is None
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `ModuleNotFoundError`.
+- [x] **Step 2: Run to verify it fails** — `ModuleNotFoundError`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```python
 # src/db/tables_personas.py
@@ -1112,8 +1112,8 @@ AUTHOR-011 — persona voice engine.
 
 Integration test `tests/integration/db/test_pg_personas.py` (same fixture shape as `test_pg_prompt_overrides.py`; cleans `DELETE FROM personas WHERE owner_id = 'it-user'` — samples cascade): create → add 2 samples → `set_sample_embedding` → `set_fingerprint` → `list_samples` shows the embedding → `delete` persona → `list_samples` empty (cascade).
 
-- [ ] **Step 4: Run** — unit test → 3 passed; `COGNIFY_DATABASE_URL=postgresql+asyncpg://cognify:cognify@localhost:5432/cognify uv run alembic upgrade head` → `f3b8d1c6a2e4`; then `downgrade -1` + `upgrade head`; integration test `-m integration` → 1 passed; full unit suite; ruff/mypy on new modules. **Do not run the migration against anything but the local Docker DB.**
-- [ ] **Step 5: Commit** — `git commit -m "feat(persona): personas + persona_samples tables, migration f3b8d1c6a2e4, voice columns, Pg + in-memory repos (AUTHOR-011)"`
+- [x] **Step 4: Run** — unit test → 3 passed; `COGNIFY_DATABASE_URL=postgresql+asyncpg://cognify:cognify@localhost:5432/cognify uv run alembic upgrade head` → `f3b8d1c6a2e4`; then `downgrade -1` + `upgrade head`; integration test `-m integration` → 1 passed; full unit suite; ruff/mypy on new modules. **Do not run the migration against anything but the local Docker DB.**
+- [x] **Step 5: Commit** — `git commit -m "feat(persona): personas + persona_samples tables, migration f3b8d1c6a2e4, voice columns, Pg + in-memory repos (AUTHOR-011)"`
 
 ---
 
@@ -1128,17 +1128,17 @@ Integration test `tests/integration/db/test_pg_personas.py` (same fixture shape 
 - Routes exactly as spec §6. Response models: `PersonaSummary {id, name, description, sample_count, ready: bool, updated_at}`, `PersonaDetail = PersonaSummary + {fingerprint: VoiceFingerprint | None, samples: [SampleView {id, word_count, preview (first 300 chars), created_at}]}`, `ScoreRequest {text}`, `VoiceScore` (from models). `SampleCreate` 422 when `word_count < MIN_SAMPLE_WORDS` → `detail={"violations": [f"sample needs at least {MIN_SAMPLE_WORDS} words (has N)"]}` (same shape as prompts). `POST /personas/{id}/score` → 409 `CognifyError(code="persona_not_ready")` when no fingerprint.
 - After `add_sample` / `delete_sample`: recompute `build_fingerprint([s.text for s in samples])` → `set_fingerprint(fp)`; on `InsufficientSamples` → `set_fingerprint(None)`. After `add_sample`, embed with `request.app.state.embedding_service.try_embed([text])` if present and warm; store via `set_sample_embedding` (skip silently when cold — the few-shot picker embeds lazily).
 
-- [ ] **Step 1: Write the failing tests** — using `auth_app` + `make_auth_header` from `tests/unit/api/conftest.py`, set `auth_app.state.persona_repo = InMemoryPersonaRepository()` and `auth_app.state.embedding_service = MagicMock(try_embed=lambda texts: None)`:
+- [x] **Step 1: Write the failing tests** — using `auth_app` + `make_auth_header` from `tests/unit/api/conftest.py`, set `auth_app.state.persona_repo = InMemoryPersonaRepository()` and `auth_app.state.embedding_service = MagicMock(try_embed=lambda texts: None)`:
   - viewer can `GET /personas` (200, empty list); viewer `POST` → 403; editor `POST {name}` → 201 with `ready=false`.
   - `POST /personas/{id}/samples` with 20 words → 422 with the violation message; with 5 samples of ≥150 words (build a 160-word string) → after the 5th, `GET /personas/{id}` shows `ready=true`, `fingerprint.sample_count == 5`, `samples[0].preview` ≤ 300 chars.
   - `DELETE /personas/{id}/samples/{sid}` on one of five → `ready=false` (fingerprint null).
   - `POST /personas/{id}/score {text}` → 409 before ready, 200 with `score`/`band`/`deviations` after.
   - unknown persona → 404 on GET/PATCH/DELETE/samples/score; `PATCH` renames; `DELETE` → 204; 31st `GET /personas` → 429.
 
-- [ ] **Step 2: Run to verify it fails.**
-- [ ] **Step 3: Implement** — router helpers `_repo(request)` (503 when absent), `_get_or_404`, `_recompute_fingerprint(repo, persona_id)`, `_maybe_embed(request, sample)`; keep every handler < 20 lines by delegating to `src/services/persona/service.py::PersonaService` if the router grows past 200 lines (create it then; it wraps the repo + fingerprint recompute + embedding). Wire `main.py` (both branches) and `bootstrap.py`.
-- [ ] **Step 4: Run** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_personas_endpoints.py tests/unit/api -q`; full unit suite; ruff; mypy on new files.
-- [ ] **Step 5: Commit** — `git commit -m "feat(persona): /personas CRUD, samples, fingerprint recompute, score preview + wiring (AUTHOR-011)"`
+- [x] **Step 2: Run to verify it fails.**
+- [x] **Step 3: Implement** — router helpers `_repo(request)` (503 when absent), `_get_or_404`, `_recompute_fingerprint(repo, persona_id)`, `_maybe_embed(request, sample)`; keep every handler < 20 lines by delegating to `src/services/persona/service.py::PersonaService` if the router grows past 200 lines (create it then; it wraps the repo + fingerprint recompute + embedding). Wire `main.py` (both branches) and `bootstrap.py`.
+- [x] **Step 4: Run** — `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api/test_personas_endpoints.py tests/unit/api -q`; full unit suite; ruff; mypy on new files.
+- [x] **Step 5: Commit** — `git commit -m "feat(persona): /personas CRUD, samples, fingerprint recompute, score preview + wiring (AUTHOR-011)"`
 
 ---
 
@@ -1148,7 +1148,7 @@ Integration test `tests/integration/db/test_pg_personas.py` (same fixture shape 
 - Modify: `src/models/brief.py` (`BriefFields.voice_persona_id: UUID | None = None`, `BriefUpdate.voice_persona_id: UUID | None = None`), `src/db/brief_repository.py` (`_row_fields` adds `voice_persona_id=row.voice_persona_id`; `brief_create_to_row` unchanged — `model_dump(mode="json")` gives a str uuid; SQLAlchemy `PG_UUID(as_uuid=True)` accepts it — verify in the test, else convert), `src/api/schemas/research.py` (`CreateResearchSessionRequest.voice_persona_id: UUID | None = None`; `ResearchSessionResponse.voice_persona_id: UUID | None = None`), `src/models/session_params.py` (`voice_persona_id: UUID | None = None`; `from_brief` copies it), `src/api/routers/research_params.py` (`_INLINE_FIELDS` += `"voice_persona_id"`; `inline_brief_create` passes `voice_persona_id=body.voice_persona_id`), `src/models/research_db.py` (`ResearchSession.voice_persona_id: UUID | None = None`), `src/db/repositories.py` (`PgResearchSessionRepository.create/update/_to_model` map it — lines 91, 138, 216), `src/services/research.py` (wherever `SessionParams` fields are copied onto the session in `start_session` — grep `audience_persona=` and add the sibling), `src/api/routers/research.py` (session response mapping — grep `content_type=` in the response builder and add `voice_persona_id`), `src/services/content/graph_state.py` (`"voice_persona_id": session.voice_persona_id`), `src/agents/content/pipeline.py` (`ContentState.voice_persona_id: NotRequired[UUID | None]`)
 - Test: extend `tests/unit/api/test_research_params.py` (or the file that tests `resolve_session_params` — `grep -rl resolve_session_params tests`) with: inline value overrides brief; brief value used when inline is None; `inline_brief_create` carries it. Extend the graph-state test (`grep -rl build_initial_state tests/unit`) with `voice_persona_id` present in the state. Extend the PG session repo integration test if one exists (`tests/integration/db/test_pg_repositories.py`) with a round trip of the new column — set `voice_persona_id=None` unless a persona row exists (FK).
 
-- [ ] **Step 1: Write the failing tests** (as listed) → **Step 2: Run** (AttributeError/KeyError) → **Step 3: Implement** the edits above → **Step 4: Run** `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api tests/unit/services tests/unit/agents/content -q` + full suite → **Step 5: Commit** `git commit -m "feat(persona): voice_persona_id through brief, session request, session row and ContentState (AUTHOR-011)"`
+- [x] **Step 1: Write the failing tests** (as listed) → **Step 2: Run** (AttributeError/KeyError) → **Step 3: Implement** the edits above → **Step 4: Run** `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/api tests/unit/services tests/unit/agents/content -q` + full suite → **Step 5: Commit** `git commit -m "feat(persona): voice_persona_id through brief, session request, session row and ContentState (AUTHOR-011)"`
 
 ---
 
@@ -1158,7 +1158,7 @@ Integration test `tests/integration/db/test_pg_personas.py` (same fixture shape 
 - Modify: `src/models/content.py` (after `audience_persona`, line 132: `voice_persona_id: UUID | None = None`, `voice_match_score: int | None = None`, `voice_scores_by_section: dict[str, int] | None = None`, `few_shot_sample_ids: list[UUID] = Field(default_factory=list)`), `src/db/repositories.py` (`PgArticleRepository.create` adds `audience_persona=article.audience_persona, voice_persona_id=…, voice_match_score=…, voice_scores_by_section=dict(...) or None, few_shot_sample_ids=[str(i) for i in article.few_shot_sample_ids]`; `_to_model` reads them back with `UUID(x)` for the id list), `src/services/content/persist.py` (`_apply_voice(article, result)` → `article.model_copy(update={...})` for the four voice keys when present in `result`, called after `build_article`), the `CanonicalArticleResponse` schema (`grep -rn "class CanonicalArticleResponse" src/api/schemas`) + `_to_canonical_response` in `src/api/routers/canonical_articles.py:157` (add the five fields)
 - Test: `tests/unit/db/test_article_repository_voice.py` (in-memory round trip keeps the fields — InMemory stores the model, trivially true, so assert on the PG mapping instead: unit-test `PgArticleRepository._to_model` with a fake row object carrying the new attributes, including `few_shot_sample_ids` as strings → UUIDs), `tests/unit/services/content/test_persist_voice.py` (`persist_pipeline_result` with `result["voice_match_score"]=88`, `voice_scores_by_section={"0": 88}`, `few_shot_sample_ids=[uuid]`, `voice_persona_id=uuid` → stored article carries them; without them → `None`/`[]`), extend `tests/unit/api/test_canonical_articles*.py` response test with the new fields; `tests/integration/db/test_pg_repositories.py` — add one article round trip asserting `audience_persona` and the voice fields survive (this is the gap fix).
 
-- [ ] Steps 1–5 as above; commit `git commit -m "feat(persona): persist voice_persona_id/score/sections/few-shot ids (+ audience_persona) on canonical_articles (AUTHOR-011)"`
+- [x] Steps 1–5 as above; commit `git commit -m "feat(persona): persist voice_persona_id/score/sections/few-shot ids (+ audience_persona) on canonical_articles (AUTHOR-011)"`
 
 ---
 
@@ -1195,10 +1195,10 @@ Integration test `tests/integration/db/test_pg_personas.py` (same fixture shape 
 ```
   (extract this into `_wire_voice(graph, llm, settings, deps)` to keep `build_content_graph` under 20 added lines.)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
   - `test_voice_nodes.py` with `FakeListChatModel`: score node no-op without fingerprint; scores sections and computes overall; fix node rewrites ONLY sections below threshold (assert `llm` called once for one weak section among three) and skips when all above; keeps the original when the rewrite drops a `[1]` citation; keeps the original when the rewrite scores lower; router picks `fix_voice_deviations` only when a score is below threshold; `_extract_output` returns `voice_match_score`.
   - `test_pipeline.py`: `build_content_graph(llm, None, Settings(_env_file=None, enable_voice_engine=False, enable_image_planner=False))` node set has no `score_voice`; with `enable_voice_engine=True` it has both nodes; with the flag on and a state lacking `voice_fingerprint`, a FakeLLM full run (existing helper `_full_pipeline_responses()`) still completes and `voice_match_score` is absent.
-- [ ] Steps 2–5; commit `git commit -m "feat(persona): score_voice + fix_voice_deviations nodes, flagged graph wiring, step names (AUTHOR-011)"`
+- [x] Steps 2–5; commit `git commit -m "feat(persona): score_voice + fix_voice_deviations nodes, flagged graph wiring, step names (AUTHOR-011)"`
 
 ---
 
@@ -1212,7 +1212,7 @@ Integration test `tests/integration/db/test_pg_personas.py` (same fixture shape 
 **Interfaces:**
 - `build_voice_state(repo: PersonaRepository | None, embed: EmbedFn | None, ctx: VoiceContextInput) -> dict[str, object]` where `VoiceContextInput(voice_persona_id: UUID | None, query: str)` (query = topic title + description). Returns `{}` when no id / no repo / persona missing / no fingerprint; else `{"voice_fingerprint": fp, "voice_block": block, "few_shot_sample_ids": [ids]}` and persists any `new_embeddings` via `repo.set_sample_embedding`. `ContentService._voice_state(session, topic)` builds the input and passes `self._deps.embedding_service.try_embed` (or `None`).
 
-- [ ] Steps 1–5 (tests: returns `{}` in each degraded case; happy path with the in-memory repo + a fake embed persists new embeddings and produces a block containing the persona's confident dims; `generate_full_article` seeds `voice_block` when the session has a persona — use the existing ContentService FakeLLM test fixture and assert the drafter's system prompt contains "Voice."); commit `git commit -m "feat(persona): resolve persona into the run state; drafter system prompt carries the voice block (AUTHOR-011)"`
+- [x] Steps 1–5 (tests: returns `{}` in each degraded case; happy path with the in-memory repo + a fake embed persists new embeddings and produces a block containing the persona's confident dims; `generate_full_article` seeds `voice_block` when the session has a persona — use the existing ContentService FakeLLM test fixture and assert the drafter's system prompt contains "Voice."); commit `git commit -m "feat(persona): resolve persona into the run state; drafter system prompt carries the voice block (AUTHOR-011)"`
 
 ---
 
@@ -1228,7 +1228,7 @@ Integration test `tests/integration/db/test_pg_personas.py` (same fixture shape 
 - `usePersonas()` → `{personas, isLoading, error, create, update, remove}`; `usePersona(id | null)` → `{persona, isLoading, addSample, removeSample, isMutating}`; both invalidate `["personas"]` / `["personas", id]`.
 - `PersonasList({personas, selectedId, onSelect, onCreate})` (name, `sample_count`, Ready/`needs N more` badge), `PersonaEditor({persona, canEdit, onSave})` (name/description + fingerprint card: one row per dim with label, mean ± std, a confidence bar `w-[{confidence*100}%]` via inline width class is NOT allowed — use Tailwind arbitrary width classes computed from 5 buckets `w-1/5 … w-full`), `PersonaSamples({persona, canEdit, violations, onAdd, onRemove})` (textarea with live word count vs 150, list with delete). Editing gated by `currentRole() !== "viewer"` (editors may edit personas).
 
-- [ ] Steps 1–5 (Vitest RED → implement → whole suite + eslint + tsc at the 13-error baseline → commit `feat(frontend): Personas settings tab — list, editor with fingerprint card, samples (AUTHOR-011)`)
+- [x] Steps 1–5 (Vitest RED → implement → whole suite + eslint + tsc at the 13-error baseline → commit `feat(frontend): Personas settings tab — list, editor with fingerprint card, samples (AUTHOR-011)`)
 
 ---
 
@@ -1239,14 +1239,14 @@ Integration test `tests/integration/db/test_pg_personas.py` (same fixture shape 
 - Modify: `frontend/src/types/api.ts` (`ArticleParams.voice_persona_id?: string`), `frontend/src/types/brief.ts` (`voice_persona_id?: string | null`), `frontend/src/components/topics/use-generate-modal-state.ts` (`voicePersonaId` state; `applyBrief` sets it from `b.voice_persona_id ?? null`; `buildParams` emits `voice_persona_id: voicePersonaId ?? undefined`; `resetState` clears), `frontend/src/components/topics/generate-article-modal.tsx` (`<VoiceSelect value={gen.voicePersonaId} onChange={gen.setVoicePersonaId} />` after `DiagramModeSelect`), `frontend/src/lib/api/articles.ts` (`ArticleResponse` += the five fields), `frontend/src/hooks/use-article.ts` (`toDetail` maps `voicePersonaId`, `voiceMatchScore`, `voiceScoresBySection`, `fewShotSampleIds`), `frontend/src/types/articles.ts` (`ArticleDetail` += those), `frontend/src/components/articles/article-sidebar.tsx` (a "Voice match" card between Metadata and Usage, rendered only when `article.voiceMatchScore != null`)
 - `VoiceSelect` uses `usePersonas()` and lists only `ready` personas (`None` first). `VoiceMatchChip({score, bySection})`: pill (`bg-success-light text-success` ≥80, `bg-warning-light text-warning` ≥60, `bg-error-light text-error` otherwise) showing `Voice match 82`, click → `role="dialog"` popover listing `Section N — score` rows (same anatomy as `UsageBadge`).
 
-- [ ] Steps 1–5 (tests: select renders only ready personas and emits the id; modal state includes `voice_persona_id` in `buildParams` when set and omits it otherwise; chip band classes + popover rows; sidebar renders the chip only with a score); commit `feat(frontend): Voice select in Generate modal + Voice-match chip on the article (AUTHOR-011)`
+- [x] Steps 1–5 (tests: select renders only ready personas and emits the id; modal state includes `voice_persona_id` in `buildParams` when set and omits it otherwise; chip band classes + popover rows; sidebar renders the chip only with a score); commit `feat(frontend): Voice select in Generate modal + Voice-match chip on the article (AUTHOR-011)`
 
 ---
 
 ### Task 12: Gates + live smoke
 
-- [ ] Backend: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q`; `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/`; `uv run mypy src/ --ignore-missing-imports | tail -1` (≤ 116 baseline; 0 in new files). Frontend: `cd frontend && npx vitest run && npx eslint src --max-warnings=5 && npx tsc --noEmit | tail -3` (13-error baseline).
-- [ ] Live smoke (branch API in-process on :8010 with `--env-file D:/Workbench/github/cognify/.env` plus `COGNIFY_ENABLE_VOICE_ENGINE=true`; Docker DB already migrated to `f3b8d1c6a2e4` by Task 4; branch frontend on :3100 with `NEXT_PUBLIC_API_BASE_URL=http://localhost:8010/api/v1` from PowerShell, `.next` wiped first; CORS override if needed as in AUTHOR-012):
+- [x] Backend: `COGNIFY_ANTHROPIC_API_KEY= uv run pytest tests/unit/ -q`; `uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/`; `uv run mypy src/ --ignore-missing-imports | tail -1` (≤ 116 baseline; 0 in new files). Frontend: `cd frontend && npx vitest run && npx eslint src --max-warnings=5 && npx tsc --noEmit | tail -3` (13-error baseline).
+- [x] Live smoke (branch API in-process on :8010 with `--env-file D:/Workbench/github/cognify/.env` plus `COGNIFY_ENABLE_VOICE_ENGINE=true`; Docker DB already migrated to `f3b8d1c6a2e4` by Task 4; branch frontend on :3100 with `NEXT_PUBLIC_API_BASE_URL=http://localhost:8010/api/v1` from PowerShell, `.next` wiped first; CORS override if needed as in AUTHOR-012):
   1. Settings → Personas: create "Smoke voice"; paste 5 samples of ≥150 words in a distinctive voice (short sentences, many questions, first person — write them into files under the scratchpad first); the card flips to Ready and shows 13 dims with confidence bars; `POST /personas/{id}/score` with an off-voice paragraph → `off_voice`.
   2. Generate a short article from the modal with Voice = "Smoke voice" → session completes; `llm_calls` for the session has `content_fix_voice` rows only for sections whose pre-fix score was below 70 (compare with the `agent_steps` output for `content_score_voice`); article page shows the Voice-match chip with per-section popover; `GET /articles/{id}` carries `voice_persona_id`, `voice_match_score`, `few_shot_sample_ids` (non-empty).
   3. Generate once more with Voice = None → no `content_score_voice` step, no chip. Flag off (restart API without the env) → graph unchanged (assert via a quick `build_content_graph` node-set check in `uv run python -c`).
@@ -1256,7 +1256,7 @@ Integration test `tests/integration/db/test_pg_personas.py` (same fixture shape 
 
 ### Task 13: Docs (no PR — local branch)
 
-- [ ] `PROGRESS.md`: AUTHOR-011 row → `Done (2026-09-0X, local branch feature/AUTHOR-011-persona-voice — NOT pushed; migration f3b8d1c6a2e4)`; RESUME block item with design decisions, modules, endpoints, flag defaults, tests, smoke record, follow-ups (URL crawl, per-user personas, Milvus store, persona for the regenerate endpoint, re-score existing articles, `voice.dim.*` per-dimension keys if admins ask). `BACKLOG.md` row + summary (Epic 11 16/17 done; remaining AUTHOR-013 5 SP + PUBLISH-002 5 SP; velocity + 13 SP). `CLAUDE.md` Epic 11 sentence + Next action. `docs/LEARNINGS.md` **L-015**: "Model fields are not columns — `CanonicalArticle.audience_persona` silently round-tripped to `None` for three tickets; every new model field needs a column + `create()` + `_to_model()` + a PG round-trip test". Plan checkboxes ticked. Commit `docs(AUTHOR-011): status, L-015, plan ticked`.
+- [x] `PROGRESS.md`: AUTHOR-011 row → `Done (2026-09-0X, local branch feature/AUTHOR-011-persona-voice — NOT pushed; migration f3b8d1c6a2e4)`; RESUME block item with design decisions, modules, endpoints, flag defaults, tests, smoke record, follow-ups (URL crawl, per-user personas, Milvus store, persona for the regenerate endpoint, re-score existing articles, `voice.dim.*` per-dimension keys if admins ask). `BACKLOG.md` row + summary (Epic 11 16/17 done; remaining AUTHOR-013 5 SP + PUBLISH-002 5 SP; velocity + 13 SP). `CLAUDE.md` Epic 11 sentence + Next action. `docs/LEARNINGS.md` **L-015**: "Model fields are not columns — `CanonicalArticle.audience_persona` silently round-tripped to `None` for three tickets; every new model field needs a column + `create()` + `_to_model()` + a PG round-trip test". Plan checkboxes ticked. Commit `docs(AUTHOR-011): status, L-015, plan ticked`.
 
 ---
 
