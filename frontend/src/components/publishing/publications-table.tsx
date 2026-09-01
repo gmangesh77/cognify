@@ -1,14 +1,11 @@
 import { ExternalLink } from "lucide-react";
+import { platformLabel } from "@/lib/publishing/platform-label";
 import type { Publication } from "@/types/publishing";
 
 interface PublicationsTableProps {
   publications: Publication[];
   onRetry: (id: string) => void;
   retryingId: string | null;
-}
-
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -91,7 +88,7 @@ export function PublicationsTable({
                 {pub.article_title}
               </td>
               <td className="px-4 py-3 text-sm text-neutral-600">
-                {capitalize(pub.platform)}
+                {platformLabel(pub.platform)}
               </td>
               <td className="px-4 py-3">
                 <StatusBadge status={pub.status} />

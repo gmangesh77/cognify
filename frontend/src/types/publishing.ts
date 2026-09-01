@@ -37,3 +37,18 @@ export interface PlatformSummary {
   failed: number;
   scheduled: number;
 }
+
+// AUTHOR-013 — LinkedIn repurpose draft (mirrors LinkedInPostDraftResponse).
+export interface LinkedInPostDraft {
+  article_id: string;
+  hook: string;
+  beats: string[];
+  cta: string;
+  hashtags: string[];
+  text: string;
+  char_count: number;
+  slop_score: number;
+  slop_rating: string;
+  model: string;
+  truncated: boolean;
+}

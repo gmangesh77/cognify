@@ -5,6 +5,7 @@ import type {
   SeoRegenerateField,
   SeoRegenerateResult,
 } from "@/types/articles";
+import type { LinkedInPostDraft } from "@/types/publishing";
 import type { UsageSummary } from "@/types/usage";
 
 export interface ArticleResponse {
@@ -160,6 +161,31 @@ export async function regenerateSeoField(
   const { data } = await apiClient.post<SeoRegenerateResult>(
     `/articles/${articleId}/seo/regenerate`,
     { field },
+  );
+  return data;
+}
+
+// AUTHOR-013 — LinkedIn repurpose: propose-only draft, then publish the
+// (possibly edited) text through the linkedin_post platform.
+export async function repurposeLinkedin(
+  articleId: string,
+  instruction?: string,
+): Promise<LinkedInPostDraft> {
+  const body = instruction ? { instruction } : {};
+  const { data } = await apiClient.post<LinkedInPostDraft>(
+    `/articles/${articleId}/repurpose/linkedin`,
+    body,
+  );
+  return data;
+}
+
+export async function publishLinkedinPost(
+  articleId: string,
+  text: string,
+): Promise<PublishResult> {
+  const { data } = await apiClient.post<PublishResult>(
+    `/articles/${articleId}/repurpose/linkedin/publish`,
+    { text },
   );
   return data;
 }
