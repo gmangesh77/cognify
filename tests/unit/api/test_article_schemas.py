@@ -47,6 +47,26 @@ class TestToImageResponse:
             response.metadata["mermaid_syntax"] == "graph TD\n    A[Start] --> B[End]"
         )
 
+    def test_none_metadata_values_survive_serialization(self) -> None:
+        """VISUAL-013 persists heading_text/paragraph_index as null when a
+        spec has no placement hint; the response must not 500 on them."""
+        asset = ImageAsset(
+            url="/assets/diagram_1.png",
+            caption="Auth flow.",
+            alt_text="Auth Flow",
+            metadata={
+                "spec_id": "sec_1_concept",
+                "section_index": 1,
+                "heading_text": None,
+                "paragraph_index": None,
+            },
+        )
+        response = _to_image_response(asset)
+        assert response.metadata is not None
+        assert response.metadata["heading_text"] is None
+        assert response.metadata["paragraph_index"] is None
+        assert response.metadata["section_index"] == 1
+
     def test_empty_metadata_becomes_none(self) -> None:
         asset = ImageAsset(
             url="/assets/chart.png",
