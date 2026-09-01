@@ -40,6 +40,7 @@ from src.api.routers.content import content_router
 from src.api.routers.content_humanize_stream import content_humanize_stream_router
 from src.api.routers.content_regenerate import content_regenerate_router
 from src.api.routers.health import health_router
+from src.api.routers.linkedin_repurpose import linkedin_repurpose_router
 from src.api.routers.metrics import metrics_router
 from src.api.routers.oauth import oauth_router
 from src.api.routers.outline import outline_router
@@ -706,6 +707,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         content_regenerate_router,
         prefix=settings.api_v1_prefix,
         tags=["content"],
+    )
+    app.include_router(
+        linkedin_repurpose_router,
+        prefix=settings.api_v1_prefix,
+        tags=["publishing"],
     )
     assets_dir = Path("generated_assets")
     if assets_dir.exists():
