@@ -171,6 +171,11 @@ def _to_canonical_response(
         provenance=_to_provenance_response(article),
         ai_generated=article.ai_generated,
         status=article.status.value,
+        audience_persona=article.audience_persona,
+        voice_persona_id=article.voice_persona_id,
+        voice_match_score=article.voice_match_score,
+        voice_scores_by_section=article.voice_scores_by_section,
+        few_shot_sample_ids=list(article.few_shot_sample_ids),
     )
 
 

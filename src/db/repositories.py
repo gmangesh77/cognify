@@ -640,6 +640,13 @@ class PgArticleRepository:
                 visuals=[v.model_dump(mode="json") for v in article.visuals],
                 provenance=article.provenance.model_dump(mode="json"),
                 authors=list(article.authors),
+                audience_persona=article.audience_persona,
+                voice_persona_id=article.voice_persona_id,
+                voice_match_score=article.voice_match_score,
+                voice_scores_by_section=dict(article.voice_scores_by_section)
+                if article.voice_scores_by_section
+                else None,
+                few_shot_sample_ids=[str(i) for i in article.few_shot_sample_ids],
             )
             db.add(row)
             await db.commit()
@@ -810,6 +817,19 @@ class PgArticleRepository:
             provenance=provenance,
             ai_generated=row.ai_generated,
             status=PgArticleRepository._article_status(row.status),
+            audience_persona=row.audience_persona,
+            voice_persona_id=row.voice_persona_id,
+            voice_match_score=(
+                int(row.voice_match_score)
+                if row.voice_match_score is not None
+                else None
+            ),
+            voice_scores_by_section=(
+                {k: int(v) for k, v in row.voice_scores_by_section.items()}
+                if row.voice_scores_by_section
+                else None
+            ),
+            few_shot_sample_ids=[UUID(x) for x in (row.few_shot_sample_ids or [])],
         )
 
 

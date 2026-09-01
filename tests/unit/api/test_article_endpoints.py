@@ -690,6 +690,25 @@ class TestGetArticle:
         )
         assert resp.status_code == 404
 
+    async def test_response_includes_voice_fields_with_defaults(
+        self,
+        finalize_client: httpx.AsyncClient,
+        auth_settings: Settings,
+        finalized_draft_id: str,
+    ) -> None:
+        """AUTHOR-011: audience_persona + voice fields present in the response."""
+        headers = make_auth_header("editor", auth_settings)
+        finalize_resp = await finalize_client.post(
+            f"/api/v1/articles/drafts/{finalized_draft_id}/finalize",
+            headers=headers,
+        )
+        data = finalize_resp.json()
+        assert data["audience_persona"] is None
+        assert data["voice_persona_id"] is None
+        assert data["voice_match_score"] is None
+        assert data["voice_scores_by_section"] is None
+        assert data["few_shot_sample_ids"] == []
+
     async def test_provenance_includes_brief_id(
         self,
         finalize_client_with_brief: httpx.AsyncClient,
