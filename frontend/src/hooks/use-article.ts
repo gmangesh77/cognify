@@ -67,6 +67,10 @@ function toDetail(a: ArticleResponse): ArticleDetail {
     status: (a.status as ArticleDetail["status"]) ?? "draft",
     wordCount: a.body_markdown.split(/\s+/).length,
     workflow: [],
+    voicePersonaId: a.voice_persona_id ?? null,
+    voiceMatchScore: a.voice_match_score ?? null,
+    voiceScoresBySection: a.voice_scores_by_section ?? null,
+    fewShotSampleIds: a.few_shot_sample_ids ?? [],
   };
 }
 

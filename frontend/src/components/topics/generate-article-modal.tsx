@@ -11,6 +11,7 @@ import { useGenerateModalState } from "@/components/topics/use-generate-modal-st
 import { BriefPicker, NEW_BRIEF } from "@/components/briefs/brief-picker";
 import { BriefOptionsFields } from "@/components/briefs/brief-options-fields";
 import { DiagramModeSelect } from "@/components/topics/diagram-mode-select";
+import { VoiceSelect } from "@/components/topics/voice-select";
 import { useTopicAnalysis } from "@/hooks/use-topic-analysis";
 import type { RankedTopic, ArticleParams } from "@/types/api";
 
@@ -131,6 +132,7 @@ export function GenerateArticleModal({
               showSave={gen.selectedBriefId === NEW_BRIEF}
             />
             <DiagramModeSelect value={gen.diagramMode} onChange={gen.setDiagramMode} />
+            <VoiceSelect value={gen.voicePersonaId} onChange={gen.setVoicePersonaId} />
             <ReviewOutlineCheckbox
               checked={gen.requireOutlineApproval}
               onChange={gen.setRequireOutlineApproval}
