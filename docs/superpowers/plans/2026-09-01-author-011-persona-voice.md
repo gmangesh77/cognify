@@ -73,7 +73,7 @@ from src.services.persona.fingerprint import (
     text_features,
 )
 
-SHORT = "We ship small. It works. Teams win."  # 3 sentences, 8 words
+SHORT = "We ship small. It works. Teams win."  # 3 sentences, 7 words
 LONG_SENTENCES = (
     "When a platform team decides to rebuild its deployment pipeline from scratch "
     "without first measuring where the current one actually loses time, the result "
@@ -105,7 +105,7 @@ class TestTextFeatures:
 
     def test_sentence_length_mean_and_std(self) -> None:
         feats = text_features(SHORT)
-        assert feats["sentence_len_mean"] == pytest.approx(8 / 3, abs=0.01)
+        assert feats["sentence_len_mean"] == pytest.approx(7 / 3, abs=0.01)
         assert feats["sentence_len_std"] > 0
 
     def test_longer_sentences_raise_fk_grade(self) -> None:
