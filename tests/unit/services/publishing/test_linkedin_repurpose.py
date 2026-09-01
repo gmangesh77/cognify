@@ -90,6 +90,22 @@ class TestRepurposeToLinkedin:
         with pytest.raises(ValueError, match="unparseable"):
             await repurpose_to_linkedin(RepurposeInput(article=sample_article), llm)
 
+    async def test_caps_at_three_llm_calls_worst_case(
+        self, sample_article: CanonicalArticle
+    ) -> None:
+        """1 parse retry (garbage, then valid-but-over-limit) + 1 direct
+        length retry (garbage, no nested retry) = 3 calls, never 4."""
+        llm = AsyncMock()
+        llm.ainvoke.side_effect = [
+            AIMessage(content="not json"),
+            AIMessage(content=_long_beats_json()),
+            AIMessage(content="also not json"),
+        ]
+        draft = await repurpose_to_linkedin(RepurposeInput(article=sample_article), llm)
+        assert llm.ainvoke.call_count == 3
+        assert draft.truncated is True
+        assert len(draft.text) <= MAX_POST_CHARS
+
     async def test_bound_system_override_reaches_system_message(
         self, sample_article: CanonicalArticle
     ) -> None:

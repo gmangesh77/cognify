@@ -4,7 +4,10 @@ import { useState } from "react";
 import { Copy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ShowToast } from "@/components/ui/toaster";
-import { useLinkedInRepurpose } from "@/hooks/use-linkedin-repurpose";
+import {
+  NOT_CONNECTED_MESSAGE,
+  useLinkedInRepurpose,
+} from "@/hooks/use-linkedin-repurpose";
 
 export interface LinkedInRepurposeModalProps {
   open: boolean;
@@ -14,7 +17,6 @@ export interface LinkedInRepurposeModalProps {
 }
 
 const MAX_CHARS = 3000;
-const NOT_CONNECTED_ERROR = "LinkedIn is not connected.";
 
 const RATING_STYLES: Record<string, { label: string; className: string }> = {
   HUMAN: { label: "Human", className: "bg-success-light text-success" },
@@ -39,7 +41,8 @@ export function LinkedInRepurposeModal({
   if (!open) return null;
 
   const overLimit = text.length > MAX_CHARS;
-  const disconnected = error === NOT_CONNECTED_ERROR;
+  const disconnected = error === NOT_CONNECTED_MESSAGE;
+  const published = publishedUrl !== null;
   const rating = draft ? RATING_STYLES[draft.slop_rating] : null;
 
   async function handleCopy() {
@@ -174,11 +177,13 @@ export function LinkedInRepurposeModal({
               <button
                 type="button"
                 onClick={() => void publish()}
-                disabled={busy || overLimit || disconnected || text.trim() === ""}
+                disabled={
+                  busy || overLimit || disconnected || published || text.trim() === ""
+                }
                 title={disconnected ? "LinkedIn is not connected" : undefined}
                 className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-white hover:bg-primary/90 disabled:opacity-60"
               >
-                {busy ? "Publishing…" : "Publish to LinkedIn"}
+                {published ? "Posted" : busy ? "Publishing…" : "Publish to LinkedIn"}
               </button>
             </footer>
           </>

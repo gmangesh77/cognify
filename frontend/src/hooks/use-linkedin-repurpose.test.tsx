@@ -108,10 +108,13 @@ describe("useLinkedInRepurpose", () => {
     );
   });
 
-  it("surfaces a 503 as a connection error", async () => {
+  it("publish 503 with code platform_unavailable maps to the not-connected message", async () => {
     vi.mocked(api.repurposeLinkedin).mockResolvedValue(DRAFT);
     vi.mocked(api.publishLinkedinPost).mockRejectedValue({
-      response: { status: 503 },
+      response: {
+        status: 503,
+        data: { error: { code: "platform_unavailable", message: "LinkedIn is not connected" } },
+      },
     });
     const { result } = renderHook(
       () => useLinkedInRepurpose({ articleId: "a1", showToast }),
@@ -125,5 +128,40 @@ describe("useLinkedInRepurpose", () => {
     });
     expect(result.current.error).toMatch(/not connected/i);
     expect(result.current.publishedUrl).toBeNull();
+  });
+
+  it("repurpose 503 (LLM unavailable) does NOT map to the not-connected message", async () => {
+    vi.mocked(api.repurposeLinkedin).mockRejectedValue({
+      response: {
+        status: 503,
+        data: { error: { code: "service_unavailable", message: "LLM not configured" } },
+      },
+    });
+    const { result } = renderHook(
+      () => useLinkedInRepurpose({ articleId: "a1", showToast }),
+      { wrapper },
+    );
+    await act(async () => {
+      await result.current.generate();
+    });
+    expect(result.current.error).not.toMatch(/not connected/i);
+  });
+
+  it("a publish 503 WITHOUT the platform_unavailable code surfaces a generic error", async () => {
+    vi.mocked(api.repurposeLinkedin).mockResolvedValue(DRAFT);
+    vi.mocked(api.publishLinkedinPost).mockRejectedValue({
+      response: { status: 503, data: { error: { code: "service_unavailable" } } },
+    });
+    const { result } = renderHook(
+      () => useLinkedInRepurpose({ articleId: "a1", showToast }),
+      { wrapper },
+    );
+    await act(async () => {
+      await result.current.generate();
+    });
+    await act(async () => {
+      await result.current.publish();
+    });
+    expect(result.current.error).not.toMatch(/not connected/i);
   });
 });

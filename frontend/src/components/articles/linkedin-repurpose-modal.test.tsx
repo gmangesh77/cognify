@@ -5,6 +5,7 @@ import { useLinkedInRepurpose } from "@/hooks/use-linkedin-repurpose";
 
 vi.mock("@/hooks/use-linkedin-repurpose", () => ({
   useLinkedInRepurpose: vi.fn(),
+  NOT_CONNECTED_MESSAGE: "LinkedIn is not connected.",
 }));
 
 const DRAFT = {
@@ -193,6 +194,27 @@ describe("LinkedInRepurposeModal", () => {
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute("title", "LinkedIn is not connected");
     expect(screen.getByRole("alert")).toHaveTextContent("LinkedIn is not connected.");
+  });
+
+  it("disables Publish and shows Posted once publishedUrl is set", () => {
+    const state = baseState({
+      draft: DRAFT,
+      text: DRAFT.text,
+      publishedUrl: "https://linkedin.com/feed/update/1",
+    });
+    vi.mocked(useLinkedInRepurpose).mockReturnValue(state);
+    render(
+      <LinkedInRepurposeModal
+        open
+        articleId="a1"
+        onClose={vi.fn()}
+        onToast={vi.fn()}
+      />,
+    );
+    const button = screen.getByText("Posted");
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(state.publish).not.toHaveBeenCalled();
   });
 
   it("calls onClose when Close is clicked", () => {

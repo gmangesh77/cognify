@@ -21,6 +21,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
+from starlette.status import HTTP_201_CREATED
 
 from src.agents.prompts import bind_prompt_overrides
 from src.api.auth.schemas import TokenPayload
@@ -111,6 +112,7 @@ async def repurpose_linkedin(
 @linkedin_repurpose_router.post(
     "/articles/{article_id}/repurpose/linkedin/publish",
     response_model=PublishResponse,
+    status_code=HTTP_201_CREATED,
     summary="Publish an edited LinkedIn post draft",
 )
 @limiter.limit("5/minute")

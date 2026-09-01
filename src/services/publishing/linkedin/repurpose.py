@@ -80,10 +80,16 @@ async def repurpose_to_linkedin(
     truncated = False
 
     if len(text) > MAX_POST_CHARS:
+        # Single direct call, no nested parse retry — caps the worst case at
+        # 3 LLM calls total. An unparseable shorter reply falls through to
+        # truncating the original (already-assembled) draft below.
         shorter_suffix = render_prompt("linkedin_repurpose.shorter")
         shorter_prompt = f"{user_prompt}\n\n{shorter_suffix}"
-        raw = await _draft_with_parse_retry(llm, system_prompt, shorter_prompt)
-        hashtags, text = _assemble(raw)
+        try:
+            raw = await _draft_once(llm, system_prompt, shorter_prompt)
+            hashtags, text = _assemble(raw)
+        except (json.JSONDecodeError, ValidationError):
+            pass
         if len(text) > MAX_POST_CHARS:
             text = _truncate_to_limit(text, MAX_POST_CHARS)
             truncated = True

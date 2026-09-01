@@ -144,11 +144,12 @@ class TestRepurposeEndpoint:
             llm=FakeListChatModel(responses=[VALID_JSON] * 15)
         )
         headers = make_auth_header("editor", auth_settings)
-        last_status = None
+        statuses = []
         for _ in range(11):
             resp = await client.post(_repurpose_url(), json={}, headers=headers)
-            last_status = resp.status_code
-        assert last_status == 429
+            statuses.append(resp.status_code)
+        assert statuses[:10] == [200] * 10
+        assert statuses[10] == 429
 
     async def test_instruction_passed_through(
         self, client: httpx.AsyncClient, auth_settings: Settings
@@ -170,7 +171,7 @@ class TestPublishLinkedinPostEndpoint:
             json={"text": "Editor-approved post text"},
             headers=make_auth_header("editor", auth_settings),
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 201
         body = resp.json()
         assert body["status"] == "success"
         publishing_service = app.state.publishing_service

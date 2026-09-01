@@ -11,10 +11,22 @@ export interface LinkedInRepurposeDeps {
   showToast: ShowToast;
 }
 
-function errorMessage(err: unknown): string {
-  const status = (err as { response?: { status?: number } } | null)?.response
-    ?.status;
-  if (status === 503) return "LinkedIn is not connected.";
+// Shared with the modal so both sides key off the same literal.
+export const NOT_CONNECTED_MESSAGE = "LinkedIn is not connected.";
+
+type ApiErrorShape = {
+  response?: { data?: { error?: { code?: string } } };
+};
+
+/** True only for the publish route's 503 platform_unavailable — a 503 from
+ * the repurpose route means the LLM is unavailable, an unrelated cause,
+ * and must not disable the Publish button. */
+function isPlatformUnavailable(err: unknown): boolean {
+  const code = (err as ApiErrorShape | null)?.response?.data?.error?.code;
+  return code === "platform_unavailable";
+}
+
+function genericErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "Request failed";
 }
 
@@ -37,7 +49,7 @@ export function useLinkedInRepurpose({ articleId, showToast }: LinkedInRepurpose
         setDraft(result);
         setText(result.text);
       } catch (err) {
-        setError(errorMessage(err));
+        setError(genericErrorMessage(err));
       } finally {
         setBusy(false);
       }
@@ -58,7 +70,11 @@ export function useLinkedInRepurpose({ articleId, showToast }: LinkedInRepurpose
         setError(result.error_message ?? "Publish failed");
       }
     } catch (err) {
-      setError(errorMessage(err));
+      setError(
+        isPlatformUnavailable(err)
+          ? NOT_CONNECTED_MESSAGE
+          : genericErrorMessage(err),
+      );
     } finally {
       setBusy(false);
     }
