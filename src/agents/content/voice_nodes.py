@@ -1,10 +1,8 @@
 """Voice-match scoring + fix graph nodes (AUTHOR-011, spec §4.5).
 
-`score_voice` is pure — scores every section against the persona's
-fingerprint, no LLM. `fix_voice_deviations` runs ONE targeted rewrite per
-weak section (mirrors `humanize_node`), reusing the humanizer's sentinel
-block splitting. Both nodes are no-ops without a fingerprint, never fail
-the run (spec §4), and are only added to the graph when the flag is on.
+`score_voice` is pure (no LLM); `fix_voice_deviations` runs ONE targeted
+rewrite per weak section via the humanizer's sentinel block splitting. Both
+are no-ops without a fingerprint, never fail the run, and are flag-gated.
 """
 
 from __future__ import annotations
@@ -113,6 +111,22 @@ class _FixRun:
     threshold: int
 
 
+def _fix_messages(
+    run: _FixRun, score: VoiceScore, payload: str
+) -> list[SystemMessage | HumanMessage]:
+    """System + user messages for one voice-fix pass (registry keys, L-014)."""
+    user = render_prompt(
+        "voice.fix.user",
+        voice_block=run.voice_block,
+        deviations=_deviation_block(score),
+        section_text=payload,
+    )
+    return [
+        SystemMessage(content=render_prompt("voice.fix.system")),
+        HumanMessage(content=user),
+    ]
+
+
 async def _rewrite_for_voice(
     run: _FixRun, section: SectionDraft, score: VoiceScore
 ) -> SectionDraft | None:
@@ -126,17 +140,7 @@ async def _rewrite_for_voice(
     if not rewritable:
         return None
     originals = set(_CITATION_RE.findall(section.body_markdown))
-    messages = [
-        SystemMessage(content=render_prompt("voice.fix.system")),
-        HumanMessage(
-            content=render_prompt(
-                "voice.fix.user",
-                voice_block=run.voice_block,
-                deviations=_deviation_block(score),
-                section_text=payload_for_llm(rewritable),
-            )
-        ),
-    ]
+    messages = _fix_messages(run, score, payload_for_llm(rewritable))
     response = await run.llm.ainvoke(messages)
     new_text = strip_fences(str(response.content).strip())
     new_body = reassemble(slot_back(blocks, rewritable, new_text))
