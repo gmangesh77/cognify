@@ -6,6 +6,11 @@ import re
 import statistics
 
 from src.models.persona import DimStat, VoiceFingerprint
+from src.services.persona.lexicon import (
+    _BOOSTERS,
+    _FIRST_PERSON,
+    _HEDGES,
+)
 from src.utils.markdown_structure import (
     extract_humanizable_text,
     humanizable_blocks,
@@ -32,75 +37,6 @@ DIMENSIONS: tuple[str, ...] = (
     "paragraph_len_mean",
     "first_person_rate",
 )
-DIM_LABELS: dict[str, str] = {
-    "sentence_len_mean": "average sentence length (words)",
-    "sentence_len_std": "sentence length variation",
-    "fk_grade": "reading grade level",
-    "ttr": "vocabulary variety (type-token ratio)",
-    "contraction_rate": "contractions per 100 words",
-    "hedge_rate": "hedging words per 100 words",
-    "booster_rate": "booster words per 100 words",
-    "punct_comma_per_1k": "commas per 1,000 words",
-    "punct_semicolon_per_1k": "semicolons per 1,000 words",
-    "punct_dash_per_1k": "dashes per 1,000 words",
-    "punct_question_per_1k": "questions per 1,000 words",
-    "paragraph_len_mean": "average paragraph length (words)",
-    "first_person_rate": "first-person words per 100 words",
-}
-
-_HEDGES = frozenset([
-    "maybe",
-    "perhaps",
-    "possibly",
-    "likely",
-    "probably",
-    "seems",
-    "appears",
-    "might",
-    "could",
-    "somewhat",
-    "arguably",
-    "generally",
-    "often",
-    "sometimes",
-    "tends",
-    "suggest",
-    "suggests",
-])
-_BOOSTERS = frozenset([
-    "clearly",
-    "obviously",
-    "certainly",
-    "definitely",
-    "absolutely",
-    "always",
-    "never",
-    "undoubtedly",
-    "must",
-    "essential",
-    "critical",
-    "crucial",
-    "extremely",
-    "highly",
-    "truly",
-])
-_FIRST_PERSON = frozenset([
-    "i",
-    "i'm",
-    "i've",
-    "i'd",
-    "i'll",
-    "me",
-    "my",
-    "mine",
-    "we",
-    "we're",
-    "we've",
-    "we'd",
-    "our",
-    "ours",
-    "us",
-])
 _WORD_RE = re.compile(r"[A-Za-z][A-Za-z']*")
 _SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
 _CONTRACTION_RE = re.compile(r"\b\w+'(?:t|s|re|ve|ll|d|m)\b", re.IGNORECASE)
@@ -197,9 +133,7 @@ def _dim_stat(values: list[float], n: int) -> DimStat:
 
 def build_fingerprint(samples: list[str]) -> VoiceFingerprint:
     """Per-dimension {mean, stddev, confidence} over the valid samples."""
-    valid = [
-        s for s in samples if len(_WORD_RE.findall(s)) >= MIN_SAMPLE_WORDS
-    ]
+    valid = [s for s in samples if len(_WORD_RE.findall(s)) >= MIN_SAMPLE_WORDS]
     if len(valid) < MIN_SAMPLES:
         msg = (
             f"need {MIN_SAMPLES} samples of {MIN_SAMPLE_WORDS}+ words, "
