@@ -7,15 +7,18 @@ in-flight research/content pipeline (AUTHOR-002, Task 4).
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request
 from starlette.status import HTTP_202_ACCEPTED
 
+from src.agents.prompts import bind_prompt_overrides
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above, require_viewer_or_above
 from src.api.errors import ServiceUnavailableError
+from src.api.prompt_scope import load_prompt_overrides
 from src.api.rate_limiter import limiter
 from src.api.routers.research import _get_research_service_readonly
 from src.api.routers.research_pipeline import get_pipeline_dispatcher
@@ -111,21 +114,23 @@ async def update_outline(
     return _to_response(draft)
 
 
-@limiter.limit("5/minute")
 @outline_router.post(
     "/research/sessions/{session_id}/outline/regenerate",
     response_model=OutlineResponse,
 )
+@limiter.limit("5/minute")
 async def regenerate_outline(
     request: Request,
     session_id: str,
     body: RegenerateOutlineRequest,
     user: TokenPayload = Depends(require_editor_or_above),
+    overrides: Mapping[str, str] = Depends(load_prompt_overrides),
 ) -> OutlineResponse:
     sid = _parse_uuid(session_id)
     await _require_awaiting_review(request, sid)
     gate = _get_outline_gate(request)
-    draft = await gate.regenerate_outline(sid, body.instruction)
+    with bind_prompt_overrides(overrides):
+        draft = await gate.regenerate_outline(sid, body.instruction)
     return _to_response(draft)
 
 

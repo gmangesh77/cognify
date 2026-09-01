@@ -26,6 +26,7 @@ import structlog
 
 from src.config.settings import Settings
 from src.db.llm_call_repository import PgLlmCallRepository
+from src.db.prompt_override_repository import PgPromptOverrideRepository
 from src.db.repositories import (
     PgAgentStepRepository,
     PgArticleDraftRepository,
@@ -63,6 +64,7 @@ class PipelineServices:
     step_repo: PgAgentStepRepository
     content_repos: ContentRepositories
     article_repo: PgArticleRepository
+    prompt_override_repo: PgPromptOverrideRepository
 
 
 async def resolve_runtime_settings(
@@ -155,4 +157,5 @@ async def build_pipeline_services(
         step_repo=step_repo,
         content_repos=content_repos,
         article_repo=article_repo,
+        prompt_override_repo=PgPromptOverrideRepository(sf),
     )

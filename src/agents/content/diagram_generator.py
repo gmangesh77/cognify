@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 import structlog
 from pydantic import ValidationError
 
+from src.agents.prompts import render_prompt
 from src.models.visual import DiagramSpec
 from src.utils.llm_json import parse_llm_json
 
@@ -31,36 +32,6 @@ _MMDC_PATH = Path(__file__).parents[3] / "node_modules" / ".bin" / "mmdc"
 # config file (see docs/mermaid-cli linux-sandbox-issue). Shipped next to this
 # module; absent in environments where mmdc isn't installed (no-op there).
 _PUPPETEER_CONFIG = Path(__file__).parent / "puppeteer-config.json"
-
-_PROMPT_TEMPLATE = (
-    "You are a technical diagram expert. Read the article sections below and "
-    "decide which diagrams (if any) would make the prose clearer and more "
-    "impactful. Draw diagrams ONLY when they clarify a concept the text "
-    "already describes -- never force a diagram onto text that does not call "
-    "for one.\n\n"
-    "Supported types (pick the one that best fits the concept):\n"
-    "- flowchart: decision trees, process flows, pipelines, branching logic\n"
-    "- sequence: request/response and message exchanges between actors\n"
-    "- class: data models, class hierarchies, component relationships\n"
-    "- state: state machines, lifecycles, status transitions\n"
-    "- er: entity-relationship / database schema\n"
-    "- journey: step-by-step user journeys or experience maps\n\n"
-    "For each diagram, provide:\n"
-    "- diagram_type: one of the types listed above\n"
-    "- title: concise diagram title (max 120 chars)\n"
-    "- mermaid_syntax: valid Mermaid code for the chosen type\n"
-    "- caption: one-sentence description for the article\n"
-    "- source_section_index: the 0-indexed section this diagram illustrates. "
-    "Use -1 for an article-level overview / high-level architecture diagram "
-    "(it will render above the article body).\n\n"
-    "Guidance on count: prefer 0 diagrams over a forced diagram. If the "
-    "article warrants it, include a high-level overview (section_index = -1) "
-    "plus a handful of per-section diagrams where they add genuine value. "
-    "Do not exceed 5 total.\n\n"
-    "Return ONLY a JSON array. Empty array [] if nothing is diagrammable. "
-    "No prose, no markdown fences, no explanation.\n\n"
-    "## Article Sections\n{sections_text}"
-)
 
 
 async def render_mermaid(syntax: str, output_path: Path) -> bool:
@@ -155,6 +126,13 @@ async def generate_mermaid_for_spec(
     return syntax.strip(), str(diagram_type)
 
 
+def _build_prompt(section_drafts: list[SectionDraft]) -> str:
+    sections_text = "\n\n".join(
+        f"### {d.title}\n{d.body_markdown}" for d in section_drafts
+    )
+    return render_prompt("content_diagrams.prompt", sections_text=sections_text)
+
+
 async def propose_diagrams(
     section_drafts: list[SectionDraft],
     llm: BaseChatModel,
@@ -164,10 +142,7 @@ async def propose_diagrams(
     Returned specs may include an overview diagram with
     ``source_section_index == -1`` which should render above the article body.
     """
-    sections_text = "\n\n".join(
-        f"### {d.title}\n{d.body_markdown}" for d in section_drafts
-    )
-    prompt = _PROMPT_TEMPLATE.format(sections_text=sections_text)
+    prompt = _build_prompt(section_drafts)
     try:
         response = await llm.ainvoke(prompt)
         raw = parse_llm_json(response.content)

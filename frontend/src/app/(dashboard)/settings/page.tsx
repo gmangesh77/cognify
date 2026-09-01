@@ -10,6 +10,7 @@ import { VisualsTab } from "@/components/settings/visuals-tab";
 import { ApiKeysTab } from "@/components/settings/api-keys-tab";
 import { SeoDefaultsTab } from "@/components/settings/seo-defaults-tab";
 import { GeneralTab } from "@/components/settings/general-tab";
+import { PromptsSettings } from "@/components/settings/prompts-settings";
 import { useToast } from "@/components/ui/toaster";
 import { useSettings } from "@/hooks/use-settings";
 import type { SettingsTab } from "@/types/settings";
@@ -74,6 +75,8 @@ function SettingsContent() {
               onUpdate={(u) => { settings.updateLlmConfig(u); showToast("LLM config updated"); }}
             />
           )}
+
+          {activeTab === "prompts" && <PromptsSettings />}
 
           {activeTab === "visuals" && (
             <VisualsTab

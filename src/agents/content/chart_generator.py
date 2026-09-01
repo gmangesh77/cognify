@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import structlog
 from pydantic import ValidationError
 
+from src.agents.prompts import render_prompt
 from src.models.content import ImageAsset
 from src.models.visual import ChartSpec
 from src.utils.llm_json import parse_llm_json
@@ -28,22 +29,12 @@ if TYPE_CHECKING:
 matplotlib.use("Agg")  # Non-interactive backend
 logger = structlog.get_logger()
 
-_PROMPT_TEMPLATE = (  # noqa: E501
-    "You are a data visualization expert. "
-    "Read the article sections below and propose 0-3 data charts.\n\n"
-    "For each chart, provide:\n"
-    '- chart_type: "bar", "line", or "pie"\n'
-    "- title: chart title (max 120 chars)\n"
-    "- x_labels: category labels or x-axis points\n"
-    "- y_values: numeric values corresponding to each label\n"
-    "- y_label: y-axis label\n"
-    "- caption: one-sentence description for the article\n"
-    "- source_section_index: which section (0-indexed) the data comes from\n\n"
-    "Only propose charts where concrete numerical data exists. "
-    "Return an empty array [] if no chartable data is found.\n\n"
-    "Return ONLY a JSON array. No explanation.\n\n"
-    "## Article Sections\n{sections_text}"
-)
+
+def _build_prompt(section_drafts: list[SectionDraft]) -> str:
+    sections_text = "\n\n".join(
+        f"### {d.title}\n{d.body_markdown}" for d in section_drafts
+    )
+    return render_prompt("content_charts.prompt", sections_text=sections_text)
 
 
 async def propose_charts(
@@ -51,10 +42,7 @@ async def propose_charts(
     llm: BaseChatModel,
 ) -> list[ChartSpec]:
     """Ask LLM to propose 0-3 chart specs from section drafts."""
-    sections_text = "\n\n".join(
-        f"### {d.title}\n{d.body_markdown}" for d in section_drafts
-    )
-    prompt = _PROMPT_TEMPLATE.format(sections_text=sections_text)
+    prompt = _build_prompt(section_drafts)
     try:
         response = await llm.ainvoke(prompt)
         raw = parse_llm_json(response.content)

@@ -22,6 +22,9 @@ from src.db.base import Base, TimestampMixin, UUIDMixin
 from src.db.tables_briefs import (
     BriefRow,  # noqa: F401 — registers table on Base.metadata
 )
+from src.db.tables_prompt_overrides import (
+    PromptOverrideRow,  # noqa: F401 — registers table on Base.metadata
+)
 
 __all__ = [
     "TopicRow",

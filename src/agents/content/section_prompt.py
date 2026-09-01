@@ -15,29 +15,22 @@ from typing import TYPE_CHECKING
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
+from src.agents.prompts import DEFAULT_PROMPTS, render_prompt
 from src.models.content_pipeline import OutlineSection, SectionDraft
 from src.models.research import ChunkResult
 
 if TYPE_CHECKING:
     from src.agents.content.section_drafter import DraftingContext
 
-SYSTEM_PROMPT = (
-    "You are an expert long-form writer. Draft a section of an article "
-    "using the provided research context. Every factual claim must include "
-    "an inline citation like [1], [2] referencing the numbered sources. "
-    "Write in a clear, authoritative tone. Target approximately "
-    "{target_word_count} words. "
-    "Do not use em-dashes or en-dashes. Use periods or commas instead. "
-    "Avoid words like delve, leverage, innovative, transformative, unprecedented. "
-    "Skip transitions like moreover, furthermore, additionally. "
-    "Vary sentence length and structure. "
-    "Write in a natural voice as a knowledgeable human, not an AI assistant."
-)
+# Re-exported so existing prompt-regression tests keep importing from here.
+SYSTEM_PROMPT = DEFAULT_PROMPTS["content_draft.system"].template
 
 
 def build_system_prompt(section: OutlineSection, ctx: DraftingContext) -> str:
     """System prompt = base + session params (audience / tone / angle / keywords)."""
-    system = SYSTEM_PROMPT.format(target_word_count=section.target_word_count)
+    system = render_prompt(
+        "content_draft.system", target_word_count=section.target_word_count
+    )
     if ctx.target_audience:
         system += f"\nWrite for this audience: {ctx.target_audience}."
     if ctx.content_tone:

@@ -7,6 +7,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
+from src.agents.prompts import render_prompt
 from src.api.schemas.topic_analysis import (
     TopicAnalysisResult,
 )
@@ -15,32 +16,6 @@ from src.models.tones import VALID_TONES
 from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
-
-_SYSTEM_PROMPT = (
-    "You are an expert content strategist. Given a topic title, suggest "
-    "metadata for article generation. Return valid JSON only."
-)
-
-_FULL_ANALYSIS_TEMPLATE = (
-    "Analyze this topic and suggest article metadata:\n\n"
-    "Title: {title}\n\n"
-    "{domains_section}"
-    "Return JSON with these fields:\n"
-    '- "description": 1-2 sentence description of the topic\n'
-    '- "domain": best-fit domain for this topic\n'
-    '- "keywords": 3-5 keywords for research\n'
-    '- "target_audience": who should read this article\n'
-    '- "content_tone": one of {valid_tones}\n'
-    '- "preferred_angle": suggested editorial angle'
-)
-
-_REGENERATE_TEMPLATE = (
-    "Regenerate ONLY the '{field}' field for this topic.\n\n"
-    "Title: {title}\n\n"
-    "Current values (keep all except {field}):\n"
-    "{current_json}\n\n"
-    "Return the full JSON with only '{field}' changed."
-)
 
 _MAX_RETRIES = 2
 
@@ -83,7 +58,7 @@ class TopicAnalyzer:
             title, configured_domains, regenerate_field, current_values
         )
         messages = [
-            SystemMessage(content=_SYSTEM_PROMPT),
+            SystemMessage(content=render_prompt("topic_analyze.system")),
             HumanMessage(content=user_msg),
         ]
         for attempt in range(_MAX_RETRIES):
@@ -111,7 +86,8 @@ class TopicAnalyzer:
         current_values: TopicAnalysisResult | None,
     ) -> str:
         if regenerate_field and current_values:
-            return _REGENERATE_TEMPLATE.format(
+            return render_prompt(
+                "topic_analyze.regenerate",
                 field=regenerate_field,
                 title=title,
                 current_json=current_values.model_dump_json(indent=2),
@@ -122,7 +98,8 @@ class TopicAnalyzer:
                 f"Available domains: {configured_domains}\n"
                 "Prefer one of these domains if the topic fits.\n\n"
             )
-        return _FULL_ANALYSIS_TEMPLATE.format(
+        return render_prompt(
+            "topic_analyze.full",
             title=title,
             domains_section=domains_section,
             valid_tones=VALID_TONES,

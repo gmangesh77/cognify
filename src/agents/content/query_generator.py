@@ -11,23 +11,10 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
+from src.agents.prompts import render_prompt
 from src.models.content_pipeline import ArticleOutline, SectionQueries
 
 logger = structlog.get_logger()
-
-_SYSTEM_PROMPT = (
-    "You are a research retrieval specialist. Given an article outline, "
-    "generate 1-2 focused search queries per section for finding relevant "
-    "passages in a knowledge base. Queries should be semantic and specific. "
-    "Respond with valid JSON only."
-)
-
-_USER_TEMPLATE = (
-    "Generate retrieval queries for each section:\n\n"
-    "{sections_text}\n\n"
-    "Return JSON array: "
-    '[{{"section_index": 0, "queries": ["query1", "query2"]}}]'
-)
 
 _MAX_RETRIES = 2
 
@@ -40,17 +27,20 @@ def _format_sections(outline: ArticleOutline) -> str:
     return "\n".join(lines)
 
 
+def _build_user_message(outline: ArticleOutline) -> str:
+    return render_prompt(
+        "content_queries.user", sections_text=_format_sections(outline)
+    )
+
+
 async def generate_section_queries(
     outline: ArticleOutline,
     llm: BaseChatModel,
 ) -> list[SectionQueries]:
     """Generate retrieval queries for all outline sections."""
-    user_msg = _USER_TEMPLATE.format(
-        sections_text=_format_sections(outline),
-    )
     messages = [
-        SystemMessage(content=_SYSTEM_PROMPT),
-        HumanMessage(content=user_msg),
+        SystemMessage(content=render_prompt("content_queries.system")),
+        HumanMessage(content=_build_user_message(outline)),
     ]
 
     for attempt in range(_MAX_RETRIES):

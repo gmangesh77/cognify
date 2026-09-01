@@ -47,10 +47,12 @@ def _build_dispatcher(request: Request) -> PipelineDispatcher:
             from src.tasks.celery_app import make_celery
 
             return CeleryDispatcher(make_celery(settings))
+    prompt_override_repo = getattr(request.app.state, "prompt_override_repo", None)
     deps = PipelineDeps(
         research_svc=request.app.state.research_service,
         content_svc=getattr(request.app.state, "content_service", None),
         outline_gate=getattr(request.app.state, "outline_gate", None),
+        prompt_overrides=getattr(prompt_override_repo, "load_all", None),
     )
     return InProcessDispatcher(deps, get_session_tasks(request))
 

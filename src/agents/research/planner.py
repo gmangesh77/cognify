@@ -11,33 +11,11 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
+from src.agents.prompts import render_prompt
 from src.models.research import ResearchPlan, TopicInput
 from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
-
-_SYSTEM_PROMPT = (
-    "You are a research planning assistant. Given a topic, generate a "
-    "research plan with 3-5 facets. Each facet should cover a distinct "
-    "angle of the topic.\n\n"
-    "For each facet, set source_type to one of:\n"
-    '- "web": current events, industry news, practical guides\n'
-    '- "academic": research papers, methodologies, empirical studies\n'
-    '- "both": topics needing both web and scholarly sources\n\n'
-    "Respond with valid JSON only."
-)
-
-_USER_TEMPLATE = (
-    "Plan research for this topic:\n"
-    "Title: {title}\n"
-    "Description: {description}\n"
-    "Domain: {domain}\n"
-    "{context_block}\n"
-    'Return JSON: {{"facets": [{{"index": 0, "title": "...", '
-    '"description": "...", "search_queries": ["..."], '
-    '"source_type": "web|academic|both"}}], '
-    '"reasoning": "..."}}'
-)
 
 _MAX_RETRIES = 2
 
@@ -60,15 +38,22 @@ def _build_context_block(topic: TopicInput) -> str:
     )
 
 
-async def generate_research_plan(topic: TopicInput, llm: BaseChatModel) -> ResearchPlan:
-    """Generate a research plan from a topic via LLM."""
-    user_msg = _USER_TEMPLATE.format(
+def _build_user_message(topic: TopicInput) -> str:
+    return render_prompt(
+        "plan_research.user",
         title=topic.title,
         description=topic.description,
         domain=topic.domain,
         context_block=_build_context_block(topic),
     )
-    messages = [SystemMessage(content=_SYSTEM_PROMPT), HumanMessage(content=user_msg)]
+
+
+async def generate_research_plan(topic: TopicInput, llm: BaseChatModel) -> ResearchPlan:
+    """Generate a research plan from a topic via LLM."""
+    messages = [
+        SystemMessage(content=render_prompt("plan_research.system")),
+        HumanMessage(content=_build_user_message(topic)),
+    ]
 
     for attempt in range(_MAX_RETRIES):
         response = await llm.ainvoke(messages)

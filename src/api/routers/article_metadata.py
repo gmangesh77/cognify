@@ -9,14 +9,17 @@ persisting — the user saves through PATCH.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, Request
 
+from src.agents.prompts import bind_prompt_overrides
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above
 from src.api.errors import CognifyValidationError, ServiceUnavailableError
+from src.api.prompt_scope import load_prompt_overrides
 from src.api.rate_limiter import limiter
 from src.api.routers.canonical_articles import (
     _get_content_service,
@@ -132,10 +135,12 @@ async def regenerate_seo_field(
     article_id: UUID,
     body: SeoRegenerateRequest,
     user: TokenPayload = Depends(require_editor_or_above),
+    overrides: Mapping[str, str] = Depends(load_prompt_overrides),
 ) -> SeoRegenerateResponse:
     svc = _get_content_service(request)
     article = await svc.get_article(article_id)
-    seo = await _regenerate_seo(svc, article)
+    with bind_prompt_overrides(overrides):
+        seo = await _regenerate_seo(svc, article)
     seo_field = {"seo_title": "title", "seo_description": "description"}.get(
         body.field, "keywords"
     )

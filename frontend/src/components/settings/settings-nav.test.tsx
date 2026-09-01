@@ -3,13 +3,14 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SettingsNav } from "./settings-nav";
 
 describe("SettingsNav", () => {
-  it("renders all 5 tab items", () => {
+  it("renders all 7 tab items", () => {
     render(<SettingsNav activeTab="domains" onTabChange={vi.fn()} />);
     expect(screen.getByText("Domains")).toBeInTheDocument();
     expect(screen.getByText("LLM Configuration")).toBeInTheDocument();
     expect(screen.getByText("API Keys")).toBeInTheDocument();
     expect(screen.getByText("SEO Defaults")).toBeInTheDocument();
     expect(screen.getByText("General")).toBeInTheDocument();
+    expect(screen.getByText("Prompts")).toBeInTheDocument();
   });
 
   it("highlights the active tab", () => {

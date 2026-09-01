@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
@@ -79,6 +81,25 @@ class TestRewriteSectionProse:
         # backend-driven content. Single substring check keeps the test
         # robust against persona text edits beyond a couple of words.
         assert "technical leadership" in rendered or "real code" in rendered
+
+    @pytest.mark.asyncio
+    async def test_render_prompt_called_once_per_rewrite(self) -> None:
+        """`section_rewrite.system` must be resolved once, not once for the
+        SystemMessage and again for `RewriteResult.prompt_used` — a second
+        call would double the `prompt_override_applied` log line."""
+        llm = FakeListChatModel(responses=["ok"])
+        with patch(
+            "src.services.content.section_rewriter.render_prompt",
+            return_value="SYSTEM PROMPT",
+        ) as mock_render:
+            result = await rewrite_section_prose(
+                section_id="abc:0",
+                instruction="x",
+                current_markdown="y",
+                llm=llm,
+            )
+        assert mock_render.call_count == 1
+        assert result.prompt_used == "SYSTEM PROMPT"
 
     @pytest.mark.asyncio
     async def test_banned_pattern_block_is_in_prompt(self) -> None:

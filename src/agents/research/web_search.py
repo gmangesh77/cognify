@@ -16,22 +16,12 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
+from src.agents.prompts import render_prompt
 from src.models.research import FacetFindings, ResearchFacet, SourceDocument
 from src.services.serpapi_client import SerpAPIClient, SerpAPIError, SerpAPIResult
 from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
-
-_CLAIMS_SYSTEM = (
-    "You are a research analyst. Extract key factual claims "
-    "and a brief summary from search results. Respond with JSON only."
-)
-
-_CLAIMS_TEMPLATE = (
-    "Search results about '{title}':\n\n{snippets}\n\n"
-    "Extract 3-5 key factual claims and a 2-3 sentence summary.\n"
-    'Return JSON: {{"claims": ["..."], "summary": "..."}}'
-)
 
 _MAX_SNIPPET_CHARS = 500
 _CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
@@ -123,9 +113,11 @@ class WebSearchAgent:
     ) -> tuple[list[str], str]:
         """Extract claims + summary via LLM, with fallback."""
         snippets = "\n".join(f"- [{s.title}]: {s.snippet}" for s in sources)
-        msg = _CLAIMS_TEMPLATE.format(title=_sanitize(title), snippets=snippets)
+        msg = render_prompt(
+            "research_web_claims.user", title=_sanitize(title), snippets=snippets
+        )
         messages = [
-            SystemMessage(content=_CLAIMS_SYSTEM),
+            SystemMessage(content=render_prompt("research_web_claims.system")),
             HumanMessage(content=msg),
         ]
         try:

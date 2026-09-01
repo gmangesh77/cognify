@@ -9,8 +9,12 @@ import pytest
 from fastapi import FastAPI
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
+from src.agents.prompts import current_prompt_overrides
 from src.api.main import create_app
 from src.config.settings import Settings
+from src.db.prompt_override_repository import InMemoryPromptOverrideRepository
+from src.models.content import ContentType
+from src.models.content_pipeline import ArticleOutline, OutlineSection
 from src.models.research import TopicInput
 from src.services.content import (
     ContentRepositories,
@@ -361,6 +365,63 @@ class TestCancelDuringDrafting:
 
             final_status = await _wait_for_status(session_repo, session_id, "cancelled")
             assert final_status == "cancelled"
+
+
+class TestRegenerateBindsPromptOverrides:
+    async def test_regenerate_binds_overrides_around_the_llm_call(
+        self, auth_settings: Settings, test_topic_id: UUID
+    ) -> None:
+        app = _make_outline_app(auth_settings, test_topic_id, _outline_only_pair() * 3)
+        session_repo = app.state.research_service._repos.sessions
+        editor_headers = make_auth_header("editor", auth_settings)
+
+        override_repo = InMemoryPromptOverrideRepository()
+        await override_repo.upsert(
+            "content_outline.system", template="OVERRIDE", updated_by="admin-1"
+        )
+        app.state.prompt_override_repo = override_repo
+
+        fresh_outline = ArticleOutline(
+            title="Regenerated",
+            content_type=ContentType.HOW_TO,
+            sections=[
+                OutlineSection(
+                    index=0,
+                    title="S1",
+                    description="d",
+                    key_points=[],
+                    target_word_count=200,
+                    relevant_facets=[],
+                )
+            ],
+            total_target_words=200,
+            reasoning="r",
+        )
+        captured: dict[str, object] = {}
+
+        async def fake_regenerate_outline(session_id, instruction):
+            captured["overrides"] = dict(current_prompt_overrides.get())
+            draft = await app.state.outline_gate.get_outline(session_id)
+            return draft.model_copy(update={"outline": fresh_outline})
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            session_id = await _create_session(
+                client, editor_headers, test_topic_id, gate=True
+            )
+            await _wait_for_status(session_repo, session_id, "awaiting_outline_review")
+            app.state.outline_gate.regenerate_outline = fake_regenerate_outline
+
+            resp = await client.post(
+                f"/api/v1/research/sessions/{session_id}/outline/regenerate",
+                json={"instruction": None},
+                headers=editor_headers,
+            )
+            assert resp.status_code == 200, resp.text
+            assert resp.json()["outline"]["title"] == "Regenerated"
+
+        assert captured["overrides"] == {"content_outline.system": "OVERRIDE"}
 
 
 class TestNoGateRegression:

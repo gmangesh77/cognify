@@ -44,6 +44,7 @@ from src.api.routers.metrics import metrics_router
 from src.api.routers.oauth import oauth_router
 from src.api.routers.outline import outline_router
 from src.api.routers.pipeline_debug import pipeline_debug_router
+from src.api.routers.prompts import prompts_router
 from src.api.routers.publishing import publishing_router
 from src.api.routers.research import research_router
 from src.api.routers.session_events import session_events_router
@@ -56,6 +57,7 @@ from src.config.settings import Settings
 from src.db.engine import create_async_engine as create_db_engine
 from src.db.engine import get_session_factory
 from src.db.llm_call_repository import PgLlmCallRepository
+from src.db.prompt_override_repository import InMemoryPromptOverrideRepository
 from src.db.repositories import (
     PgAgentStepRepository,
     PgArticleDraftRepository,
@@ -277,6 +279,10 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         from src.db.brief_repository import PgBriefRepository
 
         app.state.brief_service = BriefService(PgBriefRepository(sf))
+        # AUTHOR-012 — prompt overrides. Lazy import: API boots before migration.
+        from src.db.prompt_override_repository import PgPromptOverrideRepository
+
+        app.state.prompt_override_repo = PgPromptOverrideRepository(sf)
         # Resolve API keys: DB overrides .env
         resolver = ApiKeyResolver(api_key_repo, settings)
         resolved = await resolver.resolve_all()
@@ -387,6 +393,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.trend_registry = init_registry(settings)
     _init_research_service(app)
     app.state.brief_service = BriefService(InMemoryBriefRepository())
+    app.state.prompt_override_repo = InMemoryPromptOverrideRepository()
 
     _register_exception_handlers(app)
     _register_middleware(app, settings)
@@ -656,6 +663,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         settings_router,
         prefix=settings.api_v1_prefix,
         tags=["settings"],
+    )
+    app.include_router(
+        prompts_router,
+        prefix=settings.api_v1_prefix,
+        tags=["prompts"],
     )
     app.include_router(
         publishing_router,

@@ -178,14 +178,28 @@ class TestRequestLoggingMiddleware:
                 assert data.get("path") != "/docs"
 
 
+_RATE_LIMITED_TEST_ROUTE_KEY = "tests.unit.api.test_middleware.test_rate_limited"
+
+
 @pytest.fixture
 def _fresh_limiter() -> None:
-    """Reset limiter state to isolate tests."""
+    """Reset limiter state to isolate tests.
+
+    Only pop THIS module's locally-decorated test route (re-decorated fresh
+    on every `rate_limited_app` call, so its `_route_limits` entry would
+    otherwise grow one duplicate "2/minute" limit per test). `_route_limits`
+    is process-global and populated once at import time for every
+    `@limiter.limit(...)` decorated endpoint in the whole app — clearing the
+    whole dict here silently drops every other router's registered limit
+    for the rest of the test session (real endpoints are decorated once at
+    import and never re-register), found via AUTHOR-012's `/prompts` 429
+    test failing only when this file ran first in the full suite.
+    """
     limiter._storage.reset()
-    limiter._route_limits.clear()
+    limiter._route_limits.pop(_RATE_LIMITED_TEST_ROUTE_KEY, None)
     yield
     limiter._storage.reset()
-    limiter._route_limits.clear()
+    limiter._route_limits.pop(_RATE_LIMITED_TEST_ROUTE_KEY, None)
 
 
 @pytest.fixture

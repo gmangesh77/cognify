@@ -15,6 +15,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import ValidationError
 
+from src.agents.prompts import render_prompt
 from src.models.research import FacetFindings, ResearchFacet, SourceDocument
 from src.services.semantic_scholar import (
     ScholarPaper,
@@ -24,19 +25,6 @@ from src.services.semantic_scholar import (
 from src.utils.llm_json import parse_llm_json
 
 logger = structlog.get_logger()
-
-_CLAIMS_SYSTEM = (
-    "You are an academic research analyst. Extract key factual claims "
-    "and a summary from paper abstracts. Focus on methodology, findings, "
-    "and statistical results. Respond with JSON only."
-)
-
-_CLAIMS_TEMPLATE = (
-    "Paper abstracts about '{title}':\n\n{abstracts}\n\n"
-    "Extract 3-5 key factual claims (cite as Author et al. (year)) "
-    "and a 2-3 sentence summary of research contributions.\n"
-    'Return JSON: {{"claims": ["..."], "summary": "..."}}'
-)
 
 _MAX_SNIPPET_CHARS = 500
 _CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
@@ -128,9 +116,13 @@ class LiteratureReviewAgent:
     ) -> tuple[list[str], str]:
         """Extract claims + summary via LLM, with fallback."""
         abstracts = "\n".join(f"- [{s.title}]: {s.snippet}" for s in sources)
-        msg = _CLAIMS_TEMPLATE.format(title=_sanitize(title), abstracts=abstracts)
+        msg = render_prompt(
+            "research_literature_claims.user",
+            title=_sanitize(title),
+            abstracts=abstracts,
+        )
         messages = [
-            SystemMessage(content=_CLAIMS_SYSTEM),
+            SystemMessage(content=render_prompt("research_literature_claims.system")),
             HumanMessage(content=msg),
         ]
         try:

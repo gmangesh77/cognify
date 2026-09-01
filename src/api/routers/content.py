@@ -21,6 +21,7 @@ Boundary invariants enforced here:
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Literal
 from uuid import UUID
 
@@ -31,8 +32,10 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.agents.prompts import bind_prompt_overrides
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above
+from src.api.prompt_scope import load_prompt_overrides
 from src.api.rate_limiter import limiter
 from src.api.routers.content_shared import (
     WordDiffEntry,
@@ -97,6 +100,7 @@ async def section_rewrite(
     request: Request,
     body: SectionRewriteRequest,
     user: TokenPayload = Depends(require_editor_or_above),
+    overrides: Mapping[str, str] = Depends(load_prompt_overrides),
 ) -> SectionRewriteResponse:
     """Apply Claude-driven prose refinement to one section / paragraph."""
     history = get_history_service(request)
@@ -118,15 +122,16 @@ async def section_rewrite(
         current_md = section.text
 
     llm = _get_content_llm(request)
-    result = await rewrite_section_prose(
-        section_id=body.section_id,
-        instruction=body.instruction,
-        current_markdown=current_md,
-        scope=body.scope,
-        paragraph_index=body.paragraph_index,
-        audience_persona=body.audience_persona,
-        llm=llm,
-    )
+    with bind_prompt_overrides(overrides):
+        result = await rewrite_section_prose(
+            section_id=body.section_id,
+            instruction=body.instruction,
+            current_markdown=current_md,
+            scope=body.scope,
+            paragraph_index=body.paragraph_index,
+            audience_persona=body.audience_persona,
+            llm=llm,
+        )
     return SectionRewriteResponse(
         section_id=body.section_id,
         markdown_fragment=result.markdown_fragment,
@@ -215,6 +220,7 @@ async def paragraph_tone(
     request: Request,
     body: ParagraphToneRequest,
     user: TokenPayload = Depends(require_editor_or_above),
+    overrides: Mapping[str, str] = Depends(load_prompt_overrides),
 ) -> SectionRewriteResponse:
     """Thin wrapper around `section_rewrite` that expands a tone preset."""
     if body.preset not in TONE_PRESETS:
@@ -222,16 +228,20 @@ async def paragraph_tone(
             status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"unknown tone preset: {body.preset}",
         )
-    instruction = expand_tone_preset(body.preset)
-    rewrite = SectionRewriteRequest(
-        section_id=body.section_id,
-        instruction=instruction,
-        scope="paragraph",
-        paragraph_index=body.paragraph_index,
-        current_markdown=body.current_markdown,
-        audience_persona=body.audience_persona,
-    )
-    result: SectionRewriteResponse = await section_rewrite(request, rewrite, user)
+    with bind_prompt_overrides(overrides):
+        instruction = expand_tone_preset(body.preset)
+        rewrite = SectionRewriteRequest(
+            section_id=body.section_id,
+            instruction=instruction,
+            scope="paragraph",
+            paragraph_index=body.paragraph_index,
+            current_markdown=body.current_markdown,
+            audience_persona=body.audience_persona,
+        )
+        # Nested bind inside section_rewrite is harmless.
+        result: SectionRewriteResponse = await section_rewrite(
+            request, rewrite, user, overrides
+        )
     return result
 
 
@@ -396,6 +406,7 @@ async def humanize_preview(
     request: Request,
     body: HumanizePreviewRequest,
     user: TokenPayload = Depends(require_editor_or_above),
+    overrides: Mapping[str, str] = Depends(load_prompt_overrides),
 ) -> HumanizePreviewResponse:
     """Run a one-shot humanization pass and return the diff for review.
 
@@ -422,12 +433,13 @@ async def humanize_preview(
         current_md = section.text
 
     llm = _get_content_llm(request)
-    preview = await preview_humanization(
-        section_index=section_index,
-        title=body.title,
-        markdown=current_md,
-        llm=llm,
-    )
+    with bind_prompt_overrides(overrides):
+        preview = await preview_humanization(
+            section_index=section_index,
+            title=body.title,
+            markdown=current_md,
+            llm=llm,
+        )
     return HumanizePreviewResponse(
         section_id=body.section_id,
         original=preview.original,

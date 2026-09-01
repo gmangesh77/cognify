@@ -33,6 +33,7 @@ import structlog
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from src.agents.prompts import DEFAULT_PROMPTS, render_prompt
 from src.services.content.word_diff import WordDiffOp, diff_words
 from src.services.visuals.persona_directions import get_persona_register
 from src.utils.llm_usage import extract_usage
@@ -48,26 +49,13 @@ TonePreset = Literal[
 ]
 
 TONE_PRESETS: dict[TonePreset, str] = {
-    "shorter": (
-        "Make this paragraph noticeably shorter without losing any factual "
-        "claim. Cut hedging phrases, drop adverbs, and tighten sentence "
-        "structure. Aim for ~30% fewer words."
-    ),
-    "more_concrete": (
-        "Make this paragraph more concrete. Replace vague phrasing with "
-        "specific examples that are already implied by the surrounding "
-        "context. Do not invent new statistics, names, or quotes."
-    ),
+    "shorter": DEFAULT_PROMPTS["section_rewrite.tone.shorter"].template,
+    "more_concrete": DEFAULT_PROMPTS["section_rewrite.tone.more_concrete"].template,
     "more_conversational": (
-        "Soften this paragraph into a more conversational register. Trim "
-        "jargon to one or two key terms; favour short sentences. Keep "
-        "every factual claim and citation marker exactly as written."
+        DEFAULT_PROMPTS["section_rewrite.tone.more_conversational"].template
     ),
     "more_authoritative": (
-        "Tighten this paragraph into a more authoritative register. Lead "
-        "each sentence with the subject of the claim. Cut hedging "
-        "language. Keep every factual claim and citation marker exactly "
-        "as written."
+        DEFAULT_PROMPTS["section_rewrite.tone.more_authoritative"].template
     ),
 }
 
@@ -83,17 +71,6 @@ _BANNED_PATTERNS_BLOCK = (
     "what was already in the original.\n"
     "- Return PLAIN markdown only — no fenced code blocks around the "
     "output, no commentary, no preamble."
-)
-
-
-_REWRITER_SYSTEM = (
-    "You are a senior editor refining the prose of one section of an "
-    "article. You receive the section's current markdown and a "
-    "natural-language instruction. Return ONLY the refined markdown — "
-    "no commentary, no fences, no headings the original did not "
-    "already contain. Preserve every existing `[N]` citation marker "
-    "verbatim, every `data-spec-id` attribute verbatim, and every "
-    "second-level heading (`## …`) verbatim."
 )
 
 
@@ -117,7 +94,7 @@ def expand_tone_preset(preset: TonePreset) -> str:
     The frontend never sees this string — it ships only `{ "preset": ... }`
     so banned-pattern guards stay server-side.
     """
-    return TONE_PRESETS[preset]
+    return render_prompt(f"section_rewrite.tone.{preset}")
 
 
 async def rewrite_section_prose(
@@ -145,8 +122,9 @@ async def rewrite_section_prose(
         paragraph_index=paragraph_index,
         persona_register=persona_register,
     )
+    system_prompt = render_prompt("section_rewrite.system")
     messages = [
-        SystemMessage(content=_REWRITER_SYSTEM),
+        SystemMessage(content=system_prompt),
         HumanMessage(content=user_prompt),
     ]
     response = await llm.ainvoke(messages)
@@ -168,7 +146,7 @@ async def rewrite_section_prose(
         markdown_fragment=fragment,
         diff=diff,
         model=str(model_name),
-        prompt_used=_REWRITER_SYSTEM,
+        prompt_used=system_prompt,
         instruction=instruction,
         tokens_input=usage.get("input"),
         tokens_output=usage.get("output"),
