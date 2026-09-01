@@ -49,6 +49,7 @@ async def persist_pipeline_result(
     draft = await _apply_pipeline_outputs(ctx, draft, result)
     topic = build_topic_input(session)
     article = build_article(draft, topic)
+    article = _apply_voice(article, result)
     article = await store_article(ctx.repos, draft, article)
     logger.info("article_finalized", article_id=str(article.id), title=article.title)
     return article
@@ -62,6 +63,25 @@ def _extract_outline(result: dict[str, object]) -> ArticleOutline:
         outline = ArticleOutline.model_validate(outline)
     logger.info("outline_generated", section_count=len(outline.sections))
     return outline
+
+
+# AUTHOR-011 — voice-engine outputs (Task 8/9 produce these keys in the
+# pipeline result dict; absent keys leave the article's field defaults).
+_VOICE_RESULT_KEYS = (
+    "voice_persona_id",
+    "voice_match_score",
+    "voice_scores_by_section",
+    "few_shot_sample_ids",
+)
+
+
+def _apply_voice(
+    article: CanonicalArticle,
+    result: dict[str, object],
+) -> CanonicalArticle:
+    """Copy voice-engine outputs from the pipeline result onto the article."""
+    updates = {key: result[key] for key in _VOICE_RESULT_KEYS if key in result}
+    return article.model_copy(update=updates) if updates else article
 
 
 def _warn_if_partial_failure(result: dict[str, object]) -> None:

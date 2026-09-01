@@ -7,7 +7,8 @@ export type SettingsTab =
   | "api-keys"
   | "seo"
   | "general"
-  | "prompts";
+  | "prompts"
+  | "personas";
 
 // --- Domain ---
 

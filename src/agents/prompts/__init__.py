@@ -7,6 +7,7 @@ from src.agents.prompts import (  # noqa: F401 — registration side effects
     defaults_editing,
     defaults_linkedin,
     defaults_research,
+    defaults_voice,
 )
 from src.agents.prompts.registry import (
     DEFAULT_PROMPTS,

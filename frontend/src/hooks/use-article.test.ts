@@ -119,4 +119,35 @@ describe("useArticle", () => {
     expect(visuals[1].metadata?.placement_anchor).toBe("between_paragraphs");
     expect(visuals[1].metadata?.role_style).toBe("concept");
   });
+
+  it("maps voice fields from the wire response (AUTHOR-011)", async () => {
+    mockFetchArticle.mockResolvedValue({
+      ...mockArticle,
+      voice_persona_id: "voice-1",
+      voice_match_score: 82,
+      voice_scores_by_section: { "0": 90, "1": 74 },
+      few_shot_sample_ids: ["s1", "s2"],
+    });
+    const { result } = renderHook(() => useArticle("art-001"), { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(result.current.article).not.toBeNull();
+    });
+    const a = result.current.article!;
+    expect(a.voicePersonaId).toBe("voice-1");
+    expect(a.voiceMatchScore).toBe(82);
+    expect(a.voiceScoresBySection).toEqual({ "0": 90, "1": 74 });
+    expect(a.fewShotSampleIds).toEqual(["s1", "s2"]);
+  });
+
+  it("defaults voice fields to null/empty when absent from the response", async () => {
+    const { result } = renderHook(() => useArticle("art-001"), { wrapper: createWrapper() });
+    await waitFor(() => {
+      expect(result.current.article).not.toBeNull();
+    });
+    const a = result.current.article!;
+    expect(a.voicePersonaId).toBeNull();
+    expect(a.voiceMatchScore).toBeNull();
+    expect(a.voiceScoresBySection).toBeNull();
+    expect(a.fewShotSampleIds).toEqual([]);
+  });
 });

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -8,6 +9,8 @@ import structlog
 from fastapi import FastAPI
 
 if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
     from src.services.embeddings import EmbeddingService
     from src.services.milvus_service import MilvusRetriever
 from fastapi.exceptions import RequestValidationError
@@ -44,6 +47,7 @@ from src.api.routers.linkedin_repurpose import linkedin_repurpose_router
 from src.api.routers.metrics import metrics_router
 from src.api.routers.oauth import oauth_router
 from src.api.routers.outline import outline_router
+from src.api.routers.personas import personas_router
 from src.api.routers.pipeline_debug import pipeline_debug_router
 from src.api.routers.prompts import prompts_router
 from src.api.routers.publishing import publishing_router
@@ -58,6 +62,7 @@ from src.config.settings import Settings
 from src.db.engine import create_async_engine as create_db_engine
 from src.db.engine import get_session_factory
 from src.db.llm_call_repository import PgLlmCallRepository
+from src.db.persona_repository import InMemoryPersonaRepository
 from src.db.prompt_override_repository import InMemoryPromptOverrideRepository
 from src.db.repositories import (
     PgAgentStepRepository,
@@ -87,6 +92,7 @@ from src.services.content_repositories import (
     InMemoryArticleDraftRepository,
     InMemoryArticleRepository,
 )
+from src.services.persona.service import PersonaService
 from src.services.research import (
     InMemoryAgentStepRepository,
     InMemoryResearchSessionRepository,
@@ -159,6 +165,32 @@ def _get_or_create_embedding_service(app: FastAPI) -> EmbeddingService:
     return app.state.embedding_service  # type: ignore[no-any-return]
 
 
+def _wire_persona_repo(
+    app: FastAPI,
+    sf: async_sessionmaker[AsyncSession],
+    content_deps: ContentDeps,
+) -> ContentDeps:
+    """AUTHOR-011 — build the PG persona repo/service and fold it into
+    `content_deps` BEFORE `ContentService` is constructed.
+
+    `ContentDeps` is frozen: a later `app.state.persona_repo` reassignment
+    does not reach a `ContentService` already built from an earlier
+    `content_deps` snapshot. Review round 1 found the DB branch used to
+    build `ContentService` first and only reassign `app.state.persona_repo`
+    afterward — the pipeline silently kept reading the in-memory seed repo
+    from `create_app()` instead of Postgres whenever the anthropic key came
+    from `.env` (the only rebuild path was gated on a *resolved* DB key).
+    """
+    from src.db.persona_repository import PgPersonaRepository
+
+    app.state.persona_repo = PgPersonaRepository(sf)
+    app.state.persona_service = PersonaService(
+        app.state.persona_repo,
+        embed=lambda texts: _get_or_create_embedding_service(app).try_embed(texts),
+    )
+    return replace(content_deps, persona_repo=app.state.persona_repo)
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     """Lifespan handler: wires PG repos and LLM services."""
@@ -176,7 +208,13 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         _get_or_create_embedding_service(app).warm_up_in_background()
 
     # --- Build LLM + content deps (shared by DB and non-DB paths) ---
-    content_deps = ContentDeps(settings=settings)
+    # AUTHOR-011 — `create_app()` always seeds `app.state.persona_repo`
+    # (in-memory or PG) before lifespan runs, so it's safe here too.
+    content_deps = ContentDeps(
+        settings=settings,
+        persona_repo=app.state.persona_repo,
+        embedding_service=_get_or_create_embedding_service(app),
+    )
     if settings.anthropic_api_key:
         try:
             llm = _build_llm(settings)
@@ -185,6 +223,8 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                 llm=llm,
                 retriever=retriever,
                 settings=settings,
+                persona_repo=app.state.persona_repo,
+                embedding_service=_get_or_create_embedding_service(app),
             )
             app.state.drafting_llm = llm
             logger.info(
@@ -199,6 +239,11 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         engine = create_db_engine(db_url)
         app.state.db_engine = engine
         sf = get_session_factory(engine)
+
+        # AUTHOR-011 — must run before `ContentService(...)` below so the
+        # PG persona repo (not the in-memory seed) is baked into the deps
+        # it is built from (review round 1 — see `_wire_persona_repo`).
+        content_deps = _wire_persona_repo(app, sf, content_deps)
 
         # Re-wire research service with PG repos
         step_repo = PgAgentStepRepository(sf)
@@ -304,6 +349,8 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
                         llm=llm,
                         retriever=retriever,
                         settings=settings,
+                        persona_repo=app.state.persona_repo,
+                        embedding_service=_get_or_create_embedding_service(app),
                     )
                     app.state.content_service = ContentService(
                         repos=content_repos,
@@ -395,6 +442,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     _init_research_service(app)
     app.state.brief_service = BriefService(InMemoryBriefRepository())
     app.state.prompt_override_repo = InMemoryPromptOverrideRepository()
+    app.state.persona_repo = InMemoryPersonaRepository()
+    app.state.persona_service = PersonaService(
+        app.state.persona_repo,
+        embed=lambda texts: _get_or_create_embedding_service(app).try_embed(texts),
+    )
 
     _register_exception_handlers(app)
     _register_middleware(app, settings)
@@ -672,6 +724,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         prompts_router,
         prefix=settings.api_v1_prefix,
         tags=["prompts"],
+    )
+    app.include_router(
+        personas_router,
+        prefix=settings.api_v1_prefix,
+        tags=["personas"],
     )
     app.include_router(
         publishing_router,

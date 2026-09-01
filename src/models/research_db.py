@@ -36,6 +36,7 @@ class ResearchSession(BaseModel):
     content_type: str | None = None
     length_target: str | None = None
     audience_persona: str | None = None
+    voice_persona_id: UUID | None = None
     duration_seconds: float | None = None
     started_at: datetime
     completed_at: datetime | None = None

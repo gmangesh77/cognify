@@ -36,6 +36,7 @@ export function useGenerateModalState({ analysis, updateField }: Args) {
   const [diagramMode, setDiagramMode] =
     useState<StructuralDiagramMode>("illustration");
   const [requireOutlineApproval, setRequireOutlineApproval] = useState(false);
+  const [voicePersonaId, setVoicePersonaId] = useState<string | null>(null);
 
   const effectiveOptions: BriefOptions = options ?? {
     ...DEFAULT_OPTIONS,
@@ -52,6 +53,7 @@ export function useGenerateModalState({ analysis, updateField }: Args) {
       if (b.description) updateField("description", b.description);
       setDiagramMode(b.structural_diagram_mode);
       setRequireOutlineApproval(b.require_outline_approval);
+      setVoicePersonaId(b.voice_persona_id ?? null);
       setOptions({
         ...DEFAULT_OPTIONS,
         content_type: b.content_type,
@@ -90,6 +92,7 @@ export function useGenerateModalState({ analysis, updateField }: Args) {
         : requireOutlineApproval,
       content_type: effectiveOptions.content_type,
       length_target: effectiveOptions.length_target,
+      voice_persona_id: voicePersonaId ?? undefined,
       brief_id: isNew ? undefined : selectedBriefId,
       save_as_brief: isNew && effectiveOptions.save_as_brief ? true : undefined,
       brief_name:
@@ -104,6 +107,7 @@ export function useGenerateModalState({ analysis, updateField }: Args) {
     setOptions(null);
     setDiagramMode("illustration");
     setRequireOutlineApproval(false);
+    setVoicePersonaId(null);
   }, []);
 
   return {
@@ -117,6 +121,8 @@ export function useGenerateModalState({ analysis, updateField }: Args) {
     setDiagramMode,
     requireOutlineApproval,
     setRequireOutlineApproval,
+    voicePersonaId,
+    setVoicePersonaId,
     buildParams,
     resetState,
   };

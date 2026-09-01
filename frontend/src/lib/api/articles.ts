@@ -62,6 +62,12 @@ export interface ArticleResponse {
   };
   authors: string[];
   status?: string; // AUTHOR-007 editorial state (optional: older fixtures)
+  // AUTHOR-011 persona voice engine fields.
+  audience_persona?: string | null;
+  voice_persona_id?: string | null;
+  voice_match_score?: number | null;
+  voice_scores_by_section?: Record<string, number> | null;
+  few_shot_sample_ids?: string[];
 }
 
 export interface PaginatedArticles {

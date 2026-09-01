@@ -16,6 +16,8 @@ export interface BriefFields {
   length_target: LengthTarget;
   structural_diagram_mode: StructuralDiagramMode;
   audience_persona?: string | null;
+  /** Persona to draft in this brief's articles (AUTHOR-011). */
+  voice_persona_id?: string | null;
   require_outline_approval: boolean;
 }
 

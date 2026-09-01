@@ -2,15 +2,19 @@
 
 import json
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
-from uuid import uuid4
+from unittest.mock import AsyncMock, patch
+from uuid import UUID, uuid4
 
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
+from src.agents.content import section_prompt
 from src.api.errors import NotFoundError
+from src.config.settings import Settings
+from src.db.persona_repository_memory import InMemoryPersonaRepository
 from src.models.content import CanonicalArticle
 from src.models.content_pipeline import ArticleDraft, DraftStatus
+from src.models.persona import PersonaCreate, SampleCreate
 from src.models.research import ChunkResult, FacetFindings, SourceDocument
 from src.models.research_db import ResearchSession
 from src.services.content import (
@@ -20,6 +24,7 @@ from src.services.content import (
     InMemoryArticleRepository,
 )
 from src.services.content_repositories import ContentDeps
+from src.services.persona.fingerprint import build_fingerprint
 from src.services.research import InMemoryResearchSessionRepository
 
 
@@ -430,3 +435,119 @@ class TestDepsProperty:
             articles=InMemoryArticleRepository(),
         )
         assert ContentService(repos, deps).deps is deps
+
+
+# --- AUTHOR-011 Task 9 — voice state seeded into the run, drafter carries it ---
+
+
+class _CountingPersonaRepo(InMemoryPersonaRepository):
+    """Counts `.get()` calls so a flag-off run can assert the repo is
+    never touched."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.get_calls = 0
+
+    async def get(self, persona_id: UUID):  # type: ignore[override]
+        self.get_calls += 1
+        return await super().get(persona_id)
+
+
+async def _ready_voice_repo(
+    repo_cls: type[InMemoryPersonaRepository] = InMemoryPersonaRepository,
+) -> tuple[InMemoryPersonaRepository, UUID]:
+    """Fingerprint built from the exact text every section will draft
+    (`_long_draft_text()`), so every section scores ~100 and the voice
+    fix pass never fires — a fix pass would consume an extra FakeLLM
+    response and desync the fixed response queue below (L-007)."""
+    repo = repo_cls()
+    persona = await repo.create("owner-1", PersonaCreate(name="Voice"))
+    sample_text = _long_draft_text()
+    for _ in range(5):
+        await repo.add_sample(persona.id, SampleCreate(text=sample_text))
+    samples = await repo.list_samples(persona.id)
+    fp = build_fingerprint([s.text for s in samples])
+    await repo.set_fingerprint(persona.id, fp)
+    return repo, persona.id
+
+
+async def _make_voice_service(
+    persona_repo: InMemoryPersonaRepository,
+    persona_id: UUID,
+    *,
+    enable_voice_engine: bool,
+) -> tuple[ContentService, ResearchSession]:
+    session = _make_complete_session().model_copy(
+        update={"voice_persona_id": persona_id}
+    )
+    session_repo = InMemoryResearchSessionRepository()
+    await session_repo.create(session)
+    draft_text = _long_draft_text()
+    chart_json = json.dumps({"charts": []})
+    diagram_json = json.dumps({"diagrams": []})
+    one_run = [
+        _four_section_outline_json(),
+        _four_section_queries_json(),
+        draft_text,
+        draft_text,
+        draft_text,
+        draft_text,
+        draft_text,  # redraft (validation)
+        _seo_json(),
+        _discoverability_json(),
+        chart_json,
+        diagram_json,
+        "pad",
+        "pad",
+    ]
+    llm = FakeListChatModel(responses=one_run * 3)
+    repos = ContentRepositories(
+        drafts=InMemoryArticleDraftRepository(),
+        research=session_repo,
+        articles=InMemoryArticleRepository(),
+    )
+    retriever = _make_retriever_mock()
+    settings = Settings(_env_file=None, enable_voice_engine=enable_voice_engine)
+    deps = ContentDeps(
+        llm=llm, retriever=retriever, settings=settings, persona_repo=persona_repo
+    )
+    return ContentService(repos, deps), session
+
+
+async def _run_and_capture_system_prompts(
+    svc: ContentService, session_id: UUID
+) -> list[str]:
+    """Run the full pipeline, recording every drafter system prompt built."""
+    captured: list[str] = []
+    original = section_prompt.build_system_prompt
+
+    def _capture(section: object, ctx: object) -> str:
+        result = original(section, ctx)  # type: ignore[arg-type]
+        captured.append(result)
+        return result
+
+    with patch.object(section_prompt, "build_system_prompt", side_effect=_capture):
+        await svc.generate_full_article(session_id)
+    return captured
+
+
+class TestVoiceStateInjection:
+    async def test_drafter_system_prompt_carries_voice_block_when_flag_on(
+        self,
+    ) -> None:
+        persona_repo, persona_id = await _ready_voice_repo()
+        svc, session = await _make_voice_service(
+            persona_repo, persona_id, enable_voice_engine=True
+        )
+        captured = await _run_and_capture_system_prompts(svc, session.id)
+        assert any("Voice." in c for c in captured)
+
+    async def test_no_voice_block_and_repo_untouched_when_flag_off(self) -> None:
+        persona_repo, persona_id = await _ready_voice_repo(_CountingPersonaRepo)
+        svc, session = await _make_voice_service(
+            persona_repo, persona_id, enable_voice_engine=False
+        )
+        captured = await _run_and_capture_system_prompts(svc, session.id)
+        assert not any("Voice." in c for c in captured)
+        assert isinstance(persona_repo, _CountingPersonaRepo)
+        assert persona_repo.get_calls == 0

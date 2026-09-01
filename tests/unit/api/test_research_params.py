@@ -97,3 +97,42 @@ def test_save_as_brief_explicit_false_beats_settings_default() -> None:
         inline_brief_create(body, "T", default_gate=True).require_outline_approval
         is False
     )
+
+
+def test_voice_persona_id_inline_overrides_brief() -> None:
+    inline_id = uuid4()
+    b = _brief(voice_persona_id=uuid4())
+    body = CreateResearchSessionRequest(topic_id=uuid4(), voice_persona_id=inline_id)
+    p = resolve_session_params(ParamSources(body, b, default_gate=False))
+    assert p.voice_persona_id == inline_id
+
+
+def test_voice_persona_id_brief_used_when_inline_absent() -> None:
+    brief_persona_id = uuid4()
+    b = _brief(voice_persona_id=brief_persona_id)
+    body = CreateResearchSessionRequest(topic_id=uuid4())
+    p = resolve_session_params(ParamSources(body, b, default_gate=False))
+    assert p.voice_persona_id == brief_persona_id
+
+
+def test_voice_persona_id_defaults_to_none() -> None:
+    body = CreateResearchSessionRequest(topic_id=uuid4())
+    p = resolve_session_params(ParamSources(body, None, default_gate=False))
+    assert p.voice_persona_id is None
+
+
+def test_inline_brief_create_carries_voice_persona_id() -> None:
+    voice_id = uuid4()
+    body = CreateResearchSessionRequest(
+        topic_id=uuid4(), save_as_brief=True, voice_persona_id=voice_id
+    )
+    bc = inline_brief_create(body, "Topic T")
+    assert bc.voice_persona_id == voice_id
+
+
+def test_session_params_from_brief_copies_voice_persona_id() -> None:
+    voice_id = uuid4()
+    b = _brief(voice_persona_id=voice_id)
+    from src.models.session_params import SessionParams
+
+    assert SessionParams.from_brief(b).voice_persona_id == voice_id

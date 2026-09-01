@@ -46,6 +46,7 @@ from src.services.content_repositories import (
     ResearchSessionReader,
     aggregate_citations,
 )
+from src.services.persona.voice_context import VoiceContextInput, build_voice_state
 
 logger = structlog.get_logger()
 
@@ -119,6 +120,7 @@ class ContentService:
         findings = self._reconstruct_findings(session)
         topic = self._build_topic_input(session)
         state = build_initial_state(session, topic, findings)
+        state.update(await self._voice_state(session, topic))
 
         # Single graph run: outline → queries → draft → validate →
         # citations → humanize → SEO → charts → diagrams
@@ -216,6 +218,28 @@ class ContentService:
             msg = "LLM not configured. Set COGNIFY_ANTHROPIC_API_KEY."
             raise ValueError(msg)
         return self._deps.llm
+
+    async def _voice_state(
+        self, session: ResearchSession, topic: TopicInput
+    ) -> dict[str, object]:
+        """Resolve the session's voice persona into run state (AUTHOR-011).
+
+        `{}` (no-op) when the flag is off — the persona repo is never
+        touched — or when `build_voice_state` itself resolves to nothing
+        (no persona selected, missing, or not yet fingerprinted).
+        """
+        if not (self._deps.settings and self._deps.settings.enable_voice_engine):
+            return {}
+        embed = (
+            self._deps.embedding_service.try_embed
+            if self._deps.embedding_service
+            else None
+        )
+        ctx = VoiceContextInput(
+            voice_persona_id=session.voice_persona_id,
+            query=f"{topic.title}\n{topic.description}",
+        )
+        return await build_voice_state(self._deps.persona_repo, embed, ctx)
 
     def _graph_deps(
         self, session_id: UUID, *, stop_after_outline: bool = False

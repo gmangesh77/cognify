@@ -88,6 +88,11 @@ export interface ArticleDetail {
   status: ArticleStatus;
   wordCount: number;
   workflow: WorkflowStep[];
+  // AUTHOR-011 persona voice engine fields.
+  voicePersonaId: string | null;
+  voiceMatchScore: number | null;
+  voiceScoresBySection: Record<string, number> | null;
+  fewShotSampleIds: string[];
 }
 
 // AUTHOR-006 — metadata editing wire types

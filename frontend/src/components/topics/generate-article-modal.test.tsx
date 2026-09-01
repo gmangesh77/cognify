@@ -29,6 +29,22 @@ vi.mock("@/lib/api/trends", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-personas", () => ({
+  usePersonas: () => ({
+    personas: [
+      {
+        id: "voice-1",
+        name: "House Voice",
+        description: null,
+        sample_count: 6,
+        ready: true,
+        updated_at: "",
+      },
+    ],
+    isLoading: false,
+  }),
+}));
+
 vi.mock("@/lib/api/briefs", () => ({
   fetchBriefs: vi.fn().mockResolvedValue([
     {
@@ -43,6 +59,7 @@ vi.mock("@/lib/api/briefs", () => ({
       length_target: "long",
       structural_diagram_mode: "mermaid",
       require_outline_approval: true,
+      voice_persona_id: "voice-1",
       created_at: "",
       updated_at: "",
     },
@@ -291,8 +308,32 @@ describe("GenerateArticleModal", () => {
         length_target: "long",
         structural_diagram_mode: "mermaid",
         require_outline_approval: true,
+        voice_persona_id: "voice-1",
       }),
     );
+  });
+
+  it("omits voice_persona_id when no voice is selected", async () => {
+    const onConfirm = vi.fn();
+    renderModal({ onConfirm });
+    await screen.findByDisplayValue("security engineers");
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }));
+    await waitFor(() => expect(onConfirm).toHaveBeenCalled());
+    const [, params] = onConfirm.mock.calls[0];
+    expect(params.voice_persona_id).toBeUndefined();
+  });
+
+  it("sends voice_persona_id when a voice is selected", async () => {
+    const onConfirm = vi.fn();
+    renderModal({ onConfirm });
+    await screen.findByDisplayValue("security engineers");
+    fireEvent.change(screen.getByLabelText("Voice"), {
+      target: { value: "voice-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate" }));
+    await waitFor(() => expect(onConfirm).toHaveBeenCalled());
+    const [, params] = onConfirm.mock.calls[0];
+    expect(params.voice_persona_id).toBe("voice-1");
   });
 
   it("unticking 'Review outline' on a saved brief sends an explicit false", async () => {

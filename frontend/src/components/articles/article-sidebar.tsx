@@ -5,6 +5,7 @@ import { DomainBadge } from "@/components/common/domain-badge";
 import { UsageBadge } from "@/components/visuals/UsageBadge";
 import { useArticleUsage } from "@/hooks/use-session-usage";
 import { WorkflowSteps } from "./workflow-steps";
+import { VoiceMatchChip } from "./voice-match-chip";
 import type { ArticleDetail } from "@/types/articles";
 
 interface ArticleSidebarProps {
@@ -52,6 +53,18 @@ export function ArticleSidebar({
           <div><span className="text-neutral-500">Generated:</span> {formatTimeAgo(article.generatedAt)}</div>
         </div>
       </div>
+
+      {article.voiceMatchScore != null && (
+        <div className="rounded-lg border border-neutral-200 p-4">
+          <h4 className="text-xs font-medium uppercase text-neutral-400">Voice match</h4>
+          <div className="mt-2">
+            <VoiceMatchChip
+              score={article.voiceMatchScore}
+              bySection={article.voiceScoresBySection}
+            />
+          </div>
+        </div>
+      )}
 
       {usage && (
         <div className="rounded-lg border border-neutral-200 p-4">

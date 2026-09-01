@@ -135,4 +135,6 @@ export interface ArticleParams {
   content_type?: BriefContentType;
   length_target?: LengthTarget;
   audience_persona?: string;
+  /** Persona to draft this article in (AUTHOR-011). */
+  voice_persona_id?: string;
 }

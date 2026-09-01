@@ -98,4 +98,31 @@ describe("ArticleSidebar", () => {
     fireEvent.click(screen.getByText("Repurpose for LinkedIn"));
     expect(handler).toHaveBeenCalled();
   });
+
+  it("does not render the voice match card when voiceMatchScore is absent", () => {
+    render(
+      <ArticleSidebar
+        article={mockArticle as ArticleDetail}
+        onPublish={vi.fn()}
+        onRepurposeLinkedin={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("Voice match")).not.toBeInTheDocument();
+  });
+
+  it("renders the voice match card when voiceMatchScore is present", () => {
+    render(
+      <ArticleSidebar
+        article={{
+          ...mockArticle,
+          voiceMatchScore: 82,
+          voiceScoresBySection: { "0": 90 },
+        } as ArticleDetail}
+        onPublish={vi.fn()}
+        onRepurposeLinkedin={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Voice match")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Voice match: 82/ })).toBeInTheDocument();
+  });
 });

@@ -97,7 +97,9 @@ class ImageAssetResponse(BaseModel):
     url: str
     caption: str | None
     alt_text: str | None
-    metadata: dict[str, str | int | float] | None = None
+    # Values may be None: the VISUAL-013 render node persists
+    # heading_text/paragraph_index as null when a spec has no placement hint.
+    metadata: dict[str, str | int | float | None] | None = None
 
 
 class AttachVisualRequest(BaseModel):
@@ -111,7 +113,7 @@ class AttachVisualRequest(BaseModel):
     url: str
     caption: str | None = None
     alt_text: str | None = None
-    metadata: dict[str, str | int | float] | None = None
+    metadata: dict[str, str | int | float | None] | None = None
 
 
 class SEOMetadataResponse(BaseModel):
@@ -139,6 +141,12 @@ class CanonicalArticleResponse(BaseModel):
     provenance: ProvenanceResponse
     ai_generated: bool
     status: str = "draft"  # AUTHOR-007 editorial state
+    # AUTHOR-011 — persona voice engine v1 outputs.
+    audience_persona: str | None = None
+    voice_persona_id: UUID | None = None
+    voice_match_score: int | None = None
+    voice_scores_by_section: dict[str, int] | None = None
+    few_shot_sample_ids: list[UUID] = []
 
 
 class PaginatedArticlesResponse(BaseModel):

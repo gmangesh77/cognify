@@ -24,6 +24,7 @@ class SessionParams(BaseModel):
     content_type: str | None = None
     length_target: str | None = None
     audience_persona: str | None = None
+    voice_persona_id: UUID | None = None
 
     @classmethod
     def from_brief(cls, brief: Brief) -> "SessionParams":
@@ -39,4 +40,5 @@ class SessionParams(BaseModel):
             content_type=str(brief.content_type),
             length_target=brief.length_target,
             audience_persona=brief.audience_persona,
+            voice_persona_id=brief.voice_persona_id,
         )
