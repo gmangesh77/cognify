@@ -10,13 +10,23 @@ from src.services.persona.fingerprint import (
 )
 from src.services.persona.lexicon import DIM_LABELS
 from src.services.persona.prompt_block import build_voice_block
-from src.services.persona.scoring import band_for, score_sections, score_text
+from src.services.persona.scoring import (
+    DEVIATION_Z,
+    MIN_CONFIDENCE,
+    SHORT_SECTION_WORDS,
+    band_for,
+    score_sections,
+    score_text,
+)
 
 __all__ = [
+    "DEVIATION_Z",
     "DIMENSIONS",
     "DIM_LABELS",
+    "MIN_CONFIDENCE",
     "InsufficientSamples",
     "PickResult",
+    "SHORT_SECTION_WORDS",
     "band_for",
     "build_fingerprint",
     "build_voice_block",

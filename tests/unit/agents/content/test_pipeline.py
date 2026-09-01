@@ -465,3 +465,62 @@ class TestContentPipelineWithHumanize:
         )
         assert result.get("section_drafts") is not None
         assert len(result["section_drafts"]) == 2
+
+
+class TestVoiceEngineWiring:
+    """AUTHOR-011 — score_voice/fix_voice_deviations node set is flagged."""
+
+    def test_node_set_excludes_voice_nodes_when_flag_off(self) -> None:
+        from unittest.mock import AsyncMock
+
+        from src.config.settings import Settings
+
+        llm = AsyncMock()
+        settings = Settings(
+            _env_file=None, enable_voice_engine=False, enable_image_planner=False
+        )
+        graph = build_content_graph(llm, settings=settings)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "score_voice" not in node_names
+        assert "fix_voice_deviations" not in node_names
+
+    def test_node_set_includes_voice_nodes_when_flag_on(self) -> None:
+        from unittest.mock import AsyncMock
+
+        from src.config.settings import Settings
+
+        llm = AsyncMock()
+        settings = Settings(
+            _env_file=None, enable_voice_engine=True, enable_image_planner=False
+        )
+        graph = build_content_graph(llm, settings=settings)
+        node_names = list(graph.get_graph().nodes.keys())
+        assert "score_voice" in node_names
+        assert "fix_voice_deviations" in node_names
+
+    async def test_full_run_without_persona_completes_and_omits_voice_score(
+        self,
+    ) -> None:
+        """Flag on, but no persona seeded in state: nodes no-op, pipeline
+        still finishes end to end (L-007 — same response count as before)."""
+        from src.config.settings import Settings
+
+        responses = _full_pipeline_responses()
+        llm = FakeListChatModel(responses=responses)
+        settings = Settings(
+            _env_file=None, enable_voice_engine=True, enable_image_planner=False
+        )
+        graph = build_content_graph(llm, settings=settings)
+        result = await graph.ainvoke(
+            {
+                "topic": _make_topic(),
+                "research_plan": _make_plan(),
+                "findings": _make_findings(),
+                "session_id": uuid4(),
+                "outline": None,
+                "status": "outline_generating",
+                "error": None,
+            }
+        )
+        assert result["status"] != "failed"
+        assert "voice_match_score" not in result

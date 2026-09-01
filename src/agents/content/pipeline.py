@@ -31,6 +31,11 @@ from src.agents.content.nodes import (
     make_validate_node,
 )
 from src.agents.content.seo_node import make_seo_node
+from src.agents.content.voice_nodes import (
+    make_fix_voice_node,
+    make_score_voice_node,
+    make_voice_router,
+)
 from src.config.settings import Settings
 from src.models.content import ImageAsset
 from src.models.content_pipeline import (
@@ -39,6 +44,7 @@ from src.models.content_pipeline import (
     SectionQueries,
     SEOResult,
 )
+from src.models.persona import VoiceFingerprint
 from src.models.research import FacetFindings, ResearchPlan, TopicInput
 from src.models.visual import ImageSpec
 from src.services.milvus_retriever import MilvusRetriever
@@ -95,6 +101,11 @@ class ContentState(TypedDict):
     audience_persona: NotRequired[str | None]
     # AUTHOR-011 — measured voice persona (separate from audience_persona).
     voice_persona_id: NotRequired[UUID | None]
+    voice_fingerprint: NotRequired[VoiceFingerprint | None]
+    voice_block: NotRequired[str | None]
+    few_shot_sample_ids: NotRequired[list[UUID]]
+    voice_scores_by_section: NotRequired[dict[str, int]]
+    voice_match_score: NotRequired[int | None]
     # AUTHOR-003 — denormalised Brief id, threaded through for Provenance (Task 7).
     brief_id: NotRequired[UUID | None]
     # VISUAL-012 — "illustration" (diffusion) or "mermaid" for structural diagrams.
@@ -161,6 +172,8 @@ def _extract_output(name: str, result: dict) -> dict:  # type: ignore[type-arg]
         count = len(outline.sections) if hasattr(outline, "sections") else 0
         title = getattr(outline, "title", "")
         return {"sections": count, "title": title}
+    if "voice_match_score" in result:
+        return {"voice_match_score": result["voice_match_score"]}
     if "section_drafts" in result:
         drafts = result["section_drafts"]
         return {"sections_drafted": len(drafts)}
@@ -182,6 +195,38 @@ def _extract_output(name: str, result: dict) -> dict:  # type: ignore[type-arg]
         visuals = result.get("visuals") or []
         return {"visuals_count": len(visuals)}
     return {"done": True}
+
+
+def _voice_nodes(
+    llm: BaseChatModel, settings: Settings, deps: ContentGraphDeps | None
+) -> tuple[object, object]:
+    """Build the wrapped score/fix voice nodes (AUTHOR-011, spec §4.5)."""
+    score_node = _wrap_node("score_voice", make_score_voice_node(), deps)
+    fix_node = _wrap_node(
+        "fix_voice", make_fix_voice_node(llm, settings.voice_fix_threshold), deps
+    )
+    return score_node, fix_node
+
+
+def _wire_voice(
+    graph: StateGraph,  # type: ignore[type-arg]
+    threshold: int,
+    nodes: tuple[object, object],
+) -> None:
+    """Add the score/fix voice nodes + edges after `humanize` (AUTHOR-011)."""
+    score_node, fix_node = nodes
+    graph.add_node("score_voice", score_node)
+    graph.add_node("fix_voice_deviations", fix_node)
+    graph.add_edge("humanize", "score_voice")
+    graph.add_conditional_edges(
+        "score_voice",
+        make_voice_router(threshold),
+        {
+            "fix_voice_deviations": "fix_voice_deviations",
+            "seo_optimize": "seo_optimize",
+        },
+    )
+    graph.add_edge("fix_voice_deviations", "seo_optimize")
 
 
 def build_content_graph(
@@ -262,7 +307,11 @@ def build_content_graph(
     graph.add_edge("draft_sections", "validate_article")
     graph.add_edge("validate_article", "manage_citations")
     graph.add_edge("manage_citations", "humanize")
-    graph.add_edge("humanize", "seo_optimize")
+    if settings is not None and settings.enable_voice_engine:
+        voice_nodes = _voice_nodes(llm, settings, deps)
+        _wire_voice(graph, settings.voice_fix_threshold, voice_nodes)
+    else:
+        graph.add_edge("humanize", "seo_optimize")
 
     if image_planner_enabled:
         # New visual pipeline owns all imagery: hero + per-section
