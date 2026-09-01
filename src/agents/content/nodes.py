@@ -377,16 +377,11 @@ async def _redraft_shortest(
         update={"target_word_count": section.target_word_count * 2},
     )
     sq = _find_queries(state.get("section_queries", []), idx)
-    ctx = DraftingContext(
-        retriever=retriever,
-        topic_id=str(topic.id),
-        llm=llm,
-        prior_drafts=[d for d in drafts if d.section_index != idx],
-        target_audience=state.get("target_audience"),
-        content_tone=state.get("content_tone"),
-        preferred_angle=state.get("preferred_angle"),
-        keywords=state.get("keywords"),
-    )
+    # Built via `_make_draft_ctx` (not a second inline `DraftingContext`)
+    # so the redraft path can't drift from the normal per-section path —
+    # e.g. AUTHOR-011's `voice_block` (review round 1).
+    deps = _DraftDeps(state=state, retriever=retriever, llm=llm, topic=topic)
+    ctx = _make_draft_ctx(deps, [d for d in drafts if d.section_index != idx])
     new_draft = await draft_section(expanded, sq, ctx)
     logger.info("section_redraft_triggered", section_index=idx)
     return replace_section(drafts, new_draft)

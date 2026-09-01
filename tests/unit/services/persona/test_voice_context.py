@@ -5,10 +5,11 @@ from __future__ import annotations
 from uuid import UUID, uuid4
 
 import pytest
+import structlog.testing
 
 from src.db.persona_repository_memory import InMemoryPersonaRepository
 from src.models.persona import PersonaCreate, SampleCreate, VoiceFingerprint
-from src.services.persona.fingerprint import build_fingerprint
+from src.services.persona.fingerprint import DIM_LABELS, build_fingerprint
 from src.services.persona.voice_context import VoiceContextInput, build_voice_state
 
 _QUERY = "Kubernetes Networking\nHow pods talk to each other."
@@ -79,9 +80,14 @@ class TestDegradedCases:
             async def get(self, persona_id: UUID) -> None:
                 raise RuntimeError("db down")
 
-        ctx = VoiceContextInput(voice_persona_id=uuid4(), query=_QUERY)
-        result = await build_voice_state(_BoomRepo(), _no_embed, ctx)  # type: ignore[arg-type]
+        persona_id = uuid4()
+        ctx = VoiceContextInput(voice_persona_id=persona_id, query=_QUERY)
+        with structlog.testing.capture_logs() as logs:
+            result = await build_voice_state(_BoomRepo(), _no_embed, ctx)  # type: ignore[arg-type]
         assert result == {}
+        failures = [log for log in logs if log["event"] == "voice_context_failed"]
+        assert len(failures) == 1
+        assert failures[0]["persona_id"] == str(persona_id)
 
     @pytest.mark.asyncio
     async def test_embed_none_falls_back_to_cold_path(self) -> None:
@@ -141,3 +147,4 @@ class TestHappyPath:
             d for d, s in persona.fingerprint.dims.items() if s.confidence >= 0.5
         ]
         assert confident_dims, "fixture fingerprint should have >=1 confident dim"
+        assert any(DIM_LABELS.get(d, d) in block for d in confident_dims)

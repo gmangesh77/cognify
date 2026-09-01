@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -8,6 +9,8 @@ import structlog
 from fastapi import FastAPI
 
 if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
     from src.services.embeddings import EmbeddingService
     from src.services.milvus_service import MilvusRetriever
 from fastapi.exceptions import RequestValidationError
@@ -161,6 +164,32 @@ def _get_or_create_embedding_service(app: FastAPI) -> EmbeddingService:
     return app.state.embedding_service  # type: ignore[no-any-return]
 
 
+def _wire_persona_repo(
+    app: FastAPI,
+    sf: async_sessionmaker[AsyncSession],
+    content_deps: ContentDeps,
+) -> ContentDeps:
+    """AUTHOR-011 — build the PG persona repo/service and fold it into
+    `content_deps` BEFORE `ContentService` is constructed.
+
+    `ContentDeps` is frozen: a later `app.state.persona_repo` reassignment
+    does not reach a `ContentService` already built from an earlier
+    `content_deps` snapshot. Review round 1 found the DB branch used to
+    build `ContentService` first and only reassign `app.state.persona_repo`
+    afterward — the pipeline silently kept reading the in-memory seed repo
+    from `create_app()` instead of Postgres whenever the anthropic key came
+    from `.env` (the only rebuild path was gated on a *resolved* DB key).
+    """
+    from src.db.persona_repository import PgPersonaRepository
+
+    app.state.persona_repo = PgPersonaRepository(sf)
+    app.state.persona_service = PersonaService(
+        app.state.persona_repo,
+        embed=lambda texts: _get_or_create_embedding_service(app).try_embed(texts),
+    )
+    return replace(content_deps, persona_repo=app.state.persona_repo)
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
     """Lifespan handler: wires PG repos and LLM services."""
@@ -209,6 +238,11 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         engine = create_db_engine(db_url)
         app.state.db_engine = engine
         sf = get_session_factory(engine)
+
+        # AUTHOR-011 — must run before `ContentService(...)` below so the
+        # PG persona repo (not the in-memory seed) is baked into the deps
+        # it is built from (review round 1 — see `_wire_persona_repo`).
+        content_deps = _wire_persona_repo(app, sf, content_deps)
 
         # Re-wire research service with PG repos
         step_repo = PgAgentStepRepository(sf)
@@ -294,16 +328,6 @@ async def _lifespan(app: FastAPI):  # type: ignore[no-untyped-def]
         from src.db.prompt_override_repository import PgPromptOverrideRepository
 
         app.state.prompt_override_repo = PgPromptOverrideRepository(sf)
-        # AUTHOR-011 — persona voice engine. Lazy import: API boots before
-        # migration. Embedding access stays lazy (`_get_or_create_...`) so
-        # this works whether or not the model has warmed up yet.
-        from src.db.persona_repository import PgPersonaRepository
-
-        app.state.persona_repo = PgPersonaRepository(sf)
-        app.state.persona_service = PersonaService(
-            app.state.persona_repo,
-            embed=lambda texts: _get_or_create_embedding_service(app).try_embed(texts),
-        )
         # Resolve API keys: DB overrides .env
         resolver = ApiKeyResolver(api_key_repo, settings)
         resolved = await resolver.resolve_all()

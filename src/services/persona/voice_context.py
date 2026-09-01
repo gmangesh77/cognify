@@ -53,7 +53,11 @@ async def build_voice_state(
     try:
         return await _resolve(repo, embed or _no_embed, ctx)
     except Exception as exc:  # noqa: BLE001 — voice lookup must never fail a run
-        logger.warning("voice_context_failed", error=str(exc))
+        logger.warning(
+            "voice_context_failed",
+            persona_id=str(ctx.voice_persona_id),
+            error=str(exc),
+        )
         return {}
 
 
