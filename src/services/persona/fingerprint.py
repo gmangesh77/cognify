@@ -23,6 +23,7 @@ __all__ = [
     "DIM_LABELS",
     "InsufficientSamples",
     "build_fingerprint",
+    "count_words",
     "text_features",
 ]
 
@@ -54,6 +55,14 @@ _DASH_RE = re.compile(r"[—–]|(?<=\s)-(?=\s)|--")
 
 class InsufficientSamples(ValueError):
     """Fewer than MIN_SAMPLES samples of MIN_SAMPLE_WORDS words."""
+
+
+def count_words(text: str) -> int:
+    """Single source of truth for "word" across the persona engine — the
+    same letter-only regex `build_fingerprint`'s validity filter uses, so
+    the 422 gate, the stored `word_count`, and fingerprint eligibility
+    never disagree (AUTHOR-011 review round 1)."""
+    return len(_WORD_RE.findall(text))
 
 
 def _prose(text: str) -> str:
@@ -156,7 +165,7 @@ def _dim_stat(values: list[float], n: int) -> DimStat:
 
 def build_fingerprint(samples: list[str]) -> VoiceFingerprint:
     """Per-dimension {mean, stddev, confidence} over the valid samples."""
-    valid = [s for s in samples if len(_WORD_RE.findall(s)) >= MIN_SAMPLE_WORDS]
+    valid = [s for s in samples if count_words(s) >= MIN_SAMPLE_WORDS]
     if len(valid) < MIN_SAMPLES:
         msg = (
             f"need {MIN_SAMPLES} samples of {MIN_SAMPLE_WORDS}+ words, "

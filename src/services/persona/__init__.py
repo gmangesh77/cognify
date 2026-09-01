@@ -5,6 +5,7 @@ from src.services.persona.fingerprint import (
     DIMENSIONS,
     InsufficientSamples,
     build_fingerprint,
+    count_words,
     text_features,
 )
 from src.services.persona.lexicon import DIM_LABELS
@@ -19,6 +20,7 @@ __all__ = [
     "band_for",
     "build_fingerprint",
     "build_voice_block",
+    "count_words",
     "excerpt",
     "pick_samples",
     "score_sections",

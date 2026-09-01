@@ -21,6 +21,7 @@ from src.services.persona.fingerprint import (
     MIN_SAMPLE_WORDS,
     InsufficientSamples,
     build_fingerprint,
+    count_words,
 )
 from src.services.persona.scoring import score_text
 
@@ -107,7 +108,7 @@ class PersonaService:
     ) -> PersonaDetail | None:
         if await self._repo.get(persona_id) is None:
             return None
-        word_count = len(data.text.split())
+        word_count = count_words(data.text)
         if word_count < MIN_SAMPLE_WORDS:
             raise SampleTooShort(word_count)
         sample = await self._repo.add_sample(persona_id, data)

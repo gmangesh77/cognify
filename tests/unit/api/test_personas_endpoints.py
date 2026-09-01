@@ -9,7 +9,7 @@ import pytest
 
 from src.config.settings import Settings
 from src.db.persona_repository import InMemoryPersonaRepository
-from src.services.persona.fingerprint import MIN_SAMPLE_WORDS
+from src.services.persona.fingerprint import MIN_SAMPLE_WORDS, count_words
 from src.services.persona.service import PersonaService
 
 from .conftest import make_auth_header
@@ -27,6 +27,17 @@ def _long_sample(seed: int) -> str:
 def _short_sample() -> str:
     """Well under MIN_SAMPLE_WORDS."""
     return "This sample is far too short for the persona voice engine to accept it."
+
+
+def _numeral_boundary_sample() -> str:
+    """150 whitespace tokens (passes a naive `text.split()` gate) but only
+    145 of them are letter-words — 5 are pure numerals, which `_WORD_RE`
+    (`[A-Za-z][A-Za-z']*`) does not match. Pins `count_words` as the single
+    source of truth: regex count (145) < MIN_SAMPLE_WORDS, so this must
+    422 even though whitespace-token count == MIN_SAMPLE_WORDS."""
+    words = ["sample"] * 145
+    numerals = ["2020", "2021", "2022", "2023", "2024"]
+    return " ".join(words + numerals)
 
 
 @pytest.fixture
@@ -106,6 +117,35 @@ class TestSamples:
         assert violations == [
             f"sample needs at least {MIN_SAMPLE_WORDS} words (has {word_count})"
         ]
+
+    async def test_numeral_tokens_dont_count_as_words_still_422(
+        self, client, auth_settings: Settings
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        persona_id = await _create_persona(client, headers)
+        text = _numeral_boundary_sample()
+        assert len(text.split()) == MIN_SAMPLE_WORDS
+        assert count_words(text) < MIN_SAMPLE_WORDS
+        resp = await client.post(
+            f"/api/v1/personas/{persona_id}/samples",
+            json={"text": text},
+            headers=headers,
+        )
+        assert resp.status_code == 422
+
+    async def test_stored_word_count_matches_count_words(
+        self, client, auth_settings: Settings
+    ) -> None:
+        headers = make_auth_header("editor", auth_settings)
+        persona_id = await _create_persona(client, headers)
+        text = _long_sample(0)
+        resp = await client.post(
+            f"/api/v1/personas/{persona_id}/samples",
+            json={"text": text},
+            headers=headers,
+        )
+        assert resp.status_code == 201
+        assert resp.json()["samples"][0]["word_count"] == count_words(text)
 
     async def test_five_samples_make_persona_ready(
         self, client, auth_settings: Settings
@@ -277,6 +317,17 @@ class TestUpdateDelete:
 
         get_resp = await client.get(f"/api/v1/personas/{persona_id}", headers=headers)
         assert get_resp.status_code == 404
+
+
+class TestServiceUnavailable:
+    async def test_missing_persona_service_is_503(
+        self, client, auth_settings: Settings, personas_app
+    ) -> None:
+        personas_app.state.persona_service = None
+        resp = await client.get(
+            "/api/v1/personas", headers=make_auth_header("viewer", auth_settings)
+        )
+        assert resp.status_code == 503
 
 
 class TestRateLimit:

@@ -11,6 +11,7 @@ from src.services.persona.fingerprint import (
     MIN_SAMPLES,
     InsufficientSamples,
     build_fingerprint,
+    count_words,
     text_features,
 )
 
@@ -81,6 +82,17 @@ class TestTextFeatures:
 
     def test_dim_labels_importable_and_complete(self) -> None:
         assert set(DIM_LABELS.keys()) == set(DIMENSIONS)
+
+
+class TestCountWords:
+    def test_pins_letter_only_regex_behaviour(self) -> None:
+        """Single source of truth for "word" across the persona engine:
+        numerals and standalone-letter abbreviation fragments (`e`, `g`
+        from "e.g.") count; hyphens split "well-known" into two words.
+        AUTHOR-011 review round 1 — pin the actual regex behaviour so the
+        422 gate, stored `word_count`, and fingerprint eligibility can
+        never drift apart again."""
+        assert count_words("well-known 2024 e.g. done") == 5
 
 
 class TestBuildFingerprint:

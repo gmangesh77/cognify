@@ -19,6 +19,7 @@ from src.models.persona import (
     SampleCreate,
     VoiceFingerprint,
 )
+from src.services.persona.fingerprint import count_words
 
 logger = structlog.get_logger()
 
@@ -43,7 +44,7 @@ class PersonaRepository(Protocol):
 
 
 def _word_count(text: str) -> int:
-    return len(text.split())
+    return count_words(text)
 
 
 def row_to_persona(row: PersonaRow) -> Persona:

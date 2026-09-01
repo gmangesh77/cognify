@@ -13,10 +13,11 @@ from src.models.persona import (
     SampleCreate,
     VoiceFingerprint,
 )
+from src.services.persona.fingerprint import count_words
 
 
 def _word_count(text: str) -> int:
-    return len(text.split())
+    return count_words(text)
 
 
 class InMemoryPersonaRepository:
