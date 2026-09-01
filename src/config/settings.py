@@ -206,6 +206,10 @@ class Settings(BaseSettings):
     # auto-continuing into article generation. Per-session override via
     # CreateResearchSessionRequest.require_outline_approval.
     require_outline_approval: bool = False
+    # Persona voice engine (AUTHOR-011). Off by default: with False the
+    # score_voice / fix_voice_deviations nodes are not added to the graph.
+    enable_voice_engine: bool = False
+    voice_fix_threshold: int = 70  # sections scoring below get ONE fix pass
     # Task dispatch (INFRA-007) — "inprocess" runs pipelines on the API
     # event loop (today's behaviour); "celery" enqueues to the worker.
     # Literal so a typo fails at boot instead of silently running inprocess.
