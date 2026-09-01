@@ -1,10 +1,11 @@
-import { Globe, Cpu, ImageIcon, Key, Search, Sliders } from "lucide-react";
+import { Globe, Cpu, ImageIcon, Key, Search, Sliders, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SettingsTab } from "@/types/settings";
 
 const TABS: { key: SettingsTab; label: string; icon: React.ElementType }[] = [
   { key: "domains", label: "Domains", icon: Globe },
   { key: "llm", label: "LLM Configuration", icon: Cpu },
+  { key: "prompts", label: "Prompts", icon: FileText },
   { key: "visuals", label: "Image Generation", icon: ImageIcon },
   { key: "api-keys", label: "API Keys", icon: Key },
   { key: "seo", label: "SEO Defaults", icon: Search },
