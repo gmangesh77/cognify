@@ -33,9 +33,21 @@ _MMDC_PATH = Path(__file__).parents[3] / "node_modules" / ".bin" / "mmdc"
 # module; absent in environments where mmdc isn't installed (no-op there).
 _PUPPETEER_CONFIG = Path(__file__).parent / "puppeteer-config.json"
 
+# Cold concurrent Chromium launches (fresh container, several renders in one
+# article) measured 13s+ on an idle event loop; the old 15s ceiling timed out
+# under real generation load and silently published articles without diagram
+# PNGs (2026-09-01). mmdc renders are rare and cheap — allow a generous cap.
+MERMAID_RENDER_TIMEOUT_SECONDS: float = 60.0
 
-async def render_mermaid(syntax: str, output_path: Path) -> bool:
+
+async def render_mermaid(
+    syntax: str,
+    output_path: Path,
+    timeout_seconds: float = MERMAID_RENDER_TIMEOUT_SECONDS,
+) -> bool:
     """Render Mermaid syntax to PNG via mmdc CLI. Returns True on success."""
+    tmp_path: Path | None = None
+    process = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".mmd", delete=False) as tmp:
             tmp.write(syntax)
@@ -50,9 +62,9 @@ async def render_mermaid(syntax: str, output_path: Path) -> bool:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        _, stderr = await asyncio.wait_for(process.communicate(), timeout=15.0)
-
-        tmp_path.unlink(missing_ok=True)
+        _, stderr = await asyncio.wait_for(
+            process.communicate(), timeout=timeout_seconds
+        )
 
         if process.returncode != 0:
             logger.warning(
@@ -69,11 +81,18 @@ async def render_mermaid(syntax: str, output_path: Path) -> bool:
         logger.warning("mmdc_not_found", path=str(_MMDC_PATH))
         return False
     except TimeoutError:
-        logger.warning("mermaid_render_timeout")
+        # Kill the wedged mmdc/Chromium — wait_for only cancels our await,
+        # the subprocess would otherwise keep running (and holding memory).
+        if process is not None and process.returncode is None:
+            process.kill()
+        logger.warning("mermaid_render_timeout", timeout_seconds=timeout_seconds)
         return False
     except Exception as exc:
         logger.warning("mermaid_render_error", error=str(exc))
         return False
+    finally:
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
 
 
 _SPEC_MERMAID_TEMPLATE = (

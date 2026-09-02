@@ -41,6 +41,44 @@ def _state(**overrides: object) -> dict[str, object]:
     return base
 
 
+class _SizedStubProvider:
+    """Provider stub returning a real PNG of the requested dimensions."""
+
+    def __init__(self, width: int, height: int) -> None:
+        self._width = width
+        self._height = height
+
+    @property
+    def name(self) -> str:
+        return "gemini_flash"
+
+    @property
+    def model(self) -> str:
+        return "stub-sized"
+
+    async def render(self, **kwargs: object) -> object:
+        from io import BytesIO
+
+        from PIL import Image
+
+        from src.services.visuals.providers.base import ImageRenderResult
+
+        buf = BytesIO()
+        Image.new("RGB", (self._width, self._height), (200, 40, 40)).save(
+            buf, format="PNG"
+        )
+        return ImageRenderResult(
+            image_bytes=buf.getvalue(),
+            mime_type="image/png",
+            width=self._width,
+            height=self._height,
+            prompt_used="p",
+            model="stub-sized",
+            provider="gemini_flash",
+            latency_ms=1,
+        )
+
+
 def _build_registry() -> tuple[ImageProviderRegistry, StubImageProvider]:
     stub = StubImageProvider()
     reg = ImageProviderRegistry()
@@ -264,9 +302,11 @@ class TestImageRenderNode:
         completion = [e for e in logs if e["event"] == "mermaid_asset_complete"]
         assert len(completion) == 1
         assert completion[0]["rendered"] is False
-        # The asset is still emitted with the fallback URL for client render.
+        # The asset is still emitted with the fallback URL for client render,
+        # and the persisted flag tells publishing there is no PNG behind it.
         assert asset.url
         assert asset.metadata.get("mermaid_syntax") == "flowchart TD; A-->B"
+        assert asset.metadata.get("png_rendered") == 0
 
     async def test_mermaid_render_success_logs_rendered_true(self) -> None:
         """When mmdc produces a PNG, mermaid_asset_complete reports
@@ -282,7 +322,9 @@ class TestImageRenderNode:
             )
         ]
 
-        async def _fake_render(syntax: str, output_path: Path) -> bool:
+        async def _fake_render(
+            syntax: str, output_path: Path, timeout_seconds: float = 60.0
+        ) -> bool:
             Path(output_path).write_bytes(b"PNGDATA")
             return True
 
@@ -298,11 +340,134 @@ class TestImageRenderNode:
                 ),
                 structlog.testing.capture_logs() as logs,
             ):
-                await node(_state(image_specs=specs))
+                asset = (await node(_state(image_specs=specs)))["visuals"][0]
 
         completion = [e for e in logs if e["event"] == "mermaid_asset_complete"]
         assert len(completion) == 1
         assert completion[0]["rendered"] is True
+        assert asset.metadata.get("png_rendered") == 1
+
+    async def test_mermaid_timeout_setting_reaches_render_call(self) -> None:
+        reg, _ = _build_registry()
+        specs = [
+            _spec(
+                spec_id="diag",
+                role_style="concept",
+                placement=ImagePlacement(anchor="top", section_index=1),
+                mermaid_syntax="flowchart TD; A-->B",
+            )
+        ]
+        captured: dict[str, float] = {}
+
+        async def _fake_render(
+            syntax: str, output_path: Path, timeout_seconds: float
+        ) -> bool:
+            captured["timeout"] = timeout_seconds
+            return False
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg,
+                storage=storage,
+                default_provider="gemini_flash",
+                mermaid_timeout=42.0,
+            )
+            with patch(
+                "src.agents.content.diagram_generator.render_mermaid",
+                new=_fake_render,
+            ):
+                await node(_state(image_specs=specs))
+        assert captured["timeout"] == 42.0
+
+    async def test_mermaid_renders_are_bounded_by_the_semaphore(self) -> None:
+        """Each mermaid render launches a Chromium — they must share the
+        node's concurrency bound instead of fanning out unbounded."""
+        import asyncio
+
+        reg, _ = _build_registry()
+        specs = [
+            _spec(
+                spec_id=f"diag{i}",
+                role_style="concept",
+                placement=ImagePlacement(anchor="top", section_index=i),
+                mermaid_syntax="flowchart TD; A-->B",
+            )
+            for i in range(4)
+        ]
+        active = {"now": 0, "peak": 0}
+
+        async def _fake_render(
+            syntax: str, output_path: Path, timeout_seconds: float
+        ) -> bool:
+            active["now"] += 1
+            active["peak"] = max(active["peak"], active["now"])
+            await asyncio.sleep(0.01)
+            active["now"] -= 1
+            return False
+
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg,
+                storage=storage,
+                default_provider="gemini_flash",
+                concurrency=1,
+            )
+            with patch(
+                "src.agents.content.diagram_generator.render_mermaid",
+                new=_fake_render,
+            ):
+                await node(_state(image_specs=specs))
+        assert active["peak"] == 1
+
+    async def test_hero_render_is_normalized_to_canonical_16_9(self) -> None:
+        """gpt-image-1 returns 3:2 (1536x1024); a hero/cover render must be
+        center-cropped + resized to the 1600x900 canonical before storage —
+        the legacy illustration path already did this, the planner path
+        published raw provider dimensions (oversized 3:2 heroes on Ghost)."""
+        from io import BytesIO
+
+        from PIL import Image
+
+        from src.agents.content.illustration_generator import HERO_CANONICAL_SIZE
+
+        reg = ImageProviderRegistry()
+        reg.register(_SizedStubProvider(1536, 1024))  # type: ignore[arg-type]
+        specs = [_spec(spec_id="cover", role_style="hero")]
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            asset = (await node(_state(image_specs=specs)))["visuals"][0]
+            with Image.open(BytesIO(Path(asset.url).read_bytes())) as img:
+                assert img.size == HERO_CANONICAL_SIZE
+
+    async def test_section_visual_keeps_provider_dimensions(self) -> None:
+        """Only heroes/covers are canonicalized — inline diagrams and cards
+        keep whatever the provider produced."""
+        from io import BytesIO
+
+        from PIL import Image
+
+        reg = ImageProviderRegistry()
+        reg.register(_SizedStubProvider(1536, 1024))  # type: ignore[arg-type]
+        specs = [
+            _spec(
+                spec_id="card",
+                role_style="concept",
+                placement=ImagePlacement(anchor="top", section_index=1),
+            )
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            asset = (await node(_state(image_specs=specs)))["visuals"][0]
+            with Image.open(BytesIO(Path(asset.url).read_bytes())) as img:
+                assert img.size == (1536, 1024)
 
     async def test_provider_failure_skips_spec(self) -> None:
         class ExplodingProvider:

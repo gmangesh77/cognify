@@ -30,6 +30,7 @@ from fastapi import status as http_status
 from langchain_anthropic import ChatAnthropic
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.agents.content.image_render_node import canonicalize_hero_render
 from src.api.auth.schemas import TokenPayload
 from src.api.dependencies import require_editor_or_above
 from src.api.rate_limiter import limiter
@@ -298,6 +299,11 @@ async def render_spec(
             status_code=http_status.HTTP_502_BAD_GATEWAY,
             detail=f"render failed: {exc}",
         ) from exc
+
+    if body.spec.role_style == "hero" or body.spec.placement.anchor == "cover":
+        # Same 1600x900 canonicalization as the pipeline render node — a
+        # Studio cover re-render must not reintroduce raw 3:2 heroes.
+        result = await canonicalize_hero_render(result, spec_id=body.spec.id)
 
     stored = await _persist_render(
         storage=storage,

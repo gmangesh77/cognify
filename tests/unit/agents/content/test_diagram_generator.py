@@ -6,7 +6,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.agents.content.diagram_generator import propose_diagrams, render_mermaid
+from src.agents.content.diagram_generator import (
+    MERMAID_RENDER_TIMEOUT_SECONDS,
+    propose_diagrams,
+    render_mermaid,
+)
 from src.models.content_pipeline import SectionDraft
 from src.models.visual import DiagramType
 
@@ -60,6 +64,79 @@ class TestRenderMermaid:
         with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             result = await render_mermaid("invalid syntax", output_file)
         assert result is False
+
+    def test_render_timeout_allows_cold_concurrent_chromium_launches(self) -> None:
+        # Two concurrent first-run mmdc renders measured 13.1s on an idle
+        # loop; the old 15s ceiling timed out under real generation load
+        # (2026-09-01 regression — three articles published without PNGs).
+        assert MERMAID_RENDER_TIMEOUT_SECONDS >= 60
+
+    @pytest.mark.asyncio
+    async def test_render_passes_configured_timeout_to_wait_for(
+        self, tmp_path: Path
+    ) -> None:
+        output_file = tmp_path / "test.png"
+        mock_process = AsyncMock()
+        mock_process.returncode = 0
+        mock_process.communicate = AsyncMock(return_value=(b"", b""))
+        captured: dict[str, float] = {}
+
+        async def _fake_wait_for(
+            awaitable: object, timeout: float
+        ) -> tuple[bytes, bytes]:
+            captured["timeout"] = timeout
+            return await awaitable  # type: ignore[misc]
+
+        with (
+            patch("asyncio.create_subprocess_exec", return_value=mock_process),
+            patch("asyncio.wait_for", new=_fake_wait_for),
+        ):
+            await render_mermaid("graph TD\n    A-->B", output_file)
+        assert captured["timeout"] == MERMAID_RENDER_TIMEOUT_SECONDS
+
+    @pytest.mark.asyncio
+    async def test_timeout_kills_the_subprocess(self, tmp_path: Path) -> None:
+        # wait_for only cancels our await — the wedged mmdc/Chromium must be
+        # killed explicitly or it leaks (one orphan per timed-out render).
+        output_file = tmp_path / "test.png"
+        mock_process = AsyncMock()
+        mock_process.returncode = None
+        mock_process.kill = MagicMock()
+
+        async def _timeout(awaitable: object, timeout: float) -> None:
+            close = getattr(awaitable, "close", None)
+            if callable(close):
+                close()  # avoid "coroutine never awaited" warnings
+            raise TimeoutError
+
+        with (
+            patch("asyncio.create_subprocess_exec", return_value=mock_process),
+            patch("asyncio.wait_for", new=_timeout),
+        ):
+            result = await render_mermaid("graph TD\n    A-->B", output_file)
+        assert result is False
+        mock_process.kill.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_explicit_timeout_argument_wins(self, tmp_path: Path) -> None:
+        output_file = tmp_path / "test.png"
+        mock_process = AsyncMock()
+        mock_process.returncode = 0
+        mock_process.communicate = AsyncMock(return_value=(b"", b""))
+        captured: dict[str, float] = {}
+
+        async def _fake_wait_for(
+            awaitable: object, timeout: float
+        ) -> tuple[bytes, bytes]:
+            captured["timeout"] = timeout
+            return await awaitable  # type: ignore[misc]
+
+        with (
+            patch("asyncio.create_subprocess_exec", return_value=mock_process),
+            patch("asyncio.wait_for", new=_fake_wait_for),
+        ):
+            await render_mermaid("graph TD\n    A-->B", output_file, 42.0)
+        assert captured["timeout"] == 42.0
 
     @pytest.mark.asyncio
     async def test_returns_false_on_file_not_found(self, tmp_path: Path) -> None:

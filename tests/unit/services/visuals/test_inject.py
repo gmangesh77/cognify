@@ -562,3 +562,90 @@ class TestInjectMultiSpecOrdering:
         assert a_idx != -1 and b_idx != -1
         # `top` precedes `between_paragraphs`.
         assert a_idx < b_idx
+
+
+def _mermaid_visual(
+    spec_id: str,
+    *,
+    url: str,
+    section_index: int = 1,
+    png_rendered: int | None = None,
+) -> ImageAsset:
+    """A planner mermaid visual as persisted by `_render_mermaid_asset`.
+
+    `png_rendered=None` mimics rows written before the flag existed.
+    """
+    metadata: dict[str, object] = {
+        "spec_id": spec_id,
+        "role_style": "concept",
+        "section_index": section_index,
+        "placement_anchor": "top",
+        "diagram_type": "flowchart",
+        "mermaid_syntax": "flowchart TD; A-->B",
+        "provider": "mermaid",
+    }
+    if png_rendered is not None:
+        metadata["png_rendered"] = png_rendered
+    return ImageAsset(
+        url=url,
+        caption="Caption " + spec_id,
+        alt_text="alt " + spec_id,
+        metadata=metadata,
+    )
+
+
+class TestUnrenderedMermaidSkipped:
+    """When mmdc fails at generation time, `_render_mermaid_asset` still
+    emits the asset with the bare object key as its URL (the dashboard
+    renders client-side from `mermaid_syntax`). Publishing must NOT turn
+    that bare key into a guaranteed-404 `<img>` (the 2026-09-01 Ghost bug —
+    diagrams "missing" from the published post)."""
+
+    def test_bare_key_mermaid_visual_is_not_published(self) -> None:
+        visual = _mermaid_visual(
+            "diag", url="sessions/abc/visuals/2026/09/diag-1234.png"
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        assert _img_count(result, "diag") == 0
+        assert "sessions/abc" not in result
+
+    def test_rendered_mermaid_with_http_url_still_published(self) -> None:
+        visual = _mermaid_visual(
+            "diag", url="https://cdn.test/visuals/sessions/abc/diag.png"
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        assert _img_count(result, "diag") == 1
+
+    def test_rendered_mermaid_with_generated_assets_path_still_published(self) -> None:
+        visual = _mermaid_visual(
+            "diag", url="generated_assets/visuals/sessions/abc/diag.png"
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        assert _img_count(result, "diag") == 1
+
+    def test_rendered_mermaid_with_local_path_still_published(self) -> None:
+        visual = _mermaid_visual("diag", url="/app/generated_assets/visuals/diag.png")
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        assert _img_count(result, "diag") == 1
+
+    def test_png_rendered_flag_beats_url_sniff_for_bare_keys(self) -> None:
+        # MinIO without a public URL legitimately stores the bare key for a
+        # SUCCESSFUL render — the persisted flag must keep it published.
+        visual = _mermaid_visual(
+            "diag", url="sessions/abc/visuals/diag.png", png_rendered=1
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        assert _img_count(result, "diag") == 1
+
+    def test_png_rendered_zero_skips_even_with_resolvable_url(self) -> None:
+        visual = _mermaid_visual(
+            "diag", url="https://cdn.test/visuals/diag.png", png_rendered=0
+        )
+        article = _article(image_specs=[], visuals=[visual])
+        result = inject_visuals(article, _ctx())
+        assert _img_count(result, "diag") == 0

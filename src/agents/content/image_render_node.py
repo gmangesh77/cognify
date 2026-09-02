@@ -24,6 +24,7 @@ from uuid import UUID
 
 import structlog
 
+from src.agents.content.diagram_generator import MERMAID_RENDER_TIMEOUT_SECONDS
 from src.models.content import ImageAsset
 from src.models.visual import ImageSpec
 from src.services.visuals.object_storage import (
@@ -48,6 +49,7 @@ def make_image_render_node(
     storage: ObjectStorage,
     default_provider: str = "gemini_flash",
     concurrency: int = 3,
+    mermaid_timeout: float = MERMAID_RENDER_TIMEOUT_SECONDS,
 ) -> Any:  # noqa: ANN401
     """Factory returning the LangGraph render node fn."""
     sem = asyncio.Semaphore(max(1, concurrency))
@@ -59,9 +61,14 @@ def make_image_render_node(
     ) -> ImageAsset | None:
         # VISUAL-012 — Mermaid path: when the planner attached mermaid_syntax
         # (structural role + mermaid mode), render it deterministically via
-        # mermaid-cli instead of calling a diffusion provider.
+        # mermaid-cli instead of calling a diffusion provider. Runs under the
+        # same semaphore — each render launches a Chromium, and unbounded
+        # concurrent cold launches are what pushed renders past the timeout.
         if spec.mermaid_syntax:
-            return await _render_mermaid_asset(spec, storage, session_id)
+            async with sem:
+                return await _render_mermaid_asset(
+                    spec, storage, session_id, timeout_seconds=mermaid_timeout
+                )
 
         provider = _resolve_provider(spec, registry, default_provider)
         if provider is None:
@@ -98,6 +105,12 @@ def make_image_render_node(
                 return None
             elapsed_ms = int((time.perf_counter() - started) * 1000)
 
+        canonicalized = False
+        if spec.role_style == "hero" or spec.placement.anchor == "cover":
+            normalized = await canonicalize_hero_render(result, spec_id=spec.id)
+            canonicalized = normalized is not result
+            result = normalized
+
         try:
             stored = await _persist(
                 storage=storage,
@@ -113,12 +126,17 @@ def make_image_render_node(
             )
             return None
 
-        return _build_asset(
+        asset = _build_asset(
             spec=spec,
             result=result,
             stored=stored,
             generation_ms=elapsed_ms,
         )
+        if canonicalized:
+            # The stored pixels are 1600x900 regardless of what the spec
+            # requested — keep the persisted metadata truthful.
+            asset.metadata["aspect_ratio"] = "16:9"
+        return asset
 
     async def image_render_node(state: dict[str, Any]) -> dict[str, Any]:
         existing = list(state.get("visuals") or [])
@@ -157,6 +175,36 @@ def _resolve_provider(
     return None
 
 
+async def canonicalize_hero_render(
+    result: ImageRenderResult, *, spec_id: str
+) -> ImageRenderResult:
+    """Center-crop + resize hero/cover renders to the 1600x900 canonical.
+
+    Providers return their native shapes (gpt-image-1: 1536x1024, 3:2) which
+    render oversized in Ghost's 16:9 feature-image slot. Best-effort: on any
+    failure the original render is kept — never crash the pipeline.
+    """
+    from src.agents.content.illustration_generator import (
+        HERO_CANONICAL_HEIGHT,
+        HERO_CANONICAL_WIDTH,
+        normalize_hero_image,
+    )
+
+    try:
+        normalized = await asyncio.to_thread(normalize_hero_image, result.image_bytes)
+    except Exception as exc:  # noqa: BLE001 — keep the un-normalized render
+        logger.warning("hero_normalize_failed", spec_id=spec_id, error=str(exc))
+        return result
+    return result.model_copy(
+        update={
+            "image_bytes": normalized,
+            "mime_type": "image/png",
+            "width": HERO_CANONICAL_WIDTH,
+            "height": HERO_CANONICAL_HEIGHT,
+        }
+    )
+
+
 async def _persist(
     *,
     storage: ObjectStorage,
@@ -179,6 +227,8 @@ async def _render_mermaid_asset(
     spec: ImageSpec,
     storage: ObjectStorage,
     session_id: UUID | None,
+    *,
+    timeout_seconds: float = MERMAID_RENDER_TIMEOUT_SECONDS,
 ) -> ImageAsset | None:
     """Render a planner Mermaid spec to a PNG and emit a diagram ImageAsset.
 
@@ -205,7 +255,7 @@ async def _render_mermaid_asset(
     try:
         with tempfile.TemporaryDirectory() as tmp:
             png = Path(tmp) / "diagram.png"
-            if await render_mermaid(syntax, png) and png.exists():
+            if await render_mermaid(syntax, png, timeout_seconds) and png.exists():
                 stored = await storage.put(
                     key=key,
                     content=png.read_bytes(),
@@ -227,6 +277,10 @@ async def _render_mermaid_asset(
         "diagram_type": spec.diagram_type or "flowchart",
         "mermaid_syntax": syntax,
         "provider": "mermaid",
+        # 1 when a real PNG was stored, 0 when the URL is only the fallback
+        # key — the publish-time injector keys its skip decision off this
+        # (int, not bool: ImageAsset.metadata values are str|int|float|None).
+        "png_rendered": 1 if png_rendered else 0,
     }
     logger.info(
         "mermaid_asset_complete",

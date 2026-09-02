@@ -112,6 +112,17 @@ def inject_visuals(article: CanonicalArticle, ctx: InjectionContext) -> str:
         if cover_visual is not None and asset is cover_visual:
             continue
         meta = asset.metadata or {}
+        if _is_unrendered_mermaid(asset):
+            # mmdc failed at generation time: the asset's URL is the bare
+            # object key with no PNG behind it. The dashboard still renders
+            # it client-side from `mermaid_syntax`, but publishing an <img>
+            # for it would ship a guaranteed 404 — skip it instead.
+            logger.warning(
+                "inject_skipped_unrendered_mermaid",
+                spec_id=meta.get("spec_id"),
+                url=asset.url,
+            )
+            continue
         spec_id = meta.get("spec_id")
         if isinstance(spec_id, str) and spec_id in spec_by_id:
             section_index = spec_by_id[spec_id].placement.section_index
@@ -181,6 +192,31 @@ def inject_visuals(article: CanonicalArticle, ctx: InjectionContext) -> str:
         rendered = _legacy_figure_html(asset, ctx) + "\n" + rendered
 
     return rendered
+
+
+def _is_unrendered_mermaid(asset: ImageAsset) -> bool:
+    """True when a mermaid asset has no PNG behind its URL (mmdc failed).
+
+    The render node persists `png_rendered` (1/0) on every mermaid asset —
+    trust it when present. Assets from before that flag existed fall back
+    to a URL sniff: a successful render stores a resolvable URL (absolute
+    http(s), a `generated_assets/`-relative path, or a local filesystem
+    path), while the failure fallback keeps the raw storage key
+    (e.g. `sessions/<id>/…`), which no static mount serves. The flag is
+    authoritative because some storage configs (MinIO without a public
+    URL) legitimately return the bare key for successful renders.
+    """
+    meta = asset.metadata or {}
+    if meta.get("provider") != "mermaid":
+        return False
+    flag = meta.get("png_rendered")
+    if flag is not None:
+        return not flag
+    url = asset.url
+    if url.startswith(("http://", "https://", "generated_assets/", "/")):
+        return False
+    # Windows-style absolute path (test/dev LocalDisk storage).
+    return re.match(r"^[A-Za-z]:[\\/]", url) is None
 
 
 def _synthesize_spec_from_metadata(asset: ImageAsset) -> ImageSpec | None:

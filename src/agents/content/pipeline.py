@@ -289,6 +289,7 @@ def build_content_graph(
                     storage=storage,
                     default_provider=settings.default_image_provider,
                     concurrency=settings.image_render_concurrency,
+                    mermaid_timeout=settings.mermaid_render_timeout,
                 ),
                 deps,
             ),
