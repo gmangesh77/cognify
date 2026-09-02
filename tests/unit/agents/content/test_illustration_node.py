@@ -10,8 +10,9 @@ from PIL import Image
 from src.agents.content.illustration_generator import (
     HERO_CANONICAL_HEIGHT,
     HERO_CANONICAL_WIDTH,
+    normalize_hero_image,
 )
-from src.agents.content.nodes import _normalize_hero_image, make_illustration_node
+from src.agents.content.nodes import make_illustration_node
 from src.models.content import ImageAsset
 from src.models.content_pipeline import SEOResult
 from src.models.research import TopicInput
@@ -164,27 +165,27 @@ class TestNormalizeHeroImage:
     def test_resizes_widescreen_source_to_canonical(self) -> None:
         """1792x1024 input -> exact 1600x900 output."""
         src = _make_png_bytes(1792, 1024)
-        result = _normalize_hero_image(src)
+        result = normalize_hero_image(src)
         with Image.open(BytesIO(result)) as img:
             assert img.size == (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
 
     def test_crops_square_source_to_canonical(self) -> None:
         """1024x1024 square input -> exact 1600x900 output (upscaled + cropped)."""
         src = _make_png_bytes(1024, 1024)
-        result = _normalize_hero_image(src)
+        result = normalize_hero_image(src)
         with Image.open(BytesIO(result)) as img:
             assert img.size == (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
 
     def test_handles_ultra_wide_source(self) -> None:
         """3000x800 ultra-wide input is still normalized to 1600x900."""
         src = _make_png_bytes(3000, 800)
-        result = _normalize_hero_image(src)
+        result = normalize_hero_image(src)
         with Image.open(BytesIO(result)) as img:
             assert img.size == (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
 
     def test_handles_tall_source(self) -> None:
         """Tall 800x1600 input is still normalized to 1600x900."""
         src = _make_png_bytes(800, 1600)
-        result = _normalize_hero_image(src)
+        result = normalize_hero_image(src)
         with Image.open(BytesIO(result)) as img:
             assert img.size == (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)

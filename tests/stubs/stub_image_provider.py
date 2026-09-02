@@ -15,12 +15,20 @@ from __future__ import annotations
 
 from src.services.visuals.providers.base import ImageProvider, ImageRenderResult
 
-# 1x1 transparent PNG.
-_PNG_1X1: bytes = (
-    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
-    b"\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
-    b"\x00\x00\x00\rIDATx\x9cc\xfc\xcf\xc0P\x0f\x00\x05\x00\x01\xe2&\x05[\x00\x00\x00\x00IEND\xaeB`\x82"
-)
+
+def _make_png_1x1() -> bytes:
+    """A real, PIL-decodable 1x1 transparent PNG (hero canonicalization
+    re-encodes render bytes, so a merely structurally-valid PNG breaks)."""
+    from io import BytesIO
+
+    from PIL import Image
+
+    buf = BytesIO()
+    Image.new("RGBA", (1, 1), (0, 0, 0, 0)).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+_PNG_1X1: bytes = _make_png_1x1()
 
 
 class StubImageProvider:

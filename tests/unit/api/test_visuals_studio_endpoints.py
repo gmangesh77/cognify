@@ -294,6 +294,44 @@ class TestRenderEndpoint:
         assert data["image_url"] is None
         assert data["mime_type"] == "image/png"
 
+    async def test_hero_render_is_canonicalized_to_1600x900(
+        self, studio_client: httpx.AsyncClient, studio_settings: Settings
+    ) -> None:
+        """A Studio cover re-render must apply the same 16:9 canonical as
+        the pipeline — this is the documented remediation path for old
+        3:2 heroes."""
+        import base64
+        from io import BytesIO
+
+        from PIL import Image
+
+        resp = await studio_client.post(
+            "/api/v1/visuals/render",
+            json={"spec": self._spec_payload()},  # hero + cover anchor
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert (data["width"], data["height"]) == (1600, 900)
+        with Image.open(BytesIO(base64.b64decode(data["image_base64"]))) as img:
+            assert img.size == (1600, 900)
+
+    async def test_section_render_keeps_provider_dimensions(
+        self, studio_client: httpx.AsyncClient, studio_settings: Settings
+    ) -> None:
+        spec = self._spec_payload()
+        spec["role_style"] = "concept"
+        spec["placement"] = {"anchor": "top", "section_index": 1}
+        resp = await studio_client.post(
+            "/api/v1/visuals/render",
+            json={"spec": spec},
+            headers=_editor_headers(studio_settings),
+        )
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        # StubImageProvider returns a 1x1 PNG — untouched for non-heroes.
+        assert (data["width"], data["height"]) == (1, 1)
+
     async def test_returns_503_when_provider_missing(
         self,
         studio_app: FastAPI,

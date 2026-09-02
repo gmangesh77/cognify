@@ -195,15 +195,23 @@ def inject_visuals(article: CanonicalArticle, ctx: InjectionContext) -> str:
 
 
 def _is_unrendered_mermaid(asset: ImageAsset) -> bool:
-    """True when a mermaid asset's URL is a bare object key (mmdc failed).
+    """True when a mermaid asset has no PNG behind its URL (mmdc failed).
 
-    A successful render stores a resolvable URL: absolute http(s), a
-    `generated_assets/`-relative path, or a local filesystem path. The
-    failure fallback keeps the raw storage key (e.g. `sessions/<id>/…`),
-    which no static mount serves.
+    The render node persists `png_rendered` (1/0) on every mermaid asset —
+    trust it when present. Assets from before that flag existed fall back
+    to a URL sniff: a successful render stores a resolvable URL (absolute
+    http(s), a `generated_assets/`-relative path, or a local filesystem
+    path), while the failure fallback keeps the raw storage key
+    (e.g. `sessions/<id>/…`), which no static mount serves. The flag is
+    authoritative because some storage configs (MinIO without a public
+    URL) legitimately return the bare key for successful renders.
     """
-    if (asset.metadata or {}).get("provider") != "mermaid":
+    meta = asset.metadata or {}
+    if meta.get("provider") != "mermaid":
         return False
+    flag = meta.get("png_rendered")
+    if flag is not None:
+        return not flag
     url = asset.url
     if url.startswith(("http://", "https://", "generated_assets/", "/")):
         return False

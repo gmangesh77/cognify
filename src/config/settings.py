@@ -144,6 +144,10 @@ class Settings(BaseSettings):
     illustration_timeout: float = 120.0
     # Diagram generation (Mermaid CLI)
     diagram_output_dir: str = "generated_assets/diagrams"
+    # mmdc/Chromium render ceiling. Two cold concurrent Chromium launches
+    # measured 13.1s on an idle loop; 15s timed out under real generation
+    # load (2026-09-01) and silently published articles without PNGs.
+    mermaid_render_timeout: float = 60.0
     # Visuals — generation (Epic 10 / VISUAL-004)
     enable_image_planner: bool = True  # flipped at end of Phase 5 / VISUAL-008
     # dalle_3 | gemini_flash | gemini_3_pro | imagen_4

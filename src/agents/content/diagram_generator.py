@@ -40,8 +40,14 @@ _PUPPETEER_CONFIG = Path(__file__).parent / "puppeteer-config.json"
 MERMAID_RENDER_TIMEOUT_SECONDS: float = 60.0
 
 
-async def render_mermaid(syntax: str, output_path: Path) -> bool:
+async def render_mermaid(
+    syntax: str,
+    output_path: Path,
+    timeout_seconds: float = MERMAID_RENDER_TIMEOUT_SECONDS,
+) -> bool:
     """Render Mermaid syntax to PNG via mmdc CLI. Returns True on success."""
+    tmp_path: Path | None = None
+    process = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".mmd", delete=False) as tmp:
             tmp.write(syntax)
@@ -57,10 +63,8 @@ async def render_mermaid(syntax: str, output_path: Path) -> bool:
             stderr=asyncio.subprocess.PIPE,
         )
         _, stderr = await asyncio.wait_for(
-            process.communicate(), timeout=MERMAID_RENDER_TIMEOUT_SECONDS
+            process.communicate(), timeout=timeout_seconds
         )
-
-        tmp_path.unlink(missing_ok=True)
 
         if process.returncode != 0:
             logger.warning(
@@ -77,11 +81,18 @@ async def render_mermaid(syntax: str, output_path: Path) -> bool:
         logger.warning("mmdc_not_found", path=str(_MMDC_PATH))
         return False
     except TimeoutError:
-        logger.warning("mermaid_render_timeout")
+        # Kill the wedged mmdc/Chromium — wait_for only cancels our await,
+        # the subprocess would otherwise keep running (and holding memory).
+        if process is not None and process.returncode is None:
+            process.kill()
+        logger.warning("mermaid_render_timeout", timeout_seconds=timeout_seconds)
         return False
     except Exception as exc:
         logger.warning("mermaid_render_error", error=str(exc))
         return False
+    finally:
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
 
 
 _SPEC_MERMAID_TEMPLATE = (

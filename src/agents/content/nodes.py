@@ -23,9 +23,7 @@ from src.agents.content.illustration_generator import (
     HERO_CANONICAL_WIDTH,
     ImageGenerator,
     generate_illustration_prompt,
-)
-from src.agents.content.illustration_generator import (
-    normalize_hero_image as _normalize_hero_image,
+    normalize_hero_image,
 )
 from src.agents.content.length_budgets import budget_for
 from src.agents.content.outline_generator import OutlineContext, generate_outline
@@ -242,7 +240,7 @@ def make_illustration_node(
             return {"visuals": existing}
 
         # Enforce canonical dimensions so every hero is identical 16:9.
-        normalized = await asyncio.to_thread(_normalize_hero_image, image_bytes)
+        normalized = await asyncio.to_thread(normalize_hero_image, image_bytes)
         path = await asyncio.to_thread(
             _save_illustration, normalized, output_dir, session_id
         )

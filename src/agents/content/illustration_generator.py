@@ -53,12 +53,12 @@ def normalize_hero_image(image_bytes: bytes) -> bytes:
         # Center-crop to the target aspect ratio
         if src_ratio > target_ratio:
             # Source is wider than target — crop sides
-            new_w = int(src_h * target_ratio)
+            new_w = max(1, int(src_h * target_ratio))
             left = (src_w - new_w) // 2
             box = (left, 0, left + new_w, src_h)
         else:
             # Source is taller than target — crop top/bottom
-            new_h = int(src_w / target_ratio)
+            new_h = max(1, int(src_w / target_ratio))
             top = (src_h - new_h) // 2
             box = (0, top, src_w, top + new_h)
         cropped = img.crop(box)
