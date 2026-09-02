@@ -43,6 +43,7 @@ from src.api.routers.content import content_router
 from src.api.routers.content_humanize_stream import content_humanize_stream_router
 from src.api.routers.content_regenerate import content_regenerate_router
 from src.api.routers.health import health_router
+from src.api.routers.linkedin_repurpose import linkedin_repurpose_router
 from src.api.routers.metrics import metrics_router
 from src.api.routers.oauth import oauth_router
 from src.api.routers.outline import outline_router
@@ -520,6 +521,9 @@ def _init_publishing_service(
             LinkedInAdapter,
             LinkedInCredentials,
         )
+        from src.services.publishing.linkedin.post_transformer import (
+            LinkedInPostTransformer,
+        )
         from src.services.publishing.linkedin.transformer import LinkedInTransformer
 
         creds = LinkedInCredentials(
@@ -529,11 +533,11 @@ def _init_publishing_service(
             client_id=settings.linkedin_client_id,
             client_secret=settings.linkedin_client_secret,
         )
-        pair = PlatformPair(
-            transformer=LinkedInTransformer(),
-            adapter=LinkedInAdapter(creds),
-        )
-        svc.register("linkedin", pair)
+        adapter = LinkedInAdapter(creds)
+        svc.register("linkedin", PlatformPair(LinkedInTransformer(), adapter))
+        # linkedin_post: repurposed standalone posts (AUTHOR-013), shares
+        # the same adapter/credentials as the `linkedin` platform.
+        svc.register("linkedin_post", PlatformPair(LinkedInPostTransformer(), adapter))
     app.state.publishing_service = svc
     logger.info("publishing_service_initialized", platforms=list(svc._platforms.keys()))
 
@@ -760,6 +764,11 @@ def _register_routers(app: FastAPI, settings: Settings) -> None:
         content_regenerate_router,
         prefix=settings.api_v1_prefix,
         tags=["content"],
+    )
+    app.include_router(
+        linkedin_repurpose_router,
+        prefix=settings.api_v1_prefix,
+        tags=["publishing"],
     )
     assets_dir = Path("generated_assets")
     if assets_dir.exists():

@@ -11,6 +11,7 @@ import type { ArticleDetail } from "@/types/articles";
 interface ArticleSidebarProps {
   article: ArticleDetail;
   onPublish: () => void;
+  onRepurposeLinkedin: () => void;
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -20,12 +21,23 @@ function formatTimeAgo(dateStr: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function ArticleSidebar({ article, onPublish }: ArticleSidebarProps) {
+export function ArticleSidebar({
+  article,
+  onPublish,
+  onRepurposeLinkedin,
+}: ArticleSidebarProps) {
   const { usage } = useArticleUsage(article.id);
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
         <Button className="w-full" onClick={onPublish}>Publish Article</Button>
+        <button
+          type="button"
+          onClick={onRepurposeLinkedin}
+          className="w-full rounded-md bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200"
+        >
+          Repurpose for LinkedIn
+        </button>
       </div>
 
       <div className="rounded-lg border border-neutral-200 p-4">

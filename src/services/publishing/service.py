@@ -11,6 +11,7 @@ from uuid import UUID, uuid4
 import structlog
 
 from src.models.publishing import (
+    PlatformPayload,
     Publication,
     PublicationEvent,
     PublicationResult,
@@ -73,6 +74,8 @@ class PublishingService:
         article_id: UUID,
         platform: str,
         schedule_at: datetime | None = None,
+        *,
+        content_override: str | None = None,
     ) -> PublicationResult:
         logger.info(
             "publish_started",
@@ -87,7 +90,7 @@ class PublishingService:
         if pair is None:
             return _failed(article_id, platform, f"Unknown platform: {platform}")
 
-        payload = pair.transformer.transform(article)
+        payload = _apply_override(pair.transformer.transform(article), content_override)
         result = await _with_retry(
             pair.adapter,
             payload,
@@ -250,6 +253,18 @@ def _log_result(
             platform=platform,
             error=result.error_message,
         )
+
+
+def _apply_override(
+    payload: PlatformPayload, content_override: str | None
+) -> PlatformPayload:
+    """Swap `payload.content` for `content_override` when given (AUTHOR-013).
+
+    Transformers stay pure — the override lives entirely in the service.
+    """
+    if content_override is None:
+        return payload
+    return payload.model_copy(update={"content": content_override})
 
 
 def _failed(

@@ -1,18 +1,15 @@
+import { platformLabel } from "@/lib/publishing/platform-label";
 import type { PlatformSummary } from "@/types/publishing";
 
 interface PlatformSummaryCardProps {
   summary: PlatformSummary;
 }
 
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 export function PlatformSummaryCard({ summary }: PlatformSummaryCardProps) {
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
       <h3 className="font-heading text-lg font-semibold text-neutral-800">
-        {capitalize(summary.platform)}
+        {platformLabel(summary.platform)}
       </h3>
       <p className="mt-1 text-3xl font-heading font-semibold text-neutral-900">
         {summary.total}

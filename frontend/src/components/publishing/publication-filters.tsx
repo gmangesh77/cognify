@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { platformLabel } from "@/lib/publishing/platform-label";
 
 const STATUS_FILTERS = [
   { value: "all", label: "All" },
@@ -26,10 +27,7 @@ export function PublicationFilters({
 }: PublicationFiltersProps) {
   const platformFilters = [
     { value: "all", label: "All" },
-    ...platforms.map((p) => ({
-      value: p,
-      label: p.charAt(0).toUpperCase() + p.slice(1),
-    })),
+    ...platforms.map((p) => ({ value: p, label: platformLabel(p) })),
   ];
 
   return (

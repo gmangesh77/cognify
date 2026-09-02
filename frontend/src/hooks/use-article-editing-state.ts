@@ -14,6 +14,8 @@ export function useArticleEditingState(articleId: string) {
   const [panel, setPanel] = useState<WorkbenchPanel | null>(null);
   const [historySectionId, setHistorySectionId] = useState<string | null>(null);
   const [focusVisualSection, setFocusVisualSection] = useState<number | null>(null);
+  // AUTHOR-013 — LinkedIn repurpose modal open/closed.
+  const [linkedinOpen, setLinkedinOpen] = useState(false);
 
   const openSection = (
     sectionIndex: number,
@@ -38,5 +40,7 @@ export function useArticleEditingState(articleId: string) {
     focusVisualSection,
     setFocusVisualSection,
     openSection,
+    linkedinOpen,
+    setLinkedinOpen,
   };
 }

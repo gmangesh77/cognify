@@ -11,6 +11,7 @@ import { ArticleDetailToolbar } from "@/components/articles/article-detail-toolb
 import { ArticleHeaderEditor } from "@/components/articles/article-header-editor";
 import { ArticleNotFound } from "@/components/articles/article-not-found";
 import { ArticleSidebar } from "@/components/articles/article-sidebar";
+import { LinkedInRepurposeModal } from "@/components/articles/linkedin-repurpose-modal";
 import { PublishModal } from "@/components/articles/publish-modal";
 import { useToast } from "@/components/ui/toaster";
 import { ImageImportModal } from "@/components/visuals/ImageImportModal";
@@ -41,6 +42,8 @@ export default function ArticleDetailPage() {
     focusVisualSection,
     setFocusVisualSection,
     openSection,
+    linkedinOpen,
+    setLinkedinOpen,
   } = useArticleEditingState(id);
 
   const { insertVisuals, publish } = useArticleActions({ id, refetch, showToast });
@@ -139,7 +142,11 @@ export default function ArticleDetailPage() {
           </div>
         ) : (
           <div className="w-80 shrink-0">
-            <ArticleSidebar article={article} onPublish={() => setPublishOpen(true)} />
+            <ArticleSidebar
+              article={article}
+              onPublish={() => setPublishOpen(true)}
+              onRepurposeLinkedin={() => setLinkedinOpen(true)}
+            />
           </div>
         )}
       </div>
@@ -171,6 +178,12 @@ export default function ArticleDetailPage() {
           setPublishOpen(false);
           void publish(platforms);
         }}
+      />
+      <LinkedInRepurposeModal
+        open={linkedinOpen}
+        articleId={id}
+        onClose={() => setLinkedinOpen(false)}
+        onToast={showToast}
       />
       <SavedAssetGallery open={galleryOpen} onClose={() => setGalleryOpen(false)} />
       <ImageImportModal

@@ -185,6 +185,9 @@ def _register_linkedin_live(
             LinkedInAdapter,
             LinkedInCredentials,
         )
+        from src.services.publishing.linkedin.post_transformer import (
+            LinkedInPostTransformer,
+        )
         from src.services.publishing.linkedin.transformer import LinkedInTransformer
         from src.services.publishing.service import PlatformPair
 
@@ -195,11 +198,12 @@ def _register_linkedin_live(
             client_id=settings.linkedin_client_id,  # type: ignore[attr-defined]
             client_secret=settings.linkedin_client_secret,  # type: ignore[attr-defined]
         )
-        pair = PlatformPair(
-            transformer=LinkedInTransformer(),
-            adapter=LinkedInAdapter(creds),
-        )
-        app.state.publishing_service.register("linkedin", pair)  # type: ignore[attr-defined]
+        adapter = LinkedInAdapter(creds)
+        svc = app.state.publishing_service  # type: ignore[attr-defined]
+        svc.register("linkedin", PlatformPair(LinkedInTransformer(), adapter))
+        # linkedin_post: repurposed standalone posts (AUTHOR-013), shares
+        # the same adapter/credentials as the `linkedin` platform.
+        svc.register("linkedin_post", PlatformPair(LinkedInPostTransformer(), adapter))
         logger.info("linkedin_registered_live")
     except Exception as exc:
         logger.warning("linkedin_live_registration_failed", error=str(exc))

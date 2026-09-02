@@ -44,7 +44,7 @@ describe("ArticleSidebar", () => {
         ],
       },
     });
-    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} />);
+    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} onRepurposeLinkedin={vi.fn()} />);
     expect(screen.getByText("Usage")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /\$0\.052 this article · 3\.2k tok · 2 img/ }),
@@ -53,41 +53,60 @@ describe("ArticleSidebar", () => {
   });
 
   it("renders publish button", () => {
-    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} />);
+    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} onRepurposeLinkedin={vi.fn()} />);
     expect(screen.getByText("Publish Article")).toBeInTheDocument();
   });
 
   it("renders domain", () => {
-    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} />);
+    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} onRepurposeLinkedin={vi.fn()} />);
     expect(screen.getByText("Cybersecurity")).toBeInTheDocument();
   });
 
   it("renders word count", () => {
-    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} />);
+    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} onRepurposeLinkedin={vi.fn()} />);
     expect(screen.getByText(/3,200/)).toBeInTheDocument();
   });
 
   it("renders workflow steps", () => {
-    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} />);
+    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} onRepurposeLinkedin={vi.fn()} />);
     expect(screen.getByText("Research")).toBeInTheDocument();
     expect(screen.getByText("Drafting")).toBeInTheDocument();
   });
 
   it("renders key claims", () => {
-    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} />);
+    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} onRepurposeLinkedin={vi.fn()} />);
     expect(screen.getByText(/AI detection improved/)).toBeInTheDocument();
     expect(screen.getByText(/Phishing attacks rose/)).toBeInTheDocument();
   });
 
   it("calls onPublish when publish button clicked", () => {
     const handler = vi.fn();
-    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={handler} />);
+    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={handler} onRepurposeLinkedin={vi.fn()} />);
     fireEvent.click(screen.getByText("Publish Article"));
     expect(handler).toHaveBeenCalled();
   });
 
+  it("calls onRepurposeLinkedin when the LinkedIn button is clicked", () => {
+    const handler = vi.fn();
+    render(
+      <ArticleSidebar
+        article={mockArticle as ArticleDetail}
+        onPublish={vi.fn()}
+        onRepurposeLinkedin={handler}
+      />,
+    );
+    fireEvent.click(screen.getByText("Repurpose for LinkedIn"));
+    expect(handler).toHaveBeenCalled();
+  });
+
   it("does not render the voice match card when voiceMatchScore is absent", () => {
-    render(<ArticleSidebar article={mockArticle as ArticleDetail} onPublish={vi.fn()} />);
+    render(
+      <ArticleSidebar
+        article={mockArticle as ArticleDetail}
+        onPublish={vi.fn()}
+        onRepurposeLinkedin={vi.fn()}
+      />,
+    );
     expect(screen.queryByText("Voice match")).not.toBeInTheDocument();
   });
 
@@ -100,6 +119,7 @@ describe("ArticleSidebar", () => {
           voiceScoresBySection: { "0": 90 },
         } as ArticleDetail}
         onPublish={vi.fn()}
+        onRepurposeLinkedin={vi.fn()}
       />,
     );
     expect(screen.getByText("Voice match")).toBeInTheDocument();
