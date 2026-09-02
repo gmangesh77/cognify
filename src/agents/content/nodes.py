@@ -20,10 +20,12 @@ from src.agents.content.diagram_generator import propose_diagrams, render_mermai
 from src.agents.content.illustration_generator import (
     DALLE_SOURCE_SIZE,
     HERO_CANONICAL_HEIGHT,
-    HERO_CANONICAL_SIZE,
     HERO_CANONICAL_WIDTH,
     ImageGenerator,
     generate_illustration_prompt,
+)
+from src.agents.content.illustration_generator import (
+    normalize_hero_image as _normalize_hero_image,
 )
 from src.agents.content.length_budgets import budget_for
 from src.agents.content.outline_generator import OutlineContext, generate_outline
@@ -259,39 +261,6 @@ def make_illustration_node(
         return {"visuals": [asset] + existing}
 
     return illustration_node
-
-
-def _normalize_hero_image(image_bytes: bytes) -> bytes:
-    """Center-crop and resize to canonical 16:9 hero dimensions.
-
-    Guarantees every hero.png is exactly HERO_CANONICAL_SIZE regardless of
-    what the generator returned, so Ghost themes render consistently across
-    list cards and article detail pages.
-    """
-    from io import BytesIO
-
-    from PIL import Image
-
-    with Image.open(BytesIO(image_bytes)) as img:
-        src_w, src_h = img.size
-        target_ratio = HERO_CANONICAL_WIDTH / HERO_CANONICAL_HEIGHT
-        src_ratio = src_w / src_h
-        # Center-crop to the target aspect ratio
-        if src_ratio > target_ratio:
-            # Source is wider than target — crop sides
-            new_w = int(src_h * target_ratio)
-            left = (src_w - new_w) // 2
-            box = (left, 0, left + new_w, src_h)
-        else:
-            # Source is taller than target — crop top/bottom
-            new_h = int(src_w / target_ratio)
-            top = (src_h - new_h) // 2
-            box = (0, top, src_w, top + new_h)
-        cropped = img.crop(box)
-        resized = cropped.resize(HERO_CANONICAL_SIZE, Image.Resampling.LANCZOS)
-        out = BytesIO()
-        resized.save(out, format="PNG")
-        return out.getvalue()
 
 
 def _save_illustration(image_bytes: bytes, output_dir: str, session_id: UUID) -> Path:

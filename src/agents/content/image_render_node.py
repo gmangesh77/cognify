@@ -98,6 +98,9 @@ def make_image_render_node(
                 return None
             elapsed_ms = int((time.perf_counter() - started) * 1000)
 
+        if spec.role_style == "hero" or spec.placement.anchor == "cover":
+            result = await _canonicalize_hero(result, spec_id=spec.id)
+
         try:
             stored = await _persist(
                 storage=storage,
@@ -155,6 +158,36 @@ def _resolve_provider(
     if registry.has(default_provider):
         return registry.get(default_provider)
     return None
+
+
+async def _canonicalize_hero(
+    result: ImageRenderResult, *, spec_id: str
+) -> ImageRenderResult:
+    """Center-crop + resize hero/cover renders to the 1600x900 canonical.
+
+    Providers return their native shapes (gpt-image-1: 1536x1024, 3:2) which
+    render oversized in Ghost's 16:9 feature-image slot. Best-effort: on any
+    failure the original render is kept — never crash the pipeline.
+    """
+    from src.agents.content.illustration_generator import (
+        HERO_CANONICAL_HEIGHT,
+        HERO_CANONICAL_WIDTH,
+        normalize_hero_image,
+    )
+
+    try:
+        normalized = await asyncio.to_thread(normalize_hero_image, result.image_bytes)
+    except Exception as exc:  # noqa: BLE001 — keep the un-normalized render
+        logger.warning("hero_normalize_failed", spec_id=spec_id, error=str(exc))
+        return result
+    return result.model_copy(
+        update={
+            "image_bytes": normalized,
+            "mime_type": "image/png",
+            "width": HERO_CANONICAL_WIDTH,
+            "height": HERO_CANONICAL_HEIGHT,
+        }
+    )
 
 
 async def _persist(

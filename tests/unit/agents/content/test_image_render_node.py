@@ -41,6 +41,44 @@ def _state(**overrides: object) -> dict[str, object]:
     return base
 
 
+class _SizedStubProvider:
+    """Provider stub returning a real PNG of the requested dimensions."""
+
+    def __init__(self, width: int, height: int) -> None:
+        self._width = width
+        self._height = height
+
+    @property
+    def name(self) -> str:
+        return "gemini_flash"
+
+    @property
+    def model(self) -> str:
+        return "stub-sized"
+
+    async def render(self, **kwargs: object) -> object:
+        from io import BytesIO
+
+        from PIL import Image
+
+        from src.services.visuals.providers.base import ImageRenderResult
+
+        buf = BytesIO()
+        Image.new("RGB", (self._width, self._height), (200, 40, 40)).save(
+            buf, format="PNG"
+        )
+        return ImageRenderResult(
+            image_bytes=buf.getvalue(),
+            mime_type="image/png",
+            width=self._width,
+            height=self._height,
+            prompt_used="p",
+            model="stub-sized",
+            provider="gemini_flash",
+            latency_ms=1,
+        )
+
+
 def _build_registry() -> tuple[ImageProviderRegistry, StubImageProvider]:
     stub = StubImageProvider()
     reg = ImageProviderRegistry()
@@ -303,6 +341,54 @@ class TestImageRenderNode:
         completion = [e for e in logs if e["event"] == "mermaid_asset_complete"]
         assert len(completion) == 1
         assert completion[0]["rendered"] is True
+
+    async def test_hero_render_is_normalized_to_canonical_16_9(self) -> None:
+        """gpt-image-1 returns 3:2 (1536x1024); a hero/cover render must be
+        center-cropped + resized to the 1600x900 canonical before storage —
+        the legacy illustration path already did this, the planner path
+        published raw provider dimensions (oversized 3:2 heroes on Ghost)."""
+        from io import BytesIO
+
+        from PIL import Image
+
+        from src.agents.content.illustration_generator import HERO_CANONICAL_SIZE
+
+        reg = ImageProviderRegistry()
+        reg.register(_SizedStubProvider(1536, 1024))  # type: ignore[arg-type]
+        specs = [_spec(spec_id="cover", role_style="hero")]
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            asset = (await node(_state(image_specs=specs)))["visuals"][0]
+            with Image.open(BytesIO(Path(asset.url).read_bytes())) as img:
+                assert img.size == HERO_CANONICAL_SIZE
+
+    async def test_section_visual_keeps_provider_dimensions(self) -> None:
+        """Only heroes/covers are canonicalized — inline diagrams and cards
+        keep whatever the provider produced."""
+        from io import BytesIO
+
+        from PIL import Image
+
+        reg = ImageProviderRegistry()
+        reg.register(_SizedStubProvider(1536, 1024))  # type: ignore[arg-type]
+        specs = [
+            _spec(
+                spec_id="card",
+                role_style="concept",
+                placement=ImagePlacement(anchor="top", section_index=1),
+            )
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            storage = LocalDiskObjectStorage(tmp)
+            node = make_image_render_node(
+                registry=reg, storage=storage, default_provider="gemini_flash"
+            )
+            asset = (await node(_state(image_specs=specs)))["visuals"][0]
+            with Image.open(BytesIO(Path(asset.url).read_bytes())) as img:
+                assert img.size == (1536, 1024)
 
     async def test_provider_failure_skips_spec(self) -> None:
         class ExplodingProvider:

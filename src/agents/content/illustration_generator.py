@@ -19,12 +19,12 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger()
 
-# Canonical hero image dimensions enforced on every generated illustration.
-# DALL-E 3 returns 1792x1024 (its widest landscape), which we center-crop
-# and downscale to exact 16:9 at 1600x900. Having a single fixed size
-# guarantees consistent appearance across Ghost list cards, article detail
-# pages, and any other consumer of the feature_image. Normalization lives
-# in src/agents/content/nodes.py::_normalize_hero_image.
+# Canonical hero image dimensions enforced on every generated hero/cover.
+# Providers return their own shapes (DALL-E 3: 1792x1024; gpt-image-1:
+# 1536x1024), which `normalize_hero_image` center-crops and resizes to
+# exact 16:9 at 1600x900. Having a single fixed size guarantees consistent
+# appearance across Ghost list cards, article detail pages, and any other
+# consumer of the feature_image.
 HERO_CANONICAL_WIDTH = 1600
 HERO_CANONICAL_HEIGHT = 900
 HERO_CANONICAL_SIZE = (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
@@ -32,6 +32,40 @@ HERO_CANONICAL_SIZE = (HERO_CANONICAL_WIDTH, HERO_CANONICAL_HEIGHT)
 # accepts 1024x1024, 1024x1792, or 1792x1024 — 1792x1024 is the widest
 # landscape option and the closest to our 16:9 target.
 DALLE_SOURCE_SIZE = (1792, 1024)
+
+
+def normalize_hero_image(image_bytes: bytes) -> bytes:
+    """Center-crop and resize to canonical 16:9 hero dimensions.
+
+    Guarantees every hero.png is exactly HERO_CANONICAL_SIZE regardless of
+    what the generator returned, so Ghost themes render consistently across
+    list cards and article detail pages. CPU-bound — call via
+    `asyncio.to_thread` from async code.
+    """
+    from io import BytesIO
+
+    from PIL import Image
+
+    with Image.open(BytesIO(image_bytes)) as img:
+        src_w, src_h = img.size
+        target_ratio = HERO_CANONICAL_WIDTH / HERO_CANONICAL_HEIGHT
+        src_ratio = src_w / src_h
+        # Center-crop to the target aspect ratio
+        if src_ratio > target_ratio:
+            # Source is wider than target — crop sides
+            new_w = int(src_h * target_ratio)
+            left = (src_w - new_w) // 2
+            box = (left, 0, left + new_w, src_h)
+        else:
+            # Source is taller than target — crop top/bottom
+            new_h = int(src_w / target_ratio)
+            top = (src_h - new_h) // 2
+            box = (0, top, src_w, top + new_h)
+        cropped = img.crop(box)
+        resized = cropped.resize(HERO_CANONICAL_SIZE, Image.Resampling.LANCZOS)
+        out = BytesIO()
+        resized.save(out, format="PNG")
+        return out.getvalue()
 
 
 class ImageGenerator(Protocol):

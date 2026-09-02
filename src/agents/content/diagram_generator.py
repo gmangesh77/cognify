@@ -33,6 +33,12 @@ _MMDC_PATH = Path(__file__).parents[3] / "node_modules" / ".bin" / "mmdc"
 # module; absent in environments where mmdc isn't installed (no-op there).
 _PUPPETEER_CONFIG = Path(__file__).parent / "puppeteer-config.json"
 
+# Cold concurrent Chromium launches (fresh container, several renders in one
+# article) measured 13s+ on an idle event loop; the old 15s ceiling timed out
+# under real generation load and silently published articles without diagram
+# PNGs (2026-09-01). mmdc renders are rare and cheap — allow a generous cap.
+MERMAID_RENDER_TIMEOUT_SECONDS: float = 60.0
+
 
 async def render_mermaid(syntax: str, output_path: Path) -> bool:
     """Render Mermaid syntax to PNG via mmdc CLI. Returns True on success."""
@@ -50,7 +56,9 @@ async def render_mermaid(syntax: str, output_path: Path) -> bool:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        _, stderr = await asyncio.wait_for(process.communicate(), timeout=15.0)
+        _, stderr = await asyncio.wait_for(
+            process.communicate(), timeout=MERMAID_RENDER_TIMEOUT_SECONDS
+        )
 
         tmp_path.unlink(missing_ok=True)
 
